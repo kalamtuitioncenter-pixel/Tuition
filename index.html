@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kalam Tuition ERP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+Tamil:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ── Reset & Base ─────────────────────────────────────── */
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f1f5f9;--bg2:#ffffff;--bg3:#f8fafc;
+  --tx:#0f172a;--tx2:#475569;--tx3:#94a3b8;
+  --br:#e2e8f0;--br2:#cbd5e1;
+  --pr:#1a56db;--pr2:#1239a5;--prl:#eff6ff;
+  --sd:#0f172a;--sd2:#1e293b;--sdtx:#94a3b8;
+  --success:#10b981;--warn:#f59e0b;--danger:#ef4444;
+  --card:#ffffff;
+  --radius:10px;--radius-lg:14px;
+  --shadow:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+  --shadow-md:0 4px 12px rgba(0,0,0,.08);
+}
+.dark{
+  --bg:#0f172a;--bg2:#1e293b;--bg3:#0f172a;
+  --tx:#f1f5f9;--tx2:#94a3b8;--tx3:#475569;
+  --br:#334155;--br2:#475569;
+  --prl:#1e3a8a;--card:#1e293b;
+}
+body{font-family:'Inter','Noto Sans Tamil',system-ui,sans-serif;background:var(--bg);color:var(--tx);font-size:13px;min-height:100vh;transition:background .2s,color .2s}
+
+/* ── Scrollbar ────────────────────────────────────────── */
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--br2);border-radius:2px}
+
+/* ── Layout ───────────────────────────────────────────── */
+.app{display:flex;min-height:100vh}
+.sidebar{width:220px;background:var(--sd);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100;overflow:hidden;transition:transform .25s}
+.main{margin-left:220px;flex:1;display:flex;flex-direction:column;min-height:100vh}
+
+/* ── Sidebar ──────────────────────────────────────────── */
+.s-brand{padding:18px 16px 14px;border-bottom:1px solid rgba(255,255,255,.07)}
+.s-logo-row{display:flex;align-items:center;gap:10px}
+.s-logo{width:34px;height:34px;background:var(--pr);border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.s-logo svg{width:18px;height:18px}
+.s-brand-name{font-size:13px;font-weight:600;color:#fff;line-height:1.2}
+.s-brand-sub{font-size:10px;color:#60a5fa;margin-top:2px}
+.s-center{padding:9px 16px 10px;border-bottom:1px solid rgba(255,255,255,.06)}
+.s-clbl{font-size:9px;color:#475569;text-transform:uppercase;letter-spacing:.07em;margin-bottom:2px}
+.s-cval{font-size:11px;color:#e2e8f0;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.s-nav{flex:1;overflow-y:auto;padding:6px 0}
+.s-nav::-webkit-scrollbar{width:2px}
+.nav-section{font-size:9px;color:#334155;text-transform:uppercase;letter-spacing:.07em;padding:8px 16px 3px;margin-top:2px}
+.nav-item{display:flex;align-items:center;gap:9px;padding:8px 12px;cursor:pointer;color:#94a3b8;border-radius:8px;margin:1px 8px;font-size:11.5px;font-weight:400;transition:background .12s,color .12s;border:none;background:transparent;width:calc(100% - 16px);text-align:left}
+.nav-item:hover{background:var(--sd2);color:#e2e8f0}
+.nav-item.active{background:var(--pr);color:#fff;font-weight:500}
+.nav-item.active svg{opacity:1}
+.nav-item svg{width:15px;height:15px;flex-shrink:0;opacity:.7}
+.s-foot{padding:8px;border-top:1px solid rgba(255,255,255,.07);display:flex;gap:5px}
+.s-fbt{flex:1;padding:7px 4px;border-radius:7px;background:rgba(255,255,255,.06);border:none;color:#94a3b8;cursor:pointer;font-size:10px;display:flex;align-items:center;justify-content:center;gap:4px;transition:.12s}
+.s-fbt:hover{background:rgba(255,255,255,.12);color:#e2e8f0}
+.s-fbt svg{width:12px;height:12px}
+
+/* ── Topbar ───────────────────────────────────────────── */
+.topbar{height:52px;background:var(--card);border-bottom:.5px solid var(--br);display:flex;align-items:center;padding:0 20px;gap:10px;position:sticky;top:0;z-index:50}
+.topbar-title{font-size:15px;font-weight:600;flex:1;color:var(--tx)}
+.topbar-right{display:flex;align-items:center;gap:8px}
+.avatar-sm{width:30px;height:30px;border-radius:50%;background:var(--pr);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;cursor:pointer}
+
+/* ── Content ──────────────────────────────────────────── */
+.content{flex:1;padding:20px 22px 40px}
+.page{display:none;animation:fadeIn .2s ease}
+.page.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── Stat Cards ───────────────────────────────────────── */
+.stat-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:18px}
+.stat-card{background:var(--bg2);border:.5px solid var(--br);border-radius:var(--radius-lg);padding:16px;box-shadow:var(--shadow)}
+.stat-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:10px}
+.stat-icon svg{width:19px;height:19px}
+.stat-lbl{font-size:11px;color:var(--tx2);margin-bottom:5px;font-weight:500}
+.stat-val{font-size:26px;font-weight:700;color:var(--tx);line-height:1}
+.stat-sub{font-size:10px;color:var(--tx3);margin-top:4px}
+
+/* ── Cards ────────────────────────────────────────────── */
+.card{background:var(--card);border:.5px solid var(--br);border-radius:var(--radius-lg);padding:16px;box-shadow:var(--shadow)}
+.card-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.card-title{font-size:13px;font-weight:600;color:var(--tx)}
+.row2{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:14px;margin-bottom:16px}
+.row3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+
+/* ── Badges ───────────────────────────────────────────── */
+.badge{display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:10px;font-weight:600}
+.badge-green{background:#EAF3DE;color:#27500A}
+.badge-amber{background:#FAEEDA;color:#633806}
+.badge-red{background:#FCEBEB;color:#791F1F}
+.badge-blue{background:#E6F1FB;color:#0C447C}
+.badge-purple{background:#EEEDFE;color:#3C3489}
+.badge-teal{background:#E1F5EE;color:#085041}
+.dark .badge-green{background:#064e3b;color:#6ee7b7}
+.dark .badge-amber{background:#78350f;color:#fcd34d}
+.dark .badge-red{background:#7f1d1d;color:#fca5a5}
+.dark .badge-blue{background:#1e3a8a;color:#93c5fd}
+.dark .badge-purple{background:#4c1d95;color:#c4b5fd}
+
+/* ── Buttons ──────────────────────────────────────────── */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;border:.5px solid var(--br2);background:transparent;color:var(--tx);cursor:pointer;font-size:12px;font-weight:500;transition:.12s;font-family:inherit}
+.btn:hover{background:var(--bg);border-color:var(--tx3)}
+.btn:active{transform:scale(.98)}
+.btn svg{width:13px;height:13px}
+.btn-primary{background:var(--pr);color:#fff;border-color:var(--pr)}
+.btn-primary:hover{background:var(--pr2);border-color:var(--pr2)}
+.btn-danger{background:var(--danger);color:#fff;border-color:var(--danger)}
+.btn-sm{padding:4px 10px;font-size:11px}
+.btn-icon{padding:6px;border-radius:7px}
+
+/* ── Forms ────────────────────────────────────────────── */
+.form-group{margin-bottom:12px}
+.form-label{display:block;font-size:11px;font-weight:500;color:var(--tx2);margin-bottom:4px}
+.form-input{width:100%;padding:8px 12px;border-radius:8px;border:.5px solid var(--br2);background:var(--card);color:var(--tx);font-size:13px;outline:none;font-family:inherit;transition:border-color .15s}
+.form-input:focus{border-color:var(--pr);box-shadow:0 0 0 3px rgba(26,86,219,.1)}
+.form-select{width:100%;padding:8px 12px;border-radius:8px;border:.5px solid var(--br2);background:var(--card);color:var(--tx);font-size:13px;outline:none;font-family:inherit;appearance:auto}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-textarea{width:100%;padding:8px 12px;border-radius:8px;border:.5px solid var(--br2);background:var(--card);color:var(--tx);font-size:13px;outline:none;font-family:inherit;resize:vertical;min-height:80px}
+.form-textarea:focus{border-color:var(--pr)}
+
+/* ── Toolbar ──────────────────────────────────────────── */
+.toolbar{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.search-box{display:flex;align-items:center;gap:8px;background:var(--card);border:.5px solid var(--br);border-radius:8px;padding:6px 12px;flex:1;max-width:280px}
+.search-box input{border:none;background:transparent;color:var(--tx);font-size:13px;outline:none;width:100%;font-family:inherit}
+.search-box svg{width:15px;height:15px;color:var(--tx3);flex-shrink:0}
+.seg-bar{display:flex;background:var(--bg);border-radius:9px;padding:2px;gap:2px}
+.seg-btn{padding:5px 14px;border-radius:7px;border:none;background:transparent;color:var(--tx2);cursor:pointer;font-size:11px;font-weight:500;transition:.12s;font-family:inherit}
+.seg-btn.active{background:var(--card);color:var(--tx);box-shadow:var(--shadow)}
+
+/* ── Table ────────────────────────────────────────────── */
+.table-wrap{border:.5px solid var(--br);border-radius:var(--radius-lg);overflow:hidden;background:var(--card);box-shadow:var(--shadow);overflow-x:auto}
+table{width:100%;border-collapse:collapse;table-layout:fixed}
+thead{background:var(--bg)}
+th{text-align:left;font-size:10px;font-weight:600;color:var(--tx2);padding:9px 12px;border-bottom:.5px solid var(--br);text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}
+td{padding:10px 12px;border-bottom:.5px solid var(--br);font-size:12px;color:var(--tx)}
+tbody tr:last-child td{border-bottom:none}
+tbody tr{transition:background .1s}
+tbody tr:hover td{background:var(--bg)}
+
+/* ── Avatar ───────────────────────────────────────────── */
+.av{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0}
+.flex-c{display:flex;align-items:center;gap:8px}
+
+/* ── Modal ────────────────────────────────────────────── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px;animation:fadeIn .15s}
+.modal{background:var(--card);border-radius:var(--radius-lg);padding:24px;width:100%;max-width:500px;border:.5px solid var(--br);box-shadow:var(--shadow-md);max-height:90vh;overflow-y:auto}
+.modal-title{font-size:16px;font-weight:600;color:var(--tx);margin-bottom:18px}
+.modal-footer{display:flex;gap:10px;margin-top:16px;padding-top:16px;border-top:.5px solid var(--br)}
+.modal-footer .btn{flex:1;justify-content:center}
+
+/* ── Attendance ───────────────────────────────────────── */
+.att-row{display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:.5px solid var(--br);background:var(--card)}
+.att-row:last-child{border-bottom:none}
+.att-row:hover{background:var(--bg)}
+.att-btns{display:flex;gap:5px;margin-left:auto}
+.att-btn{width:32px;height:30px;border-radius:7px;border:.5px solid var(--br);background:transparent;cursor:pointer;font-size:10px;font-weight:700;transition:.12s;display:flex;align-items:center;justify-content:center}
+.att-btn:hover{border-color:currentColor;opacity:.8}
+.att-p{color:#1D9E75}.att-p.sel{background:#EAF3DE;border-color:#1D9E75}
+.att-a{color:#E24B4A}.att-a.sel{background:#FCEBEB;border-color:#E24B4A}
+.att-l{color:#BA7517}.att-l.sel{background:#FAEEDA;border-color:#BA7517}
+
+/* ── Fee Summary ──────────────────────────────────────── */
+.fee-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:14px}
+.fee-box{background:var(--card);border:.5px solid var(--br);border-radius:var(--radius-lg);padding:14px;box-shadow:var(--shadow)}
+.fee-box-lbl{font-size:10px;color:var(--tx3);margin-bottom:4px}
+.fee-box-val{font-size:22px;font-weight:700}
+
+/* ── Progress Bar ─────────────────────────────────────── */
+.progress{height:7px;background:var(--bg);border-radius:4px;overflow:hidden;margin-top:5px}
+.progress-fill{height:100%;border-radius:4px;transition:width .4s}
+
+/* ── AI Cards ─────────────────────────────────────────── */
+.ai-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.6fr);gap:14px}
+.ai-feat-btn{border:.5px solid var(--br);border-radius:var(--radius-lg);padding:14px;cursor:pointer;background:var(--card);transition:.12s;display:flex;gap:12px;align-items:flex-start;margin-bottom:8px;border-left-width:3px}
+.ai-feat-btn:hover{border-color:var(--pr)}
+.ai-feat-btn.active{border-color:var(--pr)!important;background:var(--prl)}
+.ai-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ai-icon svg{width:19px;height:19px}
+.ai-result-panel{background:var(--bg);border-radius:var(--radius-lg);padding:16px;height:100%;min-height:300px}
+.ai-stream{font-size:12px;color:var(--tx2);white-space:pre-wrap;line-height:1.8;font-family:'Courier New',monospace}
+
+/* ── Shop Grid ────────────────────────────────────────── */
+.shop-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
+.shop-card{background:var(--card);border:.5px solid var(--br);border-radius:var(--radius-lg);padding:14px;box-shadow:var(--shadow)}
+.shop-name{font-size:13px;font-weight:500;color:var(--tx);margin-bottom:4px}
+.shop-price{font-size:17px;font-weight:700;color:#185FA5;margin:6px 0}
+.qty-row{display:flex;align-items:center;gap:8px;margin-top:10px}
+.qty-btn{width:28px;height:28px;border-radius:7px;border:.5px solid var(--br);background:transparent;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;color:var(--tx);transition:.12s;line-height:1}
+.qty-btn:hover{background:var(--bg)}
+.qty-val{font-size:14px;font-weight:600;min-width:22px;text-align:center;color:var(--tx)}
+
+/* ── Notifications ────────────────────────────────────── */
+.notif-item{display:flex;gap:12px;padding:14px 0;border-bottom:.5px solid var(--br)}
+.notif-item:last-child{border-bottom:none}
+.notif-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:3px}
+
+/* ── Chart wrappers ───────────────────────────────────── */
+.chart-wrap{position:relative;height:180px}
+
+/* ── Responsive ───────────────────────────────────────── */
+.hamburger{display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--tx)}
+.hamburger svg{width:22px;height:22px}
+.sidebar-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:99}
+@media(max-width:900px){
+  .sidebar{transform:translateX(-100%)}
+  .sidebar.open{transform:translateX(0)}
+  .sidebar-backdrop.open{display:block}
+  .main{margin-left:0}
+  .hamburger{display:flex}
+  .stat-grid{grid-template-columns:1fr 1fr}
+  .row2{grid-template-columns:1fr}
+  .form-row{grid-template-columns:1fr}
+  .ai-grid{grid-template-columns:1fr}
+}
+@media(max-width:560px){
+  .stat-grid{grid-template-columns:1fr}
+  .fee-summary{grid-template-columns:1fr}
+  .shop-grid{grid-template-columns:1fr 1fr}
+  .content{padding:14px 14px 40px}
+  .topbar{padding:0 14px}
+}
+
+/* ── Settings ─────────────────────────────────────────── */
+.settings-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:.5px solid var(--br)}
+.settings-row:last-child{border-bottom:none}
+
+/* ── Quick Actions ────────────────────────────────────── */
+.qa-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.qa-card{background:var(--bg);border:.5px solid var(--br);border-radius:var(--radius-lg);padding:16px 8px;text-align:center;cursor:pointer;transition:.12s;display:flex;flex-direction:column;align-items:center;gap:8px}
+.qa-card:hover{background:var(--card);box-shadow:var(--shadow-md);transform:translateY(-1px)}
+.qa-card svg{width:22px;height:22px}
+.qa-card span{font-size:11px;color:var(--tx2);font-weight:500}
+@media(max-width:700px){.qa-grid{grid-template-columns:repeat(3,1fr)}}
+
+
+/* ── Backup ───────────────────────────────────────────── */
+.backup-status{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:8px;background:var(--bg);border:.5px solid var(--br);margin-bottom:8px}
+.backup-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.backup-dot.ok{background:#1D9E75;animation:none}
+.backup-dot.pending{background:#BA7517}
+.backup-dot.error{background:#E24B4A;animation:none}
+.backup-log{background:var(--bg);border-radius:8px;padding:12px;max-height:180px;overflow-y:auto;font-family:monospace;font-size:11px;color:var(--tx2);line-height:1.7;border:.5px solid var(--br)}
+.backup-log::-webkit-scrollbar{width:3px}
+.backup-progress{height:4px;background:var(--br);border-radius:2px;overflow:hidden;margin-top:8px}
+.backup-progress-fill{height:100%;border-radius:2px;background:var(--pr);transition:width .4s}
+.sheet-url-input{font-family:monospace;font-size:11px}
+.backup-card{background:var(--card);border:.5px solid var(--br);border-radius:var(--radius-lg);padding:16px;margin-bottom:12px;box-shadow:var(--shadow)}
+.backup-card-title{font-size:13px;font-weight:600;color:var(--tx);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.backup-card-title svg{width:16px;height:16px}
+.brow{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:.5px solid var(--br)}
+.brow:last-child{border-bottom:none}
+.brow-lbl{font-size:13px;font-weight:500;color:var(--tx)}
+.brow-sub{font-size:11px;color:var(--tx2);margin-top:2px}
+.history-item{display:flex;gap:10px;padding:8px 0;border-bottom:.5px solid var(--br);align-items:center}
+.history-item:last-child{border-bottom:none}
+
+/* ── Toast ────────────────────────────────────────────── */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--tx);color:var(--bg2);padding:12px 18px;border-radius:10px;font-size:13px;font-weight:500;z-index:999;animation:slideUp .2s ease;box-shadow:var(--shadow-md);display:none}
+.toast.show{display:block}
+@keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+
+/* ── Inline form section ──────────────────────────────── */
+.inline-form{background:var(--bg);border:.5px solid var(--br);border-radius:var(--radius-lg);padding:18px;margin-bottom:16px}
+.inline-form-title{font-size:14px;font-weight:600;color:var(--tx);margin-bottom:16px}
+</style>
+</head>
+
+<body>
+<div class="sidebar-backdrop" id="backdrop" onclick="closeSidebar()"></div>
+<div class="toast" id="toast"></div>
+
+<!-- ── LICENSE BANNER ──────────────────────────────────────── -->
+<div id="license-banner" style="display:none;background:#854F0B;color:#fff;text-align:center;padding:8px 16px;font-size:12px;font-weight:500;position:relative;z-index:200">
+  <span id="license-banner-msg"></span>
+  &nbsp;·&nbsp;
+  <span onclick="openUpgradeModal()" style="cursor:pointer;text-decoration:underline;font-weight:700">Upgrade Now →</span>
+  <button onclick="document.getElementById('license-banner').style.display='none'" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:#fff;cursor:pointer;font-size:16px">×</button>
+</div>
+
+<!-- ── EXPIRED OVERLAY ─────────────────────────────────────── -->
+<div id="expired-overlay" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.95);z-index:999;display:none;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:16px;padding:40px;max-width:440px;width:90%;text-align:center">
+    <div style="font-size:40px;margin-bottom:16px">⏰</div>
+    <div style="font-size:20px;font-weight:700;color:#0f172a;margin-bottom:8px" id="expired-title">Trial Expired</div>
+    <div style="font-size:14px;color:#475569;margin-bottom:24px;line-height:1.6" id="expired-msg">Your 30-day free trial has ended. Purchase a license to continue using Kalam Tuition ERP.</div>
+    <button onclick="openUpgradeModal();document.getElementById('expired-overlay').style.display='none'" style="width:100%;padding:14px;background:#1a56db;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;margin-bottom:10px">View Plans & Pricing</button>
+    <div style="font-size:12px;color:#94a3b8;margin-top:8px">Already purchased? Update your LICENSE_KEY in config.js</div>
+  </div>
+</div>
+
+<!-- ── UPGRADE MODAL ───────────────────────────────────────── -->
+<div id="upgrade-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:500;overflow-y:auto;padding:20px">
+  <div style="background:var(--card);border-radius:16px;max-width:780px;margin:0 auto;padding:32px;border:.5px solid var(--br)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <div style="font-size:22px;font-weight:700;color:var(--tx)">Upgrade Kalam Tuition ERP</div>
+      <button onclick="closeUpgradeModal()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--tx2)">×</button>
+    </div>
+    <div style="font-size:14px;color:var(--tx2);margin-bottom:28px">Choose the plan that fits your tuition center</div>
+    <div id="plans-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:24px"></div>
+    <div style="background:var(--bg);border-radius:12px;padding:16px;margin-bottom:16px">
+      <div style="font-size:13px;font-weight:600;color:var(--tx);margin-bottom:8px">Already have a license key?</div>
+      <div style="display:flex;gap:8px">
+        <input id="license-key-input" class="form-input" placeholder="e.g. PRO-2025-A3F9" style="flex:1;font-family:monospace">
+        <button onclick="activateLicense()" style="padding:8px 18px;background:#1a56db;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:600;font-size:13px">Activate</button>
+      </div>
+      <div id="license-activate-msg" style="font-size:12px;margin-top:6px"></div>
+    </div>
+    <div style="text-align:center;font-size:12px;color:var(--tx3)">
+      To purchase, contact: <strong id="contact-email">support@kalamtuitionerp.in</strong> &nbsp;|&nbsp; WhatsApp: <strong id="contact-phone">+91 98765 00000</strong>
+    </div>
+  </div>
+</div>
+
+<div class="app">
+
+<!-- ── SIDEBAR ─────────────────────────────────────── -->
+<div class="sidebar" id="sidebar">
+  <div class="s-brand">
+    <div class="s-logo-row">
+      <div class="s-logo">
+        <svg viewBox="0 0 16 16" fill="none"><path d="M8 1.5L2 4.5v7l6 3 6-3v-7L8 1.5z" stroke="#fff" stroke-width="1.4"/><path d="M2 4.5l6 3 6-3M8 7.5v6.5" stroke="#fff" stroke-width="1.2"/></svg>
+      </div>
+      <div>
+        <div class="s-brand-name" id="sbn">Kalam Tuition ERP</div>
+        <div class="s-brand-sub" id="sbs">Admin Dashboard</div>
+      </div>
+    </div>
+  </div>
+  <div class="s-center">
+    <div class="s-clbl" id="s-clbl">Center</div>
+    <div class="s-cval">Sri Kalam Tuition · Chidambaram</div>
+  </div>
+  <nav class="s-nav">
+    <div class="nav-section" id="ns1">Main</div>
+    <button class="nav-item active" onclick="goPage('dashboard',this)" id="ni-dashboard">
+      <svg viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="9" y="2" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="2" y="9" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="9" y="9" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.3"/></svg>
+      <span id="nl-db">Dashboard</span>
+    </button>
+    <button class="nav-item" onclick="goPage('students',this)" id="ni-students">
+      <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="3" stroke="currentColor" stroke-width="1.3"/><path d="M2 14c0-3.3 2.7-5 6-5s6 1.7 6 5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+      <span id="nl-st">Students</span>
+    </button>
+    <button class="nav-item" onclick="goPage('attendance',this)" id="ni-attendance">
+      <svg viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5 2v2M11 2v2M2 7h12M5.5 10.5l1.5 1.5 3-3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span id="nl-at">Attendance</span>
+    </button>
+    <button class="nav-item" onclick="goPage('fees',this)" id="ni-fees">
+      <svg viewBox="0 0 16 16" fill="none"><rect x="2" y="4" width="12" height="9" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M2 7h12M6 10h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+      <span id="nl-fe">Fees</span>
+    </button>
+    <button class="nav-item" onclick="goPage('marks',this)" id="ni-marks">
+      <svg viewBox="0 0 16 16" fill="none"><path d="M3 12V4l5-2 5 2v8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M6 8h4M6 10.5h2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+      <span id="nl-mk">Marks & Exams</span>
+    </button>
+    <div class="nav-section" id="ns2">Management</div>
+    <button class="nav-item" onclick="goPage('staff',this)" id="ni-staff">
+      <svg viewBox="0 0 16 16" fill="none"><circle cx="6" cy="5" r="2.5" stroke="currentColor" stroke-width="1.3"/><path d="M1 14c0-2.8 2.2-4 5-4M13 14v-4m0 4l-2-2m2 2l2-2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="13" cy="7" r="2.5" stroke="currentColor" stroke-width="1.3"/></svg>
+      <span id="nl-sf">Staff</span>
+    </button>
+    <button class="nav-item" onclick="goPage('shop',this)" id="ni-shop">
+      <svg viewBox="0 0 16 16" fill="none"><path d="M2 3h12l-1.5 6H3.5L2 3z" stroke="currentColor" stroke-width="1.3"/><circle cx="5.5" cy="13" r="1" stroke="currentColor" stroke-width="1.3"/><circle cx="11.5" cy="13" r="1" stroke="currentColor" stroke-width="1.3"/></svg>
+      <span id="nl-sh">Shop</span>
+    </button>
+    <button class="nav-item" onclick="goPage('notifications',this)" id="ni-notifications">
+      <svg viewBox="0 0 16 16" fill="none"><path d="M8 2a4 4 0 014 4v3l1.5 2h-11L4 9V6a4 4 0 014-4z" stroke="currentColor" stroke-width="1.3"/><path d="M6.5 12.5a1.5 1.5 0 003 0" stroke="currentColor" stroke-width="1.3"/></svg>
+      <span id="nl-no">Notifications</span>
+    </button>
+    <button class="nav-item" onclick="goPage('ai',this)" id="ni-ai">
+      <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="5" stroke="currentColor" stroke-width="1.3"/><path d="M6 6.5c.5-1.5 3.5-1.5 3 .5-.5 1.5-3 1-3 2.5M8 12v.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+      <span id="nl-ai">AI Features</span>
+    </button>
+    <button class="nav-item" onclick="goPage('backup',this)" id="ni-backup">
+      <svg viewBox="0 0 16 16" fill="none"><path d="M8 2v8M5 7l3 3 3-3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 11v2a1 1 0 001 1h10a1 1 0 001-1v-2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+      <span id="nl-bk">Backup & Sync</span>
+    </button>
+    <button class="nav-item" onclick="goPage('settings',this)" id="ni-settings">
+      <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.3"/><path d="M8 2v1.5M8 12.5V14M14 8h-1.5M3.5 8H2M12.2 3.8l-1.06 1.06M4.86 11.14L3.8 12.2M12.2 12.2l-1.06-1.06M4.86 4.86L3.8 3.8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+      <span id="nl-se">Settings</span>
+    </button>
+  </nav>
+  <div class="s-foot">
+    <button class="s-fbt" onclick="toggleLang()" title="Toggle language">
+      <svg viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.2"/><path d="M6 1.5c-1 1-1.5 2.5-1.5 4.5s.5 3.5 1.5 4.5M6 1.5c1 1 1.5 2.5 1.5 4.5S7 9.5 6 10.5M1.5 6h9" stroke="currentColor" stroke-width="1.1"/></svg>
+      <span id="lang-lbl">தமிழ்</span>
+    </button>
+    <button class="s-fbt" onclick="toggleDark()" title="Toggle dark mode">
+      <svg id="dark-icon" viewBox="0 0 12 12" fill="none"><path d="M7 2a4 4 0 100 8A4.5 4.5 0 017 2z" stroke="currentColor" stroke-width="1.2"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- ── MAIN ──────────────────────────────────────────── -->
+<div class="main">
+  <header class="topbar">
+    <button class="hamburger" onclick="toggleSidebar()">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M3 12h18M3 6h18M3 18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+    <div class="topbar-title" id="page-title">Dashboard</div>
+    <div class="topbar-right">
+      <button class="btn btn-primary btn-sm" id="topbar-add-btn" onclick="topbarAdd()" style="display:none">
+        <svg viewBox="0 0 14 14" fill="none"><path d="M7 2v10M2 7h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <span id="topbar-add-lbl">Add</span>
+      </button>
+      <div class="avatar-sm" title="Kalam Admin">KA</div>
+    </div>
+  </header>
+
+  <div class="content">
+
+    <!-- DASHBOARD ──────────────────────────────────── -->
+    <div class="page active" id="pg-dashboard">
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#EAF3DE"><svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="3" stroke="#1D9E75" stroke-width="1.4"/><path d="M2 14c0-3.3 2.7-5 6-5s6 1.7 6 5" stroke="#1D9E75" stroke-width="1.4" stroke-linecap="round"/></svg></div>
+          <div class="stat-lbl" id="sl-1">Total Students</div>
+          <div class="stat-val" id="sv-students">248</div>
+          <div class="stat-sub">+12 this month</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#EAF3DE"><svg viewBox="0 0 16 16" fill="none"><rect x="2" y="4" width="12" height="9" rx="1.5" stroke="#1D9E75" stroke-width="1.4"/><path d="M2 7h12M7 10h2" stroke="#1D9E75" stroke-width="1.3" stroke-linecap="round"/></svg></div>
+          <div class="stat-lbl" id="sl-2">Monthly Income</div>
+          <div class="stat-val" style="color:#1D9E75">₹1.84L</div>
+          <div class="stat-sub">92% collected</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#FCEBEB"><svg viewBox="0 0 16 16" fill="none"><path d="M8 5v4M8 10.5v.5" stroke="#E24B4A" stroke-width="1.6" stroke-linecap="round"/><path d="M2 13L8 2l6 11H2z" stroke="#E24B4A" stroke-width="1.3" stroke-linejoin="round"/></svg></div>
+          <div class="stat-lbl" id="sl-3">Pending Fees</div>
+          <div class="stat-val" style="color:#E24B4A">₹16,400</div>
+          <div class="stat-sub">14 students</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#E6F1FB"><svg viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="1.5" stroke="#185FA5" stroke-width="1.4"/><path d="M5 2v2M11 2v2M2 7h12M5.5 10.5l1.5 1.5 3-3" stroke="#185FA5" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div class="stat-lbl" id="sl-4">Attendance Today</div>
+          <div class="stat-val" style="color:#185FA5">87%</div>
+          <div class="stat-sub">216 present · 32 absent</div>
+        </div>
+      </div>
+
+      <div class="row2">
+        <div class="card">
+          <div class="card-hd">
+            <span class="card-title" id="ct-income">Income trend (6 months)</span>
+            <span class="badge badge-blue">₹1.84L this month</span>
+          </div>
+          <div style="display:flex;gap:12px;margin-bottom:10px;font-size:11px;color:var(--tx2)">
+            <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#185FA5;display:inline-block"></span>Income</span>
+            <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#E24B4A;display:inline-block"></span>Pending</span>
+          </div>
+          <div class="chart-wrap"><canvas id="chart-income"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-hd"><span class="card-title" id="ct-fee">Fee Status</span></div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;font-size:11px;color:var(--tx2)">
+            <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#1D9E75;display:inline-block"></span>Paid 78%</span>
+            <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#BA7517;display:inline-block"></span>Pending 14%</span>
+            <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#E24B4A;display:inline-block"></span>Overdue 8%</span>
+          </div>
+          <div class="chart-wrap"><canvas id="chart-fee"></canvas></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-hd"><span class="card-title" id="ct-qa">Quick Actions</span></div>
+        <div class="qa-grid">
+          <div class="qa-card" onclick="goPage('attendance',document.getElementById('ni-attendance'))">
+            <svg viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="1.5" stroke="#185FA5" stroke-width="1.3"/><path d="M5.5 10.5l1.5 1.5 3-3" stroke="#185FA5" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span id="qa1">Mark Attendance</span>
+          </div>
+          <div class="qa-card" onclick="goPage('fees',document.getElementById('ni-fees'))">
+            <svg viewBox="0 0 16 16" fill="none"><rect x="2" y="4" width="12" height="9" rx="1.5" stroke="#1D9E75" stroke-width="1.3"/><path d="M2 7h12M6 10h4" stroke="#1D9E75" stroke-width="1.3" stroke-linecap="round"/></svg>
+            <span id="qa2">Collect Fee</span>
+          </div>
+          <div class="qa-card" onclick="openAddStudentModal()">
+            <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="3" stroke="#534AB7" stroke-width="1.3"/><path d="M2 14c0-3.3 2.7-5 6-5s6 1.7 6 5" stroke="#534AB7" stroke-width="1.3" stroke-linecap="round"/></svg>
+            <span id="qa3">Add Student</span>
+          </div>
+          <div class="qa-card" onclick="goPage('ai',document.getElementById('ni-ai'))">
+            <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="5" stroke="#854F0B" stroke-width="1.3"/><path d="M6 6.5c.5-1.5 3.5-1.5 3 .5-.5 1.5-3 1-3 2.5M8 12v.5" stroke="#854F0B" stroke-width="1.3" stroke-linecap="round"/></svg>
+            <span id="qa4">AI Insights</span>
+          </div>
+          <div class="qa-card" onclick="goPage('notifications',document.getElementById('ni-notifications'))">
+            <svg viewBox="0 0 16 16" fill="none"><path d="M8 2a4 4 0 014 4v3l1.5 2h-11L4 9V6a4 4 0 014-4z" stroke="#993C1D" stroke-width="1.3"/><path d="M6.5 12.5a1.5 1.5 0 003 0" stroke="#993C1D" stroke-width="1.3"/></svg>
+            <span id="qa5">Send Alert</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STUDENTS ──────────────────────────────────── -->
+    <div class="page" id="pg-students">
+      <div class="toolbar">
+        <div class="search-box">
+          <svg viewBox="0 0 16 16" fill="none"><circle cx="6.5" cy="6.5" r="4" stroke="currentColor" stroke-width="1.3"/><path d="M11 11l2.5 2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <input id="s-search" placeholder="Search name, ID, phone..." oninput="filterStudents(this.value)">
+        </div>
+        <select class="form-select" style="width:auto" onchange="filterStudentStatus(this.value)">
+          <option value="all" id="opt-all">All Status</option>
+          <option value="active" id="opt-active">Active</option>
+          <option value="inactive" id="opt-inactive">Inactive</option>
+        </select>
+        <button class="btn btn-primary" onclick="openAddStudentModal()">
+          <svg viewBox="0 0 14 14" fill="none"><path d="M7 2v10M2 7h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          <span id="btn-add-st">Add Student</span>
+        </button>
+        <button class="btn" style="margin-left:auto" onclick="toast_show('Exporting students to Excel...')">
+          <svg viewBox="0 0 14 14" fill="none"><path d="M7 2v8M4 7l3 3 3-3M2 11h10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Export
+        </button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th style="width:30%">Student</th>
+            <th style="width:14%">ID</th>
+            <th style="width:8%">Grade</th>
+            <th style="width:20%">Parent</th>
+            <th style="width:13%">Status</th>
+            <th style="width:15%">Actions</th>
+          </tr></thead>
+          <tbody id="st-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ATTENDANCE ────────────────────────────────── -->
+    <div class="page" id="pg-attendance">
+      <div class="toolbar">
+        <select class="form-select" style="width:auto"><option>Science Group – Morning</option><option>Maths Group – Evening</option><option>Commerce – Weekend</option></select>
+        <input type="date" class="form-input" style="width:auto">
+        <div class="seg-bar">
+          <button class="seg-btn active" onclick="markAllAtt('P',this)" id="btn-all-p">All Present</button>
+          <button class="seg-btn" onclick="markAllAtt('A',this)" id="btn-all-a">All Absent</button>
+        </div>
+        <div style="margin-left:auto;display:flex;gap:16px;font-size:13px;font-weight:600">
+          <span style="color:#1D9E75" id="att-pc">0 Present</span>
+          <span style="color:#E24B4A" id="att-ac">0 Absent</span>
+          <span style="color:#BA7517" id="att-lc">0 Late</span>
+          <span id="att-pct" style="color:var(--tx)">— %</span>
+        </div>
+      </div>
+      <div class="card" style="padding:0;overflow:hidden;margin-bottom:14px" id="att-list-wrap"></div>
+      <button class="btn btn-primary" onclick="toast_show('Attendance saved for all students!')" style="padding:10px 22px">
+        <svg viewBox="0 0 14 14" fill="none"><path d="M2 7l4 4 6-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span id="btn-save-att">Save Attendance</span>
+      </button>
+    </div>
+
+    <!-- FEES ──────────────────────────────────────── -->
+    <div class="page" id="pg-fees">
+      <div class="fee-summary">
+        <div class="fee-box"><div class="fee-box-lbl" id="fl-1">Collected</div><div class="fee-box-val" style="color:#1D9E75">₹1,84,200</div></div>
+        <div class="fee-box"><div class="fee-box-lbl" id="fl-2">Pending</div><div class="fee-box-val" style="color:#BA7517">₹16,400</div></div>
+        <div class="fee-box"><div class="fee-box-lbl" id="fl-3">Overdue Records</div><div class="fee-box-val" style="color:#E24B4A">5</div></div>
+      </div>
+      <div class="toolbar">
+        <div class="seg-bar" id="fee-tabs">
+          <button class="seg-btn active" onclick="setFeeTab('all',this)">All</button>
+          <button class="seg-btn" onclick="setFeeTab('paid',this)" id="ft-paid">Paid</button>
+          <button class="seg-btn" onclick="setFeeTab('pending',this)" id="ft-pend">Pending</button>
+          <button class="seg-btn" onclick="setFeeTab('overdue',this)" id="ft-over">Overdue</button>
+        </div>
+        <button class="btn btn-primary" style="margin-left:auto" onclick="openAddFeeModal()">
+          <svg viewBox="0 0 14 14" fill="none"><path d="M7 2v10M2 7h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          <span id="btn-add-fee">New Fee Entry</span>
+        </button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th style="width:14%">Receipt</th>
+            <th style="width:20%">Student</th>
+            <th style="width:11%">Month</th>
+            <th style="width:10%">Total</th>
+            <th style="width:10%">Paid</th>
+            <th style="width:10%">Balance</th>
+            <th style="width:10%">Mode</th>
+            <th style="width:15%">Status</th>
+          </tr></thead>
+          <tbody id="fee-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- MARKS ─────────────────────────────────────── -->
+    <div class="page" id="pg-marks">
+      <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2.2fr);gap:14px">
+        <div>
+          <div class="card">
+            <div class="card-title" id="ct-exams" style="margin-bottom:12px">Exams</div>
+            <div id="exam-list-web"></div>
+            <button class="btn" style="width:100%;justify-content:center;margin-top:8px;font-size:11px" onclick="toast_show('Exam scheduler: fill name, subject, date, marks')">+ Schedule Exam</button>
+          </div>
+        </div>
+        <div class="card" id="marks-panel">
+          <div style="color:var(--tx3);text-align:center;padding:50px 0;font-size:14px" id="marks-ph">← Select an exam to enter marks</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STAFF ─────────────────────────────────────── -->
+    <div class="page" id="pg-staff">
+      <div class="toolbar">
+        <button class="btn btn-primary" onclick="toast_show('Add staff form — fill name, designation, salary')">
+          <svg viewBox="0 0 14 14" fill="none"><path d="M7 2v10M2 7h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          <span id="btn-add-sf">Add Staff</span>
+        </button>
+        <button class="btn" style="margin-left:auto" onclick="toast_show('Payroll export ready!')">Export Payroll</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th style="width:28%">Name</th>
+            <th style="width:16%">Designation</th>
+            <th style="width:26%">Subjects</th>
+            <th style="width:16%">Salary</th>
+            <th style="width:14%">Experience</th>
+          </tr></thead>
+          <tbody id="sf-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SHOP ──────────────────────────────────────── -->
+    <div class="page" id="pg-shop">
+      <div class="toolbar">
+        <div style="font-size:14px;font-weight:600;color:var(--tx)">Cart: <span id="cart-total" style="color:var(--pr)">₹0</span></div>
+        <button class="btn btn-primary" id="btn-checkout" onclick="doCheckout()" style="display:none">
+          <svg viewBox="0 0 14 14" fill="none"><path d="M2 7l4 4 6-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Complete Sale
+        </button>
+        <button class="btn" style="margin-left:auto" onclick="toast_show('Add product form')">
+          <svg viewBox="0 0 14 14" fill="none"><path d="M7 2v10M2 7h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          Add Product
+        </button>
+      </div>
+      <div class="shop-grid" id="shop-grid"></div>
+    </div>
+
+    <!-- NOTIFICATIONS ─────────────────────────────── -->
+    <div class="page" id="pg-notifications">
+      <div class="toolbar">
+        <button class="btn btn-primary" onclick="openAddNotifModal()">
+          <svg viewBox="0 0 14 14" fill="none"><path d="M2 12l10-5L2 2v4l7 1-7 1v4z" fill="currentColor"/></svg>
+          <span id="btn-send-no">Send Notification</span>
+        </button>
+      </div>
+      <div class="card" style="padding:0 16px" id="notif-list-wrap"></div>
+    </div>
+
+    <!-- AI ────────────────────────────────────────── -->
+    <div class="page" id="pg-ai">
+      <div style="background:#E6F1FB;border:.5px solid #B5D4F4;border-radius:var(--radius-lg);padding:12px 16px;margin-bottom:14px;display:flex;gap:10px;align-items:center">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="5" stroke="#185FA5" stroke-width="1.3"/><path d="M6 6.5c.5-1.5 3.5-1.5 3 .5-.5 1.5-3 1-3 2.5M8 12v.5" stroke="#185FA5" stroke-width="1.3" stroke-linecap="round"/></svg>
+        <span style="font-size:12px;color:#0C447C;font-weight:500" id="ai-sub-lbl">Powered by Claude AI · Designed for Tamil Nadu board curriculum</span>
+      </div>
+      <div class="ai-grid">
+        <div><div id="ai-cards-web"></div></div>
+        <div class="ai-result-panel" id="ai-res-panel">
+          <div style="color:var(--tx3);text-align:center;padding:50px 0;font-size:14px" id="ai-ph">Click a feature to run AI analysis</div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- BACKUP ────────────────────────────────────────── -->
+    <div class="page" id="pg-backup">
+      <div style="max-width:620px">
+
+        <!-- Status bar -->
+        <div class="backup-status" id="backup-status-bar">
+          <div class="backup-dot ok" id="backup-dot"></div>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:500;color:var(--tx)" id="backup-status-msg">All data backed up</div>
+            <div style="font-size:11px;color:var(--tx2);margin-top:1px" id="backup-status-sub">Last backup: just now · Next: in 30 min</div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="runBackup('manual')" id="btn-backup-now">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M8 2v8M5 7l3 3 3-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Backup Now
+          </button>
+        </div>
+
+        <!-- Auto Backup -->
+        <div class="backup-card">
+          <div class="backup-card-title">
+            <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="5" stroke="currentColor" stroke-width="1.3"/><path d="M8 5v3l2 2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+            Auto Backup Schedule
+          </div>
+          <div class="brow">
+            <div><div class="brow-lbl">Enable Auto Backup</div><div class="brow-sub">Automatically save data at set intervals</div></div>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+              <input type="checkbox" id="auto-backup-toggle" checked onchange="toggleAutoBackup(this.checked)" style="width:16px;height:16px;cursor:pointer">
+              <span style="font-size:12px;color:var(--tx2)" id="auto-backup-lbl">On</span>
+            </label>
+          </div>
+          <div class="brow">
+            <div><div class="brow-lbl">Backup Interval</div><div class="brow-sub" id="interval-sub">Saves every 30 minutes</div></div>
+            <select class="form-select" style="width:auto" id="backup-interval" onchange="setBackupInterval(this.value)">
+              <option value="5">Every 5 minutes</option>
+              <option value="15">Every 15 minutes</option>
+              <option value="30" selected>Every 30 minutes</option>
+              <option value="60">Every hour</option>
+              <option value="360">Every 6 hours</option>
+              <option value="1440">Once daily</option>
+            </select>
+          </div>
+          <div class="brow">
+            <div><div class="brow-lbl">Backup on Data Change</div><div class="brow-sub">Also backup when students/fees are added</div></div>
+            <input type="checkbox" id="backup-on-change" checked style="width:16px;height:16px;cursor:pointer">
+          </div>
+          <div id="next-backup-row" class="brow">
+            <div><div class="brow-lbl">Next Scheduled Backup</div></div>
+            <span style="font-size:12px;font-weight:600;color:var(--pr)" id="next-backup-time">in 30 min</span>
+          </div>
+        </div>
+
+        <!-- Local Backup -->
+        <div class="backup-card">
+          <div class="backup-card-title">
+            <svg viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5 3V1M11 3V1M2 7h12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+            Local Backup (Browser Storage)
+          </div>
+          <div class="brow">
+            <div><div class="brow-lbl">Stored Backups</div><div class="brow-sub" id="local-backup-count">3 backups saved in browser</div></div>
+            <div style="display:flex;gap:6px">
+              <button class="btn btn-sm" onclick="runBackup('local')">Save Now</button>
+              <button class="btn btn-sm" onclick="downloadBackup()">
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M8 2v8M5 7l3 3 3-3M2 13h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Download JSON
+              </button>
+            </div>
+          </div>
+          <div class="brow">
+            <div><div class="brow-lbl">Restore from Backup</div><div class="brow-sub">Upload a previously downloaded JSON file</div></div>
+            <label class="btn btn-sm" style="cursor:pointer">
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M8 12V4M5 7l3-3 3 3M2 13h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Restore
+              <input type="file" accept=".json" style="display:none" onchange="restoreBackup(this)">
+            </label>
+          </div>
+          <div class="brow">
+            <div><div class="brow-lbl">Storage Used</div></div>
+            <div style="text-align:right">
+              <div style="font-size:12px;font-weight:600;color:var(--tx)" id="storage-used">~42 KB</div>
+              <div class="backup-progress" style="width:120px;margin-top:4px"><div class="backup-progress-fill" style="width:4%"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Google Sheets Backup -->
+        <div class="backup-card">
+          <div class="backup-card-title">
+            <svg viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="1.5" stroke="#1D9E75" stroke-width="1.3"/><path d="M5 6h6M5 9h6M5 12h4" stroke="#1D9E75" stroke-width="1.2" stroke-linecap="round"/></svg>
+            <span style="color:#1D9E75">Google Sheets Backup</span>
+          </div>
+          <div style="background:#E6F1FB;border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:12px;color:#0C447C;line-height:1.6">
+            <strong>Setup in 3 steps:</strong><br>
+            1. Open Google Sheets → Extensions → Apps Script<br>
+            2. Paste the doPost() script below → Deploy as Web App<br>
+            3. Copy the Web App URL and paste it here
+          </div>
+          <div class="form-group">
+            <label class="form-label">Google Apps Script Web App URL</label>
+            <input class="form-input sheet-url-input" id="sheets-url" placeholder="https://script.google.com/macros/s/AKfycb.../exec" oninput="validateSheetUrl(this.value)">
+          </div>
+          <div id="sheet-url-status" style="display:none;font-size:11px;margin-bottom:10px"></div>
+          <div class="form-group">
+            <label class="form-label">Spreadsheet Name</label>
+            <input class="form-input" id="sheet-name" value="Kalam Tuition ERP Backup" placeholder="Sheet name">
+          </div>
+          <div class="brow" style="margin-top:4px">
+            <div><div class="brow-lbl">Auto Sync to Google Sheets</div><div class="brow-sub">Push backup to Sheets on every save</div></div>
+            <input type="checkbox" id="sheets-auto-sync" style="width:16px;height:16px;cursor:pointer">
+          </div>
+          <div style="display:flex;gap:8px;margin-top:12px">
+            <button class="btn btn-primary" onclick="syncToSheets()" id="btn-sync-sheets">
+              <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M3 8a5 5 0 015-5 5 5 0 013.54 1.46M13 8a5 5 0 01-5 5 5 5 0 01-3.54-1.46" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M11 4l2.54 1.46L11 7M5 9l-2.54 1.46L5 12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Sync to Google Sheets
+            </button>
+            <button class="btn" onclick="showAppsScript()">
+              <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M4 4h2M4 7h5M4 10h3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><rect x="2" y="2" width="12" height="12" rx="1.5" stroke="currentColor" stroke-width="1.3"/></svg>
+              View Apps Script
+            </button>
+          </div>
+          <div id="sheets-sync-status" style="display:none;margin-top:10px"></div>
+        </div>
+
+        <!-- Apps Script Code Panel -->
+        <div id="apps-script-panel" style="display:none">
+          <div class="backup-card" style="border:1.5px solid #1D9E75">
+            <div class="backup-card-title" style="color:#1D9E75">Google Apps Script — Copy & Deploy</div>
+            <pre id="apps-script-code" style="background:var(--bg);border-radius:8px;padding:14px;font-size:11px;color:var(--tx2);overflow-x:auto;line-height:1.6;border:.5px solid var(--br);white-space:pre-wrap;word-break:break-all"></pre>
+            <div style="display:flex;gap:8px;margin-top:10px">
+              <button class="btn btn-primary btn-sm" onclick="copyAppsScript()">Copy Script</button>
+              <button class="btn btn-sm" onclick="document.getElementById('apps-script-panel').style.display='none'">Close</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Backup History -->
+        <div class="backup-card">
+          <div class="backup-card-title">
+            <svg viewBox="0 0 16 16" fill="none"><path d="M2 4h12M2 8h8M2 12h5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+            Backup History
+          </div>
+          <div id="backup-history-list"></div>
+          <button class="btn btn-sm" style="margin-top:8px;color:var(--danger);border-color:var(--danger)" onclick="clearHistory()">Clear History</button>
+        </div>
+
+        <!-- Backup Log -->
+        <div class="backup-card">
+          <div class="backup-card-title">
+            <svg viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5 6h6M5 9h6M5 12h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+            Activity Log
+          </div>
+          <div class="backup-log" id="backup-log">Backup system initialised...
+</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- SETTINGS ──────────────────────────────────── -->
+    <div class="page" id="pg-settings">
+      <div style="max-width:520px">
+        <div class="card" style="margin-bottom:14px">
+          <div style="display:flex;align-items:center;gap:14px;padding-bottom:16px;border-bottom:.5px solid var(--br)">
+            <div style="width:52px;height:52px;background:#E6F1FB;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#0C447C" id="profile-avatar">KA</div>
+            <div>
+              <div style="font-size:16px;font-weight:600;color:var(--tx)" id="cfg-owner">Kalam Admin</div>
+              <div style="font-size:12px;color:var(--tx2);margin-top:2px" id="cfg-phone">+91 98765 43210 · Admin</div>
+            </div>
+          </div>
+          <div style="padding-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12px">
+            <div><div style="color:var(--tx3);font-size:10px;margin-bottom:2px">Center Name</div><div style="font-weight:500" id="cfg-center-name">Sri Kalam Tuition</div></div>
+            <div><div style="color:var(--tx3);font-size:10px;margin-bottom:2px">City</div><div style="font-weight:500" id="cfg-city">Chidambaram, TN</div></div>
+            <div><div style="color:var(--tx3);font-size:10px;margin-bottom:2px">Email</div><div style="font-weight:500" id="cfg-email">—</div></div>
+            <div><div style="color:var(--tx3);font-size:10px;margin-bottom:2px">License Plan</div><div><span class="badge badge-blue" id="cfg-plan-badge">Trial</span></div></div>
+          </div>
+          <div style="margin-top:12px;padding-top:12px;border-top:.5px solid var(--br);display:flex;justify-content:space-between;align-items:center">
+            <div style="font-size:11px;color:var(--tx3)" id="cfg-plan">Edit center details in <code>config.js</code></div>
+            <button onclick="openUpgradeModal()" class="btn btn-primary btn-sm">Upgrade Plan</button>
+          </div>
+        </div>
+        <div class="card" style="margin-bottom:14px">
+          <div class="card-title" style="margin-bottom:14px">Preferences</div>
+          <div class="settings-row">
+            <div><div style="font-size:13px;font-weight:500;color:var(--tx)" id="pref-dark">Dark Mode</div><div style="font-size:11px;color:var(--tx2);margin-top:2px" id="pref-dark-sub">Currently off</div></div>
+            <button class="btn" onclick="toggleDark()">Toggle</button>
+          </div>
+          <div class="settings-row">
+            <div><div style="font-size:13px;font-weight:500;color:var(--tx)" id="pref-lang">Language</div><div style="font-size:11px;color:var(--tx2);margin-top:2px" id="pref-lang-sub">English / தமிழ்</div></div>
+            <button class="btn" onclick="toggleLang()" id="lang-toggle-btn">Switch to தமிழ்</button>
+          </div>
+        </div>
+        <div class="card" style="margin-bottom:14px">
+          <div class="card-title" style="margin-bottom:12px">Security</div>
+          <div style="font-size:12px;color:var(--tx2);line-height:2">
+            <div>✓ Firebase OTP phone authentication (Admin, Staff, Parent)</div>
+            <div>✓ Role-based access control — Admin / Staff / Parent</div>
+            <div>✓ Multi-tenant data isolation by centerId</div>
+            <div>✓ Firestore security rules enforced server-side</div>
+            <div>✓ Offline sync via Hive local database (mobile apps)</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title" style="margin-bottom:12px">About</div>
+          <div style="font-size:12px;color:var(--tx2);line-height:2">
+            <div><strong>App:</strong> Kalam Tuition ERP v1.0.0</div>
+            <div><strong>Stack:</strong> Flutter (Android) + Next.js (Web) + Firebase</div>
+            <div><strong>AI:</strong> Claude claude-sonnet-4-20250514 via Anthropic API</div>
+            <div><strong>Multi-tenant:</strong> SaaS-ready, unlimited centers</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+</div><!-- /app -->
+
+<!-- ── MODALS ──────────────────────────────────────────── -->
+<div class="modal-overlay" id="modal-student" style="display:none" onclick="closeModal('modal-student',event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-title" id="modal-st-title">Add New Student</div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label" id="lbl-sname">Student Name *</label><input class="form-input" id="inp-sname" placeholder="Full name"></div>
+      <div class="form-group"><label class="form-label" id="lbl-grade">Grade</label>
+        <select class="form-select" id="inp-grade"><option>6</option><option>7</option><option>8</option><option>9</option><option selected>10</option><option>11</option><option>12</option></select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label" id="lbl-school">School</label><input class="form-input" id="inp-school" placeholder="School name"></div>
+      <div class="form-group"><label class="form-label" id="lbl-course">Course</label>
+        <select class="form-select"><option>Science Group</option><option>Maths Group</option><option>Commerce</option></select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label" id="lbl-pname">Parent Name *</label><input class="form-input" id="inp-pname" placeholder="Parent full name"></div>
+      <div class="form-group"><label class="form-label" id="lbl-pphone">Parent Phone *</label><input class="form-input" id="inp-pphone" placeholder="+91 XXXXX XXXXX" type="tel"></div>
+    </div>
+    <div class="form-group"><label class="form-label" id="lbl-address">Address</label><input class="form-input" id="inp-address" placeholder="Full address"></div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="saveStudent()" id="btn-save-student">Save Student</button>
+      <button class="btn" onclick="closeModal('modal-student')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-fee" style="display:none" onclick="closeModal('modal-fee',event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-title" id="modal-fee-title">New Fee Entry</div>
+    <div class="form-group"><label class="form-label" id="lbl-fee-student">Student</label>
+      <select class="form-select" id="fee-student-sel">
+        <option>Arjun Kumar (KLM-2024-001)</option>
+        <option>Kavya Sharma (KLM-2024-002)</option>
+        <option>Ravi Suresh (KLM-2024-003)</option>
+        <option>Meena Raj (KLM-2024-004)</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label" id="lbl-fee-amount">Fee Amount ₹</label><input class="form-input" id="fee-amt" value="2500" type="number" oninput="calcFeeTotal()"></div>
+      <div class="form-group"><label class="form-label" id="lbl-fee-disc">Discount ₹</label><input class="form-input" id="fee-disc" value="0" type="number" oninput="calcFeeTotal()"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label" id="lbl-late-fee">Late Fee ₹</label><input class="form-input" id="fee-late" value="0" type="number" oninput="calcFeeTotal()"></div>
+      <div class="form-group"><label class="form-label" id="lbl-paid">Paid Amount ₹</label><input class="form-input" id="fee-paid" value="2500" type="number" oninput="calcFeeTotal()"></div>
+    </div>
+    <div style="background:var(--bg);border-radius:8px;padding:12px 14px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:12px;color:var(--tx2)" id="lbl-total-due">Total Due</span>
+      <span style="font-size:20px;font-weight:700;color:var(--pr)" id="fee-total-display">₹2,500</span>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label" id="lbl-pay-mode">Payment Mode</label>
+        <select class="form-select"><option>Cash</option><option>UPI</option><option>Bank Transfer</option></select>
+      </div>
+      <div class="form-group"><label class="form-label">Month</label>
+        <select class="form-select"><option>December 2024</option><option>January 2025</option></select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="saveFee()" id="btn-save-fee">Save & Generate Receipt</button>
+      <button class="btn" onclick="closeModal('modal-fee')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-notif" style="display:none" onclick="closeModal('modal-notif',event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-title" id="modal-notif-title">Send Notification</div>
+    <div class="form-group"><label class="form-label" id="lbl-notif-title">Title</label><input class="form-input" id="notif-title-inp" placeholder="e.g. Fee reminder for December"></div>
+    <div class="form-group"><label class="form-label" id="lbl-notif-msg">Message</label><textarea class="form-textarea" id="notif-msg-inp" placeholder="Message content..."></textarea></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Type</label>
+        <select class="form-select"><option>Fee Reminder</option><option>Exam Alert</option><option>Homework</option><option>Absent Alert</option><option>General</option></select>
+      </div>
+      <div class="form-group"><label class="form-label" id="lbl-channel">Channel</label>
+        <select class="form-select"><option>Push Notification</option><option>WhatsApp</option><option>SMS</option><option>All Channels</option></select>
+      </div>
+    </div>
+    <div class="form-group"><label class="form-label" id="lbl-send-to">Send To</label>
+      <select class="form-select"><option>All Parents</option><option>All Staff</option><option>Everyone</option></select>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="sendNotif()" id="btn-send">Send Now</button>
+      <button class="btn" onclick="closeModal('modal-notif')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="config.js"></script>
+<script src="license.js"></script>
+<script src="code.js"></script>
+</body>
+</html>

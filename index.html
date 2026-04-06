@@ -2068,7 +2068,10 @@ function activateLic() {
   const lic=window.__VALIDATE_LICENSE__?window.__VALIDATE_LICENSE__():null;
   if(!lic||!lic.valid){
     if(msgEl)msgEl.innerHTML='<span style="color:#dc2626">❌ Invalid key. Contact support.</span>';
+    CFG.LICENSE_KEY='TRIAL'; // revert if invalid
   } else {
+    // SAVE to localStorage so key persists after app close/reopen
+    try { localStorage.setItem('_erp_lic_key', key); sessionStorage.setItem('_erp_lic_key', key); } catch(e){}
     if(msgEl)msgEl.innerHTML=`<span style="color:#16a34a">✅ Activated! ${lic.planName} · ${lic.daysLeft} days</span>`;
     setTimeout(()=>{closeModal();initLicenseUI();},1500);
   }
@@ -2126,7 +2129,26 @@ function initCharts() {
 /* ═══════════════════════════════════════════════════════
    INIT
 ═══════════════════════════════════════════════════════ */
+
+// Persist license key across sessions (for WebView/WebIntoApp compatibility)
+function saveLicenseKey(key) {
+  if (!key) return;
+  CFG.LICENSE_KEY = key.trim().toUpperCase();
+  try { localStorage.setItem('_erp_lic_key', CFG.LICENSE_KEY); } catch(e) {}
+}
+function clearLicenseKey() {
+  CFG.LICENSE_KEY = 'TRIAL';
+  try { localStorage.removeItem('_erp_lic_key'); } catch(e) {}
+}
+
 function _safeInit() {
+  // Restore license key from localStorage (persists across app restarts)
+  try {
+    const savedKey = localStorage.getItem('_erp_lic_key') || sessionStorage.getItem('_erp_lic_key');
+    if (savedKey && savedKey !== 'TRIAL') {
+      CFG.LICENSE_KEY = savedKey;
+    }
+  } catch(e) {}
   initLicenseUI();
   applyLang();
   renderStudents(students);

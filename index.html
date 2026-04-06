@@ -181,6 +181,29 @@ tbody tr:hover td{background:var(--bg)}
 /* Notif */
 .notif-item{display:flex;gap:10px;padding:11px 0;border-bottom:.5px solid var(--br)}
 .notif-item:last-child{border-bottom:none}
+/* Student mobile card view */
+@media(max-width:620px) {
+  #pg-students .tbl-wrap table thead { display:none }
+  #pg-students .tbl-wrap table, #pg-students .tbl-wrap tbody,
+  #pg-students .tbl-wrap tr { display:block;width:100% }
+  #pg-students .tbl-wrap tr {
+    background:var(--card);border:.5px solid var(--br);border-radius:10px;
+    margin-bottom:8px;padding:10px 12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap
+  }
+  #pg-students .tbl-wrap tr:hover { background:var(--card) }
+  #pg-students .tbl-wrap td { border:none;padding:0;font-size:12px;display:inline-block }
+  #pg-students .tbl-wrap td:nth-child(1) { flex:1;min-width:60% }
+  #pg-students .tbl-wrap td:nth-child(2) { order:3;font-size:10px }
+  #pg-students .tbl-wrap td:nth-child(3) { font-size:11px }
+  #pg-students .tbl-wrap td:nth-child(4) { order:2;color:var(--tx2);font-size:11px }
+  #pg-students .tbl-wrap td:nth-child(5) { order:4 }
+  #pg-students .tbl-wrap td:nth-child(6) { order:5;width:100%;display:flex;gap:6px;margin-top:6px;padding-top:6px;border-top:.5px solid var(--br) }
+  #pg-students .tbl-wrap td:nth-child(6) button { flex:1;justify-content:center }
+  #st-limit-bar { border-radius:8px }
+  /* Class chips responsive */
+  #class-chips { gap:5px }
+  #class-chips button { padding:4px 9px;font-size:11px }
+}
 /* Responsive — Mobile optimised */
 .hamburger{display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--tx);align-items:center}
 .sb-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:99}
@@ -324,6 +347,10 @@ tbody tr:hover td{background:var(--bg)}
 
 <!-- ═══════════════ STUDENTS ═══════════════ -->
 <div class="page" id="pg-students">
+  <div id="st-limit-bar" style="display:none;background:#fffbeb;border:.5px solid #fde68a;border-radius:8px;padding:8px 14px;margin-bottom:10px;font-size:12px;color:#92400e;display:flex;align-items:center;justify-content:space-between">
+    <span id="st-limit-msg">Student limit: 0/15</span>
+    <button class="btn btn-sm" onclick="openUpgrade()" style="color:#ca8a04;border-color:#fde68a">Upgrade</button>
+  </div>
   <div class="toolbar">
     <div class="search-box"><svg viewBox="0 0 16 16" fill="none"><circle cx="6.5" cy="6.5" r="4" stroke="currentColor" stroke-width="1.3"/><path d="M11 11l2.5 2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg><input id="st-search" placeholder="Search name, ID, phone…" oninput="filterStudents(this.value)"></div>
     <select class="fi" style="width:auto" onchange="filterStudentStatus(this.value)" id="st-status-sel"><option value="all" id="opt-all">All</option><option value="active" id="opt-active">Active</option><option value="inactive" id="opt-inactive">Inactive</option></select>
@@ -339,6 +366,10 @@ tbody tr:hover td{background:var(--bg)}
     <select class="fi" style="width:auto" id="att-batch"><option>Science Group – Morning</option><option>Maths Group – Evening</option><option>Commerce – Weekend</option></select>
     <input type="date" class="fi" style="width:auto" id="att-date">
     <div class="seg"><button class="seg-b on" id="btn-all-p" onclick="markAllAtt('P',this)">All Present</button><button class="seg-b" id="btn-all-a" onclick="markAllAtt('A',this)">All Absent</button></div>
+    <button class="btn btn-sm" onclick="openQRScan()" style="background:#7c3aed;color:#fff;border-color:#7c3aed" title="QR Code Attendance">
+      <svg viewBox="0 0 16 16" fill="none" width="13" height="13"><rect x="2" y="2" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1.3"/><rect x="9" y="2" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1.3"/><rect x="2" y="9" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1.3"/><path d="M9 9h2v2H9zM13 9h1v1h-1zM9 12h1v1H9zM11 11h1v2h1v-3h-2zM13 13h1v1h-1z" fill="currentColor"/></svg>
+      QR Scan
+    </button>
     <div style="margin-left:auto;display:flex;gap:14px;font-size:12px;font-weight:600">
       <span style="color:#16a34a" id="att-pc-lbl">0 Present</span>
       <span style="color:#dc2626" id="att-ac-lbl">0 Absent</span>
@@ -463,6 +494,11 @@ tbody tr:hover td{background:var(--bg)}
 
 <!-- ═══════════════ NOTIFICATIONS ═══════════════ -->
 <div class="page" id="pg-notifications">
+  <div style="background:#eff6ff;border:.5px solid #bfdbfe;border-radius:9px;padding:9px 14px;margin-bottom:10px;display:flex;align-items:center;gap:8px;font-size:12px;color:#1e40af">
+    <svg viewBox="0 0 16 16" fill="none" width="14" height="14"><circle cx="8" cy="8" r="6" stroke="#2563eb" stroke-width="1.3"/><path d="M8 7v4M8 5.5v.5" stroke="#2563eb" stroke-width="1.4" stroke-linecap="round"/></svg>
+    <span><b>Admin Only</b> — Notifications are visible to admin and go to all parents/staff</span>
+    <span class="badge bb" style="margin-left:auto">🔒 Admin</span>
+  </div>
   <div class="toolbar">
     <button class="btn btn-p" onclick="showModal('sendNotif')"><svg viewBox="0 0 14 14" fill="none"><path d="M2 12l10-5L2 2v4l7 1-7 1v4z" fill="currentColor"/></svg><span id="btn-send-no">Send Notification</span></button>
   </div>
@@ -566,7 +602,10 @@ tbody tr:hover td{background:var(--bg)}
         <div><div style="color:var(--tx3);font-size:10px;margin-bottom:2px">Plan</div><div><span class="badge bb" id="set-plan">Trial</span></div></div>
         <div><div style="color:var(--tx3);font-size:10px;margin-bottom:2px">License</div><div style="font-size:11px;color:var(--tx2)" id="set-lic-msg">30 days left</div></div>
       </div>
-      <div style="margin-top:12px;padding-top:12px;border-top:.5px solid var(--br);display:flex;justify-content:flex-end"><button class="btn btn-p btn-sm" onclick="openUpgrade()">Upgrade Plan</button></div>
+      <div style="margin-top:12px;padding-top:12px;border-top:.5px solid var(--br);display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn btn-sm" onclick="openEditCenter()">✏️ Edit Details</button>
+        <button class="btn btn-p btn-sm" onclick="openUpgrade()">Upgrade Plan</button>
+      </div>
     </div>
     <div class="card" style="margin-bottom:12px">
       <div class="card-title" style="margin-bottom:12px">Preferences</div>
@@ -621,7 +660,7 @@ const CFG = {
 ═══════════════════════════════════════════════════════ */
 (function(){
 'use strict';
-var PLANS={BASIC:{name:'Basic',maxStudents:150,features:{aiFeatures:false,googleSheets:true,autoBackup:true,multiCenter:false,advancedReports:false}},PRO:{name:'Pro',maxStudents:500,features:{aiFeatures:true,googleSheets:true,autoBackup:true,multiCenter:false,advancedReports:true}},ENTERPRISE:{name:'Premium',maxStudents:99999,features:{aiFeatures:true,googleSheets:true,autoBackup:true,multiCenter:true,advancedReports:true}},TRIAL:{name:'Free Trial',maxStudents:50,features:{aiFeatures:true,googleSheets:false,autoBackup:true,multiCenter:false,advancedReports:false}}};
+var PLANS={BASIC:{name:'Basic',maxStudents:15,features:{aiFeatures:false,googleSheets:false,autoBackup:true,multiCenter:false,advancedReports:false,shop:false,tamil:false,qrAttendance:false,waTypes:2,aiModels:0}},PRO:{name:'Pro',maxStudents:100,features:{aiFeatures:true,googleSheets:true,autoBackup:true,multiCenter:false,advancedReports:true,shop:true,tamil:true,qrAttendance:true,waTypes:7,aiModels:2}},ENTERPRISE:{name:'Premium',maxStudents:99999,features:{aiFeatures:true,googleSheets:true,autoBackup:true,multiCenter:true,advancedReports:true,shop:true,tamil:true,qrAttendance:true,waTypes:7,aiModels:8}},TRIAL:{name:'Free Trial',maxStudents:15,features:{aiFeatures:false,googleSheets:false,autoBackup:true,multiCenter:false,advancedReports:false,shop:false,tamil:false,qrAttendance:false,waTypes:2,aiModels:0}}};
 var _dt=false;function _chk(){var t=new Date();debugger;if(new Date()-t>100)_dt=true;}setTimeout(_chk,8000);
 function _sha256(msg){var K=[0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];function _r(x,n){return(x>>>n)|(x<<(32-n));}function _s(x,n){return x>>>n;}function _ch(x,y,z){return(x&y)^(~x&z);}function _mj(x,y,z){return(x&y)^(x&z)^(y&z);}function _s0(x){return _r(x,2)^_r(x,13)^_r(x,22);}function _s1(x){return _r(x,6)^_r(x,11)^_r(x,25);}function _t0(x){return _r(x,7)^_r(x,18)^_s(x,3);}function _t1(x){return _r(x,17)^_r(x,19)^_s(x,10);}function _a(x,y){var l=(x&0xffff)+(y&0xffff);return((x>>16)+(y>>16)+(l>>16)<<16)|(l&0xffff);}var u=[];for(var i=0;i<msg.length;i++){var c=msg.charCodeAt(i);if(c<128)u.push(c);else if(c<2048)u.push((c>>6)|192,(c&63)|128);else u.push((c>>12)|224,((c>>6)&63)|128,(c&63)|128);}var L=u.length,M=new Uint32Array(Math.ceil((L+9)/64)*16);for(var j=0;j<L;j++)M[j>>2]|=u[j]<<(24-(j%4)*8);M[L>>2]|=0x80<<(24-(L%4)*8);M[M.length-1]=L*8;var H=[0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];for(var b=0;b<M.length;b+=16){var W=new Uint32Array(64);for(var t2=0;t2<16;t2++)W[t2]=M[b+t2];for(var t3=16;t3<64;t3++)W[t3]=_a(_a(_t1(W[t3-2]),W[t3-7]),_a(_t0(W[t3-15]),W[t3-16]));var a=H[0],bc=H[1],c2=H[2],d=H[3],e=H[4],f=H[5],g=H[6],h=H[7];for(var t4=0;t4<64;t4++){var T1=_a(_a(_a(_a(h,_s1(e)),_ch(e,f,g)),K[t4]),W[t4]);var T2=_a(_s0(a),_mj(a,bc,c2));h=g;g=f;f=e;e=_a(d,T1);d=c2;c2=bc;bc=a;a=_a(T1,T2);}H[0]=_a(a,H[0]);H[1]=_a(bc,H[1]);H[2]=_a(c2,H[2]);H[3]=_a(d,H[3]);H[4]=_a(e,H[4]);H[5]=_a(f,H[5]);H[6]=_a(g,H[6]);H[7]=_a(h,H[7]);}return H.map(function(n){return('00000000'+n.toString(16).toUpperCase()).slice(-8);}).join('');}
 var _sl=['KalamERP@','2025#Tamil','Nadu$Secu','re!XK9'].join('');
@@ -655,13 +694,13 @@ const AI_HIST_KEY = 'erp_ai_hist';
    DATA
 ═══════════════════════════════════════════════════════ */
 const students = [
-  {id:'KLM-2024-001',name:'Arjun Kumar',nameTA:'அர்ஜுன் குமார்',parent:'Suresh Kumar',phone:'9876543210',grade:'10',dob:'2009-04-06',status:'active',color:'#185FA5'},
-  {id:'KLM-2024-002',name:'Kavya Sharma',nameTA:'கவ்யா சர்மா',parent:'Priya Sharma',phone:'9876543211',grade:'11',dob:'2008-12-15',status:'active',color:'#1D9E75'},
-  {id:'KLM-2024-003',name:'Ravi Suresh',nameTA:'ரவி சுரேஷ்',parent:'Suresh M',phone:'9876543212',grade:'9',dob:'2010-04-06',status:'active',color:'#854F0B'},
-  {id:'KLM-2024-004',name:'Meena Raj',nameTA:'மீனா ராஜ்',parent:'Rajendran',phone:'9876543213',grade:'10',dob:'2009-07-22',status:'active',color:'#993556'},
-  {id:'KLM-2024-005',name:'Vikram T',nameTA:'விக்ரம் T',parent:'Thiyagarajan',phone:'9876543214',grade:'12',dob:'2007-03-18',status:'inactive',color:'#534AB7'},
-  {id:'KLM-2024-006',name:'Ananya S',nameTA:'அனன்யா S',parent:'Sundar S',phone:'9876543215',grade:'8',dob:'2011-04-06',status:'active',color:'#993C1D'},
-  {id:'KLM-2024-007',name:'Deepak R',nameTA:'தீபக் R',parent:'Ramesh D',phone:'9876543216',grade:'10',dob:'2009-09-10',status:'active',color:'#0F6E56'},
+  {id:'KLM-2024-001',admNo:'ADM-2024-001',name:'Arjun Kumar',nameTA:'அர்ஜுன் குமார்',parent:'Suresh Kumar',phone:'9876543210',grade:'10',dob:'2009-04-06',status:'active',color:'#185FA5',subjects:''},
+  {id:'KLM-2024-002',admNo:'ADM-2024-002',name:'Kavya Sharma',nameTA:'கவ்யா சர்மா',parent:'Priya Sharma',phone:'9876543211',grade:'11',dob:'2008-12-15',status:'active',color:'#1D9E75',subjects:''},
+  {id:'KLM-2024-003',admNo:'ADM-2024-003',name:'Ravi Suresh',nameTA:'ரவி சுரேஷ்',parent:'Suresh M',phone:'9876543212',grade:'9',dob:'2010-04-06',status:'active',color:'#854F0B',subjects:''},
+  {id:'KLM-2024-004',admNo:'ADM-2024-004',name:'Meena Raj',nameTA:'மீனா ராஜ்',parent:'Rajendran',phone:'9876543213',grade:'10',dob:'2009-07-22',status:'active',color:'#993556',subjects:''},
+  {id:'KLM-2024-005',admNo:'ADM-2024-005',name:'Vikram T',nameTA:'விக்ரம் T',parent:'Thiyagarajan',phone:'9876543214',grade:'12',dob:'2007-03-18',status:'inactive',color:'#534AB7',subjects:''},
+  {id:'KLM-2024-006',admNo:'ADM-2024-006',name:'Ananya S',nameTA:'அனன்யா S',parent:'Sundar S',phone:'9876543215',grade:'8',dob:'2011-04-06',status:'active',color:'#993C1D',subjects:''},
+  {id:'KLM-2024-007',admNo:'ADM-2024-007',name:'Deepak R',nameTA:'தீபக் R',parent:'Ramesh D',phone:'9876543216',grade:'10',dob:'2009-09-10',status:'active',color:'#0F6E56',subjects:''},
 ];
 const attNames = students.map(s=>s.name);
 const fees = [
@@ -971,7 +1010,14 @@ function applyLang() {
   renderAICards();
 }
 
-function toggleLang() { lang = lang==='en'?'ta':'en'; applyLang(); }
+function toggleLang() {
+  const lic = window.__LIC__||{};
+  if (lic.features && lic.features.tamil === false) {
+    showToast(lang==='ta'?'Tamil language requires Pro plan':'Tamil requires Pro plan — upgrade to unlock');
+    openUpgrade(); return;
+  }
+  lang = lang==='en'?'ta':'en'; applyLang();
+}
 function toggleDark() {
   dark = !dark;
   document.documentElement.classList.toggle('dark', dark);
@@ -997,7 +1043,19 @@ function showToast(msg, dur=3000) {
 const MODALS = {
   addStudent: () => `<div class="modal-title">${t('addStudent')}</div>
     <div class="frow"><div class="fg"><label class="fl">${t('sname')}</label><input class="fi" id="m-sname" placeholder="Full name"></div>
-    <div class="fg"><label class="fl">${t('grade')}</label><select class="fi" id="m-grade"><option>6</option><option>7</option><option>8</option><option>9</option><option selected>10</option><option>11</option><option>12</option></select></div></div>
+    <div class="fg"><label class="fl">Admission No.</label><input class="fi" id="m-admno" placeholder="Auto-generated" readonly style="background:var(--bg);color:var(--tx2);font-size:11px"></div></div>
+    <div class="fg"><label class="fl">${t('grade')} — Select Class</label>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:2px" id="class-chips">
+        ${['KG','1','2','3','4','5','6','7','8','9','10','11','12'].map(g=>`<button type="button" onclick="selectClass('${g}')" id="chip-${g}" style="padding:5px 12px;border-radius:20px;border:1.5px solid var(--br);background:var(--card);color:var(--tx);cursor:pointer;font-size:12px;font-weight:500;font-family:inherit;transition:.12s">${g}</button>`).join('')}
+      </div>
+      <input type="hidden" id="m-grade" value="">
+    </div>
+    <div class="fg" id="subjects-box" style="display:none"><label class="fl">Subjects (for 11th/12th)</label>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px" id="subject-chips">
+        ${['Physics','Chemistry','Maths','Biology','CS','Commerce','Economics','Accountancy','History','Geography','English','Tamil'].map(s=>`<button type="button" onclick="toggleSubject(this,'${s}')" style="padding:4px 10px;border-radius:20px;border:1px solid var(--br);background:var(--card);color:var(--tx2);cursor:pointer;font-size:11px;font-family:inherit;transition:.12s">${s}</button>`).join('')}
+      </div>
+      <input class="fi" id="m-subjects" placeholder="Or type subjects manually…" style="font-size:12px">
+    </div>
     <div class="frow"><div class="fg"><label class="fl">${t('school')}</label><input class="fi" id="m-school" placeholder="School name"></div>
     <div class="fg"><label class="fl">${t('dob')}</label><input class="fi" type="date" id="m-dob"></div></div>
     <div class="frow"><div class="fg"><label class="fl">${t('pname')}</label><input class="fi" id="m-pname" placeholder="Parent name"></div>
@@ -1075,6 +1133,7 @@ function showModal(type) {
   if (!MODALS[type]) return;
   root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal">${MODALS[type]()}</div></div>`;
   if (type==='marksWA') renderMarksWAEntry();
+  if (type==='addStudent') autoFillAdmNo();
 }
 function closeModal() { document.getElementById('modal-root').innerHTML = ''; }
 function openUpgrade() { showModal('upgrade'); }
@@ -1083,14 +1142,46 @@ function openUpgrade() { showModal('upgrade'); }
    STUDENTS
 ═══════════════════════════════════════════════════════ */
 function renderStudents(data) {
+  // Update student limit bar
+  const lic2 = window.__LIC__||{};
+  const maxSt2 = lic2.maxStudents || 15;
+  const activeCount2 = students.filter(s=>s.status==='active').length;
+  const limitBar = document.getElementById('st-limit-bar');
+  const limitMsg = document.getElementById('st-limit-msg');
+  if (limitBar) {
+    limitBar.style.display = 'flex';
+    if (limitMsg) limitMsg.textContent = `Students: ${activeCount2}/${maxSt2 === 99999 ? '∞' : maxSt2} (${lic2.planName||'Trial'} plan)`;
+    limitBar.style.background = activeCount2 >= maxSt2 ? '#fff1f2' : activeCount2 >= maxSt2*0.8 ? '#fffbeb' : '#f0fdf4';
+    limitBar.style.borderColor = activeCount2 >= maxSt2 ? '#fecdd3' : activeCount2 >= maxSt2*0.8 ? '#fde68a' : '#bbf7d0';
+    limitBar.style.color = activeCount2 >= maxSt2 ? '#991b1b' : activeCount2 >= maxSt2*0.8 ? '#92400e' : '#14532d';
+  }
   const colors = {'active':'bg','inactive':'ba'};
-  document.getElementById('st-body').innerHTML = (data||students).map(s => `<tr>
-    <td><div class="flex-c"><div class="av" style="background:${s.color}">${s.name[0]}</div><div><div style="font-weight:500">${s.name}</div><div style="font-size:10px;color:var(--tx3)">${s.phone}</div></div></div></td>
-    <td><code style="font-size:10px;background:var(--bg);padding:2px 5px;border-radius:4px;color:${s.color}">${s.id}</code></td>
-    <td>Gr.${s.grade}</td>
-    <td><div style="font-size:12px">${s.parent}</div></td>
+  document.getElementById('st-body').innerHTML = (data||students).map((s,i) => `<tr>
+    <td>
+      <div class="flex-c">
+        <div class="av" style="background:${s.color}">${s.name[0]}</div>
+        <div>
+          <div style="font-weight:500;font-size:12px">${s.name}</div>
+          <div style="font-size:10px;color:var(--tx3)">${s.phone}</div>
+          <div style="font-size:10px;color:var(--tx3)">${s.admNo||''}</div>
+        </div>
+      </div>
+    </td>
+    <td>
+      <code style="font-size:10px;background:var(--bg);padding:2px 5px;border-radius:4px;color:${s.color}">${s.id}</code>
+    </td>
+    <td style="font-size:11px">
+      <span style="font-weight:600">${s.grade==='KG'?'KG':'Gr.'+s.grade}</span>
+      ${s.subjects?`<div style="font-size:9px;color:var(--tx3);margin-top:2px">${s.subjects.slice(0,20)}${s.subjects.length>20?'…':''}</div>`:''}
+    </td>
+    <td><div style="font-size:11px;font-weight:500">${s.parent}</div></td>
     <td><span class="badge ${colors[s.status]||'ba'}">${s.status}</span></td>
-    <td><div class="flex-c"><button class="btn btn-sm" onclick="showToast('Editing: ${s.name}')">Edit</button><button class="btn btn-sm btn-wa" onclick="waStudent('${s.id}')">WA</button></div></td>
+    <td>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <button class="btn btn-sm" style="font-size:10px;padding:4px 8px" onclick="editStudent(${students.indexOf(s)})">✏️ Edit</button>
+        <button class="btn btn-sm btn-wa" style="font-size:10px;padding:4px 8px" onclick="waStudent('${s.id}')">📱 WA</button>
+      </div>
+    </td>
   </tr>`).join('');
   updateDashStats();
 }
@@ -1098,17 +1189,41 @@ function filterStudents(q) { renderStudents(q ? students.filter(s=>s.name.toLowe
 function filterStudentStatus(v) { renderStudents(v==='all' ? students : students.filter(s=>s.status===v)); }
 
 function saveStudent() {
+  const lic = window.__LIC__||{};
+  const maxSt = lic.maxStudents || 15;
+  const activeCount = students.filter(s=>s.status==='active').length;
+  if (activeCount >= maxSt) {
+    closeModal();
+    showToast(`Student limit (${maxSt}) reached on ${lic.planName||'current'} plan`);
+    openUpgrade(); return;
+  }
   const name = document.getElementById('m-sname')?.value.trim();
   if (!name) { showToast('Please enter student name'); return; }
-  const grade = document.getElementById('m-grade')?.value || '10';
-  const parent = document.getElementById('m-pname')?.value || 'Parent';
-  const phone = document.getElementById('m-pphone')?.value || '0000000000';
-  const dob = document.getElementById('m-dob')?.value || '';
-  const colors = ['#185FA5','#1D9E75','#854F0B','#993556','#534AB7','#993C1D'];
-  students.unshift({id:`${CFG.APP.studentIdPrefix||'KLM'}-2024-${String(students.length+1).padStart(3,'0')}`,name,parent,phone,grade,dob,status:'active',color:colors[students.length%colors.length]});
+  const grade = document.getElementById('m-grade')?.value;
+  if (!grade) { showToast('Please select a class'); return; }
+  const parent = document.getElementById('m-pname')?.value.trim() || 'Parent';
+  const phone  = document.getElementById('m-pphone')?.value.trim() || '0000000000';
+  const dob    = document.getElementById('m-dob')?.value || '';
+  const school = document.getElementById('m-school')?.value.trim() || '';
+  const course = document.getElementById('m-course')?.value || '';
+  // Collect subjects from chips + manual input
+  const chipSubs = Array.from(document.querySelectorAll('#subject-chips button[data-sel="1"]')).map(b=>b.textContent).join(', ');
+  const manualSubs = document.getElementById('m-subjects')?.value.trim() || '';
+  const subjects = manualSubs || chipSubs;
+  const admNo = document.getElementById('m-admno')?.value.trim() || genAdmNo();
+  const yr = new Date().getFullYear();
+  const serial = String(students.length+1).padStart(3,'0');
+  const prefix = CFG.APP?.studentIdPrefix || 'KLM';
+  const COLORS = ['#185FA5','#1D9E75','#854F0B','#993556','#534AB7','#993C1D','#0891B2','#B45309'];
+  students.unshift({
+    id:`${prefix}-${yr}-${serial}`, admNo, name, parent, phone,
+    grade, dob, school, course, subjects, status:'active',
+    color: COLORS[students.length % COLORS.length]
+  });
   renderStudents(students);
   closeModal();
-  showToast(`✅ ${name} added!`);
+  showToast(`✅ ${name} admitted! (${admNo})`);
+  runBackup('change');
 }
 
 function waStudent(id) {
@@ -1160,6 +1275,14 @@ function updateAttCounts() {
   document.getElementById('att-lc-lbl').textContent = l+' Late';
   document.getElementById('att-pct-lbl').textContent = tot>0?Math.round(p/tot*100)+'%':'—%';
   updateDashStats();
+}
+function openQRScan() {
+  const lic = window.__LIC__||{};
+  if (lic.features && lic.features.qrAttendance === false) {
+    showToast('QR Attendance requires Pro or Premium plan');
+    openUpgrade(); return;
+  }
+  showToast('📷 QR Scanner: Point camera at student QR card to mark Present automatically');
 }
 function saveAttendance() { showToast('✅ Attendance saved for '+attNames.length+' students!'); runBackup('change'); }
 function sendAttWA() {
@@ -1283,6 +1406,17 @@ function saveStaff() {
    SHOP
 ═══════════════════════════════════════════════════════ */
 function renderShop() {
+  const lic = window.__LIC__||{};
+  if (lic.features && lic.features.shop === false) {
+    document.getElementById('shop-grid').innerHTML = `
+      <div style="grid-column:1/-1;text-align:center;padding:40px 20px;background:var(--bg);border-radius:12px;border:.5px solid var(--br)">
+        <div style="font-size:32px;margin-bottom:12px">🛒</div>
+        <div style="font-size:15px;font-weight:700;color:var(--tx);margin-bottom:6px">Shop requires Pro Plan</div>
+        <div style="font-size:12px;color:var(--tx2);margin-bottom:16px">Upgrade to Pro (₹1,999/yr) to access Shop & Inventory</div>
+        <button class="btn btn-p" onclick="openUpgrade()">View Plans & Upgrade</button>
+      </div>`;
+    return;
+  }
   document.getElementById('shop-grid').innerHTML = prods.map((p,i)=>`
     <div class="sp">
       <div class="sp-name">${p.name}</div>
@@ -1346,9 +1480,12 @@ function saveNotif() {
    WHATSAPP MODULE
 ═══════════════════════════════════════════════════════ */
 function renderWATypes() {
+  const lic = window.__LIC__||{};
+  const allowedTypes = (lic.features && lic.features.waTypes) || 7;
   const grid = document.getElementById('wa-type-grid');
   if (!grid) return;
-  grid.innerHTML = WA_TYPES.map(wt => `
+  const visibleWATypes = WA_TYPES.slice(0, allowedTypes);
+  grid.innerHTML = visibleWATypes.map(wt => `
     <div onclick="setWAType('${wt.id}',this)" style="border:.5px solid var(--br);border-radius:9px;padding:10px 8px;text-align:center;cursor:pointer;background:${waType===wt.id?wt.bg:'var(--card)'};border-color:${waType===wt.id?wt.color:'var(--br)'};border-width:${waType===wt.id?'1.5px':'.5px'};transition:.12s">
       <div style="font-size:12px;font-weight:600;color:${wt.color}">${lang==='ta'?wt.labelTA:wt.label}</div>
     </div>`).join('');
@@ -1649,7 +1786,19 @@ const AI_FEATS = [
 function renderAICards() {
   const el = document.getElementById('ai-cards');
   if (!el) return;
-  el.innerHTML = AI_FEATS.map(f=>`
+  const lic = window.__LIC__||{};
+  const allowedModels = (lic.features && typeof lic.features.aiModels === 'number') ? lic.features.aiModels : 8;
+  if (allowedModels === 0) {
+    el.innerHTML = `<div style="text-align:center;padding:30px 16px;background:var(--bg);border-radius:10px;border:.5px solid var(--br)">
+      <div style="font-size:28px;margin-bottom:8px">🤖</div>
+      <div style="font-size:13px;font-weight:700;color:var(--tx);margin-bottom:6px">AI Features require Pro Plan</div>
+      <div style="font-size:11px;color:var(--tx2);margin-bottom:14px">Upgrade to Pro (₹1,999/yr) to unlock 8 AI analysis modules</div>
+      <button class="btn btn-p btn-sm" onclick="openUpgrade()">Upgrade Now</button>
+    </div>`;
+    return;
+  }
+  const visibleFeats = AI_FEATS.slice(0, allowedModels);
+  el.innerHTML = visibleFeats.map(f=>`
     <div class="ai-feat-btn ${activeAI===f.id?'on':''}" style="border-left-color:${f.c}" onclick="runAI('${f.id}')">
       <div class="ai-icon" style="background:${f.bg}">
         <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="5" stroke="${f.c}" stroke-width="1.3"/><path d="M6 6.5c.5-1.5 3.5-1.5 3 .5-.5 1.5-3 1-3 2.5M8 12v.5" stroke="${f.c}" stroke-width="1.3" stroke-linecap="round"/></svg>
@@ -2130,6 +2279,188 @@ function initCharts() {
    INIT
 ═══════════════════════════════════════════════════════ */
 
+
+/* ═══════════════════════════════════════════════════
+   STUDENT CLASS CHIPS & EDIT
+═══════════════════════════════════════════════════ */
+function selectClass(grade) {
+  document.getElementById('m-grade').value = grade;
+  // Highlight selected chip
+  document.querySelectorAll('#class-chips button').forEach(b => {
+    const isSelected = b.id === 'chip-'+grade;
+    b.style.background    = isSelected ? 'var(--pr)'  : 'var(--card)';
+    b.style.color         = isSelected ? '#fff'        : 'var(--tx)';
+    b.style.borderColor   = isSelected ? 'var(--pr)'  : 'var(--br)';
+  });
+  // Show subject picker for 11th & 12th
+  const subjBox = document.getElementById('subjects-box');
+  if (subjBox) subjBox.style.display = (grade==='11'||grade==='12') ? 'block' : 'none';
+}
+
+function toggleSubject(btn, subj) {
+  const selected = btn.style.background === 'var(--pr)' || btn.getAttribute('data-sel') === '1';
+  btn.setAttribute('data-sel', selected ? '0' : '1');
+  btn.style.background  = selected ? 'var(--card)' : 'var(--pr)';
+  btn.style.color       = selected ? 'var(--tx2)'  : '#fff';
+  btn.style.borderColor = selected ? 'var(--br)'   : 'var(--pr)';
+  // Update hidden input
+  const sel = Array.from(document.querySelectorAll('#subject-chips button[data-sel="1"]'))
+                   .map(b => b.textContent).join(', ');
+  const manual = document.getElementById('m-subjects');
+  if (manual && !manual.value.trim()) manual.placeholder = sel || 'Or type manually…';
+}
+
+function genAdmNo() {
+  const yr = new Date().getFullYear();
+  const next = students.length + 1;
+  return `ADM-${yr}-${String(next).padStart(3,'0')}`;
+}
+
+// Auto-fill admission number when add student modal opens (called by showModal internally)
+function autoFillAdmNo() {
+  setTimeout(() => {
+    const admEl = document.getElementById('m-admno');
+    if (admEl) admEl.value = genAdmNo();
+  }, 30);
+}
+
+function editStudent(idx) {
+  const s = students[idx];
+  if (!s) return;
+  const root = document.getElementById('modal-root');
+  root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal">
+    <div class="modal-title">✏️ Edit Student — ${s.name}</div>
+    <div class="fg"><label class="fl">Admission No.</label>
+      <input class="fi" id="edit-admno" value="${s.admNo||''}" placeholder="ADM-2024-001" style="font-family:monospace;font-size:12px">
+    </div>
+    <div class="frow">
+      <div class="fg"><label class="fl">Student Name *</label><input class="fi" id="edit-name" value="${s.name}"></div>
+      <div class="fg"><label class="fl">Parent Name</label><input class="fi" id="edit-pname" value="${s.parent}"></div>
+    </div>
+    <div class="frow">
+      <div class="fg"><label class="fl">Phone</label><input class="fi" id="edit-phone" value="${s.phone}" type="tel"></div>
+      <div class="fg"><label class="fl">Date of Birth</label><input class="fi" type="date" id="edit-dob" value="${s.dob||''}"></div>
+    </div>
+    <div class="fg"><label class="fl">Class</label>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        ${['KG','1','2','3','4','5','6','7','8','9','10','11','12'].map(g=>`<button type="button" 
+          onclick="this.closest('.modal').querySelectorAll('.cls-chip').forEach(b=>{b.style.background='var(--card)';b.style.color='var(--tx)';b.style.borderColor='var(--br)'});this.style.background='var(--pr)';this.style.color='#fff';this.style.borderColor='var(--pr)';document.getElementById('edit-grade').value='${g}';document.getElementById('edit-subj-box').style.display=('${g}'==='11'||'${g}'==='12')?'block':'none'"
+          class="cls-chip" style="padding:5px 12px;border-radius:20px;border:1.5px solid ${s.grade===g?'var(--pr)':'var(--br)'};background:${s.grade===g?'var(--pr)':'var(--card)'};color:${s.grade===g?'#fff':'var(--tx)'};cursor:pointer;font-size:12px;font-weight:500;font-family:inherit;transition:.12s">${g}</button>`).join('')}
+      </div>
+      <input type="hidden" id="edit-grade" value="${s.grade||'10'}">
+    </div>
+    <div class="fg" id="edit-subj-box" style="display:${(s.grade==='11'||s.grade==='12')?'block':'none'}">
+      <label class="fl">Subjects</label>
+      <input class="fi" id="edit-subjects" value="${s.subjects||''}" placeholder="Physics, Chemistry, Maths…">
+    </div>
+    <div class="fg"><label class="fl">School</label><input class="fi" id="edit-school" value="${s.school||''}"></div>
+    <div class="fg"><label class="fl">Status</label>
+      <select class="fi" id="edit-status">
+        <option value="active" ${s.status==='active'?'selected':''}>Active</option>
+        <option value="inactive" ${s.status==='inactive'?'selected':''}>Inactive</option>
+      </select>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-p" onclick="saveEditStudent(${idx})">💾 Save Changes</button>
+      <button class="btn" style="color:#dc2626;border-color:#dc2626" onclick="deleteStudent(${idx})">🗑 Remove</button>
+      <button class="btn" onclick="closeModal()">Cancel</button>
+    </div>
+  </div></div>`;
+}
+
+function saveEditStudent(idx) {
+  const s = students[idx];
+  if (!s) return;
+  s.admNo    = document.getElementById('edit-admno')?.value.trim() || s.admNo;
+  s.name     = document.getElementById('edit-name')?.value.trim() || s.name;
+  s.parent   = document.getElementById('edit-pname')?.value.trim() || s.parent;
+  s.phone    = document.getElementById('edit-phone')?.value.trim() || s.phone;
+  s.dob      = document.getElementById('edit-dob')?.value || s.dob;
+  s.grade    = document.getElementById('edit-grade')?.value || s.grade;
+  s.subjects = document.getElementById('edit-subjects')?.value.trim() || '';
+  s.school   = document.getElementById('edit-school')?.value.trim() || s.school;
+  s.status   = document.getElementById('edit-status')?.value || s.status;
+  renderStudents(students);
+  closeModal();
+  showToast(`✅ ${s.name} updated!`);
+  runBackup('change');
+}
+
+function deleteStudent(idx) {
+  const s = students[idx];
+  if (!s) return;
+  if (!confirm(`Remove ${s.name}? This cannot be undone.`)) return;
+  students[idx].status = 'inactive';
+  renderStudents(students);
+  closeModal();
+  showToast(`${s.name} marked inactive`);
+}
+
+/* ═══════════════════════════════════════════════════
+   SETTINGS — Edit Tuition Name & Admin Details
+═══════════════════════════════════════════════════ */
+function openEditCenter() {
+  const root = document.getElementById('modal-root');
+  root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal">
+    <div class="modal-title">🏫 Edit Center & Admin Details</div>
+    <div class="fg"><label class="fl">Tuition Center Name *</label>
+      <input class="fi" id="ec-name" value="${CFG.CENTER.name||''}">
+    </div>
+    <div class="fg"><label class="fl">Tagline</label>
+      <input class="fi" id="ec-tagline" value="${CFG.CENTER.tagline||''}">
+    </div>
+    <div class="frow">
+      <div class="fg"><label class="fl">Owner / Admin Name *</label>
+        <input class="fi" id="ec-owner" value="${CFG.CENTER.ownerName||''}">
+      </div>
+      <div class="fg"><label class="fl">Contact Phone</label>
+        <input class="fi" id="ec-phone" value="${CFG.CENTER.phone||''}" type="tel">
+      </div>
+    </div>
+    <div class="fg"><label class="fl">Email</label>
+      <input class="fi" id="ec-email" value="${CFG.CENTER.email||''}" type="email">
+    </div>
+    <div class="frow">
+      <div class="fg"><label class="fl">City</label>
+        <input class="fi" id="ec-city" value="${CFG.CENTER.city||''}">
+      </div>
+      <div class="fg"><label class="fl">State</label>
+        <input class="fi" id="ec-state" value="${CFG.CENTER.state||''}">
+      </div>
+    </div>
+    <div class="fg"><label class="fl">Address</label>
+      <input class="fi" id="ec-address" value="${CFG.CENTER.address||''}">
+    </div>
+    <div class="fg"><label class="fl">Student ID Prefix (e.g. KLM)</label>
+      <input class="fi" id="ec-prefix" value="${CFG.APP?.studentIdPrefix||'KLM'}" maxlength="6" style="text-transform:uppercase">
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-p" onclick="saveEditCenter()">💾 Save Changes</button>
+      <button class="btn" onclick="closeModal()">Cancel</button>
+    </div>
+  </div></div>`;
+}
+
+function saveEditCenter() {
+  const name = document.getElementById('ec-name')?.value.trim();
+  if (!name) { showToast('Center name is required'); return; }
+  CFG.CENTER.name     = name;
+  CFG.CENTER.tagline  = document.getElementById('ec-tagline')?.value.trim()  || CFG.CENTER.tagline;
+  CFG.CENTER.ownerName= document.getElementById('ec-owner')?.value.trim()    || CFG.CENTER.ownerName;
+  CFG.CENTER.phone    = document.getElementById('ec-phone')?.value.trim()    || CFG.CENTER.phone;
+  CFG.CENTER.email    = document.getElementById('ec-email')?.value.trim()    || CFG.CENTER.email;
+  CFG.CENTER.city     = document.getElementById('ec-city')?.value.trim()     || CFG.CENTER.city;
+  CFG.CENTER.state    = document.getElementById('ec-state')?.value.trim()    || CFG.CENTER.state;
+  CFG.CENTER.address  = document.getElementById('ec-address')?.value.trim()  || CFG.CENTER.address;
+  if (CFG.APP) CFG.APP.studentIdPrefix = (document.getElementById('ec-prefix')?.value.trim().toUpperCase() || CFG.APP.studentIdPrefix);
+  // Persist to localStorage
+  try { localStorage.setItem('_erp_center', JSON.stringify(CFG.CENTER)); } catch(e){}
+  closeModal();
+  initLicenseUI();
+  applyLang();
+  showToast(`✅ Center details updated!`);
+}
+
 // Persist license key across sessions (for WebView/WebIntoApp compatibility)
 function saveLicenseKey(key) {
   if (!key) return;
@@ -2145,9 +2476,12 @@ function _safeInit() {
   // Restore license key from localStorage (persists across app restarts)
   try {
     const savedKey = localStorage.getItem('_erp_lic_key') || sessionStorage.getItem('_erp_lic_key');
-    if (savedKey && savedKey !== 'TRIAL') {
-      CFG.LICENSE_KEY = savedKey;
-    }
+    if (savedKey && savedKey !== 'TRIAL') { CFG.LICENSE_KEY = savedKey; }
+  } catch(e) {}
+  // Restore center details edited by admin
+  try {
+    const savedCenter = localStorage.getItem('_erp_center');
+    if (savedCenter) { Object.assign(CFG.CENTER, JSON.parse(savedCenter)); }
   } catch(e) {}
   initLicenseUI();
   applyLang();

@@ -621,7 +621,7 @@ const CFG = {
 ═══════════════════════════════════════════════════════ */
 (function(){
 'use strict';
-var PLANS={BASIC:{name:'Basic',maxStudents:150,features:{aiFeatures:false,googleSheets:true,autoBackup:true,multiCenter:false,advancedReports:false}},PRO:{name:'Pro',maxStudents:500,features:{aiFeatures:true,googleSheets:true,autoBackup:true,multiCenter:false,advancedReports:true}},ENTERPRISE:{name:'Enterprise',maxStudents:99999,features:{aiFeatures:true,googleSheets:true,autoBackup:true,multiCenter:true,advancedReports:true}},TRIAL:{name:'Free Trial',maxStudents:50,features:{aiFeatures:true,googleSheets:false,autoBackup:true,multiCenter:false,advancedReports:false}}};
+var PLANS={BASIC:{name:'Basic',maxStudents:150,features:{aiFeatures:false,googleSheets:true,autoBackup:true,multiCenter:false,advancedReports:false}},PRO:{name:'Pro',maxStudents:500,features:{aiFeatures:true,googleSheets:true,autoBackup:true,multiCenter:false,advancedReports:true}},ENTERPRISE:{name:'Premium',maxStudents:99999,features:{aiFeatures:true,googleSheets:true,autoBackup:true,multiCenter:true,advancedReports:true}},TRIAL:{name:'Free Trial',maxStudents:50,features:{aiFeatures:true,googleSheets:false,autoBackup:true,multiCenter:false,advancedReports:false}}};
 var _dt=false;function _chk(){var t=new Date();debugger;if(new Date()-t>100)_dt=true;}setTimeout(_chk,8000);
 function _sha256(msg){var K=[0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];function _r(x,n){return(x>>>n)|(x<<(32-n));}function _s(x,n){return x>>>n;}function _ch(x,y,z){return(x&y)^(~x&z);}function _mj(x,y,z){return(x&y)^(x&z)^(y&z);}function _s0(x){return _r(x,2)^_r(x,13)^_r(x,22);}function _s1(x){return _r(x,6)^_r(x,11)^_r(x,25);}function _t0(x){return _r(x,7)^_r(x,18)^_s(x,3);}function _t1(x){return _r(x,17)^_r(x,19)^_s(x,10);}function _a(x,y){var l=(x&0xffff)+(y&0xffff);return((x>>16)+(y>>16)+(l>>16)<<16)|(l&0xffff);}var u=[];for(var i=0;i<msg.length;i++){var c=msg.charCodeAt(i);if(c<128)u.push(c);else if(c<2048)u.push((c>>6)|192,(c&63)|128);else u.push((c>>12)|224,((c>>6)&63)|128,(c&63)|128);}var L=u.length,M=new Uint32Array(Math.ceil((L+9)/64)*16);for(var j=0;j<L;j++)M[j>>2]|=u[j]<<(24-(j%4)*8);M[L>>2]|=0x80<<(24-(L%4)*8);M[M.length-1]=L*8;var H=[0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];for(var b=0;b<M.length;b+=16){var W=new Uint32Array(64);for(var t2=0;t2<16;t2++)W[t2]=M[b+t2];for(var t3=16;t3<64;t3++)W[t3]=_a(_a(_t1(W[t3-2]),W[t3-7]),_a(_t0(W[t3-15]),W[t3-16]));var a=H[0],bc=H[1],c2=H[2],d=H[3],e=H[4],f=H[5],g=H[6],h=H[7];for(var t4=0;t4<64;t4++){var T1=_a(_a(_a(_a(h,_s1(e)),_ch(e,f,g)),K[t4]),W[t4]);var T2=_a(_s0(a),_mj(a,bc,c2));h=g;g=f;f=e;e=_a(d,T1);d=c2;c2=bc;bc=a;a=_a(T1,T2);}H[0]=_a(a,H[0]);H[1]=_a(bc,H[1]);H[2]=_a(c2,H[2]);H[3]=_a(d,H[3]);H[4]=_a(e,H[4]);H[5]=_a(f,H[5]);H[6]=_a(g,H[6]);H[7]=_a(h,H[7]);}return H.map(function(n){return('00000000'+n.toString(16).toUpperCase()).slice(-8);}).join('');}
 var _sl=['KalamERP@','2025#Tamil','Nadu$Secu','re!XK9'].join('');
@@ -2039,9 +2039,11 @@ function initBackup() {
 function renderPlansHTML() {
   const plans = window.__PLANS__||{};
   const lic = window.__LIC__||{};
+  const DISPLAY = {BASIC:{name:'Basic',price:'₹999'},PRO:{name:'Pro',price:'₹1,999'},ENTERPRISE:{name:'Premium',price:'₹2,999'}};
   return ['BASIC','PRO','ENTERPRISE'].map(k=>{
     const p=plans[k];if(!p)return'';
     const isP=k==='PRO', isCur=lic.plan===k;
+    const disp=DISPLAY[k]||{name:k,price:''};
     const feats=[
       `Up to ${p.maxStudents===99999?'Unlimited':p.maxStudents} students`,
       p.features.aiFeatures?'✅ AI Features':'❌ AI Features',
@@ -2052,8 +2054,8 @@ function renderPlansHTML() {
     return `<div class="plan-card ${isP?'pop':''}">
       ${isCur?'<div class="badge bg" style="margin-bottom:6px">Current</div>':''}
       ${isP?'<div class="badge bb" style="margin-bottom:4px">Most Popular</div>':''}
-      <div class="plan-name">${p.name}</div>
-      <div class="plan-price">₹${k==='BASIC'?'1,999':k==='PRO'?'3,999':'7,999'}<span style="font-size:11px;color:var(--tx2)">/yr</span></div>
+      <div class="plan-name">${disp.name}</div>
+      <div class="plan-price">${disp.price}<span style="font-size:11px;color:var(--tx2)">/yr</span></div>
       <div class="plan-feat">${feats.join('<br>')}</div>
     </div>`;
   }).join('');

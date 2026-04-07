@@ -1563,6 +1563,14 @@ function getWAExtra(student) {
 }
 
 function buildWAQueue() {
+  // Plan gate: Basic plan only gets first 2 WA types
+  const lic0 = window.__LIC__||{};
+  const allowedWaTypes = (lic0.features && lic0.features.waTypes) || 7;
+  const typeIndex = WA_TYPES.findIndex(w => w.id === waType);
+  if (typeIndex >= allowedWaTypes) {
+    showToast('This message type requires Pro plan — upgrade to unlock all 7 types');
+    waType = WA_TYPES[0].id; renderWATypes(); openUpgrade(); return;
+  }
   const recipSel = document.getElementById('wa-recipients-sel')?.value || 'all';
   const langSel = document.getElementById('wa-lang-sel')?.value || 'en';
   const templateIdx = parseInt(document.getElementById('wa-template-sel')?.value||'0');

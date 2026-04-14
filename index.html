@@ -624,39 +624,42 @@ tbody tr:hover td{background:var(--bg)}
 
   <!-- TAB 2: Staff Attendance -->
   <div id="sf-panel-att" style="display:none">
-    <div class="toolbar" style="flex-wrap:wrap;gap:8px">
-      <select class="fi" style="width:auto" id="sf-att-staff">
-        <option value="all">All Staff</option>
-      </select>
-      <input type="month" class="fi" style="width:auto" id="sf-att-month">
-      <div style="margin-left:auto;display:flex;gap:8px">
-        <button class="btn btn-p btn-sm" onclick="saveStaffAtt()">✅ Save Attendance</button>
+    <!-- Date bar -->
+    <div class="card" style="margin-bottom:12px;padding:12px 16px">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:11px;font-weight:600;color:var(--tx2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px">Attendance Date</div>
+          <input type="date" class="fi" id="sf-att-date" style="max-width:200px;font-size:14px;font-weight:600" onchange="renderStaffAttGrid()">
+        </div>
+        <button class="btn btn-p" onclick="saveStaffAtt()" style="gap:6px">
+          <svg viewBox="0 0 16 16" fill="none" width="13" height="13"><path d="M13 10v2a1 1 0 01-1 1H4a1 1 0 01-1-1v-2M8 2v7M5 6l3 3 3-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Save Attendance
+        </button>
       </div>
     </div>
-    <div id="sf-att-grid" class="card" style="padding:0;overflow:hidden"></div>
+    <!-- Staff attendance rows -->
+    <div id="sf-att-grid"></div>
+    <!-- Save confirmation -->
+    <div id="sf-att-saved" style="display:none;background:#f0fdf4;border:.5px solid #bbf7d0;border-radius:8px;padding:10px 14px;font-size:12px;color:#166534;margin-top:8px">
+      ✅ Attendance saved successfully!
+    </div>
   </div>
 
   <!-- TAB 3: Payroll -->
   <div id="sf-panel-pay" style="display:none">
-    <div class="toolbar" style="flex-wrap:wrap;gap:8px">
-      <input type="month" class="fi" style="width:auto" id="sf-pay-month">
-      <button class="btn btn-p" onclick="generatePayroll()">📊 Generate Payroll</button>
-      <button class="btn btn-g" onclick="exportPayrollCSV()" style="margin-left:auto">⬇ Export CSV</button>
+    <div class="card" style="margin-bottom:12px;padding:12px 16px">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:11px;font-weight:600;color:var(--tx2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px">Payroll Month</div>
+          <input type="month" class="fi" id="sf-pay-month" style="max-width:180px;font-size:14px;font-weight:600" onchange="generatePayroll()">
+        </div>
+        <button class="btn btn-g" onclick="exportPayrollCSV()">⬇ Export CSV</button>
+      </div>
     </div>
-    <!-- Payroll summary cards -->
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px" id="sf-pay-summary"></div>
-    <!-- Payroll table -->
-    <div class="tbl-wrap" style="overflow-x:auto">
-      <table style="min-width:800px">
-        <thead><tr>
-          <th>Staff Name</th><th>Consolidated Pay</th>
-          <th>LOP Days</th><th>LOP Deduction</th>
-          <th>PF</th><th>Tax</th><th>Other Ded.</th>
-          <th>NET PAY</th><th>Action</th>
-        </tr></thead>
-        <tbody id="sf-pay-body"></tbody>
-      </table>
-    </div>
+    <!-- Summary cards -->
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px" id="sf-pay-summary"></div>
+    <!-- Payroll cards list -->
+    <div id="sf-pay-body"></div>
   </div>
 </div>
 
@@ -748,44 +751,39 @@ tbody tr:hover td{background:var(--bg)}
 
 <!-- ═══════════════ AI ═══════════════ -->
 <div class="page" id="pg-ai">
-  <div style="background:linear-gradient(135deg,#1e3a8a 0%,#1a56db 100%);border-radius:11px;padding:14px 18px;margin-bottom:14px;display:flex;align-items:center;gap:14px">
-    <div style="width:42px;height:42px;background:rgba(255,255,255,.15);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:22px">🤖</div>
-    <div>
-      <div style="font-size:15px;font-weight:700;color:#fff" id="ai-title-lbl">AI-Powered Analysis Engine</div>
-      <div style="font-size:12px;color:rgba(255,255,255,.75);margin-top:2px" id="ai-sub-lbl">Analyses your real student data instantly — no API key or internet required</div>
-    </div>
-    <div style="margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:5px">
-      <span class="badge" style="background:rgba(255,255,255,.2);color:#fff;font-size:11px">✅ Built-in AI</span>
-      <span id="ai-lang-badge" style="font-size:10px;color:rgba(255,255,255,.6)" id="ai-lang-lbl">English &amp; Tamil supported</span>
-    </div>
-  </div>
-  <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.7fr);gap:14px">
-    <div>
-      <div style="font-size:11px;font-weight:600;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:9px">AI Modules</div>
-      <div id="ai-cards"></div>
-      <div class="card" style="margin-top:10px;padding:12px">
-        <div style="font-size:12px;font-weight:600;color:var(--tx);margin-bottom:7px">Custom Prompt</div>
-        <textarea class="fi fi-ta" id="ai-custom" rows="3" placeholder="Ask anything about your students, fees, attendance…"></textarea>
-        <button class="btn btn-p" style="width:100%;justify-content:center;margin-top:7px;font-size:12px" onclick="runCustomAI()"><svg viewBox="0 0 14 14" fill="none" width="12" height="12"><path d="M2 12l10-5L2 2v4l7 1-7 1v4z" fill="currentColor"/></svg>Ask AI</button>
+
+  <!-- AI Module Cards Grid -->
+  <div id="ai-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-bottom:16px"></div>
+
+  <!-- Report Panel (hidden until a module is run) -->
+  <div id="ai-report-panel" style="display:none">
+    <!-- Report header -->
+    <div id="ai-report-header" style="display:flex;align-items:center;gap:12px;background:var(--card);border-radius:12px 12px 0 0;padding:14px 16px;border:.5px solid var(--br);border-bottom:none">
+      <div id="ai-report-icon" style="width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;background:#dbeafe">📊</div>
+      <div style="flex:1">
+        <div id="ai-report-title" style="font-size:14px;font-weight:700;color:var(--tx)">Report</div>
+        <div id="ai-report-sub" style="font-size:11px;color:var(--tx2);margin-top:2px"></div>
+      </div>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-sm" id="ai-copy-btn" onclick="copyAIResp()" style="font-size:11px">📋 Copy</button>
+        <button class="btn btn-sm" onclick="closeAIReport()" style="font-size:11px">✕ Close</button>
       </div>
     </div>
-    <div>
-      <div style="font-size:11px;font-weight:600;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:9px">AI Response</div>
-      <div style="background:var(--bg);border:.5px solid var(--br);border-radius:11px;min-height:400px;padding:15px" id="ai-panel">
-        <div id="ai-ph" style="color:var(--tx3);text-align:center;padding:60px 0;font-size:13px"><div style="font-size:30px;margin-bottom:8px">🤖</div>Select a module or type a prompt to get AI insights</div>
-        <div id="ai-loading" style="display:none;text-align:center;padding:60px 0"><div style="display:inline-flex;gap:5px"><div style="width:8px;height:8px;border-radius:50%;background:var(--pr);animation:aidot 1s infinite .0s"></div><div style="width:8px;height:8px;border-radius:50%;background:var(--pr);animation:aidot 1s infinite .2s"></div><div style="width:8px;height:8px;border-radius:50%;background:var(--pr);animation:aidot 1s infinite .4s"></div></div><div style="font-size:12px;color:var(--tx3);margin-top:8px" id="ai-loading-msg">Thinking…</div></div>
-        <div id="ai-output" style="display:none">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;padding-bottom:9px;border-bottom:.5px solid var(--br)">
-            <div style="width:26px;height:26px;border-radius:50%;background:#dbeafe;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg viewBox="0 0 16 16" fill="none" width="13" height="13"><circle cx="8" cy="8" r="5" stroke="#2563eb" stroke-width="1.3"/><path d="M6 6.5c.5-1.5 3.5-1.5 3 .5-.5 1.5-3 1-3 2.5" stroke="#2563eb" stroke-width="1.3" stroke-linecap="round"/></svg></div>
-            <div style="flex:1"><div style="font-size:12px;font-weight:600;color:#185FA5" id="ai-out-title">AI Analysis</div><div style="font-size:10px;color:var(--tx3)" id="ai-out-model">Claude</div></div>
-            <div style="display:flex;gap:5px"><button class="btn btn-sm" onclick="copyAIResp()"><svg viewBox="0 0 14 14" fill="none" width="12" height="12"><rect x="4" y="4" width="8" height="8" rx="1" stroke="currentColor" stroke-width="1.3"/><path d="M2 10V3a1 1 0 011-1h7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>Copy</button><button class="btn btn-sm" onclick="clearAI()">Clear</button></div>
-          </div>
-          <div id="ai-stream" style="font-size:13px;color:var(--tx);line-height:1.8;white-space:pre-wrap"></div>
-        </div>
+    <!-- Loading dots -->
+    <div id="ai-loading" style="display:none;background:var(--card);padding:32px 20px;text-align:center;border:.5px solid var(--br);border-top:none;border-radius:0 0 12px 12px">
+      <div style="display:flex;justify-content:center;gap:7px;margin-bottom:10px">
+        <div style="width:9px;height:9px;border-radius:50%;background:var(--pr);animation:aidot 1s infinite 0s"></div>
+        <div style="width:9px;height:9px;border-radius:50%;background:var(--pr);animation:aidot 1s infinite .2s"></div>
+        <div style="width:9px;height:9px;border-radius:50%;background:var(--pr);animation:aidot 1s infinite .4s"></div>
       </div>
+      <div style="font-size:12px;color:var(--tx2)">Analysing your data…</div>
     </div>
+    <!-- Report content -->
+    <div id="ai-output" style="display:none;background:var(--card);border:.5px solid var(--br);border-top:none;border-radius:0 0 12px 12px;padding:16px;font-family:system-ui;font-size:13px;color:var(--tx);line-height:1.8;white-space:pre-wrap;min-height:120px;max-height:520px;overflow-y:auto"></div>
   </div>
+
 </div>
+
 
 <!-- ═══════════════ BACKUP ═══════════════ -->
 <div class="page" id="pg-backup">
@@ -846,6 +844,23 @@ tbody tr:hover td{background:var(--bg)}
       <div style="margin-top:12px;padding-top:12px;border-top:.5px solid var(--br);display:flex;gap:8px;justify-content:flex-end">
         <button class="btn btn-sm" onclick="openEditCenter()">✏️ Edit Details</button>
         <button class="btn btn-p btn-sm" onclick="openUpgrade()">Upgrade Plan</button>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:12px" id="attendance-settings-card">
+      <div class="card-title" style="margin-bottom:12px">Attendance Settings <span class="badge bp" style="font-size:9px;margin-left:6px">Pro+</span></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:.5px solid var(--br)">
+        <div>
+          <div style="font-size:13px;font-weight:500;color:var(--tx)">Late Arrivals → Leave Conversion</div>
+          <div style="font-size:11px;color:var(--tx2);margin-top:2px">How many late arrivals equal 1 day leave</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <button class="btn btn-sm" onclick="changeLatesToLeave(-1)" style="padding:4px 10px;font-size:14px;font-weight:700">−</button>
+          <span id="lates-to-leave-val" style="font-size:16px;font-weight:700;color:var(--pr);min-width:30px;text-align:center">10</span>
+          <button class="btn btn-sm" onclick="changeLatesToLeave(1)" style="padding:4px 10px;font-size:14px;font-weight:700">+</button>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--tx3);padding:8px 0">
+        Currently: <b id="lates-leave-summary">10 late arrivals = 1 leave day</b>
       </div>
     </div>
     <div class="card" style="margin-bottom:12px">
@@ -950,6 +965,7 @@ const CFG = {
   BRAND: { primaryColor:'#1a56db', logoText:'KT' },
   APP: { defaultLanguage:'en', defaultTheme:'light', studentIdPrefix:'KLM', academicYear:'2024-25' },
   FEES: { lateFeePercent:5, graceDays:7 },
+  ATTENDANCE: { latesToLeave: 10 },  // Pro: how many late arrivals = 1 leave
   AI: { provider:'anthropic', apiKey:'', model:'claude-sonnet-4-20250514', maxTokens:1024 },
   GOOGLE_SHEETS: { webAppUrl:'', autoSync:false, syncInterval:30 },
 };
@@ -1042,16 +1058,16 @@ const exams = [
 ];
 const staffData = [
   {id:'STF-001',name:'Dr. Rajesh K',phone:'9876543220',desg:'Teacher',subjects:'Mathematics, Physics',
-   consolidatedPay:32000,pf:1920,tax:800,otherDed:0,exp:'8 yrs',color:'#185FA5',
+   consolidatedPay:32000,extraDed:0,extraDedNote:'',exp:'8 yrs',color:'#185FA5',
    joinDate:'2016-06-01',email:'rajesh@kalamtuition.com'},
   {id:'STF-002',name:'Ms. Kavitha S',phone:'9876543221',desg:'Teacher',subjects:'Tamil, English',
-   consolidatedPay:28000,pf:1680,tax:0,otherDed:0,exp:'5 yrs',color:'#1D9E75',
+   consolidatedPay:28000,extraDed:0,extraDedNote:'',exp:'5 yrs',color:'#1D9E75',
    joinDate:'2019-07-15',email:'kavitha@kalamtuition.com'},
   {id:'STF-003',name:'Mr. Senthil N',phone:'9876543222',desg:'Coordinator',subjects:'Science',
-   consolidatedPay:35000,pf:2100,tax:1200,otherDed:0,exp:'12 yrs',color:'#534AB7',
+   consolidatedPay:35000,extraDed:0,extraDedNote:'',exp:'12 yrs',color:'#534AB7',
    joinDate:'2012-03-01',email:'senthil@kalamtuition.com'},
   {id:'STF-004',name:'Ms. Priya M',phone:'9876543223',desg:'Support',subjects:'—',
-   consolidatedPay:18000,pf:1080,tax:0,otherDed:0,exp:'2 yrs',color:'#993C1D',
+   consolidatedPay:18000,extraDed:0,extraDedNote:'',exp:'2 yrs',color:'#993C1D',
    joinDate:'2022-01-10',email:'priya@kalamtuition.com'},
 ];
 // Staff attendance: staffAtt[staffId][YYYY-MM-DD] = 'P'|'A'|'H'|'L'
@@ -1280,6 +1296,7 @@ function navTo(id) {
   if (id === 'ai') { renderAICards(); initAI(); }
   if (id === 'whatsapp') { renderWATypes(); }
   if (id === 'admissions') { initAdmissions(); }
+  if (id === 'settings') { updateLatesDisplay(); }
 }
 
 function tbAddAction() {
@@ -1609,6 +1626,7 @@ function saveStudent() {
     grade, dob, school, course, subjects, status:'active',
     color: COLORS[students.length % COLORS.length]
   });
+  saveStudents();
   renderStudents(students);
   closeModal();
   showToast(`✅ ${name} admitted — ${admNo}`);
@@ -1671,9 +1689,10 @@ function updateAttCounts() {
   const vals = Object.values(attState);
   const p=vals.filter(x=>x==='P').length, a=vals.filter(x=>x==='A').length, l=vals.filter(x=>x==='L').length;
   const tot=p+a+l;
-  document.getElementById('att-pc-lbl').textContent = p+' '+t('active');
-  document.getElementById('att-ac-lbl').textContent = a+' '+t('inactive');
-  document.getElementById('att-lc-lbl').textContent = l+' Late';
+  document.getElementById('att-pc-lbl').textContent = p+' Present';
+  document.getElementById('att-ac-lbl').textContent = a+' Absent';
+  const ltl = CFG.ATTENDANCE?.latesToLeave || 10;
+  document.getElementById('att-lc-lbl').textContent = l+' Late ('+ltl+'=1 leave)';
   document.getElementById('att-pct-lbl').textContent = tot>0?Math.round(p/tot*100)+'%':'—%';
   updateDashStats();
 }
@@ -1790,8 +1809,7 @@ function saveExam() {
 function renderStaff() {
   document.getElementById('sf-body').innerHTML = staffData.map((s,i) => {
     const gross = s.consolidatedPay || s.baseSalary || 0;
-    const deductions = (s.pf||0) + (s.tax||0) + (s.otherDed||0);
-    const net = gross - deductions;
+    const net = gross - (s.extraDed||0);
     return `<tr>
       <td>
         <div class="flex-c">
@@ -1811,6 +1829,7 @@ function renderStaff() {
         <div style="display:flex;flex-direction:column;gap:4px">
           <button class="btn btn-sm" style="font-size:10px;padding:4px 8px" onclick="editStaffMember(${i})">✏️ Edit</button>
           <button class="btn btn-sm btn-wa" style="font-size:10px;padding:4px 8px" onclick="waStaff('${s.phone}','${s.name}')">📱 WA</button>
+          <button class="btn btn-sm" style="font-size:10px;padding:4px 8px;color:#dc2626;border-color:#fecdd3;background:#fff1f2" onclick="deleteStaffMember(${i})">🗑 Delete</button>
         </div>
       </td>
     </tr>`;
@@ -1826,9 +1845,8 @@ function saveStaff() {
   const name = document.getElementById('m-sfname')?.value.trim();
   if (!name) { showToast('Enter staff name'); return; }
   const basic = parseFloat(document.getElementById('m-sfbasic')?.value) || 0;
-  const pf    = parseFloat(document.getElementById('m-sfpf')?.value)    || 0;
-  const tax   = parseFloat(document.getElementById('m-sftax')?.value)   || 0;
   const other = parseFloat(document.getElementById('m-sfother')?.value) || 0;
+  const otherNote = document.getElementById('m-sfotherNote')?.value.trim() || '';
   const COLORS = ['#185FA5','#1D9E75','#854F0B','#993556','#534AB7','#993C1D'];
   const newId = 'STF-' + String(staffData.length + 1).padStart(3,'0');
   staffData.unshift({
@@ -1839,20 +1857,13 @@ function saveStaff() {
     subjects: document.getElementById('m-sfsub')?.value.trim() || '—',
     joinDate: document.getElementById('m-sfjoin')?.value || '',
     exp: document.getElementById('m-sfexp')?.value.trim() || '0 yrs',
-    consolidatedPay: basic, pf, tax, otherDed: other,
+    consolidatedPay: basic, extraDed: other, extraDedNote: otherNote,
     color: COLORS[staffData.length % COLORS.length]
   });
   renderStaff(); closeModal(); showToast(`✅ ${name} added to staff!`); runBackup('change');
 }
 
-function calcStaffSalary() {
-  const pay   = parseFloat(document.getElementById('m-sfbasic')?.value) || 0;
-  const pf    = parseFloat(document.getElementById('m-sfpf')?.value)    || 0;
-  const tax   = parseFloat(document.getElementById('m-sftax')?.value)   || 0;
-  const other = parseFloat(document.getElementById('m-sfother')?.value) || 0;
-  const net   = pay - pf - tax - other;
-  const nEl = document.getElementById('m-sf-net'); if (nEl) nEl.textContent = '₹' + Math.max(0,net).toLocaleString('en-IN');
-}
+function calcStaffSalary() { /* simplified - no live calc needed */ }
 
 function waStaff(phone, name) {
   const num = (phone||'').replace(/\D/g,'');
@@ -1887,19 +1898,15 @@ function editStaffMember(idx) {
       <div class="fg"><label class="fl">Experience</label><input class="fi" id="esf-exp" value="${s.exp||''}"></div>
     </div>
     <div style="background:var(--bg);border-radius:8px;padding:12px;margin:8px 0">
-      <div style="font-size:11px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">💰 Consolidated Pay</div>
+      <div style="font-size:11px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">💰 Salary</div>
       <div class="fg">
-        <label class="fl">Consolidated Salary ₹</label>
-        <input class="fi" id="esf-basic" type="number" value="${s.consolidatedPay||s.baseSalary||0}" oninput="calcEditStaffSalary()" style="font-size:16px;font-weight:600">
+        <label class="fl">Consolidated Monthly Pay ₹</label>
+        <input class="fi" id="esf-basic" type="number" value="${s.consolidatedPay||s.baseSalary||0}" style="font-size:16px;font-weight:600">
+        <div style="font-size:10px;color:var(--tx3);margin-top:3px">LOP deduction calculated automatically from attendance</div>
       </div>
       <div class="frow">
-        <div class="fg"><label class="fl">PF Deduction ₹</label><input class="fi" id="esf-pf" type="number" value="${s.pf||0}" oninput="calcEditStaffSalary()"></div>
-        <div class="fg"><label class="fl">Income Tax ₹</label><input class="fi" id="esf-tax" type="number" value="${s.tax||0}" oninput="calcEditStaffSalary()"></div>
-      </div>
-      <div class="fg"><label class="fl">Other Deduction ₹</label><input class="fi" id="esf-other" type="number" value="${s.otherDed||0}" oninput="calcEditStaffSalary()"></div>
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;padding-top:8px;border-top:.5px solid var(--br)">
-        <span style="font-size:12px;font-weight:600;color:var(--tx)">Net Pay (before LOP)</span>
-        <span style="font-size:16px;font-weight:700;color:#16a34a" id="esf-net">₹${net.toLocaleString('en-IN')}</span>
+        <div class="fg"><label class="fl">Extra Deduction ₹</label><input class="fi" id="esf-other" type="number" value="${s.extraDed||s.otherDed||0}"></div>
+        <div class="fg"><label class="fl">Reason (e.g. Advance)</label><input class="fi" id="esf-otherNote" value="${s.extraDedNote||''}"></div>
       </div>
     </div>
     <div class="modal-foot">
@@ -1909,14 +1916,7 @@ function editStaffMember(idx) {
   </div></div>`;
 }
 
-function calcEditStaffSalary() {
-  const pay   = parseFloat(document.getElementById('esf-basic')?.value)||0;
-  const pf    = parseFloat(document.getElementById('esf-pf')?.value)||0;
-  const tax   = parseFloat(document.getElementById('esf-tax')?.value)||0;
-  const other = parseFloat(document.getElementById('esf-other')?.value)||0;
-  const net   = pay - pf - tax - other;
-  const n=document.getElementById('esf-net'); if(n) n.textContent='₹'+Math.max(0,net).toLocaleString('en-IN');
-}
+function calcEditStaffSalary() { /* simplified */ }
 
 function saveEditStaff(idx) {
   const s = staffData[idx]; if (!s) return;
@@ -1928,13 +1928,38 @@ function saveEditStaff(idx) {
   s.joinDate   = document.getElementById('esf-join')?.value         || s.joinDate;
   s.exp        = document.getElementById('esf-exp')?.value.trim()   || s.exp;
   s.consolidatedPay = parseFloat(document.getElementById('esf-basic')?.value) || s.consolidatedPay || 0;
-  s.pf        = parseFloat(document.getElementById('esf-pf')?.value)    || s.pf;
-  s.tax       = parseFloat(document.getElementById('esf-tax')?.value)   || s.tax;
-  s.otherDed  = parseFloat(document.getElementById('esf-other')?.value) || s.otherDed;
+  s.extraDed     = parseFloat(document.getElementById('esf-other')?.value) || 0;
+  s.extraDedNote = document.getElementById('esf-otherNote')?.value.trim() || '';
   renderStaff(); closeModal(); showToast(`✅ ${s.name} updated!`); runBackup('change');
 }
 
 /* ── Staff Attendance ─────────────────────────────────── */
+
+function deleteStaffMember(idx) {
+  const s = staffData[idx];
+  if (!s) return;
+  const root = document.getElementById('modal-root');
+  root.innerHTML = `<div class="modal-bg"><div class="modal" style="max-width:360px">
+    <div style="text-align:center;padding:8px 0 6px">
+      <div style="font-size:36px;margin-bottom:8px">🗑️</div>
+      <div style="font-size:15px;font-weight:700;color:var(--tx);margin-bottom:6px">Remove Staff Member?</div>
+      <div style="font-size:12px;color:var(--tx2);margin-bottom:16px"><b>${s.name}</b> (${s.id})<br>All payroll records will be removed.</div>
+      <div style="display:flex;gap:8px;justify-content:center">
+        <button class="btn" style="flex:1;justify-content:center;padding:10px" onclick="closeModal()">Cancel</button>
+        <button class="btn" style="flex:1;justify-content:center;padding:10px;background:#dc2626;color:#fff;border-color:#dc2626" onclick="confirmDeleteStaff(${idx})">Remove</button>
+      </div>
+    </div>
+  </div></div>`;
+}
+function confirmDeleteStaff(idx) {
+  const s = staffData[idx];
+  if (!s) return;
+  staffData.splice(idx, 1);
+  renderStaff();
+  closeModal();
+  showToast(`🗑️ ${s.name} removed from staff`);
+  runBackup('change');
+}
 function switchStaffTab(tab, btn) {
   ['list','att','pay'].forEach(t => {
     document.getElementById('sf-panel-'+t).style.display = t===tab ? 'block' : 'none';
@@ -1948,152 +1973,257 @@ function switchStaffTab(tab, btn) {
 }
 
 function renderStaffAttGrid() {
-  const selStaff = document.getElementById('sf-att-staff')?.value || 'all';
-  const monthEl  = document.getElementById('sf-att-month');
-  if (!monthEl || !monthEl.value) {
-    const now = new Date();
-    monthEl.value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  var dateEl = document.getElementById('sf-att-date');
+  if (!dateEl.value) {
+    var n = new Date();
+    dateEl.value = n.toISOString().split('T')[0];
   }
-  const [yr, mo] = monthEl.value.split('-').map(Number);
-  const daysInMonth = new Date(yr, mo, 0).getDate();
-  const targetStaff = selStaff==='all' ? staffData : staffData.filter(s=>s.id===selStaff);
+  var date    = dateEl.value;
+  var dateObj = new Date(date + 'T00:00:00');
+  var days    = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  var months  = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var d = dateObj.getDate(), mo = months[dateObj.getMonth()], yr = dateObj.getFullYear();
+  var dayName = days[dateObj.getDay()];
+  var isSun = dateObj.getDay() === 0;
+  var isSat = dateObj.getDay() === 6;
+  var isWeekend = isSun || isSat;
 
-  const dayHeaders = Array.from({length:daysInMonth},(_,i)=>
-    `<th style="min-width:34px;font-size:10px;text-align:center">${i+1}</th>`
-  ).join('');
+  var grid = document.getElementById('sf-att-grid');
+  var savedBanner = document.getElementById('sf-att-saved');
+  if (savedBanner) savedBanner.style.display = 'none';
 
-  const rows = targetStaff.map(s => {
-    const cells = Array.from({length:daysInMonth},(_,i) => {
-      const date = `${yr}-${String(mo).padStart(2,'0')}-${String(i+1).padStart(2,'0')}`;
-      const key  = `${s.id}|${date}`;
-      const val  = staffAtt[key] || '';
-      const colors = {P:'#16a34a',A:'#dc2626',H:'#2563eb',L:'#ca8a04',LOP:'#7c3aed'};
-      return `<td style="text-align:center;padding:2px">
-        <select onchange="setStaffAtt('${s.id}','${date}',this.value)"
-          style="width:32px;border:none;background:${colors[val]||'var(--bg)'};color:${val?'#fff':'var(--tx3)'};font-size:10px;font-weight:700;border-radius:4px;padding:3px 1px;cursor:pointer;font-family:inherit">
-          <option value="">-</option>
-          <option value="P"   ${val==='P'  ?'selected':''}>P</option>
-          <option value="A"   ${val==='A'  ?'selected':''}>A</option>
-          <option value="H"   ${val==='H'  ?'selected':''}>H</option>
-          <option value="L"   ${val==='L'  ?'selected':''}>L</option>
-          <option value="LOP" ${val==='LOP'?'selected':''}>LOP</option>
-        </select>
-      </td>`;
-    }).join('');
-    const pCount = Array.from({length:daysInMonth},(_,i)=>{
-      const d=`${yr}-${String(mo).padStart(2,'0')}-${String(i+1).padStart(2,'0')}`;
-      return staffAtt[`${s.id}|${d}`];
-    });
-    const p=pCount.filter(v=>v==='P').length, a=pCount.filter(v=>v==='A').length;
-    return `<tr>
-      <td style="white-space:nowrap;font-size:12px;font-weight:500;padding:6px 10px;position:sticky;left:0;background:var(--card);z-index:1">
-        <div class="flex-c"><div class="av" style="background:${s.color};width:24px;height:24px;font-size:10px">${s.name[0]}</div>
-        <div><div>${s.name}</div><div style="font-size:10px;color:var(--tx3)">${p}P ${a}A</div></div></div>
-      </td>
-      ${cells}
-    </tr>`;
-  }).join('');
+  if (!staffData.length) {
+    grid.innerHTML = '<div class="card" style="text-align:center;padding:30px;color:var(--tx3)">No staff members. <button class="btn btn-p btn-sm" onclick="showModal(\'addStaff\')">+ Add Staff</button></div>';
+    return;
+  }
 
-  document.getElementById('sf-att-grid').innerHTML = `
-    <div style="overflow-x:auto;max-height:420px;overflow-y:auto">
-      <table style="border-collapse:collapse;min-width:${200+daysInMonth*36}px">
-        <thead style="position:sticky;top:0;z-index:2;background:var(--bg)">
-          <tr><th style="min-width:160px;position:sticky;left:0;background:var(--bg);z-index:3;font-size:11px">Staff</th>${dayHeaders}</tr>
-        </thead>
-        <tbody>${rows}</tbody>
-      </table>
-    </div>`;
+  var bannerBg  = isSun ? '#fff1f2' : isWeekend ? '#fef9c3' : 'var(--prl)';
+  var bannerTxt = isSun ? '#dc2626' : isWeekend ? '#92400e' : 'var(--pr)';
+  var wkTag     = isWeekend ? ('<span style="font-size:10px;background:' + (isSun?'#fee2e2':'#fef9c3') + ';color:' + bannerTxt + ';padding:2px 8px;border-radius:8px;margin-left:8px">' + (isSun?'Sunday':'Saturday') + '</span>') : '';
+
+  var pCount=0, clCount=0, lopCount=0, hCount=0;
+  var rows = '';
+  for (var i=0; i<staffData.length; i++) {
+    var s   = staffData[i];
+    var key = s.id + '|' + date;
+    var val = staffAtt[key] || '';
+    var pay = s.consolidatedPay || s.baseSalary || 0;
+    var net = pay - (s.extraDed||0);
+
+    if (val==='CL')  clCount++;
+    else if (val==='LOP') lopCount++;
+    else if (val==='H')   hCount++;
+    else pCount++;
+
+    var badge = '';
+    if (val==='CL')  badge = '<span style="font-size:10px;background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:10px;font-weight:700;margin-left:6px">CL</span>';
+    if (val==='LOP') badge = '<span style="font-size:10px;background:#ede9fe;color:#5b21b6;padding:2px 8px;border-radius:10px;font-weight:700;margin-left:6px">LOP</span>';
+    if (val==='H')   badge = '<span style="font-size:10px;background:#dbeafe;color:#1e40af;padding:2px 8px;border-radius:10px;font-weight:700;margin-left:6px">Holiday</span>';
+
+    var rowBg  = val==='LOP'?'#faf5ff' : val==='CL'?'#fffbeb' : val==='H'?'#eff6ff' : 'var(--card)';
+    var bdr    = val==='LOP'?'#c4b5fd' : val==='CL'?'#fde68a'  : val==='H'?'#bfdbfe' : 'var(--br)';
+    var selBg  = val==='LOP'?'#ede9fe' : val==='CL'?'#fef3c7'  : val==='H'?'#dbeafe' : 'var(--bg)';
+    var selClr = val==='LOP'?'#5b21b6' : val==='CL'?'#92400e'  : val==='H'?'#1e40af' : 'var(--tx2)';
+    var selWt  = val ? '700' : '500';
+
+    var pOpt  = '<option value=""'   + (val===''   ?' selected':'') + '>&#10003; Present</option>';
+    var clOpt = '<option value="CL"' + (val==='CL' ?' selected':'') + '>CL &mdash; Casual Leave</option>';
+    var lOpt  = '<option value="LOP"'+ (val==='LOP'?' selected':'') + '>LOP &mdash; Loss of Pay</option>';
+    var hOpt  = '<option value="H"'  + (val==='H'  ?' selected':'') + '>H &mdash; Holiday</option>';
+
+    rows += '<div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:.5px solid '+ bdr +';background:'+rowBg+'">';
+    rows += '<div class="av" style="background:'+s.color+';width:38px;height:38px;font-size:16px;font-weight:700;flex-shrink:0">'+s.name[0]+'</div>';
+    rows += '<div style="flex:1;min-width:0">';
+    rows += '  <div style="font-size:13px;font-weight:600;color:var(--tx)">'+s.name+badge+'</div>';
+    rows += '  <div style="font-size:11px;color:var(--tx2);margin-top:2px">'+s.desg+' &nbsp;&middot;&nbsp; &#8377;'+net.toLocaleString('en-IN')+'/mo</div>';
+    rows += '</div>';
+    rows += '<select onchange="setStaffAtt(\''+s.id+'\',\''+date+'\',this.value)" ';
+    rows += '  style="border:1.5px solid '+(val?bdr:'var(--br)')+';background:'+selBg+';color:'+selClr+';';
+    rows += '         font-size:12px;font-weight:'+selWt+';border-radius:8px;padding:8px 10px;';
+    rows += '         cursor:pointer;font-family:inherit;min-width:140px">';
+    rows += pOpt + clOpt + lOpt + hOpt + '</select>';
+    rows += '</div>';
+  }
+
+  grid.innerHTML =
+    '<div class="card" style="padding:0;overflow:hidden">'
+    + '<div style="padding:10px 16px;background:'+bannerBg+';border-bottom:.5px solid var(--br);display:flex;align-items:center;gap:8px">'
+    + '  <svg viewBox="0 0 16 16" fill="none" width="14" height="14"><rect x="2" y="3" width="12" height="11" rx="2" stroke="'+bannerTxt+'" stroke-width="1.3"/><path d="M5 2v2M11 2v2M2 7h12" stroke="'+bannerTxt+'" stroke-width="1.3" stroke-linecap="round"/></svg>'
+    + '  <span style="font-size:13px;font-weight:700;color:'+bannerTxt+'">'+dayName+', '+d+' '+mo+' '+yr+'</span>'
+    + wkTag
+    + '</div>'
+    + rows
+    + '<div style="padding:10px 16px;background:var(--bg);font-size:11px;color:var(--tx2);display:flex;gap:14px;flex-wrap:wrap;border-top:.5px solid var(--br)">'
+    + '  <span><b style="color:#16a34a">&#10003; Present:</b> '+pCount+'</span>'
+    + '  <span><b style="color:#ca8a04">CL:</b> '+clCount+'</span>'
+    + '  <span><b style="color:#5b21b6">LOP:</b> '+lopCount+'</span>'
+    + '  <span><b style="color:#1e40af">H:</b> '+hCount+'</span>'
+    + '  <span style="color:var(--tx3)">Total: '+staffData.length+' staff</span>'
+    + '</div>'
+    + '</div>';
 }
 
 function setStaffAtt(staffId, date, val) {
   const key = `${staffId}|${date}`;
   if (val) staffAtt[key] = val;
   else delete staffAtt[key];
+  // Auto-save on every change
+  try { localStorage.setItem('_erp_staff_att', JSON.stringify(staffAtt)); } catch(e){}
 }
 
 function saveStaffAtt() {
   try { localStorage.setItem('_erp_staff_att', JSON.stringify(staffAtt)); } catch(e){}
+  const banner = document.getElementById('sf-att-saved');
+  if (banner) { banner.style.display='block'; setTimeout(()=>{banner.style.display='none';},3000); }
   showToast('✅ Staff attendance saved!');
   runBackup('change');
 }
 
 /* ── Payroll ──────────────────────────────────────────── */
 function generatePayroll() {
-  const monthEl = document.getElementById('sf-pay-month');
+  var monthEl = document.getElementById('sf-pay-month');
   if (!monthEl || !monthEl.value) {
-    const now = new Date();
-    monthEl.value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+    var now = new Date();
+    monthEl.value = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
   }
-  const [yr, mo] = monthEl.value.split('-').map(Number);
-  const daysInMonth = new Date(yr, mo, 0).getDate();
-  const monthLabel = new Date(yr, mo-1, 1).toLocaleDateString('en-IN',{month:'long',year:'numeric'});
+  var parts = monthEl.value.split('-');
+  var yr = parseInt(parts[0]), mo = parseInt(parts[1]);
+  var daysInMonth = new Date(yr, mo, 0).getDate();
+  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var monthLabel = months[mo-1] + ' ' + yr;
 
-  let totalGross=0, totalNet=0, totalDed=0;
-
-  const rows = staffData.map(s => {
-    // Count LOP days (LOP checkbox = Loss of Pay; A without LOP = just absent, no deduction unless LOP)
-    let lopDays = 0, absentDays = 0;
-    for (let d=1; d<=daysInMonth; d++) {
-      const date = `${yr}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-      const v = staffAtt[`${s.id}|${date}`];
-      if (v === 'LOP') lopDays++;   // LOP = deducted
-      if (v === 'A')   absentDays++;// A = absent but no auto-deduction unless marked LOP
+  var payData = staffData.map(function(s) {
+    var lopDays=0, clDays=0, hDays=0;
+    for (var d=1; d<=daysInMonth; d++) {
+      var dt = yr+'-'+String(mo).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+      var v  = staffAtt[s.id+'|'+dt] || '';
+      if (v==='LOP') lopDays++;
+      if (v==='CL')  clDays++;
+      if (v==='H')   hDays++;
     }
-    const pay = s.consolidatedPay || s.baseSalary || 0;
-    const dailyRate = pay / 26;     // 26 working days per month
-    const lopDed = Math.round(lopDays * dailyRate);
-    const totalDeductions = (s.pf||0) + (s.tax||0) + (s.otherDed||0) + lopDed;
-    const net = Math.max(0, pay - totalDeductions);
-    const absentDed = lopDed; // alias for table display
-    totalGross += gross; totalNet += net; totalDed += totalDeductions;
-    return { s, gross, totalDeductions, absentDays, absentDed, net };
+    var pay        = s.consolidatedPay || s.baseSalary || 0;
+    var dailyRate  = pay / 26;
+    var lopDed     = Math.round(lopDays * dailyRate);
+    var extraDed   = s.extraDed || 0;
+    var net        = Math.max(0, pay - lopDed - extraDed);
+    return { s:s, pay:pay, lopDays:lopDays, clDays:clDays, hDays:hDays, lopDed:lopDed, extraDed:extraDed, net:net, dailyRate:dailyRate };
   });
 
-  // Summary cards
-  const payStaff = staffData.length;
-  document.getElementById('sf-pay-summary').innerHTML = [
-    {l:'Staff Count',v:payStaff,c:'#185FA5'},
-    {l:'Total Gross',v:'₹'+totalGross.toLocaleString('en-IN'),c:'#7c3aed'},
-    {l:'Total Deductions',v:'₹'+totalDed.toLocaleString('en-IN'),c:'#dc2626'},
-    {l:'Total Net Pay',v:'₹'+totalNet.toLocaleString('en-IN'),c:'#16a34a'},
-  ].map(b=>`<div class="stat" style="border-left:3px solid ${b.c}">
-    <div class="stat-lbl">${b.l}</div>
-    <div class="stat-val" style="font-size:18px;color:${b.c}">${b.v}</div>
-    <div class="stat-sub">${monthLabel}</div>
-  </div>`).join('');
+  var totalNet = payData.reduce(function(a,b){return a+b.net;}, 0);
 
-  // Payroll table rows
-  document.getElementById('sf-pay-body').innerHTML = rows.map(({s,gross,totalDeductions,absentDays,absentDed,net}) => `<tr>
-    <td>
-      <div class="flex-c">
-        <div class="av" style="background:${s.color};width:26px;height:26px;font-size:10px">${s.name[0]}</div>
-        <div><div style="font-weight:600;font-size:12px">${s.name}</div><div style="font-size:10px;color:var(--tx3)">${s.desg}</div></div>
-      </div>
-    </td>
-    <td style="font-weight:600;font-size:13px">₹${pay.toLocaleString('en-IN')}</td>
-    <td style="text-align:center"><span style="background:${lopDays>0?'#ede9fe':'var(--bg)'};color:${lopDays>0?'#7c3aed':'var(--tx3)'};padding:2px 8px;border-radius:10px;font-size:12px;font-weight:600">${lopDays}</span></td>
-    <td style="color:#7c3aed;font-size:12px;font-weight:600">₹${lopDed.toLocaleString('en-IN')}</td>
-    <td style="color:#7c3aed;font-size:12px">₹${(s.pf||0).toLocaleString('en-IN')}</td>
-    <td style="color:#dc2626;font-size:12px">₹${(s.tax||0).toLocaleString('en-IN')}</td>
-    <td style="color:#dc2626;font-size:12px">₹${(s.otherDed||0).toLocaleString('en-IN')}</td>
-    <td style="font-weight:700;color:#16a34a;font-size:14px">₹${net.toLocaleString('en-IN')}</td>
-    <td>
-      <button class="btn btn-wa btn-sm" onclick="waStaff('${s.phone}','${s.name}')" title="Send salary slip via WhatsApp">📱</button>
-    </td>
-  </tr>`).join('');
+  // Summary
+  document.getElementById('sf-pay-summary').innerHTML = [
+    {l:'Total Staff',   v:staffData.length,                      c:'#185FA5', icon:'👥'},
+    {l:'Total Net Pay', v:'&#8377;'+totalNet.toLocaleString('en-IN'), c:'#16a34a', icon:'💰'},
+  ].map(function(b) {
+    return '<div class="stat" style="border-left:3px solid '+b.c+'"><div style="font-size:20px;margin-bottom:4px">'+b.icon+'</div><div class="stat-val" style="font-size:18px;color:'+b.c+'">'+b.v+'</div><div class="stat-lbl">'+b.l+' &middot; '+monthLabel+'</div></div>';
+  }).join('');
+
+  // Staff payroll cards
+  if (!payData.length) {
+    document.getElementById('sf-pay-body').innerHTML = '<div class="card" style="text-align:center;padding:30px;color:var(--tx3)">No staff added yet</div>';
+    return;
+  }
+
+  var cards = '';
+  payData.forEach(function(item) {
+    var s         = item.s;
+    var dailyFmt  = Math.round(item.dailyRate).toLocaleString('en-IN');
+    var payFmt    = item.pay.toLocaleString('en-IN');
+    var lopFmt    = item.lopDed.toLocaleString('en-IN');
+    var netFmt    = item.net.toLocaleString('en-IN');
+    var extraNote = s.extraDedNote ? ' ('+s.extraDedNote+')' : '';
+
+    var lopRow = item.lopDays > 0
+      ? '<div style="display:flex;justify-content:space-between;padding:4px 0;border-top:.5px dashed #fde68a">'
+      + '  <span style="font-size:12px;color:#92400e">&#9888; LOP: '+item.lopDays+' day'+(item.lopDays!==1?'s':'')+' &times; &#8377;'+dailyFmt+'/day</span>'
+      + '  <span style="font-size:13px;font-weight:700;color:#92400e">&minus; &#8377;'+lopFmt+'</span>'
+      + '</div>'
+      : '<div style="font-size:11px;color:#16a34a;padding:4px 0;border-top:.5px dashed #bbf7d0">&#10003; No LOP this month</div>';
+
+    var extraRow = item.extraDed > 0
+      ? '<div style="display:flex;justify-content:space-between;padding:4px 0">'
+      + '  <span style="font-size:12px;color:#7c3aed">Extra Deduction'+extraNote+'</span>'
+      + '  <span style="font-size:13px;font-weight:700;color:#7c3aed">&minus; &#8377;'+item.extraDed.toLocaleString('en-IN')+'</span>'
+      + '</div>'
+      : '';
+
+    var attRow = (item.lopDays+item.clDays+item.hDays) > 0
+      ? '<div style="font-size:11px;color:var(--tx3);padding:4px 0">'
+      + '<span style="color:#ca8a04">CL:'+item.clDays+'</span> '
+      + '<span style="color:#5b21b6;margin:0 4px">LOP:'+item.lopDays+'</span>'
+      + '<span style="color:#1e40af">H:'+item.hDays+'</span>'
+      + '</div>'
+      : '<div style="font-size:11px;color:var(--tx3);padding:4px 0">&#10003; Full attendance</div>';
+
+    cards +=
+      '<div class="card" style="margin-bottom:10px;padding:0;overflow:hidden">'
+      // Header
+      +'<div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:.5px solid var(--br)">'
+      +'  <div class="av" style="background:'+s.color+';width:38px;height:38px;font-size:16px;font-weight:700;flex-shrink:0">'+s.name[0]+'</div>'
+      +'  <div style="flex:1">'
+      +'    <div style="font-size:14px;font-weight:700;color:var(--tx)">'+s.name+'</div>'
+      +'    <div style="font-size:11px;color:var(--tx2)">'+s.desg+'&nbsp;&middot;&nbsp;'+s.subjects+'&nbsp;&middot;&nbsp;'+s.exp+'</div>'
+      +'  </div>'
+      +'  <div style="text-align:right">'
+      +'    <div style="font-size:20px;font-weight:800;color:#16a34a">&#8377;'+netFmt+'</div>'
+      +'    <div style="font-size:10px;color:var(--tx3)">Net Pay</div>'
+      +'  </div>'
+      +'</div>'
+      // Salary breakdown
+      +'<div style="padding:10px 16px">'
+      +'  <div style="display:flex;justify-content:space-between;padding:4px 0">'
+      +'    <span style="font-size:12px;color:var(--tx2)">Consolidated Pay</span>'
+      +'    <span style="font-size:13px;font-weight:600">&#8377;'+payFmt+'</span>'
+      +'  </div>'
+      +attRow
+      +lopRow
+      +extraRow
+      // Add deduction row
+      +'  <div style="display:flex;align-items:center;gap:8px;margin-top:8px;padding-top:8px;border-top:.5px solid var(--br)">'
+      +'    <input type="number" placeholder="Extra &#8377;" id="xtra-amt-'+s.id+'" value="'+(s.extraDed||'')+'" '
+      +'           style="width:90px;border:.5px solid var(--br);border-radius:6px;padding:5px 8px;font-size:12px;font-family:inherit;background:var(--bg);color:var(--tx)">'
+      +'    <input type="text" placeholder="Reason (e.g. Advance)" id="xtra-note-'+s.id+'" value="'+(s.extraDedNote||'')+'" '
+      +'           style="flex:1;border:.5px solid var(--br);border-radius:6px;padding:5px 8px;font-size:12px;font-family:inherit;background:var(--bg);color:var(--tx)">'
+      +'    <button class="btn btn-p btn-sm" onclick="applyExtraDed(\''+s.id+'\')">Apply</button>'
+      +'  </div>'
+      +'</div>'
+      // Footer
+      +'<div style="display:flex;justify-content:flex-end;padding:8px 14px;background:var(--bg);gap:8px;border-top:.5px solid var(--br)">'
+      +'  <button class="btn btn-wa btn-sm" onclick="waStaff(\''+s.phone+'\',\''+s.name+'\')">&#128242; Salary Slip WA</button>'
+      +'</div>'
+      +'</div>';
+  });
+
+  document.getElementById('sf-pay-body').innerHTML = cards;
 }
 
+
+
+function applyExtraDed(staffId) {
+  var s = staffData.find(function(x){ return x.id===staffId; });
+  if (!s) return;
+  var amt  = parseFloat(document.getElementById('xtra-amt-'+staffId)?.value)  || 0;
+  var note = document.getElementById('xtra-note-'+staffId)?.value.trim()       || '';
+  s.extraDed     = amt;
+  s.extraDedNote = note;
+  showToast(amt > 0 ? '✅ ₹'+amt.toLocaleString('en-IN')+' deduction saved for '+s.name : '✅ Extra deduction cleared for '+s.name);
+  generatePayroll();
+}
+function toggleLopDeduction(key, apply) {
+  try { localStorage.setItem(key, apply ? '1' : '0'); } catch(e){}
+}
 function exportPayrollCSV() {
   const monthEl = document.getElementById('sf-pay-month');
   const month = monthEl?.value || new Date().toISOString().slice(0,7);
   const [yr,mo] = month.split('-').map(Number);
   const daysInMonth = new Date(yr,mo,0).getDate();
-  let csv = 'Staff ID,Name,Designation,Consolidated Pay,LOP Days,LOP Deduction,PF,Tax,Other Ded,NET PAY\n';
+  let csv = 'Staff ID,Name,Designation,Consolidated Pay,LOP Days,LOP Deduction,Extra Deduction,Extra Note,NET PAY\n';
   staffData.forEach(s => {
     let lop=0;
     for(let d=1;d<=daysInMonth;d++){
       const dt=`${yr}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-      if(staffAtt[`${s.id}|${dt}`]==='LOP') lop++;
+      if((staffAtt[`${s.id}|${dt}`]||'')==='LOP') lop++;
     }
     csv+=`${s.id||''},${s.name},${s.desg},${s.baseSalary||0},${s.hra||0},${s.ta||0},${gross},${s.pf||0},${s.tax||0},${absDed},${s.otherDed||0},${net},${absent}
 `;
@@ -2369,10 +2499,34 @@ function renderWAQueueList(queue) {
 function sendOneWA(i) {
   const item = waQueue[i];
   if (!item) return;
-  window.open(waURL(item.phone, item.message), '_blank');
-  item.status = 'sent';
-  renderWAQueueList(waQueue);
-  showToast(`📱 Opening WhatsApp for ${item.student.name}`);
+  // Show WA modal — user taps Open without leaving the app context
+  const root = document.getElementById('modal-root');
+  const msgEncoded = encodeURIComponent(item.message);
+  const waLink = waURL(item.phone, item.message);
+  root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()">
+    <div class="modal" style="max-width:420px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+        <div style="width:38px;height:38px;background:#dcfce7;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px">📱</div>
+        <div>
+          <div style="font-size:14px;font-weight:700;color:var(--tx)">${item.student.name}</div>
+          <div style="font-size:11px;color:var(--tx3)">To: ${item.student.parent} · ${item.phone}</div>
+        </div>
+      </div>
+      <div style="background:#f0fdf4;border-radius:8px;padding:12px;font-size:12px;color:#166534;font-family:'Noto Sans Tamil',system-ui;line-height:1.7;white-space:pre-wrap;max-height:200px;overflow-y:auto;margin-bottom:12px">${item.message}</div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-wa" style="flex:1;justify-content:center;padding:11px;font-weight:600" onclick="copyAndMarkWA(${i})">
+          📋 Copy Message
+        </button>
+        <a href="${waLink}" target="_blank" style="flex:1" onclick="waQueue[${i}].status='sent'; renderWAQueueList(waQueue); setTimeout(closeModal,300);">
+          <button class="btn btn-wa" style="width:100%;justify-content:center;padding:11px;font-weight:600;background:#128c7e">
+            🔗 Open WhatsApp
+          </button>
+        </a>
+        <button class="btn" style="padding:11px" onclick="closeModal()">✕</button>
+      </div>
+      <div style="font-size:10px;color:var(--tx3);text-align:center;margin-top:8px">Tip: Copy message → open WhatsApp manually → paste = app stays open</div>
+    </div>
+  </div>`;
 }
 
 function previewOneWA(i) {
@@ -2499,37 +2653,76 @@ const AI_FEATS = [
 ];
 
 function renderAICards() {
-  const el = document.getElementById('ai-cards');
+  var el = document.getElementById('ai-cards');
   if (!el) return;
-  const lic = window.__LIC__||{};
-  const allowedIds = (lic.features && lic.features.aiModuleIds) || [];
-  const PLAN_ORDER = ['TRIAL','BASIC','PRO','ENTERPRISE'];
-  const userPlanIdx = PLAN_ORDER.indexOf(lic.plan||'TRIAL');
+  var lic = window.__LIC__ || {};
+  var PLAN_ORDER = ['TRIAL','BASIC','PRO','ENTERPRISE'];
+  var userPlanIdx = PLAN_ORDER.indexOf(lic.plan || 'TRIAL');
 
-  const visibleFeats = AI_FEATS.map(f => {
-    const reqIdx = PLAN_ORDER.indexOf(f.planMin||'BASIC');
-    const locked = userPlanIdx < reqIdx;
-    return {...f, locked};
+  var META = {
+    attend_late:     {icon:'📅', bg:'#dbeafe', ic:'#2563eb'},
+    weak_subject:    {icon:'📚', bg:'#fee2e2', ic:'#dc2626'},
+    frequent_absent: {icon:'🔴', bg:'#fff1f2', ic:'#dc2626'},
+    fee_forecast:    {icon:'💰', bg:'#ccfbf1', ic:'#0891b2'},
+    late_pattern:    {icon:'🕐', bg:'#fef9c3', ic:'#ca8a04'},
+    concentration:   {icon:'📋', bg:'#ede9fe', ic:'#7c3aed'},
+    timetable:       {icon:'🗓', bg:'#ede9fe', ic:'#7c3aed'},
+    msgdraft:        {icon:'📨', bg:'#ccfbf1', ic:'#0d9488'}
+  };
+
+  el.innerHTML = '';
+  AI_FEATS.forEach(function(f) {
+    var reqIdx  = PLAN_ORDER.indexOf(f.planMin || 'BASIC');
+    var locked  = userPlanIdx < reqIdx;
+    var isActive = activeAI === f.id;
+    var info    = lang === 'ta' ? f.ta : f.en;
+    var m       = META[f.id] || {icon:'🔍', bg:'#f1f5f9', ic:'var(--pr)'};
+
+    var card = document.createElement('div');
+    card.style.cssText = 'background:var(--card);border:1.5px solid ' + (isActive ? m.ic : 'var(--br)') + ';'
+      + 'border-radius:12px;padding:16px;cursor:' + (locked?'default':'pointer') + ';'
+      + 'transition:border .15s;opacity:' + (locked?'.65':'1') + ';'
+      + (isActive ? 'box-shadow:0 0 0 3px ' + m.ic + '20;' : '');
+
+    // Icon + title row
+    var topRow = '<div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px">'
+      + '<div style="width:40px;height:40px;border-radius:10px;background:' + m.bg + ';'
+      + '            display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">'
+      + m.icon + '</div>'
+      + '<div style="flex:1;min-width:0">'
+      + '<div style="font-size:12px;font-weight:700;color:var(--tx);line-height:1.4">' + info.name + '</div>'
+      + (locked ? '<span style="font-size:9px;background:#fef3c7;color:#92400e;padding:2px 6px;border-radius:8px;font-weight:700;display:inline-block;margin-top:3px">' + (f.planMin||'PRO') + ' plan</span>' : '')
+      + '</div>'
+      + (locked
+        ? '<svg viewBox="0 0 16 16" fill="none" width="16" height="16" style="flex-shrink:0"><rect x="3" y="7" width="10" height="8" rx="2" stroke="#94a3b8" stroke-width="1.3"/><path d="M5 7V5.5a3 3 0 016 0V7" stroke="#94a3b8" stroke-width="1.3" stroke-linecap="round"/></svg>'
+        : (isActive
+          ? '<div style="width:20px;height:20px;border-radius:50%;background:' + m.ic + ';display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg viewBox="0 0 12 12" fill="none" width="10"><path d="M2 6l3 3 5-5" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>'
+          : '<svg viewBox="0 0 16 16" fill="none" width="16" height="16" style="flex-shrink:0"><path d="M6 4l4 4-4 4" stroke="' + m.ic + '" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>'))
+      + '</div>';
+
+    // Description
+    var desc = '<div style="font-size:11px;color:var(--tx2);line-height:1.5;margin-bottom:12px">' + info.desc + '</div>';
+
+    // Bottom action
+    var action = locked
+      ? '<button class="btn btn-sm" style="width:100%;justify-content:center;font-size:11px;color:#92400e;border-color:#fde68a;background:#fffbeb">Upgrade to Unlock</button>'
+      : '<div style="display:flex;align-items:center;justify-content:space-between">'
+        + '<span style="font-size:10px;color:var(--tx3)">Instant report from your data</span>'
+        + '<button class="btn btn-sm ai-run-btn" data-id="' + f.id + '" '
+        + '  style="font-size:11px;background:' + m.ic + ';color:#fff;border-color:' + m.ic + ';padding:4px 12px">'
+        + (isActive ? '&#8635; Refresh' : '&#9654; Run') + '</button>'
+        + '</div>';
+
+    card.innerHTML = topRow + desc + action;
+
+    if (!locked) {
+      card.addEventListener('click', function() { runAI(f.id); });
+    } else {
+      card.addEventListener('click', function() { openUpgrade(); });
+    }
+
+    el.appendChild(card);
   });
-
-  el.innerHTML = visibleFeats.map(f => `
-    <div class="ai-feat-btn ${f.locked?'':''+activeAI===f.id?'on':''}" 
-      style="border-left-color:${f.locked?'var(--br)':f.c};opacity:${f.locked?'.55':'1'}" 
-      onclick="${f.locked?'openUpgrade()':'runAI(\''+f.id+'\''}">
-      <div class="ai-icon" style="background:${f.locked?'var(--bg)':f.bg}">
-        ${f.locked 
-          ? '<svg viewBox="0 0 16 16" fill="none"><rect x="4" y="7" width="8" height="7" rx="1.5" stroke="#94a3b8" stroke-width="1.3"/><path d="M5.5 7V5.5a2.5 2.5 0 015 0V7" stroke="#94a3b8" stroke-width="1.3" stroke-linecap="round"/></svg>'
-          : '<svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="5" stroke="'+f.c+'" stroke-width="1.3"/><path d="M6 6.5c.5-1.5 3.5-1.5 3 .5-.5 1.5-3 1-3 2.5M8 12v.5" stroke="'+f.c+'" stroke-width="1.3" stroke-linecap="round"/></svg>'
-        }
-      </div>
-      <div style="flex:1;min-width:0">
-        <div style="font-size:12px;font-weight:600;color:${f.locked?'var(--tx3)':'var(--tx)'}">
-          ${(lang==='ta'?f.ta:f.en).name}
-          ${f.locked?'<span style="font-size:9px;background:#fef3c7;color:#92400e;border-radius:10px;padding:1px 6px;margin-left:4px">'+(f.planMin||'PRO')+'</span>':''}
-        </div>
-        <div style="font-size:11px;color:var(--tx2);margin-top:2px;line-height:1.4">${(lang==='ta'?f.ta:f.en).desc}</div>
-      </div>
-    </div>`).join('');
 }
 
 function getAICtx() {
@@ -2707,25 +2900,75 @@ function builtInAI(id) {
 }
 
 async function runAI(id) {
-  const lic = window.__LIC__ || {};
-  if (lic.features && lic.features.aiFeatures===false) { openUpgrade(); showToast(lang==='ta'?'AI அம்சங்களுக்கு Pro plan தேவை':'AI requires Pro plan'); return; }
-  const feat = AI_FEATS.find(f=>f.id===id);
+  var lic = window.__LIC__ || {};
+  if (lic.features && lic.features.aiFeatures === false) {
+    openUpgrade();
+    showToast(lang==='ta'?'AI அம்சங்களுக்கு Pro plan தேவை':'AI requires Pro plan');
+    return;
+  }
+  var feat = AI_FEATS.find(function(f){return f.id===id;});
   if (!feat) return;
-  activeAI=id; renderAICards();
-  document.getElementById('ai-ph').style.display='none';
-  document.getElementById('ai-output').style.display='none';
-  document.getElementById('ai-loading').style.display='block';
-  document.getElementById('ai-loading-msg').textContent = lang==='ta'?'AI பகுப்பாய்வு செய்கிறது…':'Analysing your data…';
-  await new Promise(r=>setTimeout(r, 700+Math.random()*800));
-  const result = builtInAI(id);
-  document.getElementById('ai-loading').style.display='none';
-  document.getElementById('ai-output').style.display='block';
-  document.getElementById('ai-out-title').textContent = (lang==='ta'?feat.ta:feat.en).name;
-  document.getElementById('ai-out-model').textContent = lang==='ta'?'உள்ளமைக்கப்பட்ட AI இயந்திரம்':'Built-in AI Engine v2';
-  const streamEl = document.getElementById('ai-stream');
-  streamEl.textContent='';
-  let i=0;
-  await new Promise(res=>{const iv=setInterval(()=>{if(i<result.length){streamEl.textContent+=result[i++];}else{clearInterval(iv);res();}},7);});
+  var PLAN_ORDER = ['TRIAL','BASIC','PRO','ENTERPRISE'];
+  var userPlanIdx = PLAN_ORDER.indexOf(lic.plan||'TRIAL');
+  var reqIdx = PLAN_ORDER.indexOf(feat.planMin||'BASIC');
+  if (userPlanIdx < reqIdx) { openUpgrade(); return; }
+
+  activeAI = id;
+  renderAICards();
+
+  // Show panel
+  var panel   = document.getElementById('ai-report-panel');
+  var loading = document.getElementById('ai-loading');
+  var output  = document.getElementById('ai-output');
+  var title   = document.getElementById('ai-report-title');
+  var sub     = document.getElementById('ai-report-sub');
+  var iconEl  = document.getElementById('ai-report-icon');
+  if (!panel) return;
+
+  var info = lang==='ta' ? feat.ta : feat.en;
+  if (title)  title.textContent  = info.name;
+  if (sub)    sub.textContent    = info.desc;
+  if (iconEl) {
+    var icons = {attend_late:'📅',weak_subject:'📚',frequent_absent:'🔴',fee_forecast:'💰',late_pattern:'🕐',concentration:'📋',timetable:'🗓',msgdraft:'📨'};
+    var bgs   = {attend_late:'#dbeafe',weak_subject:'#fee2e2',frequent_absent:'#fff1f2',fee_forecast:'#ccfbf1',late_pattern:'#fef9c3',concentration:'#ede9fe',timetable:'#ede9fe',msgdraft:'#ccfbf1'};
+    iconEl.textContent         = icons[id] || '📊';
+    iconEl.style.background    = bgs[id] || '#f1f5f9';
+  }
+
+  panel.style.display   = 'block';
+  loading.style.display = 'block';
+  output.style.display  = 'none';
+
+  // Scroll to report
+  setTimeout(function(){
+    panel.scrollIntoView({behavior:'smooth', block:'start'});
+  }, 100);
+
+  // Generate with delay (analysis feel)
+  setTimeout(function() {
+    var result = builtInAI(id);
+    loading.style.display = 'none';
+    output.style.display  = 'block';
+    output.textContent    = '';
+
+    // Typewriter effect
+    var i = 0;
+    var iv = setInterval(function() {
+      output.textContent += result[i++];
+      if (i >= result.length) { clearInterval(iv); activeAI = id; }
+    }, 6);
+  }, 600 + Math.random()*500);
+}
+
+function aiRunCard(el) {
+  var id = el && (el.getAttribute('data-id') || el.closest('[data-aid]')?.getAttribute('data-aid'));
+  if (id) runAI(id);
+}
+function closeAIReport() {
+  var panel = document.getElementById('ai-report-panel');
+  if (panel) panel.style.display = 'none';
+  activeAI = null;
+  renderAICards();
 }
 
 async function runCustomAI() {
@@ -2759,6 +3002,42 @@ async function runCustomAI() {
 
 function copyAIResp(){const t=document.getElementById('ai-stream')?.textContent||'';navigator.clipboard.writeText(t).then(()=>showToast(lang==='ta'?'நகலெடுக்கப்பட்டது!':'Copied!')).catch(()=>{});}
 function clearAI(){activeAI=null;renderAICards();document.getElementById('ai-output').style.display='none';document.getElementById('ai-ph').style.display='block';}
+
+/* ── Late-to-Leave Config (Pro+) ─────────────────────── */
+function changeLatesToLeave(delta) {
+  const lic = window.__LIC__||{};
+  if (!lic.features?.advancedReports && lic.plan !== 'ENTERPRISE') {
+    showToast('Late → Leave config requires Pro or Premium plan');
+    openUpgrade(); return;
+  }
+  const current = CFG.ATTENDANCE?.latesToLeave || 10;
+  const newVal = Math.max(1, Math.min(30, current + delta));
+  if (!CFG.ATTENDANCE) CFG.ATTENDANCE = {};
+  CFG.ATTENDANCE.latesToLeave = newVal;
+  try { localStorage.setItem('_erp_lates_to_leave', String(newVal)); } catch(e){}
+  updateLatesDisplay();
+  showToast(`✅ ${newVal} late arrivals = 1 leave day`);
+}
+function updateLatesDisplay() {
+  const val = CFG.ATTENDANCE?.latesToLeave || 10;
+  const el = document.getElementById('lates-to-leave-val');
+  const sum = document.getElementById('lates-leave-summary');
+  if (el) el.textContent = val;
+  if (sum) sum.textContent = `${val} late arrival${val!==1?'s':''} = 1 leave day`;
+}
+
+
+function copyAndMarkWA(i) {
+  const item = waQueue[i];
+  if (!item) return;
+  const txt = item.message || '';
+  navigator.clipboard.writeText(txt)
+    .then(() => showToast('✅ Copied! Open WhatsApp and paste.'))
+    .catch(() => showToast('Copy failed — please select and copy manually'));
+  item.status = 'sent';
+  renderWAQueueList(waQueue);
+  closeModal();
+}
 function saveAIKey(){}
 function toggleAIKeyVis(){}
 function updateAIHint(){}
@@ -3233,6 +3512,7 @@ function submitAdmission() {
 
   // Add to students array
   students.unshift(newStudent);
+  saveStudents();
 
   // Save custom template
   const tmpl = document.getElementById('adm-wa-template')?.value || '';
@@ -3434,6 +3714,7 @@ function saveEditStudent(idx) {
   s.subjects = document.getElementById('edit-subjects')?.value.trim() || '';
   s.school   = document.getElementById('edit-school')?.value.trim() || s.school;
   s.status   = document.getElementById('edit-status')?.value || s.status;
+  saveStudents();
   renderStudents(students);
   closeModal();
   showToast(`✅ ${s.name} updated!`);
@@ -3474,7 +3755,8 @@ function deleteStudent(idx) {
 function confirmDelete(idx) {
   const s = students[idx];
   if (!s) return;
-  students.splice(idx, 1);   // Actually removes from array
+  students.splice(idx, 1);
+  saveStudents();
   renderStudents(students);
   closeModal();
   showToast(`🗑️ ${s.name} removed`);
@@ -3546,6 +3828,24 @@ function saveEditCenter() {
   showToast(`✅ Center details updated!`);
 }
 
+
+/* ── Students localStorage persistence ─────────────── */
+const STUDENTS_KEY = '_erp_students';
+function saveStudents() {
+  try { localStorage.setItem(STUDENTS_KEY, JSON.stringify(students)); } catch(e){}
+}
+function loadStudents() {
+  try {
+    const saved = localStorage.getItem(STUDENTS_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        students.length = 0;
+        parsed.forEach(s => students.push(s));
+      }
+    }
+  } catch(e){}
+}
 // Persist license key across sessions (for WebView/WebIntoApp compatibility)
 function saveLicenseKey(key) {
   if (!key) return;
@@ -3584,8 +3884,17 @@ function _safeInit() {
     const savedStaffAtt = localStorage.getItem('_erp_staff_att');
     if (savedStaffAtt) { Object.assign(staffAtt, JSON.parse(savedStaffAtt)); }
   } catch(e) {}
+  // Restore late-to-leave config
+  try {
+    const savedLTL = localStorage.getItem('_erp_lates_to_leave');
+    if (savedLTL) {
+      if (!CFG.ATTENDANCE) CFG.ATTENDANCE = {};
+      CFG.ATTENDANCE.latesToLeave = parseInt(savedLTL) || 10;
+    }
+  } catch(e) {}
   initLicenseUI();
   applyLang();
+  loadStudents();
   renderStudents(students);
   renderAttList();
   renderFees(fees);

@@ -1749,6 +1749,7 @@ function saveFeeEntry() {
   const bal=Math.max(0,amt-paid);
   const rcpt='RCP-'+Date.now().toString().slice(-6);
   fees.unshift({rcpt,student:stName,month:new Date().toLocaleString('en-IN',{month:'short',year:'numeric'}),total:amt,paid,balance:bal,mode:document.getElementById('m-fmode')?.value||'Cash',status:paid>=amt?'paid':paid>0?'partial':'pending'});
+  saveFees();
   renderFees(fees);
   closeModal();
   showToast('✅ Fee saved! Receipt: '+rcpt);
@@ -1800,7 +1801,7 @@ function saveExam() {
   if(!name){showToast('Enter exam name');return;}
   const colors=['#185FA5','#534AB7','#854F0B','#1D9E75'];
   exams.unshift({id:'ex'+Date.now(),name,subject:document.getElementById('m-exsub')?.value||'Mathematics',type:document.getElementById('m-extype')?.value||'monthly',maxMarks:parseInt(document.getElementById('m-exmarks')?.value)||100,date:document.getElementById('m-exdate')?.value||new Date().toLocaleDateString('en-IN'),color:colors[exams.length%colors.length]});
-  renderExams();closeModal();showToast('✅ Exam scheduled!');
+  saveExams();renderExams();closeModal();showToast('✅ Exam scheduled!');
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -1860,7 +1861,7 @@ function saveStaff() {
     consolidatedPay: basic, extraDed: other, extraDedNote: otherNote,
     color: COLORS[staffData.length % COLORS.length]
   });
-  renderStaff(); closeModal(); showToast(`✅ ${name} added to staff!`); runBackup('change');
+  saveStaffData(); renderStaff(); closeModal(); showToast(`✅ ${name} added to staff!`); runBackup('change');
 }
 
 function calcStaffSalary() { /* simplified - no live calc needed */ }
@@ -1930,7 +1931,7 @@ function saveEditStaff(idx) {
   s.consolidatedPay = parseFloat(document.getElementById('esf-basic')?.value) || s.consolidatedPay || 0;
   s.extraDed     = parseFloat(document.getElementById('esf-other')?.value) || 0;
   s.extraDedNote = document.getElementById('esf-otherNote')?.value.trim() || '';
-  renderStaff(); closeModal(); showToast(`✅ ${s.name} updated!`); runBackup('change');
+  saveStaffData(); renderStaff(); closeModal(); showToast(`✅ ${s.name} updated!`); runBackup('change');
 }
 
 /* ── Staff Attendance ─────────────────────────────────── */
@@ -1955,6 +1956,7 @@ function confirmDeleteStaff(idx) {
   const s = staffData[idx];
   if (!s) return;
   staffData.splice(idx, 1);
+  saveStaffData();
   renderStaff();
   closeModal();
   showToast(`🗑️ ${s.name} removed from staff`);
@@ -2207,6 +2209,7 @@ function applyExtraDed(staffId) {
   var note = document.getElementById('xtra-note-'+staffId)?.value.trim()       || '';
   s.extraDed     = amt;
   s.extraDedNote = note;
+  saveStaffData();
   showToast(amt > 0 ? '✅ ₹'+amt.toLocaleString('en-IN')+' deduction saved for '+s.name : '✅ Extra deduction cleared for '+s.name);
   generatePayroll();
 }
@@ -2307,7 +2310,7 @@ function saveNotif() {
   const title=document.getElementById('m-ntitle')?.value||'Notification';
   const msg=document.getElementById('m-nmsg')?.value||'';
   notifData.unshift({title,msg,color:'#1D9E75',time:'Just now'});
-  renderNotifs();closeModal();showToast('✅ Notification sent!');
+  saveNotifs();renderNotifs();closeModal();showToast('✅ Notification sent!');
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -3834,12 +3837,59 @@ const STUDENTS_KEY = '_erp_students';
 function saveStudents() {
   try { localStorage.setItem(STUDENTS_KEY, JSON.stringify(students)); } catch(e){}
 }
+
+/* ── Persist all arrays to localStorage ─────────────── */
+const FEES_KEY    = '_erp_fees';
+const STAFF_KEY   = '_erp_staff';
+const EXAMS_KEY   = '_erp_exams';
+const NOTIFS_KEY  = '_erp_notifs';
+
+function saveFees() {
+  try { localStorage.setItem(FEES_KEY, JSON.stringify(fees)); } catch(e){}
+}
+function saveStaffData() {
+  try { localStorage.setItem(STAFF_KEY, JSON.stringify(staffData)); } catch(e){}
+}
+function saveExams() {
+  try { localStorage.setItem(EXAMS_KEY, JSON.stringify(exams)); } catch(e){}
+}
+function saveNotifs() {
+  try { localStorage.setItem(NOTIFS_KEY, JSON.stringify(notifData)); } catch(e){}
+}
+
+function loadAllData() {
+  // Students
+  try {
+    const s = localStorage.getItem(STUDENTS_KEY);
+    if (s !== null) { const p = JSON.parse(s); if (Array.isArray(p)) { students.length=0; p.forEach(x=>students.push(x)); } }
+  } catch(e){}
+  // Fees
+  try {
+    const f = localStorage.getItem(FEES_KEY);
+    if (f !== null) { const p = JSON.parse(f); if (Array.isArray(p)) { fees.length=0; p.forEach(x=>fees.push(x)); } }
+  } catch(e){}
+  // Staff
+  try {
+    const st = localStorage.getItem(STAFF_KEY);
+    if (st !== null) { const p = JSON.parse(st); if (Array.isArray(p)) { staffData.length=0; p.forEach(x=>staffData.push(x)); } }
+  } catch(e){}
+  // Exams
+  try {
+    const ex = localStorage.getItem(EXAMS_KEY);
+    if (ex !== null) { const p = JSON.parse(ex); if (Array.isArray(p)) { exams.length=0; p.forEach(x=>exams.push(x)); } }
+  } catch(e){}
+  // Notifications
+  try {
+    const n = localStorage.getItem(NOTIFS_KEY);
+    if (n !== null) { const p = JSON.parse(n); if (Array.isArray(p)) { notifData.length=0; p.forEach(x=>notifData.push(x)); } }
+  } catch(e){}
+}
 function loadStudents() {
   try {
     const saved = localStorage.getItem(STUDENTS_KEY);
-    if (saved) {
+    if (saved !== null) {                       // key exists (even if value is [])
       const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed) && parsed.length > 0) {
+      if (Array.isArray(parsed)) {              // accept empty array — means all deleted
         students.length = 0;
         parsed.forEach(s => students.push(s));
       }
@@ -3894,7 +3944,7 @@ function _safeInit() {
   } catch(e) {}
   initLicenseUI();
   applyLang();
-  loadStudents();
+  loadAllData();
   renderStudents(students);
   renderAttList();
   renderFees(fees);

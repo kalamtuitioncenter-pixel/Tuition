@@ -1242,6 +1242,31 @@ function fillTemplate(template, student, extra={}) {
 }
 
 // Build WA message URL
+
+/* ── WhatsApp opener — hard-close PWA after launch ─────── */
+function openWA(phone, message) {
+  const num = (phone || '').replace(/\D/g, '');
+  const ph  = num.startsWith('91') ? num : '91' + num;
+  const txt = encodeURIComponent(message);
+  const waURI = 'whatsapp://send?phone=' + ph + '&text=' + txt;
+
+  // Navigate to whatsapp:// — OS switches focus to WhatsApp
+  window.location.href = waURI;
+
+  // Hard-close the PWA window after WA has time to open
+  setTimeout(function() {
+    try { window.close(); } catch(e) {}
+    // Fallback: navigate to blank to free memory
+    // (only if still open)
+  }, 800);
+}
+
+function openWAFallback(phone, message) {
+  // Web fallback for desktop (no whatsapp:// support)
+  const num = (phone || '').replace(/\D/g, '');
+  const ph  = num.startsWith('91') ? num : '91' + num;
+  window.open('https://wa.me/' + ph + '?text=' + encodeURIComponent(message), '_blank');
+}
 function waURL(phone, message) {
   const num = phone.replace(/\D/g,'');
   const ph = num.startsWith('91') ? num : '91'+num;
@@ -1633,7 +1658,7 @@ function waStudent(id) {
   const s = students.find(st=>st.id===id);
   if (!s) return;
   const msg = `Dear ${s.parent},\n\nThis is ${CFG.CENTER.name}.\nStudent: *${s.name}* (${s.id})\n\nPlease contact us for any queries.\n📞 ${CFG.CENTER.phone}`;
-  window.open(waURL(s.phone, msg), '_blank');
+  openWA(s.phone, msg);
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -1869,11 +1894,8 @@ function saveStaff() {
 function calcStaffSalary() { /* simplified - no live calc needed */ }
 
 function waStaff(phone, name) {
-  const num = (phone||'').replace(/\D/g,'');
-  const ph  = num.startsWith('91') ? num : '91'+num;
-  const msg = `Dear ${name}, this is ${CFG.CENTER.name}. Please note important information regarding your work. Thank you.`;
-  // Try direct WA protocol first
-  window.location.href = `whatsapp://send?phone=${ph}&text=${encodeURIComponent(msg)}`;
+  var msg = 'Dear ' + name + ', this is ' + CFG.CENTER.name + '. Please note important information regarding your work. Thank you.';
+  openWA(phone, msg);
 }
 
 function editStaffMember(idx) {
@@ -2521,23 +2543,14 @@ function sendOneWA(i) {
       <div style="background:#f0fdf4;border-radius:8px;padding:12px;font-size:12px;color:#166534;font-family:'Noto Sans Tamil',system-ui;line-height:1.7;white-space:pre-wrap;max-height:200px;overflow-y:auto;margin-bottom:12px">${item.message}</div>
       <div style="display:flex;gap:8px">
         <button class="btn btn-wa" style="flex:1;justify-content:center;padding:11px;font-weight:600" onclick="copyAndMarkWA(${i})">
-          📋 Copy Message
+          📋 Copy
         </button>
-        <div style="flex:1;display:flex;flex-direction:column;gap:4px">
-          <a href="${waLink}" onclick="waQueue[${i}].status='sent'; renderWAQueueList(waQueue); setTimeout(closeModal,300);">
-            <button class="btn btn-wa" style="width:100%;justify-content:center;padding:10px;font-weight:600;background:#25d366">
-              📱 Open WhatsApp
-            </button>
-          </a>
-          <a href="https://wa.me/${item.phone.replace(/\D/g,'')}?text=${encodeURIComponent(item.message)}" target="_blank" onclick="waQueue[${i}].status='sent'; renderWAQueueList(waQueue); setTimeout(closeModal,300);">
-            <button class="btn btn-sm" style="width:100%;justify-content:center;padding:5px;font-size:10px;color:var(--tx3)">
-              🌐 Web fallback (if above fails)
-            </button>
-          </a>
-        </div>
+        <button class="btn btn-wa" style="flex:2;justify-content:center;padding:11px;font-weight:600;background:#25d366;font-size:13px"
+          onclick="waQueue[${i}].status='sent'; renderWAQueueList(waQueue); closeModal(); openWA('${item.phone}', waQueue[${i}]?.message||'');">
+          📱 Send via WhatsApp
+        </button>
         <button class="btn" style="padding:11px" onclick="closeModal()">✕</button>
       </div>
-      <div style="font-size:10px;color:var(--tx3);text-align:center;margin-top:8px">Tip: Copy message → open WhatsApp manually → paste = app stays open</div>
     </div>
   </div>`;
 }
@@ -2563,7 +2576,7 @@ function sendAllWA() {
   if (pending.length === 0) { showToast('All messages already sent!'); return; }
   // Open first unsent
   const first = pending[0];
-  window.open(waURL(first.phone, first.message), '_blank');
+  openWA(first.phone, first.message);
   first.status = 'sent';
   renderWAQueueList(waQueue);
   const remaining = waQueue.filter(w=>w.status!=='sent').length;
@@ -3609,7 +3622,7 @@ function showAdmSuccess(s, message, phone) {
       <div style="font-size:12px;color:var(--tx2);margin-bottom:14px">${s.admNo} · Class ${s.grade==='KG'?'KG':s.grade} · ${new Date().toLocaleDateString('en-IN')}</div>
       <div style="background:#dcfce7;border-radius:8px;padding:12px;font-size:11px;color:#166534;font-family:'Noto Sans Tamil',system-ui;line-height:1.6;text-align:left;max-height:180px;overflow-y:auto;white-space:pre-wrap;margin-bottom:14px">${message}</div>
       <div style="display:flex;gap:8px">
-        <button class="btn btn-wa" style="flex:1;justify-content:center;padding:11px;font-weight:600" onclick="window.open('https://wa.me/${phone.replace(/\D/g,'')}?text='+encodeURIComponent(document.querySelector('.modal div[style*=dcfce7]').textContent),'_blank');closeModal()">
+        <button class="btn btn-wa" style="flex:1;justify-content:center;padding:11px;font-weight:600" onclick="var _msg=document.querySelector('.modal div[style*=dcfce7]')?.textContent||''; closeModal(); openWA('${phone}', _msg);">
           📱 Send via WhatsApp
         </button>
         <button class="btn" style="padding:11px 14px" onclick="closeModal()">Skip</button>
@@ -3656,7 +3669,7 @@ function renderAdmRecent() {
         <div style="font-size:10px;color:var(--tx3)">${a.admNo} · Class ${a.grade} · ${a.date}</div>
         <div style="font-size:10px;color:var(--tx2)">${a.parent} · ${a.phone}</div>
       </div>
-      <button class="btn btn-wa btn-sm" onclick="window.open('https://wa.me/${(a.phone||'').replace(/\D/g,'')}?text='+encodeURIComponent('${encodeURIComponent(a.message||'')}'),'_blank')" title="Resend WA">📱</button>
+      <button class="btn btn-wa btn-sm" onclick="openWA('${a.phone||''}','${(a.message||'').replace(/'/g,"\'")}')" title="Resend WA">📱</button>
     </div>`).join('');
 }
 

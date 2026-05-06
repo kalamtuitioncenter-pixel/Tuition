@@ -322,6 +322,7 @@ tbody tr:hover td{background:var(--bg)}
     <button class="nav-item" data-page="backup"><svg viewBox="0 0 16 16" fill="none"><path d="M8 2v7M5 6l3 3 3-3M2 11v2a1 1 0 001 1h10a1 1 0 001-1v-2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg><span id="nl-backup">Backup & Sync</span></button>
     <button class="nav-item" data-page="settings"><svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.3"/><path d="M8 2v1.5M8 12.5V14M14 8h-1.5M3.5 8H2M12.2 3.8l-1.06 1.06M4.86 11.14L3.8 12.2M12.2 12.2l-1.06-1.06M4.86 4.86L3.8 3.8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg><span id="nl-settings">Settings</span></button>
   </nav>
+<div id="_save_status_bar" style="text-align:center;font-size:10px;padding:3px 10px;color:var(--tx3,#94a3b8);background:var(--bg2,#f8fafc);transition:all .3s;border-bottom:.5px solid var(--br,#e2e8f0)">Ready</div>
   <div class="s-foot">
     <button class="s-fbt" onclick="toggleLang()" id="lang-btn"><svg viewBox="0 0 12 12" fill="none" width="12" height="12"><circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.2"/><path d="M6 1.5c-1 1-1.5 2.5-1.5 4.5s.5 3.5 1.5 4.5M6 1.5c1 1 1.5 2.5 1.5 4.5S7 9.5 6 10.5M1.5 6h9" stroke="currentColor" stroke-width="1.1"/></svg><span id="lang-lbl">தமிழ்</span></button>
     <button class="s-fbt" onclick="toggleDark()" title="Dark mode"><svg viewBox="0 0 12 12" fill="none" width="12" height="12"><path d="M7 2a4 4 0 100 8A4.5 4.5 0 017 2z" stroke="currentColor" stroke-width="1.2"/></svg></button>
@@ -4013,10 +4014,24 @@ function saveEditCenter() {
 const STUDENTS_KEY = '_erp_students';
 function saveStudents() {
   const json = JSON.stringify(students);
-  // Write to all available storage mechanisms
   try { localStorage.setItem(STUDENTS_KEY, json); } catch(e) {}
   try { sessionStorage.setItem(STUDENTS_KEY, json); } catch(e) {}
-  try { window._ERP_STUDENTS_CACHE = json; } catch(e) {} // memory fallback
+  window._ERP_STUDENTS_CACHE = json;
+  // Update save status bar
+  _updateSaveBar();
+}
+
+function _updateSaveBar() {
+  const bar = document.getElementById('_save_status_bar');
+  if (!bar) return;
+  const now = new Date().toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'});
+  bar.textContent = '💾 Saved ' + students.length + ' student' + (students.length!==1?'s':'') + ' at ' + now;
+  bar.style.background = '#dcfce7';
+  bar.style.color = '#166534';
+  setTimeout(function() {
+    bar.style.background = 'var(--bg2,#f8fafc)';
+    bar.style.color = 'var(--tx3,#94a3b8)';
+  }, 2000);
 }
 
 /* ── Persist all arrays to localStorage ─────────────── */
@@ -4039,19 +4054,30 @@ function saveNotifs() {
 }
 
 function loadAllData() {
-  // Students — try localStorage, sessionStorage, memory cache
+  // Students
   try {
     var _s = null;
     try { _s = localStorage.getItem(STUDENTS_KEY); } catch(e) {}
     if (!_s || _s === '[]') { try { _s = sessionStorage.getItem(STUDENTS_KEY); } catch(e) {} }
-    if (!_s || _s === '[]') { try { _s = window._ERP_STUDENTS_CACHE || null; } catch(e) {} }
-    if (_s && _s !== '[]') {
+    if (!_s || _s === '[]') { _s = window._ERP_STUDENTS_CACHE || null; }
+    if (_s && _s.length > 2) {
       var _p = JSON.parse(_s);
       if (Array.isArray(_p) && _p.length > 0) {
         students.length = 0;
         _p.filter(function(x){ return x && x.id && x.name; }).forEach(function(x){ students.push(x); });
       }
     }
+    // Show loaded count in status bar
+    setTimeout(function(){
+      var bar = document.getElementById('_save_status_bar');
+      if (bar) {
+        if (students.length > 0) {
+          bar.textContent = '✅ Loaded ' + students.length + ' student' + (students.length!==1?'s':'') + ' from storage';
+        } else {
+          bar.textContent = 'ℹ️ No saved students — add your first student';
+        }
+      }
+    }, 100);
   } catch(e) {}
   // Fees
   try {

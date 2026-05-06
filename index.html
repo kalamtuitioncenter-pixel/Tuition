@@ -3963,7 +3963,16 @@ function saveEditCenter() {
 /* ── Students localStorage persistence ─────────────── */
 const STUDENTS_KEY = '_erp_students';
 function saveStudents() {
-  try { localStorage.setItem(STUDENTS_KEY, JSON.stringify(students)); } catch(e){}
+  try {
+    const json = JSON.stringify(students);
+    localStorage.setItem(STUDENTS_KEY, json);
+    // Verify write succeeded
+    const verify = localStorage.getItem(STUDENTS_KEY);
+    if (!verify) console.warn('[ERP] saveStudents: write may have failed');
+  } catch(e) {
+    console.error('[ERP] saveStudents error:', e);
+    showToast('⚠️ Could not save — storage may be full or blocked');
+  }
 }
 
 /* ── Persist all arrays to localStorage ─────────────── */
@@ -4037,6 +4046,18 @@ function clearLicenseKey() {
 
 function _safeInit() {
   // (data version check removed — safe)
+  // ── Test localStorage availability ─────────────────────
+  try {
+    localStorage.setItem('_erp_ls_test', '1');
+    const t = localStorage.getItem('_erp_ls_test');
+    if (t !== '1') throw new Error('read mismatch');
+    localStorage.removeItem('_erp_ls_test');
+  } catch(lsErr) {
+    // localStorage is not available — show warning banner
+    setTimeout(function() {
+      showToast('⚠️ Storage unavailable — data will not persist. Use GitHub Pages, not preview.');
+    }, 1500);
+  }
   // Restore dark mode FIRST (before any rendering to avoid flash)
   try {
     const savedDark = localStorage.getItem('_erp_dark');

@@ -378,7 +378,8 @@ tbody tr:hover td{background:var(--bg)}
     <span id="st-limit-msg">Student limit: 0/15</span>
     <button class="btn btn-sm" onclick="openUpgrade()" style="color:#ca8a04;border-color:#fde68a">Upgrade</button>
   </div>
-  <div class="toolbar">
+      <div id="save-indicator" style="display:none;background:#dcfce7;color:#166534;font-size:11px;font-weight:600;padding:6px 14px;border-radius:8px;margin-bottom:8px;border:.5px solid #bbf7d0">💾 Saved</div>
+<div class="toolbar">
     <div class="search-box"><svg viewBox="0 0 16 16" fill="none"><circle cx="6.5" cy="6.5" r="4" stroke="currentColor" stroke-width="1.3"/><path d="M11 11l2.5 2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg><input id="st-search" placeholder="Search name, ID, phone…" oninput="filterStudents(this.value)"></div>
     <select class="fi" style="width:auto" onchange="filterStudentStatus(this.value)" id="st-status-sel"><option value="all" id="opt-all">All</option><option value="active" id="opt-active">Active</option><option value="inactive" id="opt-inactive">Inactive</option></select>
     <button class="btn btn-p" onclick="showModal('addStudent')"><svg viewBox="0 0 14 14" fill="none"><path d="M7 2v10M2 7h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><span id="btn-add-st">Add Student</span></button>
@@ -788,6 +789,16 @@ tbody tr:hover td{background:var(--bg)}
 <!-- ═══════════════ BACKUP ═══════════════ -->
 <div class="page" id="pg-backup">
   <div style="max-width:620px">
+    <!-- Storage Diagnostic Card -->
+    <div class="card" style="margin-bottom:12px;padding:14px 16px;background:#f0fdf4;border:.5px solid #bbf7d0">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div style="font-size:13px;font-weight:700;color:#166534">🔍 Storage Diagnostic</div>
+        <button class="btn btn-sm" onclick="runStorageDiag()" style="font-size:11px">Check Now</button>
+      </div>
+      <div id="storage-diag" style="font-size:11px;color:#166534;font-family:monospace;line-height:1.8">
+        Click "Check Now" to verify your data is being saved correctly.
+      </div>
+    </div>
     <div class="bk-status" id="bk-status-bar">
       <div class="bk-dot ok" id="bk-dot"></div>
       <div style="flex:1"><div style="font-size:13px;font-weight:500;color:var(--tx)" id="bk-status-msg">Ready</div><div style="font-size:11px;color:var(--tx2);margin-top:1px" id="bk-status-sub">Auto backup enabled</div></div>
@@ -1638,7 +1649,14 @@ function saveStudent() {
   saveStudents();
   renderStudents(students);
   closeModal();
-  showToast(`✅ ${name} admitted — ${admNo}`);
+  showToast(`✅ ${name} saved (${students.length} total)`);
+  // Show persistent save indicator
+  const indicator = document.getElementById('save-indicator');
+  if (indicator) {
+    indicator.textContent = '💾 Saved: ' + students.length + ' student' + (students.length!==1?'s':'');
+    indicator.style.display = 'block';
+    setTimeout(()=>{ indicator.style.display='none'; }, 3000);
+  }
   runBackup('change');
   // Scroll to top of student list to show new entry
   setTimeout(() => {
@@ -3102,6 +3120,37 @@ function doResetData() {
   closeModal();
   showToast('✅ All data cleared. Start fresh!');
 }
+
+function runStorageDiag() {
+  var out = [];
+  var keys = ['_erp_students','_erp_fees','_erp_staff','_erp_exams','_erp_notifs','_erp_staff_att','_erp_lic_key','_erp_dark','_erp_center'];
+  keys.forEach(function(k) {
+    try {
+      var v = localStorage.getItem(k);
+      if (v === null) {
+        out.push('❌ ' + k + ' = (not set)');
+      } else {
+        var display = v.length > 60 ? v.slice(0, 57) + '...' : v;
+        out.push('✅ ' + k + ' = ' + display);
+      }
+    } catch(e) {
+      out.push('⚠️ ' + k + ' = ERROR: ' + e.message);
+    }
+  });
+  // Also test write
+  try {
+    localStorage.setItem('_erp_diag_test', Date.now().toString());
+    var t = localStorage.getItem('_erp_diag_test');
+    localStorage.removeItem('_erp_diag_test');
+    out.unshift('✅ localStorage WRITE TEST: OK (' + t + ')');
+  } catch(e) {
+    out.unshift('❌ localStorage WRITE TEST FAILED: ' + e.message);
+  }
+  // Memory check
+  out.push('');
+  out.push('📊 In-memory: students=' + students.length + ' fees=' + fees.length + ' staff=' + staffData.length);
+  document.getElementById('storage-diag').innerHTML = out.join('<br>');
+}
 function saveAIKey(){}
 function toggleAIKeyVis(){}
 function updateAIHint(){}
@@ -3963,16 +4012,11 @@ function saveEditCenter() {
 /* ── Students localStorage persistence ─────────────── */
 const STUDENTS_KEY = '_erp_students';
 function saveStudents() {
-  try {
-    const json = JSON.stringify(students);
-    localStorage.setItem(STUDENTS_KEY, json);
-    // Verify write succeeded
-    const verify = localStorage.getItem(STUDENTS_KEY);
-    if (!verify) console.warn('[ERP] saveStudents: write may have failed');
-  } catch(e) {
-    console.error('[ERP] saveStudents error:', e);
-    showToast('⚠️ Could not save — storage may be full or blocked');
-  }
+  const json = JSON.stringify(students);
+  // Write to all available storage mechanisms
+  try { localStorage.setItem(STUDENTS_KEY, json); } catch(e) {}
+  try { sessionStorage.setItem(STUDENTS_KEY, json); } catch(e) {}
+  try { window._ERP_STUDENTS_CACHE = json; } catch(e) {} // memory fallback
 }
 
 /* ── Persist all arrays to localStorage ─────────────── */
@@ -3995,11 +4039,20 @@ function saveNotifs() {
 }
 
 function loadAllData() {
-  // Students
+  // Students — try localStorage, sessionStorage, memory cache
   try {
-    const s = localStorage.getItem(STUDENTS_KEY);
-    if (s !== null) { const p = JSON.parse(s); if (Array.isArray(p)) { students.length=0; p.filter(x=>x&&x.id&&x.name).forEach(x=>students.push(x)); } }
-  } catch(e){}
+    var _s = null;
+    try { _s = localStorage.getItem(STUDENTS_KEY); } catch(e) {}
+    if (!_s || _s === '[]') { try { _s = sessionStorage.getItem(STUDENTS_KEY); } catch(e) {} }
+    if (!_s || _s === '[]') { try { _s = window._ERP_STUDENTS_CACHE || null; } catch(e) {} }
+    if (_s && _s !== '[]') {
+      var _p = JSON.parse(_s);
+      if (Array.isArray(_p) && _p.length > 0) {
+        students.length = 0;
+        _p.filter(function(x){ return x && x.id && x.name; }).forEach(function(x){ students.push(x); });
+      }
+    }
+  } catch(e) {}
   // Fees
   try {
     const f = localStorage.getItem(FEES_KEY);

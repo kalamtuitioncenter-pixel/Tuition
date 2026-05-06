@@ -4036,21 +4036,7 @@ function clearLicenseKey() {
 }
 
 function _safeInit() {
-  // ── Data version check: wipe stale localStorage from old builds ──
-  try {
-    var DATA_VER = '3';  // bump this when data schema changes
-    var storedVer = localStorage.getItem('_erp_data_ver');
-    if (storedVer !== DATA_VER) {
-      // Clear all old app data keys
-      ['_erp_students','_erp_fees','_erp_staff','_erp_exams',
-       '_erp_notifs','_erp_staff_att','_erp_adm_template','_erp_adm_lang',
-       '_erp_lates_to_leave','_erp_center','_erp_ts'].forEach(function(k){
-        localStorage.removeItem(k);
-      });
-      localStorage.setItem('_erp_data_ver', DATA_VER);
-      // Keep license key and dark mode across version upgrades
-    }
-  } catch(e) {}
+  // (data version check removed — safe)
   // Restore dark mode FIRST (before any rendering to avoid flash)
   try {
     const savedDark = localStorage.getItem('_erp_dark');

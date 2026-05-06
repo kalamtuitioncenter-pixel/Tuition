@@ -3150,7 +3150,17 @@ function logEntry(ss,ts,data){
 }`;
 
 function getSnapshot() {
-  return {version:'2.0',timestamp:new Date().toISOString(),center:CFG.CENTER.name,source:'app',students,fees,staff:staffData};
+  return {
+    version:   '2.1',
+    timestamp: new Date().toISOString(),
+    center:    CFG.CENTER.name || 'Kalam Tuition',
+    source:    'app',
+    students:  students,
+    fees:      fees,
+    staff:     staffData,
+    exams:     exams,
+    attState:  attState
+  };
 }
 function runBackup(source) {
   const data = getSnapshot();
@@ -3250,25 +3260,47 @@ function valSheetUrl(url) {
   el.innerHTML=url.includes('script.google.com/macros/s/')?'<span style="color:#16a34a">✓ Valid Google Apps Script URL</span>':'<span style="color:#dc2626">✗ Enter a valid Apps Script Web App URL</span>';
 }
 async function syncSheets(silent) {
-  const url=document.getElementById('sheets-url')?.value.trim();
-  if(!url){if(!silent)showToast('Enter Google Apps Script URL first');return;}
-  const btn=document.getElementById('btn-sync-sheets');
-  const statusEl=document.getElementById('sheets-sync-status');
-  if(btn){btn.disabled=true;btn.textContent='Syncing…';}
-  if(statusEl){statusEl.style.display='block';statusEl.textContent='Connecting…';}
+  const url = (document.getElementById('sheets-url')?.value || '').trim();
+  if (!url) { if (!silent) showToast('Enter Google Apps Script URL first'); return; }
+  const btn      = document.getElementById('btn-sync-sheets');
+  const statusEl = document.getElementById('sheets-sync-status');
+  const resetBtn = () => { if(btn){ btn.disabled=false; btn.textContent='Sync Now'; } };
+  if (btn) { btn.disabled=true; btn.textContent='Syncing…'; }
+  if (statusEl) { statusEl.style.display='block'; statusEl.textContent='Connecting to Google Sheets…'; }
   try {
-    await fetch(url,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(getSnapshot())});
-    const now=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
-    if(statusEl) statusEl.innerHTML='<span style="color:#16a34a">✅ Synced at '+now+'</span>';
-    bkHistory.unshift({ts:new Date().toISOString(),source:'sheets',size:(JSON.stringify(getSnapshot()).length/1024).toFixed(1)+' KB',status:'ok'});
-    renderBkHistory();
-    addBkLog('['+now+'] Synced to Google Sheets ✓');
-    if(!silent) showToast('✅ Synced to Google Sheets!');
-  } catch(e) {
-    if(statusEl) statusEl.innerHTML='<span style="color:#dc2626">✗ Sync failed: '+e.message+'</span>';
-    if(!silent) showToast('Sync failed — check URL');
+    const snapshot = getSnapshot();
+    const body = JSON.stringify({
+      center:    CFG.CENTER.name || 'Kalam Tuition',
+      timestamp: new Date().toISOString(),
+      students:  snapshot.students  || [],
+      fees:      snapshot.fees      || [],
+      staff:     snapshot.staffData || [],
+      exams:     snapshot.exams     || [],
+      attendance: snapshot.attState || {}
+    });
+    // Use no-cors — response is opaque but data is sent
+    await fetch(url, {
+      method: 'POST',
+      mode:   'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body:   body
+    });
+    const now = new Date().toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'});
+    if (statusEl) statusEl.innerHTML = '<span style="color:#16a34a">✅ Synced at ' + now + '</span>';
+    try {
+      bkHistory.unshift({ts:new Date().toISOString(),source:'sheets',
+        size:(body.length/1024).toFixed(1)+' KB',status:'ok'});
+      renderBkHistory();
+      addBkLog('['+now+'] Synced to Google Sheets ✓');
+    } catch(e2){}
+    if (!silent) showToast('✅ Synced to Google Sheets!');
+    // Save URL so it persists across reloads
+    try { localStorage.setItem('_erp_sheets_url', url); } catch(e){}
+  } catch(err) {
+    if (statusEl) statusEl.innerHTML = '<span style="color:#dc2626">✗ ' + (err.message||'Connection failed') + '</span>';
+    if (!silent) showToast('Sync failed — check Apps Script URL');
   } finally {
-    if(btn){btn.disabled=false;btn.innerHTML='<svg viewBox="0 0 16 16" fill="none" width="13" height="13"><path d="M3 8a5 5 0 015-5 5 5 0 013.54 1.46M13 8a5 5 0 01-5 5 5 5 0 01-3.54-1.46" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M11 4l2.54 1.46L11 7M5 9l-2.54 1.46L5 12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Sync Now';}
+    resetBtn();
   }
 }
 function showAppsScript() {
@@ -3281,6 +3313,12 @@ function copyAppsScript() {
   navigator.clipboard.writeText(BK_GS_CODE).then(()=>showToast('✅ Apps Script copied!')).catch(()=>{const ta=document.createElement('textarea');ta.value=BK_GS_CODE;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);showToast('✅ Copied!');});
 }
 function initBackup() {
+  // Restore saved Sheets URL
+  try {
+    const savedUrl = localStorage.getItem('_erp_sheets_url');
+    const urlEl = document.getElementById('sheets-url');
+    if (savedUrl && urlEl) urlEl.value = savedUrl;
+  } catch(e) {}
   try{bkHistory=JSON.parse(localStorage.getItem(BK_HIST_KEY)||'[]');}catch(e){}
   runBackup('auto');
   startBkTimer();

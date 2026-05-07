@@ -3125,6 +3125,20 @@ function doResetData() {
   notifData.length = 0;
   for (var k in attState) delete attState[k];
   // Re-render all pages
+  // If still empty after load, retry once after 200ms (PWA cold start)
+  if (students.length === 0) {
+    setTimeout(function() {
+      loadAllData();
+      if (students.length > 0) {
+        renderStudents(students);
+        renderAttList();
+        renderFees(fees);
+        updateDashStats();
+        var bar = document.getElementById('_save_status_bar');
+        if (bar) bar.textContent = '✅ ' + students.length + ' student' + (students.length!==1?'s':'') + ' loaded';
+      }
+    }, 300);
+  }
   renderStudents(students);
   renderAttList();
   renderFees(fees);
@@ -4076,7 +4090,10 @@ function saveNotifs() {
 function loadAllData() {
   function readKey(key) {
     var v = null;
-    try { v = localStorage.getItem(key); } catch(e) {}
+    // Try multiple times — mobile Chrome can have delayed localStorage availability
+    for (var attempt = 0; attempt < 3; attempt++) {
+      try { v = localStorage.getItem(key); if (v) break; } catch(e) {}
+    }
     if (!v) { try { v = sessionStorage.getItem(key); } catch(e) {} }
     return v;
   }
@@ -4240,9 +4257,12 @@ function _safeInit() {
 }
 
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', _safeInit);
+  document.addEventListener('DOMContentLoaded', function() {
+    // Small delay ensures localStorage is accessible after PWA/SW load
+    setTimeout(_safeInit, 50);
+  });
 } else {
-  _safeInit();
+  setTimeout(_safeInit, 50);
 }
 
 </script>

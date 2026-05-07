@@ -3125,20 +3125,6 @@ function doResetData() {
   notifData.length = 0;
   for (var k in attState) delete attState[k];
   // Re-render all pages
-  // If still empty after load, retry once after 200ms (PWA cold start)
-  if (students.length === 0) {
-    setTimeout(function() {
-      loadAllData();
-      if (students.length > 0) {
-        renderStudents(students);
-        renderAttList();
-        renderFees(fees);
-        updateDashStats();
-        var bar = document.getElementById('_save_status_bar');
-        if (bar) bar.textContent = '✅ ' + students.length + ' student' + (students.length!==1?'s':'') + ' loaded';
-      }
-    }, 300);
-  }
   renderStudents(students);
   renderAttList();
   renderFees(fees);
@@ -4040,33 +4026,13 @@ function saveEditCenter() {
 
 /* ── Students localStorage persistence ─────────────── */
 const STUDENTS_KEY = '_erp_students';
+
 function saveStudents() {
-  const json = JSON.stringify(students);
-  // 1. localStorage (main)
-  try { localStorage.setItem('_erp_students', json); } catch(e) {}
-  // 2. sessionStorage (same-tab fallback)
-  try { sessionStorage.setItem('_erp_students', json); } catch(e) {}
-  // 3. Cookie fallback (works in sandboxed iframes)
-  try {
-    const encoded = btoa(unescape(encodeURIComponent(json)));
-    const shortHash = encoded.substring(0, 4000); // cookie size limit
-    document.cookie = '_erp_stu=' + shortHash + '; path=/; SameSite=Lax; max-age=31536000';
-  } catch(e) {}
-  _updateSaveBar();
+  const data = JSON.stringify(students);
+  try { localStorage.setItem(STUDENTS_KEY, data); } catch(e) {}
+  try { sessionStorage.setItem(STUDENTS_KEY, data); } catch(e) {}
 }
 
-function _updateSaveBar() {
-  const bar = document.getElementById('_save_status_bar');
-  if (!bar) return;
-  const now = new Date().toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'});
-  bar.textContent = '💾 Saved ' + students.length + ' student' + (students.length!==1?'s':'') + ' at ' + now;
-  bar.style.background = '#dcfce7';
-  bar.style.color = '#166534';
-  setTimeout(function() {
-    bar.style.background = 'var(--bg2,#f8fafc)';
-    bar.style.color = 'var(--tx3,#94a3b8)';
-  }, 2000);
-}
 
 /* ── Persist all arrays to localStorage ─────────────── */
 const FEES_KEY    = '_erp_fees';
@@ -4090,35 +4056,19 @@ function saveNotifs() {
 function loadAllData() {
   function readKey(key) {
     var v = null;
-    // Try multiple times — mobile Chrome can have delayed localStorage availability
-    for (var attempt = 0; attempt < 3; attempt++) {
-      try { v = localStorage.getItem(key); if (v) break; } catch(e) {}
-    }
+    try { v = localStorage.getItem(key); } catch(e) {}
     if (!v) { try { v = sessionStorage.getItem(key); } catch(e) {} }
     return v;
   }
 
-  // Students — try localStorage → sessionStorage → cookie
+  // Students
   try {
-    var sv = readKey('_erp_students');
-    if (!sv) {
-      // Try cookie fallback
-      try {
-        var cookies = document.cookie.split(';');
-        for (var ci=0; ci<cookies.length; ci++) {
-          var c = cookies[ci].trim();
-          if (c.startsWith('_erp_stu=')) {
-            sv = decodeURIComponent(escape(atob(c.substring(9))));
-            break;
-          }
-        }
-      } catch(ce) {}
-    }
+    var sv = localStorage.getItem('_erp_students') || sessionStorage.getItem('_erp_students');
     if (sv) {
       var sp = JSON.parse(sv);
-      if (Array.isArray(sp)) {
+      if (Array.isArray(sp) && sp.length > 0) {
         students.length = 0;
-        sp.forEach(function(x) { if (x && x.id && x.name) students.push(x); });
+        sp.forEach(function(x) { if (x && x.name) students.push(x); }); // only check name, not id
       }
     }
   } catch(e) {}
@@ -4257,12 +4207,9 @@ function _safeInit() {
 }
 
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', function() {
-    // Small delay ensures localStorage is accessible after PWA/SW load
-    setTimeout(_safeInit, 50);
-  });
+  document.addEventListener('DOMContentLoaded', _safeInit);
 } else {
-  setTimeout(_safeInit, 50);
+  _safeInit();
 }
 
 </script>

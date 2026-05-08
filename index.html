@@ -1066,20 +1066,7 @@ const exams = [
   {id:'ex2',name:'Unit Test 3',subject:'Science',type:'unit_test',maxMarks:50,date:'22 Dec',color:'#534AB7'},
   {id:'ex3',name:'Model Exam',subject:'Tamil',type:'model',maxMarks:100,date:'28 Dec',color:'#854F0B'},
 ];
-const staffData = [
-  {id:'STF-001',name:'Dr. Rajesh K',phone:'9876543220',desg:'Teacher',subjects:'Mathematics, Physics',
-   consolidatedPay:32000,extraDed:0,extraDedNote:'',exp:'8 yrs',color:'#185FA5',
-   joinDate:'2016-06-01',email:'rajesh@kalamtuition.com'},
-  {id:'STF-002',name:'Ms. Kavitha S',phone:'9876543221',desg:'Teacher',subjects:'Tamil, English',
-   consolidatedPay:28000,extraDed:0,extraDedNote:'',exp:'5 yrs',color:'#1D9E75',
-   joinDate:'2019-07-15',email:'kavitha@kalamtuition.com'},
-  {id:'STF-003',name:'Mr. Senthil N',phone:'9876543222',desg:'Coordinator',subjects:'Science',
-   consolidatedPay:35000,extraDed:0,extraDedNote:'',exp:'12 yrs',color:'#534AB7',
-   joinDate:'2012-03-01',email:'senthil@kalamtuition.com'},
-  {id:'STF-004',name:'Ms. Priya M',phone:'9876543223',desg:'Support',subjects:'—',
-   consolidatedPay:18000,extraDed:0,extraDedNote:'',exp:'2 yrs',color:'#993C1D',
-   joinDate:'2022-01-10',email:'priya@kalamtuition.com'},
-];
+const staffData = []; // loaded from localStorage by loadAllData()
 // Staff attendance: staffAtt[staffId][YYYY-MM-DD] = 'P'|'A'|'H'|'L'
 let staffAtt = {};
 const prods = [
@@ -4029,8 +4016,12 @@ const STUDENTS_KEY = '_erp_students';
 
 function saveStudents() {
   const data = JSON.stringify(students);
-  try { localStorage.setItem(STUDENTS_KEY, data); } catch(e) {}
+  try { 
+    localStorage.setItem(STUDENTS_KEY, data);
+    console.log('[ERP] Saved ' + students.length + ' students to localStorage');
+  } catch(e) { console.error('[ERP] Save failed:', e); }
   try { sessionStorage.setItem(STUDENTS_KEY, data); } catch(e) {}
+  _updateSaveBar();
 }
 
 
@@ -4044,7 +4035,12 @@ function saveFees() {
   try { localStorage.setItem(FEES_KEY, JSON.stringify(fees)); } catch(e){}
 }
 function saveStaffData() {
-  try { localStorage.setItem(STAFF_KEY, JSON.stringify(staffData)); } catch(e){}
+  try { 
+    const data = JSON.stringify(staffData);
+    localStorage.setItem(STAFF_KEY, data);
+    sessionStorage.setItem(STAFF_KEY, data);
+    console.log('[ERP] Saved ' + staffData.length + ' staff to localStorage');
+  } catch(e){ console.error('[ERP] Save staff failed:', e); }
 }
 function saveExams() {
   try { localStorage.setItem(EXAMS_KEY, JSON.stringify(exams)); } catch(e){}
@@ -4068,10 +4064,15 @@ function loadAllData() {
       var sp = JSON.parse(sv);
       if (Array.isArray(sp) && sp.length > 0) {
         students.length = 0;
-        sp.forEach(function(x) { if (x && x.name) students.push(x); }); // only check name, not id
+        sp.forEach(function(x) { if (x && x.name) students.push(x); });
+        console.log('[ERP] Loaded ' + students.length + ' students from storage. First: ' + (students[0]&&students[0].name));
+      } else {
+        console.log('[ERP] localStorage students key exists but empty or not array');
       }
+    } else {
+      console.log('[ERP] No _erp_students key in localStorage or sessionStorage');
     }
-  } catch(e) {}
+  } catch(e) { console.error('[ERP] Load students error:', e); }
 
   // Fees
   try {
@@ -4180,16 +4181,7 @@ function _safeInit() {
   initLicenseUI();
   applyLang();
   loadAllData();
-  // Safety: remove any corrupt entries that slipped through
-  for (var _ci = students.length - 1; _ci >= 0; _ci--) {
-    if (!students[_ci] || !students[_ci].id || !students[_ci].name) students.splice(_ci, 1);
-  }
-  for (var _fi = fees.length - 1; _fi >= 0; _fi--) {
-    if (!fees[_fi] || !fees[_fi].rcpt) fees.splice(_fi, 1);
-  }
-  for (var _si = staffData.length - 1; _si >= 0; _si--) {
-    if (!staffData[_si] || !staffData[_si].id || !staffData[_si].name) staffData.splice(_si, 1);
-  }
+  // (cleanup loop removed — was incorrectly removing valid entries)
   renderStudents(students);
   renderAttList();
   renderFees(fees);

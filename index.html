@@ -1219,6 +1219,8 @@ const WA_TEMPLATES = {
 
 // Fill template with actual data
 function fillTemplate(template, student, extra={}) {
+  if (!template) return '';
+  if (!student) student = {};  // guard against undefined student
   const ctr = CFG.CENTER;
   const today = new Date();
   const att = attState;
@@ -4014,13 +4016,28 @@ function saveEditCenter() {
 /* ── Students localStorage persistence ─────────────── */
 const STUDENTS_KEY = '_erp_students';
 
+function _updateSaveBar() {
+  try {
+    const bar = document.getElementById('_save_status_bar');
+    if (!bar) return;
+    const now = new Date().toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'});
+    bar.textContent = '💾 ' + students.length + ' student' + (students.length!==1?'s':'') + ' saved · ' + now;
+    bar.style.background = '#dcfce7';
+    bar.style.color = '#166534';
+    setTimeout(function() {
+      bar.style.background = '';
+      bar.style.color = 'var(--tx3,#94a3b8)';
+    }, 2000);
+  } catch(e) {}
+}
+
 function saveStudents() {
   const data = JSON.stringify(students);
-  try { 
+  try {
     localStorage.setItem(STUDENTS_KEY, data);
-    console.log('[ERP] Saved ' + students.length + ' students to localStorage');
-  } catch(e) { console.error('[ERP] Save failed:', e); }
-  try { sessionStorage.setItem(STUDENTS_KEY, data); } catch(e) {}
+    sessionStorage.setItem(STUDENTS_KEY, data);
+    console.log('[ERP] Saved ' + students.length + ' students');
+  } catch(e) { console.error('[ERP] saveStudents error:', e); }
   _updateSaveBar();
 }
 

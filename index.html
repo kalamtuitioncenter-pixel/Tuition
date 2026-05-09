@@ -1761,8 +1761,8 @@ function renderFees(data) {
   const bm={paid:'bg',partial:'bp',pending:'ba',overdue:'br2'};
   const source = (data||fees).filter(f=>f&&f.rcpt);
   // Update summary cards
-  const collected = source.filter(f=>f.status==='paid').reduce((s,f)=>s+(f.paid||0),0);
-  const pending   = source.filter(f=>f.status==='pending'||f.status==='partial').reduce((s,f)=>s+(f.balance||0),0);
+  const collected = source.reduce((s,f)=>s+(f.paid||0),0);  // ALL paid amounts
+  const pending   = source.reduce((s,f)=>s+(f.balance||0),0); // ALL outstanding balances
   const overdue   = source.filter(f=>f.status==='overdue').length;
   const cEl=document.getElementById('fv-collected'); if(cEl) cEl.textContent='₹'+collected.toLocaleString('en-IN');
   const pEl=document.getElementById('fv-pending');   if(pEl) pEl.textContent='₹'+pending.toLocaleString('en-IN');
@@ -1800,6 +1800,8 @@ function saveFeeEntry() {
   fees.unshift({rcpt,student:stName,month:new Date().toLocaleString('en-IN',{month:'short',year:'numeric'}),total:amt,paid,balance:bal,mode:document.getElementById('m-fmode')?.value||'Cash',status:paid>=amt?'paid':paid>0?'partial':'pending'});
   saveFees();
   renderFees(fees);
+  updateDashStats();
+  initCharts();
   closeModal();
   showToast('✅ Fee saved! Receipt: '+rcpt);
   runBackup('change');
@@ -2408,7 +2410,10 @@ function updateWAPreview() {
     return;
   }
 
-  const demoStudent = students[0];
+  const demoStudent = students.find(s=>s&&s.name) || {
+    name:'Sample Student', parent:'Parent Name', phone:'9876543210',
+    grade:'10', id:'DEMO-001', status:'active'
+  };
   let template;
   if (custom) {
     template = custom;
@@ -3448,16 +3453,37 @@ function initLicenseUI() {
    DASHBOARD STATS
 ═══════════════════════════════════════════════════════ */
 function updateDashStats() {
-  const active=students.filter(s=>s.status==='active').length;
-  const el1=document.getElementById('sv-students'),el2=document.getElementById('sv-income'),el3=document.getElementById('sv-pending');
-  if(el1) el1.textContent=students.length;
-  const paid=fees.filter(f=>f.status==='paid').reduce((s,f)=>s+(f.paid||0),0);
-  const pend=fees.filter(f=>f.status!=='paid').reduce((s,f)=>s+(f.balance||0),0);
-  if(el2) el2.textContent='₹'+paid.toLocaleString('en-IN');
-  if(el3) el3.textContent='₹'+pend.toLocaleString('en-IN');
-  const attVals=Object.values(attState),p=attVals.filter(v=>v==='P').length,tot=attVals.length;
-  const el4=document.getElementById('sv-att');
-  if(el4) el4.textContent=tot>0?Math.round(p/tot*100)+'%':'—%';
+  // Students
+  const active = students.filter(s => s.status === 'active').length;
+  const el1 = document.getElementById('sv-students');
+  if (el1) el1.textContent = active;
+
+  // Income = ALL paid amounts (paid + partial + any payment received)
+  const now = new Date();
+  const thisMonth = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+  const totalPaid   = fees.reduce((s,f) => s + (f.paid||0), 0);
+  const totalPend   = fees.reduce((s,f) => s + (f.balance||0), 0);
+  // Monthly income = fees paid THIS month
+  const monthPaid = fees
+    .filter(f => (f.month||'').toLowerCase().includes(
+      now.toLocaleString('en-IN',{month:'short'}) + ' ' + now.getFullYear()
+    ) || (f.date||f.month||'').includes(thisMonth))
+    .reduce((s,f) => s + (f.paid||0), 0);
+
+  const el2 = document.getElementById('sv-income');
+  const el3 = document.getElementById('sv-pending');
+  if (el2) el2.textContent = '₹' + totalPaid.toLocaleString('en-IN');
+  if (el3) el3.textContent = '₹' + totalPend.toLocaleString('en-IN');
+
+  // Attendance
+  const activeStudents = students.filter(s => s.status === 'active');
+  const present = activeStudents.filter(s => attState[s.id] === 'P').length;
+  const total   = activeStudents.length;
+  const el4 = document.getElementById('sv-att');
+  if (el4) el4.textContent = total > 0 ? Math.round(present/total*100) + '%' : '—%';
+
+  // Update charts with real data
+  updateCharts();
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -3465,11 +3491,91 @@ function updateDashStats() {
 ═══════════════════════════════════════════════════════ */
 let c1i, c2i;
 function initCharts() {
-  const c1=document.getElementById('chart-income'),c2=document.getElementById('chart-fee');
-  if(!c1||!c2||!window.Chart) return;
-  if(c1i) c1i.destroy(); if(c2i) c2i.destroy();
-  c1i=new Chart(c1,{type:'bar',data:{labels:['Jul','Aug','Sep','Oct','Nov','Dec'],datasets:[{label:'Income',data:[142000,158000,165000,171000,178000,184200],backgroundColor:'#185FA5',borderRadius:5,barPercentage:.65},{label:'Pending',data:[22000,18000,14000,19000,12000,16400],backgroundColor:'#dc2626',borderRadius:5,barPercentage:.65}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:10},autoSkip:false},grid:{display:false}},y:{ticks:{font:{size:10},callback:v=>'₹'+(v/1000)+'K'},grid:{color:'rgba(128,128,128,.07)'}}}}}); 
-  c2i=new Chart(c2,{type:'doughnut',data:{labels:['Paid 78%','Pending 14%','Overdue 8%'],datasets:[{data:[184200,16400,9600],backgroundColor:['#16a34a','#ca8a04','#dc2626'],borderWidth:0,hoverOffset:6}]},options:{responsive:true,maintainAspectRatio:false,cutout:'68%',plugins:{legend:{display:false}}}});
+  const c1 = document.getElementById('chart-income');
+  const c2 = document.getElementById('chart-fee');
+  if (!c1 || !c2 || !window.Chart) return;
+  if (c1i) { try { c1i.destroy(); } catch(e) {} }
+  if (c2i) { try { c2i.destroy(); } catch(e) {} }
+
+  // Build last 6 months labels from real date
+  const now = new Date();
+  const labels = [], incomeData = [], pendingData = [];
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  for (let m = 5; m >= 0; m--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - m, 1);
+    const monthLabel = MONTHS[d.getMonth()] + ' ' + d.getFullYear();
+    const shortLabel = MONTHS[d.getMonth()];
+    labels.push(shortLabel);
+
+    // Sum paid amounts for this month from real fees array
+    const monthFees = fees.filter(f => {
+      if (!f.month) return false;
+      return f.month.includes(shortLabel) && f.month.includes(String(d.getFullYear()));
+    });
+    const income  = monthFees.reduce((s,f) => s + (f.paid||0), 0);
+    const pending = monthFees.reduce((s,f) => s + (f.balance||0), 0);
+    incomeData.push(income);
+    pendingData.push(pending);
+  }
+
+  // Income bar chart
+  c1i = new Chart(c1, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label:'Income',  data:incomeData,  backgroundColor:'#185FA5', borderRadius:5, barPercentage:.65 },
+        { label:'Pending', data:pendingData, backgroundColor:'#dc2626', borderRadius:5, barPercentage:.65 }
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins: { legend:{display:true, labels:{color:'#94a3b8',font:{size:11}}}, tooltip:{callbacks:{label:ctx=>'₹'+ctx.raw.toLocaleString('en-IN')}} },
+      scales: {
+        x: { ticks:{color:'#94a3b8',font:{size:10}}, grid:{display:false} },
+        y: { ticks:{color:'#94a3b8',font:{size:10}, callback:v=>'₹'+(v>=1000?Math.round(v/1000)+'K':v)}, grid:{color:'rgba(148,163,184,.1)'} }
+      }
+    }
+  });
+
+  // Fee status doughnut — from real data
+  const totalPaid    = fees.reduce((s,f)=>s+(f.status==='paid'   ?f.paid   :0),0) + fees.reduce((s,f)=>s+(f.status==='partial'?f.paid   :0),0);
+  const totalPending = fees.reduce((s,f)=>s+(f.status==='pending'?f.balance:0),0);
+  const totalOverdue = fees.reduce((s,f)=>s+(f.status==='overdue'?f.balance:0),0);
+
+  c2i = new Chart(c2, {
+    type: 'doughnut',
+    data: {
+      labels: ['Paid','Pending','Overdue'],
+      datasets: [{ data:[totalPaid||1, totalPending, totalOverdue], backgroundColor:['#16a34a','#ca8a04','#dc2626'], borderWidth:0, hoverOffset:4 }]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins: { legend:{display:false}, tooltip:{callbacks:{label:ctx=>'₹'+ctx.raw.toLocaleString('en-IN')}} },
+      cutout:'70%'
+    }
+  });
+}
+
+// Match a fee record to a given month/year
+function matchFeeMonth(f, month, year) {
+  if (!f) return false;
+  const monthNames = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+  const mLow = (f.month||'').toLowerCase();
+  // Try "May 2026" format
+  const mName = monthNames[month-1];
+  if (mLow.includes(mName) && mLow.includes(String(year))) return true;
+  // Try date field "2026-05-xx"
+  if (f.date && f.date.startsWith(year+'-'+String(month).padStart(2,'0'))) return true;
+  return false;
+}
+
+function updateCharts() {
+  // Reinitialize with fresh data
+  if (window.Chart && document.getElementById('chart-income')) {
+    initCharts();
+  }
 }
 
 /* ═══════════════════════════════════════════════════════

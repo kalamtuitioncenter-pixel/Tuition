@@ -492,12 +492,6 @@ tbody tr:hover td{background:var(--bg)}
         <label class="fl">Course / Batch</label>
         <select class="fi" id="adm-course">
           <option value="">— Select batch —</option>
-          <option>Science Group</option>
-          <option>Maths Group</option>
-          <option>Commerce</option>
-          <option>Morning Batch</option>
-          <option>Evening Batch</option>
-          <option>Weekend Batch</option>
         </select>
       </div>
 
@@ -562,9 +556,15 @@ tbody tr:hover td{background:var(--bg)}
 
 <!-- ═══════════════ ATTENDANCE ═══════════════ -->
 <div class="page" id="pg-attendance">
-  <div class="toolbar">
-    <select class="fi" style="width:auto" id="att-batch"><option>Science Group – Morning</option><option>Maths Group – Evening</option><option>Commerce – Weekend</option></select>
-    <input type="date" class="fi" style="width:auto" id="att-date">
+  <div class="toolbar" style="flex-wrap:wrap;gap:8px">
+    <select class="fi" style="width:auto;flex:1;min-width:140px" id="att-batch" onchange="renderAttList()">
+      <option value="">All Students</option>
+    </select>
+    <select class="fi" style="width:auto" id="att-session" onchange="renderAttList()">
+      <option value="morning">☀️ Morning Session</option>
+      <option value="evening">🌙 Evening Session</option>
+    </select>
+    <input type="date" class="fi" style="width:auto" id="att-date" onchange="renderAttList()">
     <div class="seg"><button class="seg-b on" id="btn-all-p" onclick="markAllAtt('P',this)">All Present</button><button class="seg-b" id="btn-all-a" onclick="markAllAtt('A',this)">All Absent</button></div>
     <button class="btn btn-sm" onclick="openQRScan()" style="background:#7c3aed;color:#fff;border-color:#7c3aed" title="QR Code Attendance">
       <svg viewBox="0 0 16 16" fill="none" width="13" height="13"><rect x="2" y="2" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1.3"/><rect x="9" y="2" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1.3"/><rect x="2" y="9" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1.3"/><path d="M9 9h2v2H9zM13 9h1v1h-1zM9 12h1v1H9zM11 11h1v2h1v-3h-2zM13 13h1v1h-1z" fill="currentColor"/></svg>
@@ -1147,13 +1147,17 @@ const t = k => T[lang][k] || T.en[k] || k;
    WHATSAPP MESSAGE TEMPLATES
 ═══════════════════════════════════════════════════════ */
 const WA_TYPES = [
-  {id:'absent',   label:'Absent Alert',   labelTA:'வருகை எச்சரிக்கை',   color:'#dc2626', bg:'#fee2e2'},
-  {id:'late',     label:'Late Alert',     labelTA:'தாமத எச்சரிக்கை',    color:'#ca8a04', bg:'#fef9c3'},
-  {id:'monthly',  label:'Monthly Report', labelTA:'மாதாந்திர அறிக்கை',   color:'#2563eb', bg:'#dbeafe'},
-  {id:'marks',    label:'Exam Marks',     labelTA:'தேர்வு மதிப்பெண்கள்', color:'#7c3aed', bg:'#ede9fe'},
-  {id:'holiday',  label:'Holiday Notice', labelTA:'விடுமுறை அறிவிப்பு',  color:'#0891b2', bg:'#ccfbf1'},
-  {id:'birthday', label:'Birthday Wish',  labelTA:'பிறந்தநாள் வாழ்த்து',  color:'#16a34a', bg:'#dcfce7'},
-  {id:'fees',     label:'Fee Reminder',   labelTA:'கட்டண நினைவூட்டல்',   color:'#854f0b', bg:'#fef3c7'},
+  {id:'absent',      label:'Absent Alert',       labelTA:'வருகை எச்சரிக்கை',      color:'#dc2626', bg:'#fee2e2'},
+  {id:'late',        label:'Late Alert',          labelTA:'தாமத எச்சரிக்கை',       color:'#ca8a04', bg:'#fef9c3'},
+  {id:'monthly',     label:'Monthly Report',      labelTA:'மாதாந்திர அறிக்கை',      color:'#2563eb', bg:'#dbeafe'},
+  {id:'marks',       label:'Exam Marks',          labelTA:'தேர்வு மதிப்பெண்கள்',    color:'#7c3aed', bg:'#ede9fe'},
+  {id:'holiday',     label:'Holiday Notice',      labelTA:'விடுமுறை அறிவிப்பு',     color:'#0891b2', bg:'#ccfbf1'},
+  {id:'birthday',    label:'Birthday Wish',       labelTA:'பிறந்தநாள் வாழ்த்து',     color:'#16a34a', bg:'#dcfce7'},
+  {id:'fees',        label:'Fee Reminder',        labelTA:'கட்டண நினைவூட்டல்',      color:'#854f0b', bg:'#fef3c7'},
+  {id:'pending_fees',label:'Pending Fees Alert',  labelTA:'நிலுவை கட்டண எச்சரிக்கை', color:'#dc2626', bg:'#fee2e2'},
+  {id:'leave',       label:'Leave Notification',  labelTA:'விடுப்பு அறிவிப்பு',      color:'#7c3aed', bg:'#ede9fe'},
+  {id:'time_change', label:'Time Change Notice',  labelTA:'நேர மாற்ற அறிவிப்பு',    color:'#0891b2', bg:'#ccfbf1'},
+  {id:'custom',      label:'Custom Message',      labelTA:'தனிப்பயன் செய்தி',        color:'#475569', bg:'#f1f5f9'},
 ];
 
 const WA_TEMPLATES = {
@@ -1296,6 +1300,99 @@ const pageConfig = {
   fees:     { addLabel: ()=>t('newFee'),     addFn: ()=>showModal('addFee') },
   notifications: { addLabel: ()=>t('sendNotif'), addFn: ()=>showModal('sendNotif') },
   staff:    { addLabel: ()=>t('addStaff'),   addFn: ()=>showModal('addStaff') },
+  pending_fees: {
+    en: `Dear {parent_name}, this is {center_name}.
+
+⚠️ Fee Pending Alert for {student_name}
+
+Balance Due: ₹{amount}
+Month: {month}
+
+Kindly clear the pending fees at your earliest. For queries call {center_phone}.
+
+Thank you.`,
+    ta: `அன்பான {parent_name}, இது {center_name}.
+
+⚠️ கட்டண நிலுவை எச்சரிக்கை - {student_name}
+
+நிலுவை தொகை: ₹{amount}
+மாதம்: {month}
+
+கட்டணத்தை உடனடியாக செலுத்தவும். தொடர்புக்கு: {center_phone}.
+
+நன்றி.`
+  },
+  leave: {
+    en: `Dear {parent_name},
+
+🏫 {center_name} — Leave Notification
+
+Student: {student_name}
+Leave Date: {date}
+Reason: {reason}
+
+Attendance will be marked as leave. Classes will resume as scheduled.
+
+Regards,
+{center_name}
+📞 {center_phone}`,
+    ta: `அன்பான {parent_name},
+
+🏫 {center_name} — விடுப்பு அறிவிப்பு
+
+மாணவர்: {student_name}
+விடுப்பு தேதி: {date}
+காரணம்: {reason}
+
+வருகை விடுப்பாக பதிவு செய்யப்படும். வகுப்புகள் வழக்கம் போல் தொடரும்.
+
+மரியாதையுடன்,
+{center_name} 📞 {center_phone}`
+  },
+  time_change: {
+    en: `Dear {parent_name},
+
+⏰ Important: Batch Time Change
+
+Student: {student_name}
+Batch: {batch}
+
+New Timing: {new_time}
+Effective From: {date}
+
+Please note the updated schedule. For queries call {center_phone}.
+
+Regards,
+{center_name}`,
+    ta: `அன்பான {parent_name},
+
+⏰ முக்கியம்: Batch நேர மாற்றம்
+
+மாணவர்: {student_name}
+Batch: {batch}
+
+புதிய நேரம்: {new_time}
+தேதி முதல்: {date}
+
+புதிய அட்டவணையை கவனிக்கவும். தொடர்புக்கு: {center_phone}
+
+{center_name}`
+  },
+  custom: {
+    en: `Dear {parent_name},
+
+{custom_message}
+
+Regards,
+{center_name}
+📞 {center_phone}`,
+    ta: `அன்பான {parent_name},
+
+{custom_message}
+
+மரியாதையுடன்,
+{center_name} 📞 {center_phone}`
+  }
 };
 
 function navTo(id) {
@@ -1320,7 +1417,7 @@ function navTo(id) {
   if (id === 'ai') { renderAICards(); initAI(); }
   if (id === 'whatsapp') { renderWATypes(); }
   if (id === 'admissions') { initAdmissions(); }
-  if (id === 'settings') { updateLatesDisplay(); }
+  if (id === 'settings') { updateLatesDisplay(); renderBatchEditor(); }
 }
 
 function tbAddAction() {
@@ -1690,9 +1787,19 @@ function renderAttList() {
   const today = new Date().toISOString().split('T')[0];
   const dateEl = document.getElementById('att-date');
   if (!dateEl.value) dateEl.value = today;
-  const activeStudents = students.filter(s => s && s.name && s.status === 'active');
+  const sess  = document.getElementById('att-session')?.value || 'morning';
+  const batch = document.getElementById('att-batch')?.value || '';
+  // Populate batch dropdown from CFG.BATCHES
+  const batchSel = document.getElementById('att-batch');
+  if (batchSel && batchSel.options.length <= 1) {
+    (CFG.BATCHES||[]).forEach(function(b){
+      const o=document.createElement('option'); o.value=b; o.textContent=b; batchSel.appendChild(o);
+    });
+  }
+  let activeStudents = students.filter(s => s && s.name && s.status === 'active');
+  if (batch) activeStudents = activeStudents.filter(s => (s.batch||s.course||'')===batch);
   document.getElementById('att-wrap').innerHTML = activeStudents.map((s) => {
-    const val = attState[s.id] || '';
+    const val = attState[s.id+'_'+sess] || '';
     return `<div class="att-row">
       <div class="av" style="background:${s.color}">${(s.name||'?')[0]}</div>
       <div class="att-name">
@@ -1703,13 +1810,19 @@ function renderAttList() {
         <button class="att-btn ${val==='P'?'ps':''}" onclick="setAtt('${s.id}','P',this)" style="color:#16a34a">P</button>
         <button class="att-btn ${val==='A'?'as':''}" onclick="setAtt('${s.id}','A',this)" style="color:#dc2626">A</button>
         <button class="att-btn ${val==='L'?'ls':''}" onclick="setAtt('${s.id}','L',this)" style="color:#ca8a04">L</button>
+        <button class="att-btn" onclick="setAtt('${s.id}','',this)" style="color:var(--tx3);font-size:10px;padding:3px 6px" title="Clear">✕</button>
       </div>
     </div>`;
   }).join('');
   updateAttCounts();
 }
+function getAttKey(sid) {
+  const sess = document.getElementById('att-session')?.value || 'morning';
+  return sid + '_' + sess;
+}
 function setAtt(sid, v, btn) {
-  if (v) attState[sid] = v; else delete attState[sid];
+  const key = getAttKey(sid);
+  if (v) attState[key] = v; else delete attState[key];
   const row = btn.closest('.att-row');
   row.querySelectorAll('.att-btn').forEach(b => b.classList.remove('ps','as','ls'));
   btn.classList.add(v==='P'?'ps':v==='A'?'as':'ls');
@@ -1718,16 +1831,23 @@ function setAtt(sid, v, btn) {
 function markAllAtt(v, btn) {
   document.querySelectorAll('.seg .seg-b').forEach(b=>b.classList.remove('on'));
   btn.classList.add('on');
-  students.filter(s=>s.status==='active').forEach(s => { attState[s.id] = v; });
+  const sess = document.getElementById('att-session')?.value || 'morning';
+  const batch = document.getElementById('att-batch')?.value || '';
+  let target = students.filter(s=>s.status==='active');
+  if (batch) target = target.filter(s=>s.batch===batch || s.course===batch);
+  target.forEach(s => { attState[s.id+'_'+sess] = v; });
   renderAttList();
 }
 function updateAttCounts() {
-  const active = students.filter(s=>s.status==='active');
+  const sess  = document.getElementById('att-session')?.value || 'morning';
+  const batch = document.getElementById('att-batch')?.value || '';
+  let active = students.filter(s=>s.status==='active');
+  if (batch) active = active.filter(s=>(s.batch||s.course||'')===batch);
   let p=0, a=0, l=0;
   active.forEach(s => {
-    const v = attState[s.id]||'';
+    const v = attState[s.id+'_'+sess]||'';
     if(v==='P') p++; else if(v==='A') a++; else if(v==='L') l++;
-    else p++; // unmarked = present by default
+    else p++; // unmarked = present
   });
   const tot = active.length;
   document.getElementById('att-pc-lbl').textContent = p+' Present';
@@ -3160,6 +3280,44 @@ function runStorageDiag() {
   out.push('📊 In-memory: students=' + students.length + ' fees=' + fees.length + ' staff=' + staffData.length);
   document.getElementById('storage-diag').innerHTML = out.join('<br>');
 }
+
+function renderBatchEditor() {
+  var el = document.getElementById('batch-list-editor');
+  if (!el) return;
+  if (!CFG.BATCHES || !CFG.BATCHES.length) {
+    el.innerHTML = '<div style="color:var(--tx3);font-size:11px">No batches — add one below</div>';
+    return;
+  }
+  el.innerHTML = CFG.BATCHES.map(function(b, i) {
+    return '<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:.5px solid var(--br)">'
+      + '<span style="flex:1;font-size:12px;color:var(--tx)">' + b + '</span>'
+      + '<button class="btn btn-sm" style="font-size:10px;color:#dc2626;border-color:#fecdd3;padding:2px 8px" '
+      + 'onclick="deleteBatch(' + i + ')">✕</button>'
+      + '</div>';
+  }).join('');
+}
+function addBatch() {
+  var inp = document.getElementById('new-batch-name');
+  var name = inp ? inp.value.trim() : '';
+  if (!name) { showToast('Enter a batch name'); return; }
+  if (!CFG.BATCHES) CFG.BATCHES = [];
+  CFG.BATCHES.push(name);
+  if (inp) inp.value = '';
+  saveBatches();
+  renderBatchEditor();
+  showToast('✅ Batch "' + name + '" added');
+}
+function deleteBatch(idx) {
+  if (!CFG.BATCHES) return;
+  var name = CFG.BATCHES[idx];
+  CFG.BATCHES.splice(idx, 1);
+  saveBatches();
+  renderBatchEditor();
+  showToast('Removed: ' + name);
+}
+function saveBatches() {
+  try { localStorage.setItem('_erp_batches', JSON.stringify(CFG.BATCHES)); } catch(e) {}
+}
 function saveAIKey(){}
 function toggleAIKeyVis(){}
 function updateAIHint(){}
@@ -3635,6 +3793,20 @@ Warm regards,
 {center_name}`,
 };
 
+function populateBatchDropdown(selId) {
+  const sel = document.getElementById(selId);
+  if (!sel) return;
+  const current = sel.value;
+  // Keep the first "Select batch" option
+  while (sel.options.length > 1) sel.remove(1);
+  (CFG.BATCHES || []).forEach(function(b) {
+    const opt = document.createElement('option');
+    opt.value = b; opt.textContent = b;
+    sel.appendChild(opt);
+  });
+  if (current) sel.value = current;
+}
+
 function initAdmissions() {
   // Generate next admission number
   const yr = new Date().getFullYear();
@@ -3789,14 +3961,27 @@ function submitAdmission() {
   if (admRecentList.length > 20) admRecentList.pop();
 
   // Add admission fee record if non-zero
+  // Admission fee record (one-time, auto-paid)
   if (parseFloat(admFee) > 0) {
     fees.unshift({
       rcpt: 'RCP-ADM-' + Date.now().toString().slice(-5),
-      student: name, month: 'Admission',
+      student: name, studentId: newStudent.id, month: 'Admission Fee',
       total: parseFloat(admFee), paid: parseFloat(admFee), balance: 0,
       mode: 'Cash', status: 'paid',
     });
   }
+  // Monthly fee record — created as PENDING so it shows under Pending Fees
+  if (parseFloat(fee) > 0) {
+    const now2 = new Date();
+    const monthLabel = now2.toLocaleDateString('en-IN', {month:'short', year:'numeric'});
+    fees.unshift({
+      rcpt: 'RCP-' + Date.now().toString().slice(-5),
+      student: name, studentId: newStudent.id, month: monthLabel,
+      total: parseFloat(fee), paid: 0, balance: parseFloat(fee),
+      mode: '—', status: 'pending',
+    });
+  }
+  saveFees();
 
   runBackup('change');
   renderStudents(students);
@@ -4292,6 +4477,11 @@ function _safeInit() {
   try {
     const savedStaffAtt = localStorage.getItem('_erp_staff_att');
     if (savedStaffAtt) { Object.assign(staffAtt, JSON.parse(savedStaffAtt)); }
+  } catch(e) {}
+  // Restore batches
+  try {
+    const savedBatches = localStorage.getItem('_erp_batches');
+    if (savedBatches) CFG.BATCHES = JSON.parse(savedBatches);
   } catch(e) {}
   // Restore late-to-leave config
   try {

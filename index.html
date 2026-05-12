@@ -1,8 +1,4 @@
-
-<li class="nav-item" data-page="batches" onclick="navTo('batches',this)">
-  <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><rect x="1" y="3" width="14" height="3" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="1" y="8" width="9" height="3" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="1" y="13" width="6" height="1.5" rx="0.75" fill="currentColor" opacity=".5"/></svg>
-  <span class="nav-label">Batches</span>
-</li><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -345,28 +341,6 @@ tbody tr:hover td{background:var(--bg)}
   </header>
   <div class="content" id="content">
 
-
-<!-- ═══════════════ BATCHES ═══════════════ -->
-<div class="page" id="pg-batches">
-  <div class="toolbar">
-    <button class="btn btn-p" onclick="showAddBatchModal()">
-      <svg viewBox="0 0 14 14" fill="none"><path d="M7 2v10M2 7h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-      Add Batch
-    </button>
-  </div>
-
-  <!-- Batch cards -->
-  <div id="batches-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px"></div>
-
-  <!-- Empty state -->
-  <div id="batches-empty" style="display:none;text-align:center;padding:40px 20px;background:var(--card);border-radius:12px;border:.5px solid var(--br)">
-    <div style="font-size:36px;margin-bottom:10px">📚</div>
-    <div style="font-size:14px;font-weight:600;color:var(--tx);margin-bottom:6px">No Batches Yet</div>
-    <div style="font-size:12px;color:var(--tx2);margin-bottom:16px">Create batches to organise students by class time and subject</div>
-    <button class="btn btn-p" onclick="showAddBatchModal()">+ Add First Batch</button>
-  </div>
-</div>
-
 <!-- ═══════════════ DASHBOARD ═══════════════ -->
 <div class="page active" id="pg-dashboard">
   <div class="stat-grid">
@@ -518,6 +492,12 @@ tbody tr:hover td{background:var(--bg)}
         <label class="fl">Course / Batch</label>
         <select class="fi" id="adm-course">
           <option value="">— Select batch —</option>
+          <option>Science Group</option>
+          <option>Maths Group</option>
+          <option>Commerce</option>
+          <option>Morning Batch</option>
+          <option>Evening Batch</option>
+          <option>Weekend Batch</option>
         </select>
       </div>
 
@@ -582,15 +562,9 @@ tbody tr:hover td{background:var(--bg)}
 
 <!-- ═══════════════ ATTENDANCE ═══════════════ -->
 <div class="page" id="pg-attendance">
-  <div class="toolbar" style="flex-wrap:wrap;gap:8px">
-    <select class="fi" style="width:auto;flex:1;min-width:140px" id="att-batch" onchange="updateAttSessions();renderAttList()">
-      <option value="">All Students</option>
-    </select>
-    <select class="fi" style="width:auto" id="att-session" onchange="renderAttList()">
-      <option value="morning">☀️ Morning</option>
-      <option value="evening">🌙 Evening</option>
-    </select>
-    <input type="date" class="fi" style="width:auto" id="att-date" onchange="renderAttList()">
+  <div class="toolbar">
+    <select class="fi" style="width:auto" id="att-batch"><option>Science Group – Morning</option><option>Maths Group – Evening</option><option>Commerce – Weekend</option></select>
+    <input type="date" class="fi" style="width:auto" id="att-date">
     <div class="seg"><button class="seg-b on" id="btn-all-p" onclick="markAllAtt('P',this)">All Present</button><button class="seg-b" id="btn-all-a" onclick="markAllAtt('A',this)">All Absent</button></div>
     <button class="btn btn-sm" onclick="openQRScan()" style="background:#7c3aed;color:#fff;border-color:#7c3aed" title="QR Code Attendance">
       <svg viewBox="0 0 16 16" fill="none" width="13" height="13"><rect x="2" y="2" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1.3"/><rect x="9" y="2" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1.3"/><rect x="2" y="9" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1.3"/><path d="M9 9h2v2H9zM13 9h1v1h-1zM9 12h1v1H9zM11 11h1v2h1v-3h-2zM13 13h1v1h-1z" fill="currentColor"/></svg>
@@ -1173,17 +1147,13 @@ const t = k => T[lang][k] || T.en[k] || k;
    WHATSAPP MESSAGE TEMPLATES
 ═══════════════════════════════════════════════════════ */
 const WA_TYPES = [
-  {id:'absent',      label:'Absent Alert',       labelTA:'வருகை எச்சரிக்கை',      color:'#dc2626', bg:'#fee2e2'},
-  {id:'late',        label:'Late Alert',          labelTA:'தாமத எச்சரிக்கை',       color:'#ca8a04', bg:'#fef9c3'},
-  {id:'monthly',     label:'Monthly Report',      labelTA:'மாதாந்திர அறிக்கை',      color:'#2563eb', bg:'#dbeafe'},
-  {id:'marks',       label:'Exam Marks',          labelTA:'தேர்வு மதிப்பெண்கள்',    color:'#7c3aed', bg:'#ede9fe'},
-  {id:'holiday',     label:'Holiday Notice',      labelTA:'விடுமுறை அறிவிப்பு',     color:'#0891b2', bg:'#ccfbf1'},
-  {id:'birthday',    label:'Birthday Wish',       labelTA:'பிறந்தநாள் வாழ்த்து',     color:'#16a34a', bg:'#dcfce7'},
-  {id:'fees',        label:'Fee Reminder',        labelTA:'கட்டண நினைவூட்டல்',      color:'#854f0b', bg:'#fef3c7'},
-  {id:'pending_fees',label:'Pending Fees Alert',  labelTA:'நிலுவை கட்டண எச்சரிக்கை', color:'#dc2626', bg:'#fee2e2'},
-  {id:'leave',       label:'Leave Notification',  labelTA:'விடுப்பு அறிவிப்பு',      color:'#7c3aed', bg:'#ede9fe'},
-  {id:'time_change', label:'Time Change Notice',  labelTA:'நேர மாற்ற அறிவிப்பு',    color:'#0891b2', bg:'#ccfbf1'},
-  {id:'custom',      label:'Custom Message',      labelTA:'தனிப்பயன் செய்தி',        color:'#475569', bg:'#f1f5f9'},
+  {id:'absent',   label:'Absent Alert',   labelTA:'வருகை எச்சரிக்கை',   color:'#dc2626', bg:'#fee2e2'},
+  {id:'late',     label:'Late Alert',     labelTA:'தாமத எச்சரிக்கை',    color:'#ca8a04', bg:'#fef9c3'},
+  {id:'monthly',  label:'Monthly Report', labelTA:'மாதாந்திர அறிக்கை',   color:'#2563eb', bg:'#dbeafe'},
+  {id:'marks',    label:'Exam Marks',     labelTA:'தேர்வு மதிப்பெண்கள்', color:'#7c3aed', bg:'#ede9fe'},
+  {id:'holiday',  label:'Holiday Notice', labelTA:'விடுமுறை அறிவிப்பு',  color:'#0891b2', bg:'#ccfbf1'},
+  {id:'birthday', label:'Birthday Wish',  labelTA:'பிறந்தநாள் வாழ்த்து',  color:'#16a34a', bg:'#dcfce7'},
+  {id:'fees',     label:'Fee Reminder',   labelTA:'கட்டண நினைவூட்டல்',   color:'#854f0b', bg:'#fef3c7'},
 ];
 
 const WA_TEMPLATES = {
@@ -1259,12 +1229,6 @@ function fillTemplate(template, student, extra={}) {
   const totalMarked = presentCount + absentCount + Object.values(att).filter(v=>v==='L').length;
   const attPct = totalMarked>0 ? Math.round(presentCount/totalMarked*100) : 0;
 
-  // Auto-calculate pending balance for this student
-  var pendingFee = 0;
-  try {
-    pendingFee = fees.filter(function(f){ return f.student===student.name && (f.balance||0)>0; })
-                     .reduce(function(s,f){ return s+(f.balance||0); }, 0);
-  } catch(e) {}
   return template
     .replace(/{student_name}/g, (student && ((student && student.nameTA) || student.name)) || '')
     .replace(/{parent_name}/g, student.parent)
@@ -1332,99 +1296,6 @@ const pageConfig = {
   fees:     { addLabel: ()=>t('newFee'),     addFn: ()=>showModal('addFee') },
   notifications: { addLabel: ()=>t('sendNotif'), addFn: ()=>showModal('sendNotif') },
   staff:    { addLabel: ()=>t('addStaff'),   addFn: ()=>showModal('addStaff') },
-  pending_fees: {
-    en: `Dear {parent_name}, this is {center_name}.
-
-⚠️ Fee Pending Alert for {student_name}
-
-Balance Due: ₹{amount}
-Month: {month}
-
-Kindly clear the pending fees at your earliest. For queries call {center_phone}.
-
-Thank you.`,
-    ta: `அன்பான {parent_name}, இது {center_name}.
-
-⚠️ கட்டண நிலுவை எச்சரிக்கை - {student_name}
-
-நிலுவை தொகை: ₹{amount}
-மாதம்: {month}
-
-கட்டணத்தை உடனடியாக செலுத்தவும். தொடர்புக்கு: {center_phone}.
-
-நன்றி.`
-  },
-  leave: {
-    en: `Dear {parent_name},
-
-🏫 {center_name} — Leave Notification
-
-Student: {student_name}
-Leave Date: {date}
-Reason: {reason}
-
-Attendance will be marked as leave. Classes will resume as scheduled.
-
-Regards,
-{center_name}
-📞 {center_phone}`,
-    ta: `அன்பான {parent_name},
-
-🏫 {center_name} — விடுப்பு அறிவிப்பு
-
-மாணவர்: {student_name}
-விடுப்பு தேதி: {date}
-காரணம்: {reason}
-
-வருகை விடுப்பாக பதிவு செய்யப்படும். வகுப்புகள் வழக்கம் போல் தொடரும்.
-
-மரியாதையுடன்,
-{center_name} 📞 {center_phone}`
-  },
-  time_change: {
-    en: `Dear {parent_name},
-
-⏰ Important: Batch Time Change
-
-Student: {student_name}
-Batch: {batch}
-
-New Timing: {new_time}
-Effective From: {date}
-
-Please note the updated schedule. For queries call {center_phone}.
-
-Regards,
-{center_name}`,
-    ta: `அன்பான {parent_name},
-
-⏰ முக்கியம்: Batch நேர மாற்றம்
-
-மாணவர்: {student_name}
-Batch: {batch}
-
-புதிய நேரம்: {new_time}
-தேதி முதல்: {date}
-
-புதிய அட்டவணையை கவனிக்கவும். தொடர்புக்கு: {center_phone}
-
-{center_name}`
-  },
-  custom: {
-    en: `Dear {parent_name},
-
-{custom_message}
-
-Regards,
-{center_name}
-📞 {center_phone}`,
-    ta: `அன்பான {parent_name},
-
-{custom_message}
-
-மரியாதையுடன்,
-{center_name} 📞 {center_phone}`
-  }
 };
 
 function navTo(id) {
@@ -1449,9 +1320,7 @@ function navTo(id) {
   if (id === 'ai') { renderAICards(); initAI(); }
   if (id === 'whatsapp') { renderWATypes(); }
   if (id === 'admissions') { initAdmissions(); }
-  if (id === 'settings') { updateLatesDisplay(); renderBatchEditor(); }
-  if (id === 'batches') { initBatches(); }
-  if (id === 'batches')  { renderBatchesList(); }
+  if (id === 'settings') { updateLatesDisplay(); }
 }
 
 function tbAddAction() {
@@ -1821,123 +1690,50 @@ function renderAttList() {
   const today = new Date().toISOString().split('T')[0];
   const dateEl = document.getElementById('att-date');
   if (!dateEl.value) dateEl.value = today;
-
-  // Populate batch dropdown
-  const batchSel = document.getElementById('att-batch');
-  if (batchSel) {
-    const cur = batchSel.value;
-    while (batchSel.options.length > 1) batchSel.remove(1);
-    (CFG.BATCHES||[]).forEach(function(b) {
-      const bName = typeof b==='string' ? b : b.name;
-      const o = document.createElement('option'); o.value=bName; o.textContent=bName;
-      batchSel.appendChild(o);
-    });
-    if (cur) batchSel.value = cur;
-  }
-
-  // Populate session dropdown from selected batch
-  const sessSel = document.getElementById('att-session');
-  const selBatch = batchSel?.value || '';
-  const batchObj = (CFG.BATCHES||[]).find(function(b){ return (typeof b==='string'?b:b.name)===selBatch; });
-  if (sessSel) {
-    const curSess = sessSel.value;
-    while (sessSel.options.length > 0) sessSel.remove(0);
-    const sessions = (batchObj && batchObj.sessions) ? batchObj.sessions : [{label:'Morning Session',start:'09:00',end:'11:00'},{label:'Evening Session',start:'16:00',end:'18:00'}];
-    sessions.forEach(function(s) {
-      const o = document.createElement('option');
-      o.value = s.label;
-      o.textContent = '⏰ ' + s.label + (s.start?' ('+s.start+')':'');
-      sessSel.appendChild(o);
-    });
-    if (curSess) sessSel.value = curSess;
-  }
-
-  const sess  = sessSel?.value || 'morning';
-  const batch = selBatch;
-
-  let activeStudents = students.filter(function(s){ return s && s.name && s.status==='active'; });
-  if (batch) activeStudents = activeStudents.filter(function(s){ return (s.batch||s.course||'')===batch; });
-
-  if (!activeStudents.length) {
-    document.getElementById('att-wrap').innerHTML = '<div style="text-align:center;padding:30px;color:var(--tx3)">'
-      + (batch ? 'No active students in "'+batch+'"' : 'No active students yet') + '</div>';
-    updateAttCounts(); return;
-  }
-
-  document.getElementById('att-wrap').innerHTML = activeStudents.map(function(s) {
-    const key = s.id + '_' + sess;
-    const val = attState[key] || '';
-    return '<div class="att-row" id="attrow-'+s.id+'">'
-      + '<div class="av" style="background:'+s.color+'">'+(s.name||'?')[0]+'</div>'
-      + '<div class="att-name">'
-      + '  <div style="font-weight:500;font-size:13px">'+s.name+'</div>'
-      + '  <div style="font-size:10px;color:var(--tx3)">'+(s.batch||s.course||'No batch')+' · '+s.parent+'</div>'
-      + '</div>'
-      + '<div class="att-btns" data-sid="'+s.id+'">'
-      + '<button class="att-btn '+(val==='P'?'ps':'')+'" data-v="P" onclick="attClick(this)" title="Present" style="color:#16a34a;font-weight:700">P</button>'
-      + '<button class="att-btn '+(val==='A'?'as':'')+'" data-v="A" onclick="attClick(this)" title="Absent"  style="color:#dc2626;font-weight:700">A</button>'
-      + '<button class="att-btn '+(val==='L'?'ls':'')+'" data-v="L" onclick="attClick(this)" title="Late"    style="color:#ca8a04;font-weight:700">L</button>'
-      + '<button class="att-btn '+(val==='Lv'?'lvs':'')+'" data-v="Lv" onclick="attClick(this)" title="Leave" style="color:#7c3aed;font-weight:700;font-size:10px">Lv</button>'
-      + '</div>'
-      + '</div>';
+  const activeStudents = students.filter(s => s && s.name && s.status === 'active');
+  document.getElementById('att-wrap').innerHTML = activeStudents.map((s) => {
+    const val = attState[s.id] || '';
+    return `<div class="att-row">
+      <div class="av" style="background:${s.color}">${(s.name||'?')[0]}</div>
+      <div class="att-name">
+        <div style="font-weight:500;font-size:13px">${s.name}</div>
+        <div style="font-size:10px;color:var(--tx3)">${s.grade==='KG'?'KG':'Gr.'+s.grade} &middot; ${s.parent}</div>
+      </div>
+      <div class="att-btns">
+        <button class="att-btn ${val==='P'?'ps':''}" onclick="setAtt('${s.id}','P',this)" style="color:#16a34a">P</button>
+        <button class="att-btn ${val==='A'?'as':''}" onclick="setAtt('${s.id}','A',this)" style="color:#dc2626">A</button>
+        <button class="att-btn ${val==='L'?'ls':''}" onclick="setAtt('${s.id}','L',this)" style="color:#ca8a04">L</button>
+      </div>
+    </div>`;
   }).join('');
   updateAttCounts();
 }
-
-function updateAttSessions() {
-  var bname = document.getElementById('att-batch')?.value || '';
-  var sessEl = document.getElementById('att-session');
-  if (!sessEl) return;
-  var batch = batches.find(function(b){ return b.name===bname; });
-  sessEl.innerHTML = '<option value="morning">☀️ Morning</option><option value="evening">🌙 Evening</option>';
-  if (batch && batch.sessions && batch.sessions.length) {
-    sessEl.innerHTML = batch.sessions.map(function(s){
-      return '<option value="'+s+'">'+(s==='morning'?'☀️ Morning':'🌙 Evening')+'</option>';
-    }).join('');
-  }
-}
 function setAtt(sid, v, btn) {
-  const sess = document.getElementById('att-session')?.value || 'default';
-  const key  = sid + '_' + sess;
-  if (v) attState[key] = v; else delete attState[key];
-  if (btn) {
-    const container = btn.closest('.att-btns');
-    if (container) container.querySelectorAll('.att-btn').forEach(function(b){ b.classList.remove('ps','as','ls','lvs'); });
-    btn.classList.add(v==='P'?'ps':v==='A'?'as':v==='L'?'ls':'lvs');
-  }
+  if (v) attState[sid] = v; else delete attState[sid];
+  const row = btn.closest('.att-row');
+  row.querySelectorAll('.att-btn').forEach(b => b.classList.remove('ps','as','ls'));
+  btn.classList.add(v==='P'?'ps':v==='A'?'as':'ls');
   updateAttCounts();
 }
-function attClick(btn) {
-  const v   = btn.getAttribute('data-v');
-  const sid = btn.closest('.att-btns')?.getAttribute('data-sid');
-  if (sid) setAtt(sid, v, btn);
-}
 function markAllAtt(v, btn) {
-  document.querySelectorAll('.seg .seg-b').forEach(function(b){ b.classList.remove('on'); });
-  if (btn) btn.classList.add('on');
-  const sess  = document.getElementById('att-session')?.value || 'default';
-  const batch = document.getElementById('att-batch')?.value || '';
-  let target = students.filter(function(s){ return s.status==='active'; });
-  if (batch) target = target.filter(function(s){ return (s.batch||s.course||'')===batch; });
-  target.forEach(function(s){ attState[s.id+'_'+sess] = v; });
+  document.querySelectorAll('.seg .seg-b').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  students.filter(s=>s.status==='active').forEach(s => { attState[s.id] = v; });
   renderAttList();
 }
 function updateAttCounts() {
-  const sess  = document.getElementById('att-session')?.value || 'morning';
-  const batch = document.getElementById('att-batch')?.value || '';
-  let active = students.filter(s=>s.status==='active');
-  if (batch) active = active.filter(s=>(s.batch||s.course||'')===batch);
+  const active = students.filter(s=>s.status==='active');
   let p=0, a=0, l=0;
   active.forEach(s => {
-    const v = attState[s.id+'_'+sess]||'';
-    if(v==='P') p++; else if(v==='A') a++; else if(v==='L'||v==='LV') l++;
-    else p++; // unmarked = present
+    const v = attState[s.id]||'';
+    if(v==='P') p++; else if(v==='A') a++; else if(v==='L') l++;
+    else p++; // unmarked = present by default
   });
   const tot = active.length;
   document.getElementById('att-pc-lbl').textContent = p+' Present';
   document.getElementById('att-ac-lbl').textContent = a+' Absent';
   const ltl = CFG.ATTENDANCE?.latesToLeave || 10;
-  document.getElementById('att-lc-lbl').textContent = l+' Late · '+lv+' Leave';
+  document.getElementById('att-lc-lbl').textContent = l+' Late ('+ltl+'=1 leave)';
   document.getElementById('att-pct-lbl').textContent = tot>0?Math.round(p/tot*100)+'%':'—%';
   updateDashStats();
 }
@@ -1965,8 +1761,8 @@ function renderFees(data) {
   const bm={paid:'bg',partial:'bp',pending:'ba',overdue:'br2'};
   const source = (data||fees).filter(f=>f&&f.rcpt);
   // Update summary cards
-  const collected = source.reduce((s,f)=>s+(f.paid||0),0);  // ALL paid amounts
-  const pending   = source.reduce((s,f)=>s+(f.balance||0),0); // ALL outstanding balances
+  const collected = source.filter(f=>f.status==='paid').reduce((s,f)=>s+(f.paid||0),0);
+  const pending   = source.filter(f=>f.status==='pending'||f.status==='partial').reduce((s,f)=>s+(f.balance||0),0);
   const overdue   = source.filter(f=>f.status==='overdue').length;
   const cEl=document.getElementById('fv-collected'); if(cEl) cEl.textContent='₹'+collected.toLocaleString('en-IN');
   const pEl=document.getElementById('fv-pending');   if(pEl) pEl.textContent='₹'+pending.toLocaleString('en-IN');
@@ -2004,8 +1800,6 @@ function saveFeeEntry() {
   fees.unshift({rcpt,student:stName,month:new Date().toLocaleString('en-IN',{month:'short',year:'numeric'}),total:amt,paid,balance:bal,mode:document.getElementById('m-fmode')?.value||'Cash',status:paid>=amt?'paid':paid>0?'partial':'pending'});
   saveFees();
   renderFees(fees);
-  updateDashStats();
-  initCharts();
   closeModal();
   showToast('✅ Fee saved! Receipt: '+rcpt);
   runBackup('change');
@@ -2570,34 +2364,17 @@ function saveNotif() {
    WHATSAPP MODULE
 ═══════════════════════════════════════════════════════ */
 function renderWATypes() {
-  var el = document.getElementById('wa-type-grid');
-  if (!el) return;
-  var lic = window.__LIC__ || {};
-  var allowed = lic.features ? (lic.features.waTypes || 2) : 7;
-  var basicTypes = ['absent','late'];
-
-  el.innerHTML = WA_TYPES.map(function(wt, idx) {
-    var isLocked = allowed <= 2 && !basicTypes.includes(wt.id);
-    var isActive = activeWAType === wt.id;
-    return '<div class="wa-type-btn' + (isActive?' on':'') + '" '
-      + 'onclick="' + (isLocked ? 'openUpgrade()' : 'selectWAType(\'' + wt.id + '\',this)') + '" '
-      + 'style="border-left:3px solid ' + (isLocked ? 'var(--br)' : wt.color) + ';opacity:' + (isLocked ? '.55' : '1') + '">'
-      + '<div style="width:32px;height:32px;border-radius:8px;background:' + (isLocked ? 'var(--bg)' : wt.bg) + ';'
-      + 'display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0">'
-      + (isLocked ? '🔒' : getWAIcon(wt.id)) + '</div>'
-      + '<div style="flex:1;min-width:0">'
-      + '<div style="font-size:12px;font-weight:600;color:' + (isLocked ? 'var(--tx3)' : 'var(--tx)') + '">'
-      + (lang==='ta' ? wt.labelTA : wt.label) + '</div>'
-      + (isLocked ? '<div style="font-size:9px;background:#fef3c7;color:#92400e;border-radius:8px;padding:1px 6px;display:inline-block;margin-top:2px">Pro+</div>' : '')
-      + '</div>'
-      + '</div>';
-  }).join('');
-}
-
-function getWAIcon(id) {
-  var icons = {absent:'🚫',late:'⏰',monthly:'📊',marks:'📝',holiday:'🏖️',birthday:'🎂',
-               fees:'💰',pending_fees:'⚠️',leave:'📋',time_change:'⏱️',custom:'✏️'};
-  return icons[id] || '📱';
+  const lic = window.__LIC__||{};
+  const allowedTypes = (lic.features && lic.features.waTypes) || 7;
+  const grid = document.getElementById('wa-type-grid');
+  if (!grid) return;
+  const visibleWATypes = WA_TYPES.slice(0, allowedTypes);
+  grid.innerHTML = visibleWATypes.map(wt => `
+    <div onclick="setWAType('${wt.id}',this)" style="border:.5px solid var(--br);border-radius:9px;padding:10px 8px;text-align:center;cursor:pointer;background:${waType===wt.id?wt.bg:'var(--card)'};border-color:${waType===wt.id?wt.color:'var(--br)'};border-width:${waType===wt.id?'1.5px':'.5px'};transition:.12s">
+      <div style="font-size:12px;font-weight:600;color:${wt.color}">${lang==='ta'?wt.labelTA:wt.label}</div>
+    </div>`).join('');
+  updateWATemplates();
+  buildWAQueue();
 }
 
 function setWAType(id, el) {
@@ -2631,10 +2408,7 @@ function updateWAPreview() {
     return;
   }
 
-  const demoStudent = students.find(s=>s&&s.name) || {
-    name:'Sample Student', parent:'Parent Name', phone:'9876543210',
-    grade:'10', id:'DEMO-001', status:'active'
-  };
+  const demoStudent = students[0];
   let template;
   if (custom) {
     template = custom;
@@ -3343,7 +3117,6 @@ function doResetData() {
   renderStudents(students);
   renderAttList();
   renderFees(fees);
-  initBatches();  // migrate + sync batch config
   renderExams();
   renderStaff();
   renderNotifs();
@@ -3381,408 +3154,6 @@ function runStorageDiag() {
   out.push('');
   out.push('📊 In-memory: students=' + students.length + ' fees=' + fees.length + ' staff=' + staffData.length);
   document.getElementById('storage-diag').innerHTML = out.join('<br>');
-}
-
-/* renderBatchEditor → now in Batches page */
-
-/* ══════════════════════════════════════════════════════
-   BATCHES MODULE
-══════════════════════════════════════════════════════ */
-// Each batch: {id, name, sessions:['morning','evening'], days:[], startTime, endTime}
-var batches = [];
-const BATCHES_KEY = '_erp_batches_v2';
-
-function saveBatchesData() {
-  try { localStorage.setItem(BATCHES_KEY, JSON.stringify(batches)); } catch(e){}
-}
-function loadBatchesData() {
-  try {
-    var b = localStorage.getItem(BATCHES_KEY);
-    if (b) { var p = JSON.parse(b); if (Array.isArray(p)) batches = p; }
-    // Migrate from CFG.BATCHES (old string array)
-    if (!batches.length && CFG.BATCHES && CFG.BATCHES.length) {
-      batches = CFG.BATCHES.map(function(name,i){
-        return {id:'B'+i, name:name, sessions:['morning'], days:['Mon','Tue','Wed','Thu','Fri','Sat'], startTime:'04:00', endTime:'07:00'};
-      });
-      saveBatchesData();
-    }
-  } catch(e){}
-}
-
-function renderBatchesList() {
-  var el = document.getElementById('batches-list');
-  if (!el) return;
-  if (!batches.length) {
-    el.innerHTML = '<div class="card" style="text-align:center;padding:30px;color:var(--tx3)">No batches yet. Click + Add Batch to create one.</div>';
-    return;
-  }
-  el.innerHTML = batches.map(function(b,i){
-    var studentCount = students.filter(function(s){ return (s.batch||s.course||'')===(b.name||''); }).length;
-    var sessLabels = (b.sessions||[]).map(function(s){ return s==='morning'?'☀️ Morning':'🌙 Evening'; }).join(' · ');
-    var days = (b.days||[]).join(', ') || 'All days';
-    return '<div class="card" style="margin-bottom:10px;padding:0;overflow:hidden">'
-      +'<div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:.5px solid var(--br)">'
-      +'<div style="width:42px;height:42px;border-radius:10px;background:var(--prl);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">📚</div>'
-      +'<div style="flex:1">'
-      +'<div style="font-size:14px;font-weight:700;color:var(--tx)">'+b.name+'</div>'
-      +'<div style="font-size:11px;color:var(--tx2);margin-top:2px">'+sessLabels+' &nbsp;·&nbsp; '+days+'</div>'
-      +'</div>'
-      +'<div style="text-align:right">'
-      +'<div style="font-size:18px;font-weight:700;color:var(--pr)">'+studentCount+'</div>'
-      +'<div style="font-size:10px;color:var(--tx3)">Students</div>'
-      +'</div>'
-      +'</div>'
-      +'<div style="padding:10px 16px;display:flex;gap:8px;flex-wrap:wrap">'
-      +'<span style="font-size:11px;color:var(--tx2)">🕐 '+b.startTime+' – '+b.endTime+'</span>'
-      +'<div style="margin-left:auto;display:flex;gap:6px">'
-      +'<button class="btn btn-sm" onclick="editBatch('+i+')" style="font-size:11px">✏️ Edit</button>'
-      +'<button class="btn btn-sm" onclick="batchAttendance('+i+')" style="font-size:11px;background:var(--pr);color:#fff;border-color:var(--pr)">📅 Attendance</button>'
-      +'<button class="btn btn-sm" onclick="deleteBatchItem('+i+')" style="font-size:11px;color:#dc2626;border-color:#fecdd3">🗑</button>'
-      +'</div></div>'
-      +'</div>';
-  }).join('');
-  // Also sync to CFG.BATCHES for dropdowns
-  CFG.BATCHES = batches.map(function(b){ return b.name; });
-}
-
-function showBatchModal(idx, b) {
-  var DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-  var days = b.days||DAYS.slice(0,6);
-  var root = document.getElementById('modal-root');
-  root.innerHTML = '<div class="modal-bg" onclick="if(event.target===this)closeModal()">'
-    +'<div class="modal" style="max-width:440px">'
-    +'<div class="modal-title">'+(idx<0?'Add New':'Edit')+' Batch</div>'
-    +'<div class="fg"><label class="fl">Batch Name *</label>'
-    +'<input class="fi" id="bm-name" value="'+(b.name||'')+'" placeholder="e.g. Morning Batch A"></div>'
-    +'<div class="frow"><div class="fg"><label class="fl">Start Time</label>'
-    +'<input class="fi" type="time" id="bm-start" value="'+(b.startTime||'16:00')+'"></div>'
-    +'<div class="fg"><label class="fl">End Time</label>'
-    +'<input class="fi" type="time" id="bm-end" value="'+(b.endTime||'19:00')+'"></div></div>'
-    +'<div class="fg"><label class="fl">Sessions</label>'
-    +'<div style="display:flex;gap:8px;margin-top:4px">'
-    +'<label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">'
-    +'<input type="checkbox" id="bm-morning" '+(( b.sessions||[]).includes('morning')?'checked':'')+' style="width:16px;height:16px;accent-color:var(--pr)"> ☀️ Morning</label>'
-    +'<label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">'
-    +'<input type="checkbox" id="bm-evening" '+((b.sessions||[]).includes('evening')?'checked':'')+' style="width:16px;height:16px;accent-color:var(--pr)"> 🌙 Evening</label>'
-    +'</div></div>'
-    +'<div class="fg"><label class="fl">Days</label>'
-    +'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px" id="bm-days">'
-    +DAYS.map(function(day){
-      return '<button type="button" onclick="toggleDay(this)" data-day="'+day+'" '
-        +'style="padding:4px 10px;border-radius:16px;font-size:12px;border:1.5px solid var(--br);'
-        +'background:'+(days.includes(day)?'var(--pr)':'var(--card)')+';'
-        +'color:'+(days.includes(day)?'#fff':'var(--tx)')+';cursor:pointer;font-family:inherit">'+day+'</button>';
-    }).join('')
-    +'</div></div>'
-    +'<div class="modal-foot">'
-    +'<button class="btn btn-p" onclick="saveBatchModal('+idx+')">💾 Save Batch</button>'
-    +'<button class="btn" onclick="closeModal()">Cancel</button>'
-    +'</div></div></div>';
-}
-function toggleDay(btn) {
-  var on = btn.style.background.includes('var(--pr)') || btn.style.background==='var(--pr)';
-  btn.style.background = on ? 'var(--card)' : 'var(--pr)';
-  btn.style.color = on ? 'var(--tx)' : '#fff';
-}
-function deleteBatchItem(idx) {
-  var name = batches[idx]?.name;
-  batches.splice(idx,1);
-  saveBatchesData();
-  renderBatchesList();
-  showToast('Removed: '+name);
-}
-function batchAttendance(idx) {
-  var b = batches[idx];
-  // Pre-select batch in attendance and navigate
-  navTo('attendance');
-  setTimeout(function(){
-    var sel = document.getElementById('att-batch');
-    if (sel) sel.value = b.name;
-    var sessEl = document.getElementById('att-session');
-    if (sessEl && b.sessions && b.sessions.length) {
-      sessEl.innerHTML = b.sessions.map(function(s){
-        return '<option value="'+s+'">'+(s==='morning'?'☀️ Morning Session':'🌙 Evening Session')+'</option>';
-      }).join('');
-    }
-    renderAttList();
-  }, 200);
-}
-function insertWAVar(v){var el=document.getElementById("wa-custom-msg");if(!el)return;var s=el.selectionStart,e=el.selectionEnd;el.value=el.value.substring(0,s)+v+el.value.substring(e);el.selectionStart=el.selectionEnd=s+v.length;el.focus();document.getElementById("wa-custom-len").textContent=el.value.length+" chars";}
-
-/* ══════════════════════════════════════════════════════
-   BATCHES MODULE
-══════════════════════════════════════════════════════ */
-
-// CFG.BATCHES is array of objects: {id, name, subject, sessions:[{label,start,end}], color, studentCount}
-function initBatches() {
-  // Migrate old string batches to objects if needed
-  if (!CFG.BATCHES) CFG.BATCHES = [];
-  CFG.BATCHES = CFG.BATCHES.map(function(b) {
-    if (typeof b === 'string') {
-      return { id: 'B-' + Date.now() + Math.random().toString(36).slice(2,5),
-               name: b, subject: '', color: '#185FA5',
-               sessions: [{label:'Session 1', start:'16:00', end:'18:00'}] };
-    }
-    return b;
-  });
-  renderBatches();
-}
-
-function renderBatches() {
-  var grid = document.getElementById('batches-grid');
-  var empty = document.getElementById('batches-empty');
-  if (!grid) return;
-
-  if (!CFG.BATCHES || !CFG.BATCHES.length) {
-    grid.innerHTML = '';
-    if (empty) empty.style.display = 'block';
-    return;
-  }
-  if (empty) empty.style.display = 'none';
-
-  var COLORS = ['#185FA5','#1D9E75','#7c3aed','#854F0B','#dc2626','#0891b2'];
-  grid.innerHTML = CFG.BATCHES.map(function(b, bi) {
-    var studentCount = students.filter(function(s){ return s.batch===b.name || s.course===b.name; }).length;
-    var sessions = b.sessions || [{label:'Session 1', start:'16:00', end:'18:00'}];
-    var sessionRows = sessions.map(function(sess, si) {
-      return '<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:.5px solid var(--br)">'
-        + '<span style="font-size:11px;font-weight:600;color:var(--tx)">' + (sess.label||'Session '+(si+1)) + '</span>'
-        + '<span style="font-size:11px;color:var(--tx2)">'
-        + (sess.start||'--:--') + ' – ' + (sess.end||'--:--') + '</span>'
-        + '<button onclick="event.stopPropagation();editSession('+bi+','+si+')" style="background:none;border:none;cursor:pointer;color:var(--tx3);font-size:11px;padding:0 4px">✏️</button>'
-        + '<button onclick="event.stopPropagation();deleteSession('+bi+','+si+')" style="background:none;border:none;cursor:pointer;color:#dc2626;font-size:11px;padding:0 4px">✕</button>'
-        + '</div>';
-    }).join('');
-
-    return '<div class="card" style="padding:0;overflow:hidden">'
-      + '<div style="background:' + (b.color||COLORS[bi%COLORS.length]) + ';padding:14px 16px;display:flex;align-items:center;gap:10px">'
-      + '  <div style="width:40px;height:40px;border-radius:10px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:20px">📚</div>'
-      + '  <div style="flex:1;min-width:0">'
-      + '    <div style="font-size:15px;font-weight:700;color:#fff">' + b.name + '</div>'
-      + '    <div style="font-size:11px;color:rgba(255,255,255,.8)">' + (b.subject||'No subject set') + ' · ' + studentCount + ' student' + (studentCount!==1?'s':'') + '</div>'
-      + '  </div>'
-      + '  <div style="display:flex;gap:6px">'
-      + '    <button onclick="editBatch('+bi+')" style="background:rgba(255,255,255,.2);border:none;border-radius:6px;padding:5px 8px;color:#fff;cursor:pointer;font-size:11px">✏️</button>'
-      + '    <button onclick="deleteBatch('+bi+')" style="background:rgba(255,255,255,.2);border:none;border-radius:6px;padding:5px 8px;color:#fff;cursor:pointer;font-size:11px">🗑</button>'
-      + '  </div>'
-      + '</div>'
-      + '<div style="padding:10px 16px">'
-      + '  <div style="font-size:10px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Sessions</div>'
-      + sessionRows
-      + '  <button onclick="addSession('+bi+')" class="btn btn-sm" style="margin-top:8px;width:100%;justify-content:center;font-size:11px">+ Add Session</button>'
-      + '</div>'
-      + '</div>';
-  }).join('');
-
-  // Sync batches to dropdowns
-  syncBatchDropdowns();
-}
-
-function syncBatchDropdowns() {
-  // Update all batch selects in attendance, admissions, add-student modal
-  var selects = document.querySelectorAll('#att-batch, #adm-course, #m-course');
-  selects.forEach(function(sel) {
-    if (!sel) return;
-    var current = sel.value;
-    while (sel.options.length > 1) sel.remove(1); // keep first "All" option
-    (CFG.BATCHES||[]).forEach(function(b) {
-      var bName = typeof b === 'string' ? b : b.name;
-      var o = document.createElement('option');
-      o.value = bName; o.textContent = bName;
-      sel.appendChild(o);
-    });
-    if (current) sel.value = current;
-  });
-}
-
-function showAddBatchModal() {
-  var colors = ['#185FA5','#1D9E75','#7c3aed','#854F0B','#dc2626','#0891b2'];
-  var root = document.getElementById('modal-root');
-  root.innerHTML = '<div class="modal-bg" onclick="if(event.target===this)closeModal()">'
-    + '<div class="modal">'
-    + '<div class="modal-title">📚 Add Batch</div>'
-    + '<div class="fg"><label class="fl">Batch Name *</label><input class="fi" id="nb-name" placeholder="e.g. Morning Batch"></div>'
-    + '<div class="fg"><label class="fl">Subject / Group</label><input class="fi" id="nb-subject" placeholder="e.g. Maths, Science, Commerce"></div>'
-    + '<div class="fg"><label class="fl">Color</label>'
-    + '<div style="display:flex;gap:8px;margin-top:4px">'
-    + colors.map(function(c,i){ return '<div onclick="document.querySelectorAll(\'.clr-opt\').forEach(x=>x.style.outline=\'none\');this.style.outline=\'2px solid #000\';document.getElementById(\'nb-color\').value=\'' + c + '\';" class="clr-opt" style="width:28px;height:28px;border-radius:50%;background:'+c+';cursor:pointer;transition:.1s'+(i===0?';outline:2px solid #000':'')+';outline-offset:2px"></div>'; }).join('')
-    + '</div><input type="hidden" id="nb-color" value="' + colors[0] + '"></div>'
-    + '<div style="background:var(--bg);border-radius:8px;padding:10px;margin-top:6px">'
-    + '  <div style="font-size:11px;font-weight:700;color:var(--tx2);margin-bottom:8px">Sessions</div>'
-    + '  <div id="nb-sessions">'
-    + '    <div class="frow nb-sess-row">'
-    + '      <div class="fg"><label class="fl">Label</label><input class="fi nb-sess-label" value="Morning Session" placeholder="Session name"></div>'
-    + '      <div class="fg"><label class="fl">Start</label><input class="fi nb-sess-start" type="time" value="09:00"></div>'
-    + '      <div class="fg"><label class="fl">End</label><input class="fi nb-sess-end" type="time" value="11:00"></div>'
-    + '    </div>'
-    + '  </div>'
-    + '  <button class="btn btn-sm" onclick="addSessionRow()" style="margin-top:8px;width:100%;justify-content:center;font-size:11px">+ Add Another Session</button>'
-    + '</div>'
-    + '<div class="modal-foot">'
-    + '  <button class="btn btn-p" onclick="saveBatchModal()">Save Batch</button>'
-    + '  <button class="btn" onclick="closeModal()">Cancel</button>'
-    + '</div>'
-    + '</div></div>';
-}
-
-function addSessionRow() {
-  var container = document.getElementById('nb-sessions');
-  if (!container) return;
-  var row = document.createElement('div');
-  row.className = 'frow nb-sess-row';
-  row.style.marginTop = '6px';
-  row.innerHTML = '<div class="fg"><label class="fl">Label</label><input class="fi nb-sess-label" placeholder="Evening Session"></div>'
-    + '<div class="fg"><label class="fl">Start</label><input class="fi nb-sess-start" type="time" value="16:00"></div>'
-    + '<div class="fg"><label class="fl">End</label><input class="fi nb-sess-end" type="time" value="18:00"></div>'
-    + '<button onclick="this.closest(\'.nb-sess-row\').remove()" style="background:none;border:none;color:#dc2626;cursor:pointer;align-self:flex-end;padding:8px 4px;font-size:16px">✕</button>';
-  container.appendChild(row);
-}
-
-function saveBatchModal() {
-  var name = document.getElementById('nb-name')?.value.trim();
-  if (!name) { showToast('Enter a batch name'); return; }
-  var sessions = [];
-  document.querySelectorAll('.nb-sess-row').forEach(function(row) {
-    sessions.push({
-      label: row.querySelector('.nb-sess-label')?.value.trim() || 'Session',
-      start: row.querySelector('.nb-sess-start')?.value || '09:00',
-      end:   row.querySelector('.nb-sess-end')?.value   || '11:00'
-    });
-  });
-  if (!CFG.BATCHES) CFG.BATCHES = [];
-  CFG.BATCHES.push({
-    id: 'B-' + Date.now(),
-    name: name,
-    subject: document.getElementById('nb-subject')?.value.trim() || '',
-    color: document.getElementById('nb-color')?.value || '#185FA5',
-    sessions: sessions.length ? sessions : [{label:'Session 1', start:'09:00', end:'11:00'}]
-  });
-  saveBatches();
-  renderBatches();
-  closeModal();
-  showToast('✅ Batch "' + name + '" added!');
-}
-
-function editBatch(idx) {
-  var b = CFG.BATCHES[idx];
-  if (!b || typeof b === 'string') return;
-  var colors = ['#185FA5','#1D9E75','#7c3aed','#854F0B','#dc2626','#0891b2'];
-  var root = document.getElementById('modal-root');
-  var sessHtml = (b.sessions||[{label:'Session 1',start:'09:00',end:'11:00'}]).map(function(s) {
-    return '<div class="frow nb-sess-row" style="margin-top:4px">'
-      + '<div class="fg"><label class="fl">Label</label><input class="fi nb-sess-label" value="' + (s.label||'') + '"></div>'
-      + '<div class="fg"><label class="fl">Start</label><input class="fi nb-sess-start" type="time" value="' + (s.start||'09:00') + '"></div>'
-      + '<div class="fg"><label class="fl">End</label><input class="fi nb-sess-end" type="time" value="' + (s.end||'11:00') + '"></div>'
-      + '<button onclick="this.closest(\'.nb-sess-row\').remove()" style="background:none;border:none;color:#dc2626;cursor:pointer;align-self:flex-end;padding:8px 4px;font-size:16px">✕</button>'
-      + '</div>';
-  }).join('');
-
-  root.innerHTML = '<div class="modal-bg" onclick="if(event.target===this)closeModal()">'
-    + '<div class="modal"><div class="modal-title">✏️ Edit Batch</div>'
-    + '<div class="fg"><label class="fl">Batch Name</label><input class="fi" id="nb-name" value="' + b.name + '"></div>'
-    + '<div class="fg"><label class="fl">Subject</label><input class="fi" id="nb-subject" value="' + (b.subject||'') + '"></div>'
-    + '<div class="fg"><label class="fl">Color</label><div style="display:flex;gap:8px;margin-top:4px">'
-    + colors.map(function(c){ return '<div onclick="document.querySelectorAll(\'.clr-opt\').forEach(x=>x.style.outline=\'none\');this.style.outline=\'2px solid #000\';document.getElementById(\'nb-color\').value=\'' + c + '\'" class="clr-opt" style="width:28px;height:28px;border-radius:50%;background:'+c+';cursor:pointer;outline-offset:2px'+(b.color===c?';outline:2px solid #000':'')+'""></div>'; }).join('')
-    + '</div><input type="hidden" id="nb-color" value="' + (b.color||'#185FA5') + '"></div>'
-    + '<div style="background:var(--bg);border-radius:8px;padding:10px;margin-top:6px">'
-    + '<div style="font-size:11px;font-weight:700;color:var(--tx2);margin-bottom:6px">Sessions</div>'
-    + '<div id="nb-sessions">' + sessHtml + '</div>'
-    + '<button class="btn btn-sm" onclick="addSessionRow()" style="margin-top:8px;width:100%;justify-content:center;font-size:11px">+ Add Session</button>'
-    + '</div>'
-    + '<div class="modal-foot">'
-    + '<button class="btn btn-p" onclick="saveEditBatch(' + idx + ')">Save</button>'
-    + '<button class="btn" onclick="closeModal()">Cancel</button>'
-    + '</div></div></div>';
-}
-
-function saveEditBatch(idx) {
-  var b = CFG.BATCHES[idx];
-  if (!b) return;
-  var oldName = b.name;
-  b.name    = document.getElementById('nb-name')?.value.trim() || b.name;
-  b.subject = document.getElementById('nb-subject')?.value.trim() || '';
-  b.color   = document.getElementById('nb-color')?.value || b.color;
-  b.sessions = [];
-  document.querySelectorAll('.nb-sess-row').forEach(function(row) {
-    b.sessions.push({
-      label: row.querySelector('.nb-sess-label')?.value.trim() || 'Session',
-      start: row.querySelector('.nb-sess-start')?.value || '09:00',
-      end:   row.querySelector('.nb-sess-end')?.value   || '11:00'
-    });
-  });
-  // Update students if batch name changed
-  if (oldName !== b.name) {
-    students.forEach(function(s){ if(s.batch===oldName||s.course===oldName){ s.batch=b.name; s.course=b.name; } });
-    saveStudents();
-  }
-  saveBatches();
-  renderBatches();
-  closeModal();
-  showToast('✅ Batch updated!');
-}
-
-function addSession(batchIdx) {
-  var b = CFG.BATCHES[batchIdx];
-  if (!b || typeof b==='string') return;
-  if (!b.sessions) b.sessions = [];
-  b.sessions.push({label:'New Session', start:'16:00', end:'18:00'});
-  saveBatches();
-  renderBatches();
-}
-
-function editSession(batchIdx, sessIdx) {
-  var b = CFG.BATCHES[batchIdx];
-  var s = b && b.sessions && b.sessions[sessIdx];
-  if (!s) return;
-  var root = document.getElementById('modal-root');
-  root.innerHTML = '<div class="modal-bg" onclick="if(event.target===this)closeModal()">'
-    + '<div class="modal" style="max-width:360px">'
-    + '<div class="modal-title">⏰ Edit Session</div>'
-    + '<div class="fg"><label class="fl">Label</label><input class="fi" id="es-label" value="' + (s.label||'') + '"></div>'
-    + '<div class="frow">'
-    + '<div class="fg"><label class="fl">Start Time</label><input class="fi" id="es-start" type="time" value="' + (s.start||'09:00') + '"></div>'
-    + '<div class="fg"><label class="fl">End Time</label><input class="fi" id="es-end" type="time" value="' + (s.end||'11:00') + '"></div>'
-    + '</div>'
-    + '<div class="modal-foot">'
-    + '<button class="btn btn-p" onclick="saveSession(' + batchIdx + ',' + sessIdx + ')">Save</button>'
-    + '<button class="btn" onclick="closeModal()">Cancel</button>'
-    + '</div></div></div>';
-}
-
-function saveSession(bi, si) {
-  var b = CFG.BATCHES[bi];
-  if (!b || !b.sessions || !b.sessions[si]) return;
-  b.sessions[si].label = document.getElementById('es-label')?.value.trim() || b.sessions[si].label;
-  b.sessions[si].start = document.getElementById('es-start')?.value || b.sessions[si].start;
-  b.sessions[si].end   = document.getElementById('es-end')?.value   || b.sessions[si].end;
-  saveBatches();
-  renderBatches();
-  closeModal();
-  showToast('✅ Session updated!');
-}
-
-function deleteSession(bi, si) {
-  var b = CFG.BATCHES[bi];
-  if (!b || !b.sessions) return;
-  if (b.sessions.length <= 1) { showToast('Need at least one session'); return; }
-  b.sessions.splice(si, 1);
-  saveBatches();
-  renderBatches();
-}
-
-function deleteBatch(idx) {
-  var b = CFG.BATCHES[idx];
-  if (!b) return;
-  var name = typeof b==='string' ? b : b.name;
-  if (!confirm('Remove batch "' + name + '"?')) return;
-  CFG.BATCHES.splice(idx, 1);
-  saveBatches();
-  renderBatches();
-  showToast('Batch removed');
-}
-
-function saveBatches() {
-  try { localStorage.setItem('_erp_batches', JSON.stringify(CFG.BATCHES)); } catch(e) {}
 }
 function saveAIKey(){}
 function toggleAIKeyVis(){}
@@ -4077,37 +3448,16 @@ function initLicenseUI() {
    DASHBOARD STATS
 ═══════════════════════════════════════════════════════ */
 function updateDashStats() {
-  // Students
-  const active = students.filter(s => s.status === 'active').length;
-  const el1 = document.getElementById('sv-students');
-  if (el1) el1.textContent = active;
-
-  // Income = ALL paid amounts (paid + partial + any payment received)
-  const now = new Date();
-  const thisMonth = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
-  const totalPaid   = fees.reduce((s,f) => s + (f.paid||0), 0);
-  const totalPend   = fees.reduce((s,f) => s + (f.balance||0), 0);
-  // Monthly income = fees paid THIS month
-  const monthPaid = fees
-    .filter(f => (f.month||'').toLowerCase().includes(
-      now.toLocaleString('en-IN',{month:'short'}) + ' ' + now.getFullYear()
-    ) || (f.date||f.month||'').includes(thisMonth))
-    .reduce((s,f) => s + (f.paid||0), 0);
-
-  const el2 = document.getElementById('sv-income');
-  const el3 = document.getElementById('sv-pending');
-  if (el2) el2.textContent = '₹' + totalPaid.toLocaleString('en-IN');
-  if (el3) el3.textContent = '₹' + totalPend.toLocaleString('en-IN');
-
-  // Attendance
-  const activeStudents = students.filter(s => s.status === 'active');
-  const present = activeStudents.filter(s => attState[s.id] === 'P').length;
-  const total   = activeStudents.length;
-  const el4 = document.getElementById('sv-att');
-  if (el4) el4.textContent = total > 0 ? Math.round(present/total*100) + '%' : '—%';
-
-  // Update charts with real data
-  updateCharts();
+  const active=students.filter(s=>s.status==='active').length;
+  const el1=document.getElementById('sv-students'),el2=document.getElementById('sv-income'),el3=document.getElementById('sv-pending');
+  if(el1) el1.textContent=students.length;
+  const paid=fees.filter(f=>f.status==='paid').reduce((s,f)=>s+(f.paid||0),0);
+  const pend=fees.filter(f=>f.status!=='paid').reduce((s,f)=>s+(f.balance||0),0);
+  if(el2) el2.textContent='₹'+paid.toLocaleString('en-IN');
+  if(el3) el3.textContent='₹'+pend.toLocaleString('en-IN');
+  const attVals=Object.values(attState),p=attVals.filter(v=>v==='P').length,tot=attVals.length;
+  const el4=document.getElementById('sv-att');
+  if(el4) el4.textContent=tot>0?Math.round(p/tot*100)+'%':'—%';
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -4115,128 +3465,11 @@ function updateDashStats() {
 ═══════════════════════════════════════════════════════ */
 let c1i, c2i;
 function initCharts() {
-  const c1 = document.getElementById('chart-income');
-  const c2 = document.getElementById('chart-fee');
-  if (!c1 || !c2 || !window.Chart) return;
-  if (c1i) { try { c1i.destroy(); } catch(e) {} }
-  if (c2i) { try { c2i.destroy(); } catch(e) {} }
-
-  // Build last 6 months labels from real date
-  const now = new Date();
-  const labels = [], incomeData = [], pendingData = [];
-  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-
-  for (let m = 5; m >= 0; m--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - m, 1);
-    const monthLabel = MONTHS[d.getMonth()] + ' ' + d.getFullYear();
-    const shortLabel = MONTHS[d.getMonth()];
-    labels.push(shortLabel);
-
-    // Sum paid amounts for this month from real fees array
-    const monthFees = fees.filter(f => {
-      if (!f.month) return false;
-      return f.month.includes(shortLabel) && f.month.includes(String(d.getFullYear()));
-    });
-    const income  = monthFees.reduce((s,f) => s + (f.paid||0), 0);
-    const pending = monthFees.reduce((s,f) => s + (f.balance||0), 0);
-    incomeData.push(income);
-    pendingData.push(pending);
-  }
-
-  // Income bar chart
-  c1i = new Chart(c1, {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [
-        { label:'Income',  data:incomeData,  backgroundColor:'#185FA5', borderRadius:5, barPercentage:.65 },
-        { label:'Pending', data:pendingData, backgroundColor:'#dc2626', borderRadius:5, barPercentage:.65 }
-      ]
-    },
-    options: {
-      responsive:true, maintainAspectRatio:false,
-      plugins: { legend:{display:true, labels:{color:'#94a3b8',font:{size:11}}}, tooltip:{callbacks:{label:ctx=>'₹'+ctx.raw.toLocaleString('en-IN')}} },
-      scales: {
-        x: { ticks:{color:'#94a3b8',font:{size:10}}, grid:{display:false} },
-        y: { ticks:{color:'#94a3b8',font:{size:10}, callback:v=>'₹'+(v>=1000?Math.round(v/1000)+'K':v)}, grid:{color:'rgba(148,163,184,.1)'} }
-      }
-    }
-  });
-
-  // Fee status doughnut — from real data
-  const totalPaid    = fees.reduce((s,f)=>s+(f.status==='paid'   ?f.paid   :0),0) + fees.reduce((s,f)=>s+(f.status==='partial'?f.paid   :0),0);
-  const totalPending = fees.reduce((s,f)=>s+(f.status==='pending'?f.balance:0),0);
-  const totalOverdue = fees.reduce((s,f)=>s+(f.status==='overdue'?f.balance:0),0);
-
-  c2i = new Chart(c2, {
-    type: 'doughnut',
-    data: {
-      labels: ['Paid','Pending','Overdue'],
-      datasets: [{ data:[totalPaid||1, totalPending, totalOverdue], backgroundColor:['#16a34a','#ca8a04','#dc2626'], borderWidth:0, hoverOffset:4 }]
-    },
-    options: {
-      responsive:true, maintainAspectRatio:false,
-      plugins: { legend:{display:false}, tooltip:{callbacks:{label:ctx=>'₹'+ctx.raw.toLocaleString('en-IN')}} },
-      cutout:'70%'
-    }
-  });
-
-  // Class strength bar chart
-  var c3 = document.getElementById('chart-class');
-  if (c3 && window.Chart) {
-    if (window.c3i) { try { window.c3i.destroy(); } catch(e) {} }
-    var GRADES = ['KG','1','2','3','4','5','6','7','8','9','10','11','12'];
-    var gradeLabels = [], gradeCounts = [];
-    GRADES.forEach(function(g) {
-      var count = students.filter(function(s){ return s.grade===g && s.status==='active'; }).length;
-      if (count > 0 || students.length === 0) {
-        gradeLabels.push(g==='KG'?'KG':'Gr.'+g);
-        gradeCounts.push(count);
-      }
-    });
-    if (!gradeLabels.length) { gradeLabels=['No Data']; gradeCounts=[0]; }
-    window.c3i = new Chart(c3, {
-      type: 'bar',
-      data: {
-        labels: gradeLabels,
-        datasets: [{
-          label: 'Students',
-          data: gradeCounts,
-          backgroundColor: '#7c3aed',
-          borderRadius: 5,
-          barPercentage: .7
-        }]
-      },
-      options: {
-        responsive:true, maintainAspectRatio:false,
-        plugins: { legend:{display:false}, tooltip:{callbacks:{label:function(ctx){ return ctx.raw + ' student' + (ctx.raw!==1?'s':''); }}} },
-        scales: {
-          x: { ticks:{color:'#94a3b8',font:{size:10}}, grid:{display:false} },
-          y: { ticks:{color:'#94a3b8',font:{size:10},stepSize:1}, grid:{color:'rgba(148,163,184,.1)'}, beginAtZero:true }
-        }
-      }
-    });
-  }
-}
-
-// Match a fee record to a given month/year
-function matchFeeMonth(f, month, year) {
-  if (!f) return false;
-  const monthNames = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
-  const mLow = (f.month||'').toLowerCase();
-  // Try "May 2026" format
-  const mName = monthNames[month-1];
-  if (mLow.includes(mName) && mLow.includes(String(year))) return true;
-  // Try date field "2026-05-xx"
-  if (f.date && f.date.startsWith(year+'-'+String(month).padStart(2,'0'))) return true;
-  return false;
-}
-
-function updateCharts() {
-  // Reinitialize with fresh data
-  if (window.Chart && document.getElementById('chart-income')) {
-    initCharts();
-  }
+  const c1=document.getElementById('chart-income'),c2=document.getElementById('chart-fee');
+  if(!c1||!c2||!window.Chart) return;
+  if(c1i) c1i.destroy(); if(c2i) c2i.destroy();
+  c1i=new Chart(c1,{type:'bar',data:{labels:['Jul','Aug','Sep','Oct','Nov','Dec'],datasets:[{label:'Income',data:[142000,158000,165000,171000,178000,184200],backgroundColor:'#185FA5',borderRadius:5,barPercentage:.65},{label:'Pending',data:[22000,18000,14000,19000,12000,16400],backgroundColor:'#dc2626',borderRadius:5,barPercentage:.65}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:10},autoSkip:false},grid:{display:false}},y:{ticks:{font:{size:10},callback:v=>'₹'+(v/1000)+'K'},grid:{color:'rgba(128,128,128,.07)'}}}}}); 
+  c2i=new Chart(c2,{type:'doughnut',data:{labels:['Paid 78%','Pending 14%','Overdue 8%'],datasets:[{data:[184200,16400,9600],backgroundColor:['#16a34a','#ca8a04','#dc2626'],borderWidth:0,hoverOffset:6}]},options:{responsive:true,maintainAspectRatio:false,cutout:'68%',plugins:{legend:{display:false}}}});
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -4295,20 +3528,6 @@ Warm regards,
 அன்புடன்,
 {center_name}`,
 };
-
-function populateBatchDropdown(selId) {
-  const sel = document.getElementById(selId);
-  if (!sel) return;
-  const current = sel.value;
-  // Keep the first "Select batch" option
-  while (sel.options.length > 1) sel.remove(1);
-  (CFG.BATCHES || []).forEach(function(b) {
-    const opt = document.createElement('option');
-    opt.value = b; opt.textContent = b;
-    sel.appendChild(opt);
-  });
-  if (current) sel.value = current;
-}
 
 function initAdmissions() {
   // Generate next admission number
@@ -4464,29 +3683,14 @@ function submitAdmission() {
   if (admRecentList.length > 20) admRecentList.pop();
 
   // Add admission fee record if non-zero
-  var _now = new Date();
-  var _monthLabel = _now.toLocaleDateString('en-IN', {month:'short', year:'numeric'});
-  // Admission fee (one-time, paid immediately)
   if (parseFloat(admFee) > 0) {
     fees.unshift({
       rcpt: 'RCP-ADM-' + Date.now().toString().slice(-5),
-      student: name, studentId: newStudent.id, month: 'Admission Fee',
+      student: name, month: 'Admission',
       total: parseFloat(admFee), paid: parseFloat(admFee), balance: 0,
       mode: 'Cash', status: 'paid',
     });
   }
-  // Monthly tuition fee — always created as PENDING (shows in Fees → Pending)
-  // Even if fee=0, create a ₹0 pending record so student shows in fee list
-  var _feeAmt = parseFloat(fee) || 0;
-  fees.unshift({
-    rcpt: 'RCP-' + Date.now().toString().slice(-5),
-    student: name, studentId: newStudent.id, month: _monthLabel,
-    total: _feeAmt, paid: 0, balance: _feeAmt,
-    mode: '—', status: _feeAmt > 0 ? 'pending' : 'paid',
-  });
-  saveFees();
-  renderFees(fees);
-  updateDashStats();
 
   runBackup('change');
   renderStudents(students);
@@ -4983,8 +4187,6 @@ function _safeInit() {
     const savedStaffAtt = localStorage.getItem('_erp_staff_att');
     if (savedStaffAtt) { Object.assign(staffAtt, JSON.parse(savedStaffAtt)); }
   } catch(e) {}
-  // Restore batches
-  loadBatchesData();
   // Restore late-to-leave config
   try {
     const savedLTL = localStorage.getItem('_erp_lates_to_leave');
@@ -5021,49 +4223,4 @@ if (document.readyState === 'loading') {
 
 </script>
 </body>
-</html>function selectWAType(id, btn) {
-  activeWAType = id;
-  document.querySelectorAll('.wa-type-btn').forEach(function(b){ b.classList.remove('on'); });
-  if (btn) btn.classList.add('on');
-
-  var ef = document.getElementById('wa-extra-fields');
-  var fc = document.getElementById('wa-field-custom');
-  var fl = document.getElementById('wa-field-leave');
-  var ft = document.getElementById('wa-field-time');
-  var fp = document.getElementById('wa-field-pending');
-  var showExtra = ['custom','leave','time_change','pending_fees'].includes(id);
-
-  if (ef) ef.style.display = showExtra ? 'block' : 'none';
-  if (fc) fc.style.display = id==='custom' ? 'block' : 'none';
-  if (fl) fl.style.display = id==='leave'  ? 'block' : 'none';
-  if (ft) ft.style.display = id==='time_change' ? 'block' : 'none';
-  if (fp) fp.style.display = id==='pending_fees' ? 'block' : 'none';
-
-  // Set today's date defaults
-  var today = new Date().toISOString().split('T')[0];
-  var ld = document.getElementById('wa-leave-date');
-  if (ld && !ld.value) ld.value = today;
-  var td = document.getElementById('wa-time-date');
-  if (td && !td.value) td.value = today;
-
-  // Show pending list
-  if (id==='pending_fees') {
-    var pendStudents = students.filter(function(s){
-      return fees.some(function(f){ return f.student===s.name && (f.balance||0)>0; }) ||
-             !fees.some(function(f){ return f.student===s.name; });
-    });
-    var pList = document.getElementById('wa-pending-list');
-    if (pList) {
-      pList.innerHTML = pendStudents.length
-        ? pendStudents.map(function(s){
-            var bal = fees.filter(function(f){ return f.student===s.name; }).reduce(function(a,f){ return a+(f.balance||0); },0);
-            return '<div style="padding:4px 0;border-bottom:.5px solid var(--br);font-size:11px">'
-              + '<b>' + s.name + '</b> — <span style="color:#dc2626">₹' + bal.toLocaleString('en-IN') + ' pending</span>'
-              + ' · 📞 ' + (s.phone||'—') + '</div>';
-          }).join('')
-        : '<div style="color:#16a34a;font-size:11px">✅ No pending fees!</div>';
-    }
-  }
-
-  updateWAPreview();
-}
+</html>

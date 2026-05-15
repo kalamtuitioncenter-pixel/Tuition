@@ -565,7 +565,49 @@ tbody tr:hover td{background:var(--bg)}
         <button class="btn btn-sm" style="margin-top:8px" onclick="resetAdmTemplate()">↺ Reset to Default</button>
       </div>
 
-      <!-- Recent admissions -->
+      <!-- Fee Receipt WA Template -->
+      <div class="card">
+        <div style="font-size:13px;font-weight:700;color:var(--tx);margin-bottom:4px;display:flex;align-items:center;gap:8px">
+          <span style="font-size:16px">💰</span> Fee Receipt WhatsApp Template
+        </div>
+        <div style="font-size:11px;color:var(--tx3);margin-bottom:10px">Sent automatically after collecting fees. Use variables to personalise.</div>
+        <div class="fg">
+          <label class="fl">Language</label>
+          <select class="fi" id="fee-rcpt-lang" onchange="refreshFeeReceiptPreview()">
+            <option value="en">English</option>
+            <option value="ta">Tamil</option>
+            <option value="both">Both (Tamil + English)</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label class="fl">Template (customise freely)</label>
+          <textarea class="fi" id="fee-rcpt-template" rows="12"
+            style="font-size:12px;font-family:'Noto Sans Tamil',system-ui;line-height:1.7;resize:vertical"
+            oninput="refreshFeeReceiptPreview()"></textarea>
+        </div>
+        <div style="font-size:11px;color:var(--tx3);margin-bottom:8px;line-height:1.8">
+          Variables:
+          <code style="background:var(--bg);padding:1px 5px;border-radius:3px">{student_name}</code>
+          <code style="background:var(--bg);padding:1px 5px;border-radius:3px">{parent_name}</code>
+          <code style="background:var(--bg);padding:1px 5px;border-radius:3px">{class}</code>
+          <code style="background:var(--bg);padding:1px 5px;border-radius:3px">{batch}</code>
+          <code style="background:var(--bg);padding:1px 5px;border-radius:3px">{receipt_no}</code>
+          <code style="background:var(--bg);padding:1px 5px;border-radius:3px">{month}</code>
+          <code style="background:var(--bg);padding:1px 5px;border-radius:3px">{amount_paid}</code>
+          <code style="background:var(--bg);padding:1px 5px;border-radius:3px">{total_fee}</code>
+          <code style="background:var(--bg);padding:1px 5px;border-radius:3px">{balance}</code>
+          <code style="background:var(--bg);padding:1px 5px;border-radius:3px">{payment_mode}</code>
+          <code style="background:var(--bg);padding:1px 5px;border-radius:3px">{date_time}</code>
+          <code style="background:var(--bg);padding:1px 5px;border-radius:3px">{center_name}</code>
+          <code style="background:var(--bg);padding:1px 5px;border-radius:3px">{center_phone}</code>
+          <code style="background:var(--bg);padding:1px 5px;border-radius:3px">{status}</code>
+        </div>
+        <div style="background:#dcfce7;border-radius:8px;padding:11px;font-size:12px;color:#166534;font-family:'Noto Sans Tamil',system-ui;line-height:1.7;white-space:pre-wrap;max-height:180px;overflow-y:auto;border:.5px solid #bbf7d0" id="fee-rcpt-preview">Preview…</div>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button class="btn btn-sm" onclick="saveFeeReceiptTemplate()">💾 Save Template</button>
+          <button class="btn btn-sm" onclick="resetFeeReceiptTemplate()">↺ Reset to Default</button>
+        </div>
+      </div>
       <div class="card" style="flex:1">
         <div style="font-size:13px;font-weight:700;color:var(--tx);margin-bottom:10px">📋 Recent Admissions</div>
         <div id="adm-recent-list" style="max-height:220px;overflow-y:auto">
@@ -616,20 +658,43 @@ tbody tr:hover td{background:var(--bg)}
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
       <div class="fg"><label class="fl">Batch Name *</label><input class="fi" id="bf-name" placeholder="e.g. Science Group A"></div>
       <div class="fg"><label class="fl">Session *</label>
-        <select class="fi" id="bf-session">
-          <option value="Morning">☀️ Morning</option>
-          <option value="Evening">🌙 Evening</option>
+        <select class="fi" id="bf-session" onchange="toggleBatchTimeFields()">
+          <option value="Morning">☀️ Morning Only</option>
+          <option value="Evening">🌙 Evening Only</option>
           <option value="Both">☀️🌙 Both Sessions</option>
         </select>
       </div>
       <div class="fg"><label class="fl">Days</label><input class="fi" id="bf-days" placeholder="Mon–Sat" value="Mon–Sat"></div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
-      <div class="fg"><label class="fl">Start Time</label><input class="fi" id="bf-stime" type="time" value="16:00"></div>
-      <div class="fg"><label class="fl">End Time</label><input class="fi" id="bf-etime" type="time" value="19:00"></div>
+
+    <!-- Single session time (Morning or Evening) -->
+    <div id="bf-single-time" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+      <div class="fg">
+        <label class="fl" id="bf-stime-label">☀️ Start Time</label>
+        <input class="fi" id="bf-stime" type="time" value="16:00">
+      </div>
+      <div class="fg">
+        <label class="fl" id="bf-etime-label">End Time</label>
+        <input class="fi" id="bf-etime" type="time" value="19:00">
+      </div>
       <div class="fg"><label class="fl">Max Students</label><input class="fi" id="bf-max" type="number" placeholder="30" value="30"></div>
     </div>
-    <div class="fg"><label class="fl">Subjects Covered</label><input class="fi" id="bf-subjects" placeholder="e.g. Maths, Science, English"></div>
+
+    <!-- Both sessions: separate Morning + Evening time rows -->
+    <div id="bf-both-time" style="display:none">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:8px;padding:10px;background:#fef9c3;border-radius:8px;border:.5px solid #fde68a">
+        <div class="fg"><label class="fl">☀️ Morning Start</label><input class="fi" id="bf-morn-start" type="time" value="07:00"></div>
+        <div class="fg"><label class="fl">☀️ Morning End</label><input class="fi" id="bf-morn-end" type="time" value="10:00"></div>
+        <div class="fg"><label class="fl">Morning Max Students</label><input class="fi" id="bf-morn-max" type="number" placeholder="30" value="30"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;padding:10px;background:#dbeafe;border-radius:8px;border:.5px solid #bfdbfe">
+        <div class="fg"><label class="fl">🌙 Evening Start</label><input class="fi" id="bf-eve-start" type="time" value="16:00"></div>
+        <div class="fg"><label class="fl">🌙 Evening End</label><input class="fi" id="bf-eve-end" type="time" value="19:00"></div>
+        <div class="fg"><label class="fl">Evening Max Students</label><input class="fi" id="bf-eve-max" type="number" placeholder="30" value="30"></div>
+      </div>
+    </div>
+
+    <div class="fg" style="margin-top:8px"><label class="fl">Subjects Covered</label><input class="fi" id="bf-subjects" placeholder="e.g. Maths, Science, English"></div>
     <div class="fg"><label class="fl">Description (optional)</label><input class="fi" id="bf-desc" placeholder="e.g. For Class 9 & 10 students"></div>
     <input type="hidden" id="bf-edit-id" value="">
     <div style="display:flex;gap:8px;margin-top:4px">
@@ -691,7 +756,7 @@ tbody tr:hover td{background:var(--bg)}
     <button class="btn" onclick="showModal('feeStructure')" style="gap:5px"><svg viewBox="0 0 14 14" fill="none" width="12" height="12"><rect x="1" y="1" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.3"/><path d="M3 4h8M3 7h5M3 10h6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>Fee Structure</button>
     <button class="btn btn-p" style="margin-left:auto" onclick="showModal('addFee')"><svg viewBox="0 0 14 14" fill="none"><path d="M7 2v10M2 7h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><span id="btn-add-fee">New Fee Entry</span></button>
   </div>
-  <div class="tbl-wrap"><table><thead><tr><th style="width:12%">Receipt</th><th style="width:19%">Student</th><th style="width:10%">Month</th><th style="width:9%">Total</th><th style="width:9%">Paid</th><th style="width:9%">Balance</th><th style="width:9%">Mode</th><th style="width:11%">Status</th><th style="width:12%">Action</th></tr></thead><tbody id="fee-body"></tbody></table></div>
+  <div class="tbl-wrap"><table><thead><tr><th style="width:18%">Receipt / Period</th><th style="width:12%">Month</th><th style="width:10%">Total</th><th style="width:10%">Paid</th><th style="width:10%">Balance</th><th style="width:9%">Mode</th><th style="width:10%">Status</th><th style="width:11%">Action</th></tr></thead><tbody id="fee-body"></tbody></table></div>
 </div>
 
 <!-- ═══════════════ MARKS ═══════════════ -->
@@ -1461,9 +1526,18 @@ function navTo(id) {
   if (id === 'ai') { renderAICards(); initAI(); }
   if (id === 'whatsapp') { renderWATypes(); }
   if (id === 'admissions') { initAdmissions(); }
-  if (id === 'settings') { updateLatesDisplay(); }
+  if (id === 'settings') { updateLatesDisplay(); initFeeReceiptTemplate(); }
   if (id === 'dashboard') { updateDashStats(); setTimeout(initCharts, 100); }
-  if (id === 'batches') { renderBatchesPage(); }}
+  if (id === 'batches') { renderBatchesPage(); }
+  if (id === 'fees') {
+    // Default to Pending tab so only unpaid records show first
+    const pendBtn = document.getElementById('ft-pend');
+    if (pendBtn) {
+      setFeeTab('pending', pendBtn);
+    } else {
+      renderFees(fees);
+    }
+  }}
 
 function tbAddAction() {
   const active = document.querySelector('.page.active');
@@ -2039,48 +2113,100 @@ function renderFees(data) {
   const bm = {paid:'bg', partial:'bp', pending:'ba', overdue:'br2'};
   const source = (data || fees).filter(f => f && f.rcpt);
 
-  // Update summary cards
+  // Always recalculate summary from the full fees array
   const allFees = fees.filter(f => f && f.rcpt);
   const collected = allFees.filter(f=>f.status==='paid').reduce((s,f)=>s+(f.paid||0),0);
-  const pending   = allFees.filter(f=>f.status==='pending'||f.status==='partial').reduce((s,f)=>s+(f.balance||0),0);
-  const overdue   = allFees.filter(f=>f.status==='overdue').length;
+  const pendingAmt = allFees.filter(f=>f.status==='pending'||f.status==='partial').reduce((s,f)=>s+(f.balance||0),0);
+  const overdueCount = allFees.filter(f=>f.status==='overdue').length;
   const cEl=document.getElementById('fv-collected'); if(cEl) cEl.textContent='₹'+collected.toLocaleString('en-IN');
-  const pEl=document.getElementById('fv-pending');   if(pEl) pEl.textContent='₹'+pending.toLocaleString('en-IN');
-  const oEl=document.getElementById('fv-overdue');   if(oEl) oEl.textContent=overdue+' record'+(overdue!==1?'s':'');
+  const pEl=document.getElementById('fv-pending');   if(pEl) pEl.textContent='₹'+pendingAmt.toLocaleString('en-IN');
+  const oEl=document.getElementById('fv-overdue');   if(oEl) oEl.textContent=overdueCount+' record'+(overdueCount!==1?'s':'');
 
   if (source.length === 0) {
-    document.getElementById('fee-body').innerHTML = `<tr><td colspan="9" style="text-align:center;padding:28px;color:var(--tx3);font-size:13px">No fee records found</td></tr>`;
+    document.getElementById('fee-body').innerHTML = `<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--tx3);font-size:13px">
+      ${data && data !== fees ? '🎉 No pending fees! All caught up.' : 'No fee records found.'}
+    </td></tr>`;
     return;
   }
 
-  document.getElementById('fee-body').innerHTML = source.map(f => {
-    const isPaid = f.status === 'paid';
-    const rcptEsc = f.rcpt.replace(/'/g, "\\'");
-    // Subject tag for 11/12th subject fees
-    const subjTag = f.subject ? `<span style="display:block;font-size:9px;color:#7c3aed;font-weight:600;margin-top:1px">${f.subject}</span>` : '';
-    const typeTag = f.type==='admission'
-      ? `<span style="font-size:9px;background:#dbeafe;color:#1d4ed8;padding:0 5px;border-radius:8px;font-weight:600">Adm</span>`
-      : f.type==='subject'
-      ? `<span style="font-size:9px;background:#ede9fe;color:#7c3aed;padding:0 5px;border-radius:8px;font-weight:600">Subj</span>`
-      : '';
-    return `<tr style="${!isPaid ? 'background:var(--card)' : ''}">
-      <td><code style="font-size:10px;color:#185FA5">${f.rcpt}</code>${typeTag}</td>
-      <td style="font-weight:500;font-size:12px">${f.student}${subjTag}</td>
-      <td style="font-size:11px">${f.month}</td>
-      <td>₹${(f.total||0).toLocaleString('en-IN')}</td>
-      <td style="color:#16a34a;font-weight:600">₹${(f.paid||0).toLocaleString('en-IN')}</td>
-      <td style="color:${f.balance>0?'#dc2626':'var(--tx3)'}">₹${(f.balance||0).toLocaleString('en-IN')}</td>
-      <td style="font-size:11px">${f.mode||'Cash'}</td>
-      <td><span class="badge ${bm[f.status]||'ba'}">${f.status}</span></td>
-      <td>${isPaid
-        ? `<span style="font-size:11px;color:#16a34a;font-weight:600">✅ Paid</span>`
-        : `<button onclick="openCollectModal('${rcptEsc}')"
-             style="background:#16a34a;color:#fff;border:none;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:4px;white-space:nowrap">
-             💰 Collect
-           </button>`
-      }</td>
+  // ── Group records by student ──────────────────────────────
+  const groups = {};
+  const order  = [];
+  source.forEach(f => {
+    const key = f.studentId || f.student;
+    if (!groups[key]) { groups[key] = []; order.push(key); }
+    groups[key].push(f);
+  });
+
+  let html = '';
+  order.forEach(key => {
+    const recs = groups[key];
+    const sName = recs[0].student;
+    const student = students.find(s => s.id === (recs[0].studentId) || s.name === sName);
+    const av = student ? student.color : '#6366f1';
+    const grade = student ? (student.grade === 'KG' ? 'KG' : 'Gr.' + student.grade) : '';
+    const course = student ? (student.course || '') : '';
+
+    // Totals for this student across shown records
+    const totalAmt  = recs.reduce((s,f)=>s+(f.total||0),0);
+    const totalPaid = recs.reduce((s,f)=>s+(f.paid||0),0);
+    const totalBal  = recs.reduce((s,f)=>s+(f.balance||0),0);
+    const allPaid   = recs.every(f=>f.status==='paid');
+    const anyPending = recs.some(f=>f.status!=='paid');
+
+    // Student group header row
+    html += `<tr style="background:var(--bg);border-top:2px solid var(--br)">
+      <td colspan="6" style="padding:7px 12px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="width:28px;height:28px;border-radius:8px;background:${av};color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">${sName[0]}</div>
+          <div>
+            <span style="font-size:13px;font-weight:700;color:var(--tx)">${sName}</span>
+            ${grade ? `<span style="font-size:10px;color:var(--tx3);margin-left:6px">${grade}</span>` : ''}
+            ${course ? `<span style="font-size:10px;background:var(--prl);color:var(--pr);padding:0 6px;border-radius:8px;margin-left:6px">${course}</span>` : ''}
+          </div>
+          <div style="margin-left:auto;text-align:right">
+            ${totalBal > 0
+              ? `<span style="font-size:11px;font-weight:700;color:#dc2626">₹${totalBal.toLocaleString('en-IN')} due</span>`
+              : `<span style="font-size:11px;font-weight:700;color:#16a34a">✅ Fully Paid</span>`}
+          </div>
+        </div>
+      </td>
+      <td colspan="3" style="padding:7px 12px;text-align:right">
+        <span style="font-size:10px;color:var(--tx3)">${recs.length} record${recs.length!==1?'s':''}</span>
+      </td>
     </tr>`;
-  }).join('');
+
+    // Individual fee rows (indented)
+    recs.forEach(f => {
+      const isPaid   = f.status === 'paid';
+      const rcptEsc  = f.rcpt.replace(/'/g, "\\'");
+      const typeTag  = f.type==='admission'
+        ? `<span style="font-size:9px;background:#dbeafe;color:#1d4ed8;padding:1px 5px;border-radius:6px;font-weight:600;margin-left:4px">Adm</span>`
+        : f.type==='subject'
+        ? `<span style="font-size:9px;background:#ede9fe;color:#7c3aed;padding:1px 5px;border-radius:6px;font-weight:600;margin-left:4px">Subj</span>`
+        : `<span style="font-size:9px;background:#dcfce7;color:#166534;padding:1px 5px;border-radius:6px;font-weight:600;margin-left:4px">Monthly</span>`;
+      const subjTag  = f.subject ? ` · <span style="font-size:10px;color:#7c3aed">${f.subject}</span>` : '';
+
+      html += `<tr style="background:${isPaid?'transparent':'#fffbeb'};border-left:3px solid ${isPaid?'#bbf7d0':'#fcd34d'}">
+        <td style="padding:6px 12px 6px 24px"><code style="font-size:10px;color:#185FA5">${f.rcpt}</code>${typeTag}</td>
+        <td style="font-size:11px;color:var(--tx2);padding:6px 8px">${f.month}${subjTag}</td>
+        <td style="font-size:12px;padding:6px 8px">₹${(f.total||0).toLocaleString('en-IN')}</td>
+        <td style="font-size:12px;color:#16a34a;font-weight:600;padding:6px 8px">₹${(f.paid||0).toLocaleString('en-IN')}</td>
+        <td style="font-size:12px;font-weight:600;color:${f.balance>0?'#dc2626':'var(--tx3)'};padding:6px 8px">₹${(f.balance||0).toLocaleString('en-IN')}</td>
+        <td style="font-size:11px;color:var(--tx3);padding:6px 8px">${f.mode||'Cash'}</td>
+        <td style="padding:6px 8px"><span class="badge ${bm[f.status]||'ba'}">${f.status}</span></td>
+        <td style="padding:6px 8px">${isPaid
+          ? `<span style="font-size:11px;color:#16a34a;font-weight:600">✅ Done</span>`
+          : `<button onclick="openCollectModal('${rcptEsc}')"
+               style="background:#16a34a;color:#fff;border:none;padding:5px 12px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">
+               💰 Collect
+             </button>`
+        }</td>
+      </tr>`;
+    });
+  });
+
+  document.getElementById('fee-body').innerHTML = html;
 }
 function setFeeTab(v, btn) {
   document.querySelectorAll('#fee-tabs .seg-b').forEach(b => b.classList.remove('on'));
@@ -2214,20 +2340,106 @@ function submitCollect(rcpt) {
   if (collecting > (f.balance || 0) + 0.01) {
     showToast(`Max collectable is ₹${(f.balance||0).toLocaleString('en-IN')}`); return;
   }
+
+  // Update fee record
   f.paid    = (f.paid || 0) + collecting;
   f.balance = Math.max(0, (f.total || 0) - f.paid);
   f.mode    = mode;
   f.status  = f.balance <= 0 ? 'paid' : f.paid > 0 ? 'partial' : 'pending';
-  f.paidOn  = new Date().toLocaleDateString('en-IN');
+
+  // Stamp exact date & time of payment
+  const now        = new Date();
+  const dateStr    = now.toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric'});
+  const timeStr    = now.toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit', hour12:true});
+  const dateTimeStr = dateStr + ' at ' + timeStr;
+  f.paidOn  = dateTimeStr;
+
   saveFees();
-  closeModal();
-  // Stay on whichever tab is active
+
+  // Refresh fee list
   const activeTab = document.querySelector('#fee-tabs .seg-b.on');
   if (activeTab) activeTab.click();
   else renderFees(fees);
   updateDashStats();
-  showToast(`✅ ₹${collecting.toLocaleString('en-IN')} collected from ${f.student}${f.balance>0?' — ₹'+f.balance.toLocaleString('en-IN')+' balance remaining':' — Fully Paid! 🎉'}`);
   runBackup('change');
+
+  // Find student phone number
+  const student = students.find(s => s.id === f.studentId || s.name === f.student);
+  const phone   = student?.phone || '';
+  const parent  = student?.parent || 'Parent';
+  const grade   = student ? (student.grade === 'KG' ? 'KG' : 'Class ' + student.grade) : '';
+  const course  = student?.course || '';
+
+  // Build receipt WA message
+  const isFullyPaid = f.balance <= 0;
+  const waMsg = buildFeeReceiptWA({
+    studentName : f.student,
+    parent, grade, course,
+    rcpt        : f.rcpt,
+    month       : f.month,
+    subject     : f.subject || '',
+    collected   : collecting,
+    totalFee    : f.total,
+    totalPaid   : f.paid,
+    balance     : f.balance,
+    mode,
+    dateTime    : dateTimeStr,
+    isFullyPaid,
+  });
+
+  // Show WA send modal
+  showFeeReceiptModal(phone, waMsg, f.student, collecting, f.balance, dateTimeStr);
+}
+
+function buildFeeReceiptWA(d) {
+  const template = getFeeReceiptTemplate();
+  return fillFeeReceiptTemplate(template, d);
+}
+
+function showFeeReceiptModal(phone, waMsg, studentName, collected, balance, dateTimeStr) {
+  const root = document.getElementById('modal-root');
+  root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()">
+  <div class="modal" style="max-width:440px">
+    <div style="text-align:center;margin-bottom:14px">
+      <div style="font-size:36px;margin-bottom:6px">💰</div>
+      <div style="font-size:15px;font-weight:700;color:var(--tx)">Payment Collected!</div>
+      <div style="font-size:12px;color:var(--tx2);margin-top:3px">₹${collected.toLocaleString('en-IN')} received from <b>${studentName}</b></div>
+      <div style="font-size:11px;color:var(--tx3);margin-top:2px">${dateTimeStr}</div>
+      ${balance <= 0
+        ? `<div style="margin-top:8px;display:inline-block;background:#dcfce7;color:#166534;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700">✅ Fully Paid — No balance</div>`
+        : `<div style="margin-top:8px;display:inline-block;background:#fee2e2;color:#991b1b;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700">⚠️ Balance ₹${balance.toLocaleString('en-IN')} remaining</div>`}
+    </div>
+
+    <!-- WA message preview -->
+    <div style="font-size:10px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">WhatsApp Receipt Preview</div>
+    <div style="background:#dcfce7;border-radius:10px;padding:12px 14px;font-size:11px;color:#166534;line-height:1.7;white-space:pre-wrap;max-height:220px;overflow-y:auto;font-family:'Noto Sans Tamil',system-ui;margin-bottom:14px;border:.5px solid #bbf7d0" id="fee-wa-preview">${waMsg}</div>
+
+    <div class="fg" style="margin-bottom:12px">
+      <label class="fl">Edit message before sending</label>
+      <textarea class="fi" id="fee-wa-edit" rows="3" style="resize:vertical;font-size:11px;font-family:'Noto Sans Tamil',system-ui" oninput="document.getElementById('fee-wa-preview').textContent=this.value">${waMsg}</textarea>
+    </div>
+
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-wa" style="flex:1;justify-content:center;padding:12px;font-size:13px;font-weight:700"
+        onclick="sendFeeReceiptWA('${phone}')">
+        <svg viewBox="0 0 16 16" fill="none" width="16"><circle cx="8" cy="8" r="7" fill="#25d366"/><path d="M11.5 9.8c-.2-.1-1.2-.6-1.4-.7-.2-.1-.3-.1-.5.1-.1.2-.5.7-.6.8-.1.1-.2.1-.4 0-.2-.1-.9-.3-1.7-1-.6-.6-1-1.3-1.1-1.5-.1-.2 0-.3.1-.4l.3-.4c.1-.1.1-.2.2-.4 0-.1 0-.3 0-.4-.1-.1-.5-1.1-.6-1.5-.2-.4-.3-.3-.5-.3h-.4c-.1 0-.4.1-.6.3-.2.2-.8.8-.8 1.9s.8 2.2.9 2.4c.1.1 1.6 2.4 3.8 3.4.5.2.9.4 1.2.5.5.2 1 .1 1.3-.1.4-.2.8-.8.9-1.5.1-.4 0-.6-.1-.7z" fill="#fff"/></svg>
+        📱 Send Receipt on WhatsApp
+      </button>
+      <button class="btn" style="padding:12px 14px" onclick="closeModal()">Skip</button>
+    </div>
+  </div>
+</div>`;
+}
+
+function sendFeeReceiptWA(phone) {
+  const msg = document.getElementById('fee-wa-edit')?.value
+           || document.getElementById('fee-wa-preview')?.textContent || '';
+  closeModal();
+  if (!phone || phone.replace(/\D/g,'').length < 10) {
+    showToast('⚠️ No phone number saved for this student. Add it in Students.');
+    return;
+  }
+  setTimeout(() => openWA(phone, msg), 200);
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -3530,6 +3742,7 @@ function confirmResetData() {
 function doResetData() {
   ['_erp_students','_erp_fees','_erp_staff','_erp_exams',
    '_erp_notifs','_erp_staff_att','_erp_adm_template','_erp_adm_lang',
+   '_erp_fee_rcpt_template','_erp_fee_rcpt_lang',
    '_erp_lates_to_leave'].forEach(function(k){ localStorage.removeItem(k); });
   // Reset in-memory arrays
   students.length = 0;
@@ -3907,37 +4120,20 @@ function deleteBatch(i) {
 /* ═══════════════════════════════════════════════════════
    BATCHES PAGE — full CRUD
 ═══════════════════════════════════════════════════════ */
-function showAddBatchPanel(editIdx) {
-  const panel = document.getElementById('batch-form-panel');
-  if (!panel) return;
-  const titleEl = document.getElementById('batch-form-title');
-  const editId = document.getElementById('bf-edit-id');
-  if (editIdx !== undefined && batches[editIdx]) {
-    const b = batches[editIdx];
-    document.getElementById('bf-name').value = b.name || '';
-    document.getElementById('bf-session').value = b.time || 'Morning';
-    document.getElementById('bf-days').value = b.days || 'Mon–Sat';
-    document.getElementById('bf-stime').value = b.startTime || '16:00';
-    document.getElementById('bf-etime').value = b.endTime || '19:00';
-    document.getElementById('bf-max').value = b.maxStudents || 30;
-    document.getElementById('bf-subjects').value = b.subjects || '';
-    document.getElementById('bf-desc').value = b.desc || '';
-    if (editId) editId.value = b.id;
-    if (titleEl) titleEl.textContent = '✏️ Edit Batch';
+function toggleBatchTimeFields() {
+  const session = document.getElementById('bf-session')?.value;
+  const single = document.getElementById('bf-single-time');
+  const both   = document.getElementById('bf-both-time');
+  const sLabel = document.getElementById('bf-stime-label');
+  if (!single || !both) return;
+  if (session === 'Both') {
+    single.style.display = 'none';
+    both.style.display   = 'block';
   } else {
-    document.getElementById('bf-name').value = '';
-    document.getElementById('bf-session').value = 'Morning';
-    document.getElementById('bf-days').value = 'Mon–Sat';
-    document.getElementById('bf-stime').value = '16:00';
-    document.getElementById('bf-etime').value = '19:00';
-    document.getElementById('bf-max').value = 30;
-    document.getElementById('bf-subjects').value = '';
-    document.getElementById('bf-desc').value = '';
-    if (editId) editId.value = '';
-    if (titleEl) titleEl.textContent = '➕ Add New Batch';
+    single.style.display = 'grid';
+    both.style.display   = 'none';
+    if (sLabel) sLabel.textContent = session === 'Morning' ? '☀️ Start Time' : '🌙 Start Time';
   }
-  panel.style.display = 'block';
-  document.getElementById('bf-name').focus();
 }
 
 function hideAddBatchPanel() {
@@ -3945,26 +4141,81 @@ function hideAddBatchPanel() {
   if (panel) panel.style.display = 'none';
 }
 
+function showAddBatchPanel(editIdx) {
+  const panel = document.getElementById('batch-form-panel');
+  if (!panel) return;
+  const titleEl = document.getElementById('batch-form-title');
+  const editId  = document.getElementById('bf-edit-id');
+  if (editIdx !== undefined && batches[editIdx]) {
+    const b = batches[editIdx];
+    document.getElementById('bf-name').value     = b.name || '';
+    document.getElementById('bf-session').value  = b.time || 'Morning';
+    document.getElementById('bf-days').value     = b.days || 'Mon–Sat';
+    document.getElementById('bf-stime').value    = b.startTime || '16:00';
+    document.getElementById('bf-etime').value    = b.endTime || '19:00';
+    document.getElementById('bf-max').value      = b.maxStudents || 30;
+    document.getElementById('bf-subjects').value = b.subjects || '';
+    document.getElementById('bf-desc').value     = b.desc || '';
+    // Dual time fields
+    if (b.time === 'Both') {
+      document.getElementById('bf-morn-start').value = b.morningStart || '07:00';
+      document.getElementById('bf-morn-end').value   = b.morningEnd   || '10:00';
+      document.getElementById('bf-morn-max').value   = b.morningMax   || 30;
+      document.getElementById('bf-eve-start').value  = b.eveningStart || '16:00';
+      document.getElementById('bf-eve-end').value    = b.eveningEnd   || '19:00';
+      document.getElementById('bf-eve-max').value    = b.eveningMax   || 30;
+    }
+    if (editId) editId.value = b.id;
+    if (titleEl) titleEl.textContent = '✏️ Edit Batch';
+  } else {
+    document.getElementById('bf-name').value     = '';
+    document.getElementById('bf-session').value  = 'Morning';
+    document.getElementById('bf-days').value     = 'Mon–Sat';
+    document.getElementById('bf-stime').value    = '16:00';
+    document.getElementById('bf-etime').value    = '19:00';
+    document.getElementById('bf-max').value      = 30;
+    document.getElementById('bf-subjects').value = '';
+    document.getElementById('bf-desc').value     = '';
+    if (editId) editId.value = '';
+    if (titleEl) titleEl.textContent = '➕ Add New Batch';
+  }
+  panel.style.display = 'block';
+  toggleBatchTimeFields();
+  document.getElementById('bf-name').focus();
+}
+
 function saveBatchFull() {
-  const name = document.getElementById('bf-name')?.value.trim();
+  const name   = document.getElementById('bf-name')?.value.trim();
   if (!name) { showToast('⚠️ Batch name is required'); return; }
-  const time = document.getElementById('bf-session')?.value || 'Morning';
-  const days = document.getElementById('bf-days')?.value.trim() || 'Mon–Sat';
-  const startTime = document.getElementById('bf-stime')?.value || '16:00';
-  const endTime = document.getElementById('bf-etime')?.value || '19:00';
+  const time   = document.getElementById('bf-session')?.value || 'Morning';
+  const days   = document.getElementById('bf-days')?.value.trim() || 'Mon–Sat';
   const maxStudents = parseInt(document.getElementById('bf-max')?.value) || 30;
-  const subjects = document.getElementById('bf-subjects')?.value.trim() || '';
-  const desc = document.getElementById('bf-desc')?.value.trim() || '';
-  const editId = document.getElementById('bf-edit-id')?.value || '';
+  const subjects    = document.getElementById('bf-subjects')?.value.trim() || '';
+  const desc        = document.getElementById('bf-desc')?.value.trim() || '';
+  const editId      = document.getElementById('bf-edit-id')?.value || '';
+
+  let batchData = { name, time, days, maxStudents, subjects, desc };
+
+  if (time === 'Both') {
+    // Save both session times separately
+    batchData.morningStart = document.getElementById('bf-morn-start')?.value || '07:00';
+    batchData.morningEnd   = document.getElementById('bf-morn-end')?.value   || '10:00';
+    batchData.morningMax   = parseInt(document.getElementById('bf-morn-max')?.value) || 30;
+    batchData.eveningStart = document.getElementById('bf-eve-start')?.value  || '16:00';
+    batchData.eveningEnd   = document.getElementById('bf-eve-end')?.value    || '19:00';
+    batchData.eveningMax   = parseInt(document.getElementById('bf-eve-max')?.value) || 30;
+    batchData.startTime    = batchData.morningStart; // for display
+    batchData.endTime      = batchData.eveningEnd;
+  } else {
+    batchData.startTime = document.getElementById('bf-stime')?.value || '16:00';
+    batchData.endTime   = document.getElementById('bf-etime')?.value || '19:00';
+  }
 
   if (editId) {
     const idx = batches.findIndex(b => b.id === editId);
-    if (idx !== -1) {
-      batches[idx] = { ...batches[idx], name, time, days, startTime, endTime, maxStudents, subjects, desc };
-      showToast('✅ Batch updated: ' + name);
-    }
+    if (idx !== -1) { batches[idx] = { ...batches[idx], ...batchData }; showToast('✅ Batch updated: ' + name); }
   } else {
-    batches.push({ id: 'b' + Date.now(), name, time, days, startTime, endTime, maxStudents, subjects, desc, enrolled: 0 });
+    batches.push({ id: 'b' + Date.now(), ...batchData, enrolled: 0 });
     showToast('✅ Batch added: ' + name);
   }
   saveBatches();
@@ -4038,7 +4289,11 @@ function renderBatchesPage() {
         <div style="width:40px;height:40px;border-radius:10px;background:${sessionColor.bg};border:1px solid ${sessionColor.bc};display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${sessionIcon}</div>
         <div style="flex:1;min-width:0">
           <div style="font-size:14px;font-weight:700;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${b.name}</div>
-          <div style="font-size:11px;color:var(--tx3);margin-top:2px">${b.days||'Mon–Sat'} · ${b.startTime||'16:00'} – ${b.endTime||'19:00'}</div>
+          <div style="font-size:11px;color:var(--tx3);margin-top:2px">${b.days||'Mon–Sat'} · ${
+            b.time === 'Both'
+              ? `☀️ ${b.morningStart||'07:00'}–${b.morningEnd||'10:00'} &nbsp;🌙 ${b.eveningStart||'16:00'}–${b.eveningEnd||'19:00'}`
+              : `${b.startTime||'16:00'} – ${b.endTime||'19:00'}`
+          }</div>
         </div>
         <span style="background:${sessionColor.bg};color:${sessionColor.tc};border:1px solid ${sessionColor.bc};padding:2px 9px;border-radius:20px;font-size:10px;font-weight:700;white-space:nowrap;flex-shrink:0">${b.time}</span>
       </div>
@@ -4272,6 +4527,167 @@ Warm regards,
 அன்புடன்,
 {center_name}`,
 };
+
+/* ── Fee Receipt WA Templates ──────────────────────── */
+const FEE_RECEIPT_TEMPLATES = {
+  en:
+`Dear {parent_name},
+
+🏫 *{center_name}*
+━━━━━━━━━━━━━━━━━━━━
+💰 *Fee Payment Receipt*
+━━━━━━━━━━━━━━━━━━━━
+
+Payment received for *{student_name}*:
+
+📋 Receipt  : {receipt_no}
+🎓 Class    : {class}
+📚 Batch    : {batch}
+📅 Period   : {month}
+
+💵 Collected : ₹{amount_paid}
+💳 Mode      : {payment_mode}
+✅ Total Paid: ₹{total_paid}
+📊 Total Fee : ₹{total_fee}
+🔴 Balance   : ₹{balance}
+
+{status}
+
+🕐 Date & Time: {date_time}
+
+Thank you for your prompt payment! 🙏
+
+📞 {center_phone}
+_{center_name} — Keep this as your receipt._`,
+
+  ta:
+`அன்பான {parent_name},
+
+🏫 *{center_name}*
+━━━━━━━━━━━━━━━━━━━━
+💰 *கட்டண ரசீது*
+━━━━━━━━━━━━━━━━━━━━
+
+*{student_name}*-க்கான கட்டணம் பெறப்பட்டது:
+
+📋 ரசீது எண் : {receipt_no}
+🎓 வகுப்பு   : {class}
+📚 குழு      : {batch}
+📅 மாதம்     : {month}
+
+💵 வசூலிக்கப்பட்டது : ₹{amount_paid}
+💳 செலுத்தும் முறை  : {payment_mode}
+✅ மொத்த செலுத்தல்  : ₹{total_paid}
+📊 மொத்த கட்டணம்   : ₹{total_fee}
+🔴 நிலுவை            : ₹{balance}
+
+{status}
+
+🕐 தேதி & நேரம்: {date_time}
+
+உரிய நேரத்தில் செலுத்தியதற்கு நன்றி! 🙏
+
+📞 {center_phone}
+_{center_name} — இதை ரசீதாக வைத்திருங்கள்._`,
+};
+
+function fillFeeReceiptTemplate(template, d) {
+  const isFullyPaid = (parseFloat(d.balance) || 0) <= 0;
+  const statusLine  = isFullyPaid
+    ? '✅ *Fully Paid — No balance due*'
+    : `⚠️ *Balance ₹${(parseFloat(d.balance)||0).toLocaleString('en-IN')} remaining*`;
+  return template
+    .replace(/{student_name}/g, d.studentName  || 'Student')
+    .replace(/{parent_name}/g,  d.parent       || 'Parent')
+    .replace(/{class}/g,        d.grade        || '')
+    .replace(/{batch}/g,        d.course       || 'General')
+    .replace(/{receipt_no}/g,   d.rcpt         || '')
+    .replace(/{month}/g,        d.month        || '')
+    .replace(/{subject}/g,      d.subject      || '')
+    .replace(/{amount_paid}/g,  (parseFloat(d.collected)||0).toLocaleString('en-IN'))
+    .replace(/{total_paid}/g,   (parseFloat(d.totalPaid)||0).toLocaleString('en-IN'))
+    .replace(/{total_fee}/g,    (parseFloat(d.totalFee)||0).toLocaleString('en-IN'))
+    .replace(/{balance}/g,      (parseFloat(d.balance)||0).toLocaleString('en-IN'))
+    .replace(/{payment_mode}/g, d.mode         || 'Cash')
+    .replace(/{date_time}/g,    d.dateTime     || '')
+    .replace(/{status}/g,       statusLine)
+    .replace(/{center_name}/g,  CFG.CENTER.name  || 'Tuition Center')
+    .replace(/{center_phone}/g, CFG.CENTER.phone || '');
+}
+
+function getFeeReceiptTemplate() {
+  try {
+    const saved = localStorage.getItem('_erp_fee_rcpt_template');
+    if (saved) return saved;
+  } catch(e) {}
+  return FEE_RECEIPT_TEMPLATES.en;
+}
+
+function saveFeeReceiptTemplate() {
+  const tmpl = document.getElementById('fee-rcpt-template')?.value || '';
+  try { localStorage.setItem('_erp_fee_rcpt_template', tmpl); } catch(e) {}
+  showToast('✅ Fee receipt template saved!');
+}
+
+function resetFeeReceiptTemplate() {
+  const lang = document.getElementById('fee-rcpt-lang')?.value || 'en';
+  const tmplEl = document.getElementById('fee-rcpt-template');
+  let tpl;
+  if (lang === 'ta')   tpl = FEE_RECEIPT_TEMPLATES.ta;
+  else if (lang === 'both') tpl = FEE_RECEIPT_TEMPLATES.en + '\n\n─────────────\n\n' + FEE_RECEIPT_TEMPLATES.ta;
+  else tpl = FEE_RECEIPT_TEMPLATES.en;
+  if (tmplEl) tmplEl.value = tpl;
+  try { localStorage.removeItem('_erp_fee_rcpt_template'); } catch(e) {}
+  refreshFeeReceiptPreview();
+  showToast('Template reset to default');
+}
+
+function refreshFeeReceiptPreview() {
+  const lang   = document.getElementById('fee-rcpt-lang')?.value || 'en';
+  const tmplEl = document.getElementById('fee-rcpt-template');
+  const prevEl = document.getElementById('fee-rcpt-preview');
+  if (!tmplEl || !prevEl) return;
+  // Load correct default if field is blank or matches a default
+  const saved = localStorage.getItem('_erp_fee_rcpt_template');
+  const isDefault = !saved || tmplEl.value === FEE_RECEIPT_TEMPLATES.en || tmplEl.value === FEE_RECEIPT_TEMPLATES.ta;
+  if (isDefault) {
+    if (lang === 'ta') tmplEl.value = FEE_RECEIPT_TEMPLATES.ta;
+    else if (lang === 'both') tmplEl.value = FEE_RECEIPT_TEMPLATES.en + '\n\n─────────────\n\n' + FEE_RECEIPT_TEMPLATES.ta;
+    else tmplEl.value = FEE_RECEIPT_TEMPLATES.en;
+  }
+  try { localStorage.setItem('_erp_fee_rcpt_lang', lang); } catch(e) {}
+  // Preview with sample data
+  prevEl.textContent = fillFeeReceiptTemplate(tmplEl.value, {
+    studentName : 'Monisha R',
+    parent      : 'Rajesh',
+    grade       : 'Class 10',
+    course      : 'Maths Group – Evening',
+    rcpt        : 'RCP-MF-51941',
+    month       : 'May 2026',
+    subject     : '',
+    collected   : 1200,
+    totalPaid   : 1200,
+    totalFee    : 1500,
+    balance     : 300,
+    mode        : 'Cash',
+    dateTime    : new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) + ' at ' + new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true}),
+  });
+}
+
+function initFeeReceiptTemplate() {
+  const tmplEl = document.getElementById('fee-rcpt-template');
+  if (!tmplEl) return;
+  try {
+    const saved     = localStorage.getItem('_erp_fee_rcpt_template');
+    const savedLang = localStorage.getItem('_erp_fee_rcpt_lang') || 'en';
+    const langSel   = document.getElementById('fee-rcpt-lang');
+    if (langSel) langSel.value = savedLang;
+    tmplEl.value = saved || FEE_RECEIPT_TEMPLATES.en;
+  } catch(e) {
+    tmplEl.value = FEE_RECEIPT_TEMPLATES.en;
+  }
+  refreshFeeReceiptPreview();
+}
 
 function initAdmissions() {
   // Populate batch dropdown from batches array
@@ -4656,6 +5072,7 @@ function submitAdmission() {
   }
 
   runBackup('change');
+  saveFees();
   renderStudents(students);
   renderAdmRecent();
   updateAdmCounter();
@@ -4669,18 +5086,46 @@ function submitAdmission() {
 
 function showAdmSuccess(s, message, phone) {
   const root = document.getElementById('modal-root');
+  // Build fee summary for this new student
+  const studentFees = fees.filter(f => f.studentId === s.id || f.student === s.name);
+  const admFeeRec   = studentFees.find(f => f.type === 'admission');
+  const pendingRecs = studentFees.filter(f => f.status === 'pending');
+  const pendingTotal = pendingRecs.reduce((sum, f) => sum + (f.balance || 0), 0);
+
+  const feeHTML = studentFees.length > 0 ? `
+    <div style="background:var(--bg);border-radius:8px;padding:10px 12px;margin-bottom:14px;text-align:left;border:.5px solid var(--br)">
+      <div style="font-size:10px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Fee Records Created</div>
+      ${admFeeRec ? `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:.5px dashed var(--br)">
+        <span style="font-size:11px;color:var(--tx2)">✅ Admission Fee</span>
+        <span style="font-size:11px;font-weight:600;color:#16a34a">₹${(admFeeRec.total||0).toLocaleString('en-IN')} Paid</span>
+      </div>` : ''}
+      ${pendingRecs.map(f=>`<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:.5px dashed var(--br)">
+        <span style="font-size:11px;color:var(--tx2)">⏳ ${f.month}${f.subject?' · '+f.subject:''}</span>
+        <span style="font-size:11px;font-weight:600;color:#dc2626">₹${(f.balance||0).toLocaleString('en-IN')} Pending</span>
+      </div>`).join('')}
+      ${pendingTotal > 0 ? `<div style="display:flex;justify-content:space-between;padding-top:6px;margin-top:2px">
+        <span style="font-size:12px;font-weight:700;color:var(--tx)">Total Pending</span>
+        <span style="font-size:14px;font-weight:800;color:#dc2626">₹${pendingTotal.toLocaleString('en-IN')}</span>
+      </div>` : ''}
+    </div>` : '';
+
   root.innerHTML = `<div class="modal-bg"><div class="modal" style="max-width:420px">
     <div style="text-align:center;padding:8px 0 6px">
       <div style="font-size:44px;margin-bottom:8px">🎉</div>
       <div style="font-size:16px;font-weight:700;color:var(--tx);margin-bottom:4px">${s.name} Admitted!</div>
       <div style="font-size:12px;color:var(--tx2);margin-bottom:14px">${s.admNo} · Class ${s.grade==='KG'?'KG':s.grade} · ${new Date().toLocaleDateString('en-IN')}</div>
-      <div style="background:#dcfce7;border-radius:8px;padding:12px;font-size:11px;color:#166534;font-family:'Noto Sans Tamil',system-ui;line-height:1.6;text-align:left;max-height:180px;overflow-y:auto;white-space:pre-wrap;margin-bottom:14px">${message}</div>
-      <div style="display:flex;gap:8px">
+      ${feeHTML}
+      <div style="background:#dcfce7;border-radius:8px;padding:12px;font-size:11px;color:#166534;font-family:'Noto Sans Tamil',system-ui;line-height:1.6;text-align:left;max-height:140px;overflow-y:auto;white-space:pre-wrap;margin-bottom:14px">${message}</div>
+      <div style="display:flex;gap:8px;margin-bottom:8px">
         <button class="btn btn-wa" style="flex:1;justify-content:center;padding:11px;font-weight:600" onclick="var _msg=document.querySelector('.modal div[style*=dcfce7]')?.textContent||''; closeModal(); openWA('${phone}', _msg);">
           📱 Send via WhatsApp
         </button>
         <button class="btn" style="padding:11px 14px" onclick="closeModal()">Skip</button>
       </div>
+      ${pendingTotal > 0 ? `<button class="btn" style="width:100%;justify-content:center;padding:10px;font-size:12px;font-weight:600;color:#dc2626;border-color:#dc2626"
+        onclick="closeModal(); navTo('fees'); setTimeout(()=>{ const pb=document.getElementById('ft-pend'); if(pb){ setFeeTab('pending',pb); } },100)">
+        ⏳ View Pending Fees (₹${pendingTotal.toLocaleString('en-IN')})
+      </button>` : ''}
     </div>
   </div></div>`;
 }

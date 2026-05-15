@@ -321,6 +321,7 @@ tbody tr:hover td{background:var(--bg)}
     <button class="nav-item" data-page="notifications"><svg viewBox="0 0 16 16" fill="none"><path d="M8 2a4 4 0 014 4v3l1.5 2h-11L4 9V6a4 4 0 014-4z" stroke="currentColor" stroke-width="1.3"/><path d="M6.5 12.5a1.5 1.5 0 003 0" stroke="currentColor" stroke-width="1.3"/></svg><span id="nl-notifications">Notifications</span></button>
     <button class="nav-item" data-page="ai"><svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="5" stroke="currentColor" stroke-width="1.3"/><path d="M6 6.5c.5-1.5 3.5-1.5 3 .5-.5 1.5-3 1-3 2.5M8 12v.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg><span id="nl-ai">AI Features</span></button>
     <button class="nav-item" data-page="backup"><svg viewBox="0 0 16 16" fill="none"><path d="M8 2v7M5 6l3 3 3-3M2 11v2a1 1 0 001 1h10a1 1 0 001-1v-2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg><span id="nl-backup">Backup & Sync</span></button>
+    <button class="nav-item" data-page="wa-templates"><svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" fill="#25d366"/><path d="M11.5 9.8c-.2-.1-1.2-.6-1.4-.7-.2-.1-.3-.1-.5.1-.1.2-.5.7-.6.8-.1.1-.2.1-.4 0-.2-.1-.9-.3-1.7-1-.6-.6-1-1.3-1.1-1.5-.1-.2 0-.3.1-.4l.3-.4c.1-.1.1-.2.2-.4 0-.1 0-.3 0-.4-.1-.1-.5-1.1-.6-1.5-.2-.4-.3-.3-.5-.3h-.4c-.1 0-.4.1-.6.3-.2.2-.8.8-.8 1.9s.8 2.2.9 2.4c.1.1 1.6 2.4 3.8 3.4.5.2.9.4 1.2.5.5.2 1 .1 1.3-.1.4-.2.8-.8.9-1.5.1-.4 0-.6-.1-.7z" fill="#fff"/></svg><span>WA Templates</span></button>
     <button class="nav-item" data-page="settings"><svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.3"/><path d="M8 2v1.5M8 12.5V14M14 8h-1.5M3.5 8H2M12.2 3.8l-1.06 1.06M4.86 11.14L3.8 12.2M12.2 12.2l-1.06-1.06M4.86 4.86L3.8 3.8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg><span id="nl-settings">Settings</span></button>
   </nav>
 <div id="_save_status_bar" style="text-align:center;font-size:10px;padding:3px 10px;color:var(--tx3,#94a3b8);background:var(--bg2,#f8fafc);transition:all .3s;border-bottom:.5px solid var(--br,#e2e8f0)">Ready</div>
@@ -1069,6 +1070,57 @@ tbody tr:hover td{background:var(--bg)}
   </div>
 </div>
 
+<!-- ═══════════ WA TEMPLATES SETTINGS (full page) ═══════════ -->
+<div class="page" id="pg-wa-templates">
+  <!-- Header -->
+  <div style="background:linear-gradient(135deg,#25d366,#128c7e);border-radius:12px;padding:16px 20px;margin-bottom:16px;display:flex;align-items:center;gap:14px">
+    <div style="width:44px;height:44px;background:rgba(255,255,255,.15);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">✏️</div>
+    <div style="flex:1">
+      <div style="font-size:16px;font-weight:700;color:#fff">WhatsApp Message Templates</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.8);margin-top:2px">Customise every message type in English &amp; Tamil. Changes save automatically.</div>
+    </div>
+    <button class="btn btn-sm" onclick="resetAllWATemplates()" style="background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.3);white-space:nowrap;flex-shrink:0">↺ Reset All</button>
+  </div>
+
+  <!-- Type tabs -->
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px" id="wt-type-tabs"></div>
+
+  <!-- Editor card -->
+  <div class="card" id="wt-editor-card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div style="font-size:14px;font-weight:700;color:var(--tx)" id="wt-editor-title">Select a type above</div>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-sm" onclick="resetWATypeTemplate()" id="wt-reset-btn" style="display:none">↺ Reset</button>
+        <button class="btn btn-sm btn-p" onclick="saveWATypeTemplate()" id="wt-save-btn" style="display:none">💾 Save</button>
+      </div>
+    </div>
+
+    <!-- Variables reference -->
+    <div id="wt-vars" style="display:none;margin-bottom:10px;padding:8px 10px;background:var(--bg);border-radius:8px;font-size:11px;color:var(--tx2);line-height:2"></div>
+
+    <!-- Language tabs -->
+    <div style="display:flex;gap:4px;margin-bottom:10px" id="wt-lang-tabs">
+      <button id="wt-lt-en" onclick="switchWTLang('en')" style="padding:5px 14px;border-radius:8px;border:1.5px solid #185FA5;background:#185FA5;color:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">EN</button>
+      <button id="wt-lt-ta" onclick="switchWTLang('ta')" style="padding:5px 14px;border-radius:8px;border:.5px solid var(--br);background:var(--card);color:var(--tx2);font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">தமிழ்</button>
+    </div>
+
+    <!-- EN editor -->
+    <div id="wt-pane-en">
+      <textarea class="fi" id="wt-tmpl-en" rows="10" style="font-size:12px;font-family:'Noto Sans Tamil',system-ui;line-height:1.7;resize:vertical;width:100%;box-sizing:border-box" oninput="refreshWTPreview()"></textarea>
+    </div>
+    <!-- TA editor -->
+    <div id="wt-pane-ta" style="display:none">
+      <textarea class="fi" id="wt-tmpl-ta" rows="10" style="font-size:12px;font-family:'Noto Sans Tamil',system-ui;line-height:1.7;resize:vertical;width:100%;box-sizing:border-box" oninput="refreshWTPreview()"></textarea>
+    </div>
+
+    <!-- Live preview -->
+    <div style="margin-top:12px">
+      <div style="font-size:10px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Live Preview</div>
+      <div id="wt-preview" style="background:#dcfce7;border-radius:8px;padding:11px 13px;font-size:11px;color:#166534;line-height:1.7;white-space:pre-wrap;max-height:200px;overflow-y:auto;font-family:'Noto Sans Tamil',system-ui;border:.5px solid #bbf7d0">Select a message type to preview…</div>
+    </div>
+  </div>
+</div>
+
   </div><!-- /content -->
 </div><!-- /main -->
 </div><!-- /app -->
@@ -1537,7 +1589,8 @@ function navTo(id) {
     } else {
       renderFees(fees);
     }
-  }}
+  }
+  if (id === 'wa-templates') { initWATemplatesPage(); }}
 
 function tbAddAction() {
   const active = document.querySelector('.page.active');
@@ -2011,7 +2064,20 @@ function renderAttList() {
   const today = new Date().toISOString().split('T')[0];
   const dateEl = document.getElementById('att-date');
   if (!dateEl.value) dateEl.value = today;
+  const date = dateEl.value;
   const session = document.getElementById('att-session')?.value || 'morning';
+
+  // Load saved attendance for this date + session from localStorage
+  const storageKey = '_erp_att_' + date + '_' + session;
+  try {
+    const saved = localStorage.getItem(storageKey);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      // Merge saved into attState (don't wipe other sessions)
+      Object.assign(attState, parsed);
+    }
+  } catch(e) {}
+
   const batchId = document.getElementById('att-batch')?.value || '';
   const batch = batches.find(b=>b.id===batchId);
 
@@ -2066,6 +2132,11 @@ function setAtt(sid, v, btn, session) {
   row.querySelectorAll('.att-btn').forEach(b => b.classList.remove('ps','as','ls'));
   btn.classList.add(v==='P'?'ps':v==='A'?'as':'ls');
   updateAttCounts();
+  // Auto-persist to localStorage immediately
+  const date = document.getElementById('att-date')?.value || new Date().toISOString().split('T')[0];
+  const sess  = session || document.getElementById('att-session')?.value || 'morning';
+  const storageKey = '_erp_att_' + date + '_' + sess;
+  try { localStorage.setItem(storageKey, JSON.stringify(attState)); } catch(e) {}
 }
 function markAllAtt(v, btn) {
   document.querySelectorAll('.seg .seg-b').forEach(b=>b.classList.remove('on'));
@@ -2097,7 +2168,19 @@ function openQRScan() {
   }
   showToast('📷 QR Scanner: Point camera at student QR card to mark Present automatically');
 }
-function saveAttendance() { showToast('✅ Attendance saved for '+students.filter(s=>s.status==='active').length+' students!'); runBackup('change'); }
+function saveAttendance() {
+  const date = document.getElementById('att-date')?.value || new Date().toISOString().split('T')[0];
+  const session = document.getElementById('att-session')?.value || 'morning';
+  const key = '_erp_att_' + date + '_' + session;
+  try { localStorage.setItem(key, JSON.stringify(attState)); } catch(e) {}
+  // Also save a master index of which date+session keys exist
+  try {
+    const idx = JSON.parse(localStorage.getItem('_erp_att_index') || '[]');
+    if (!idx.includes(key)) { idx.push(key); localStorage.setItem('_erp_att_index', JSON.stringify(idx)); }
+  } catch(e) {}
+  showToast('✅ Attendance saved for ' + date + ' (' + session + ')');
+  runBackup('change');
+}
 function sendAttWA() {
   waType = 'absent';
   document.getElementById('wa-recipients-sel').value = 'absent';
@@ -3026,9 +3109,20 @@ function updateWATemplates() {
   if (!sel) return;
   const wt = WA_TYPES.find(w=>w.id===waType);
   if (!wt) return;
-  const langKey = lang==='ta'?'ta':'en';
+  const langKey = document.getElementById('wa-lang-sel')?.value === 'ta' ? 'ta' : 'en';
+  const hasSaved = !!getWTSaved(waType, langKey);
   const templates = WA_TEMPLATES[waType]?.[langKey] || WA_TEMPLATES[waType]?.en || ['Default message'];
-  sel.innerHTML = templates.map((t,i)=>`<option value="${i}">Template ${i+1}</option>`).join('');
+  sel.innerHTML = templates.map((t,i)=>`<option value="${i}">${hasSaved && i===0 ? '✏️ Custom Template' : 'Template '+(i+1)}</option>`).join('');
+  // Also add a "✏️ Customise" link hint
+  const customBtn = document.getElementById('wa-custom-edit-hint');
+  if (!customBtn) {
+    const hint = document.createElement('div');
+    hint.id = 'wa-custom-edit-hint';
+    hint.style.cssText = 'font-size:11px;color:#128c7e;margin-top:4px;cursor:pointer;text-decoration:underline;';
+    hint.textContent = '✏️ Customise this template →';
+    hint.onclick = () => navTo('wa-templates');
+    sel.parentElement?.appendChild(hint);
+  }
   updateWAPreview();
 }
 
@@ -3040,23 +3134,23 @@ function updateWAPreview() {
   const custom = document.getElementById('wa-custom-msg')?.value?.trim();
 
   if (waType === 'holiday') {
-    // Holiday needs modal for extra details - show placeholder
     previewEl.textContent = 'Holiday notice: Click "Build Message Queue" to enter holiday details.\n\nPreview will show here after you fill in the holiday information.';
     return;
   }
 
-  const demoStudent = students[0];
+  const demoStudent = students.find(s=>s.status==='active') || students[0] || {name:'Monisha',parent:'Suresh',grade:'10',phone:'9876543210',id:'demo'};
   let template;
   if (custom) {
     template = custom;
   } else {
     const langKey = langSel==='ta'?'ta':(langSel==='both'?'both':'en');
     if (langKey === 'both') {
-      const en = WA_TEMPLATES[waType]?.en?.[templateIdx] || '';
-      const ta = WA_TEMPLATES[waType]?.ta?.[0] || '';
-      template = en + '\n\n---\n\n' + ta;
+      // Prefer saved custom templates
+      const en = getWTSaved(waType,'en') || WA_TEMPLATES[waType]?.en?.[templateIdx] || '';
+      const ta = getWTSaved(waType,'ta') || WA_TEMPLATES[waType]?.ta?.[0] || '';
+      template = en + '\n\n─────────────\n\n' + ta;
     } else {
-      template = WA_TEMPLATES[waType]?.[langKey]?.[templateIdx] || WA_TEMPLATES[waType]?.en?.[0] || '';
+      template = getWTSaved(waType, langKey) || WA_TEMPLATES[waType]?.[langKey]?.[templateIdx] || WA_TEMPLATES[waType]?.en?.[0] || '';
     }
   }
 
@@ -3142,11 +3236,11 @@ function buildWAQueue() {
     } else {
       const langKey = langSel==='ta'?'ta':(langSel==='both'?'both':'en');
       if (langKey === 'both') {
-        const en = WA_TEMPLATES[waType]?.en?.[templateIdx]||'';
-        const ta = WA_TEMPLATES[waType]?.ta?.[0]||'';
-        template = en+'\n\n---\n\n'+ta;
+        const en = getWTSaved(waType,'en') || WA_TEMPLATES[waType]?.en?.[templateIdx] || '';
+        const ta = getWTSaved(waType,'ta') || WA_TEMPLATES[waType]?.ta?.[0] || '';
+        template = en+'\n\n─────────────\n\n'+ta;
       } else {
-        template = WA_TEMPLATES[waType]?.[langKey]?.[templateIdx] || WA_TEMPLATES[waType]?.en?.[0] || '';
+        template = getWTSaved(waType, langKey) || WA_TEMPLATES[waType]?.[langKey]?.[templateIdx] || WA_TEMPLATES[waType]?.en?.[0] || '';
       }
     }
     const extra = getWAExtra(student);
@@ -3743,6 +3837,15 @@ function doResetData() {
   ['_erp_students','_erp_fees','_erp_staff','_erp_exams',
    '_erp_notifs','_erp_staff_att','_erp_adm_template','_erp_adm_lang',
    '_erp_fee_rcpt_template','_erp_fee_rcpt_lang',
+   '_erp_wt_absent_en','_erp_wt_absent_ta',
+   '_erp_wt_late_en','_erp_wt_late_ta',
+   '_erp_wt_monthly_en','_erp_wt_monthly_ta',
+   '_erp_wt_marks_en','_erp_wt_marks_ta',
+   '_erp_wt_holiday_en','_erp_wt_holiday_ta',
+   '_erp_wt_birthday_en','_erp_wt_birthday_ta',
+   '_erp_wt_fees_en','_erp_wt_fees_ta',
+   '_erp_wt_admission_en','_erp_wt_admission_ta',
+   '_erp_wt_fee_receipt_en','_erp_wt_fee_receipt_ta',
    '_erp_lates_to_leave'].forEach(function(k){ localStorage.removeItem(k); });
   // Reset in-memory arrays
   students.length = 0;
@@ -4528,7 +4631,224 @@ Warm regards,
 {center_name}`,
 };
 
-/* ── Fee Receipt WA Templates ──────────────────────── */
+/* ═══════════════════════════════════════════════════════
+   WA TEMPLATES PAGE — full customisation for all types
+═══════════════════════════════════════════════════════ */
+const WT_VARS = {
+  absent:   '{parent_name} · {student_name} · {grade} · {center_name} · {center_phone}',
+  late:     '{parent_name} · {student_name} · {grade} · {center_name} · {center_phone}',
+  monthly:  '{parent_name} · {student_name} · {att_pct} · {present_days} · {absent_days} · {att_status} · {center_name} · {center_phone}',
+  marks:    '{parent_name} · {student_name} · {exam_name} · {subject} · {marks} · {max_marks} · {percentage} · {grade_letter} · {remarks} · {center_name}',
+  holiday:  '{holiday_name} · {holiday_date} · {holiday_reason} · {resume_date} · {center_name}',
+  birthday: '{student_name} · {parent_name} · {center_name}',
+  fees:     '{parent_name} · {student_name} · {month} · {amount} · {due_date} · {overdue_note} · {center_name} · {center_phone}',
+  admission:'{parent_name} · {student_name} · {class} · {batch} · {admission_no} · {fee} · {center_name} · {center_phone}',
+  fee_receipt:'{student_name} · {parent_name} · {class} · {batch} · {receipt_no} · {month} · {amount_paid} · {total_paid} · {total_fee} · {balance} · {payment_mode} · {date_time} · {status} · {center_name} · {center_phone}',
+};
+
+const WT_SAMPLE = {
+  absent:   { parent_name:'Suresh', student_name:'Monisha', grade:'10', center_name:'KTC', center_phone:'9876543210' },
+  late:     { parent_name:'Suresh', student_name:'Monisha', grade:'10', center_name:'KTC', center_phone:'9876543210' },
+  monthly:  { parent_name:'Suresh', student_name:'Monisha', att_pct:'82', present_days:'20', absent_days:'4', att_status:'✅ Good', center_name:'KTC', center_phone:'9876543210' },
+  marks:    { parent_name:'Suresh', student_name:'Monisha', exam_name:'Monthly Test', subject:'Maths', marks:'87', max_marks:'100', percentage:'87', grade_letter:'A', remarks:'Excellent performance', center_name:'KTC' },
+  holiday:  { holiday_name:'Pongal', holiday_date:'14 Jan 2026', holiday_reason:'Pongal Festival', resume_date:'16 Jan 2026', center_name:'KTC' },
+  birthday: { student_name:'Monisha', parent_name:'Suresh', center_name:'KTC' },
+  fees:     { parent_name:'Suresh', student_name:'Monisha', month:'May 2026', amount:'1500', due_date:'5 Jun 2026', overdue_note:'', center_name:'KTC', center_phone:'9876543210' },
+  admission:{ parent_name:'Suresh', student_name:'Monisha', grade:'10', batch:'Maths Group – Evening', admNo:'ADM-2026-012', fee:'1500', center_name:'KTC', center_phone:'9876543210' },
+  fee_receipt:{ studentName:'Monisha', parent:'Suresh', grade:'Class 10', course:'Maths Group – Evening', rcpt:'RCP-MF-51941', month:'May 2026', collected:1200, totalPaid:1200, totalFee:1500, balance:300, mode:'Cash', dateTime:'15 May 2026 at 04:35 PM' },
+};
+
+const WT_ALL_TYPES = [
+  {id:'absent',      label:'Absent Alert',      emoji:'🚫', color:'#dc2626'},
+  {id:'late',        label:'Late Alert',         emoji:'⏰', color:'#ca8a04'},
+  {id:'monthly',     label:'Monthly Report',     emoji:'📊', color:'#2563eb'},
+  {id:'marks',       label:'Exam Marks',         emoji:'📝', color:'#7c3aed'},
+  {id:'holiday',     label:'Holiday Notice',     emoji:'🎉', color:'#0891b2'},
+  {id:'birthday',    label:'Birthday Wish',      emoji:'🎂', color:'#16a34a'},
+  {id:'fees',        label:'Fee Reminder',       emoji:'💰', color:'#854f0b'},
+  {id:'admission',   label:'Admission Welcome',  emoji:'🎓', color:'#185FA5'},
+  {id:'fee_receipt', label:'Fee Receipt',        emoji:'🧾', color:'#16a34a'},
+];
+
+let wtActiveType = null;
+let wtActiveLang = 'en';
+
+function initWATemplatesPage() {
+  const tabs = document.getElementById('wt-type-tabs');
+  if (!tabs) return;
+  tabs.innerHTML = WT_ALL_TYPES.map(t => {
+    const hasSaved = !!getWTSaved(t.id, 'en') || !!getWTSaved(t.id, 'ta');
+    return `<button onclick="selectWTType('${t.id}')" id="wttab-${t.id}"
+      style="display:flex;align-items:center;gap:6px;padding:7px 12px;border-radius:9px;border:1.5px solid var(--br);background:var(--card);color:var(--tx);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:.12s;white-space:nowrap">
+      ${t.emoji} ${t.label}${hasSaved?` <span style="width:6px;height:6px;background:${t.color};border-radius:50%;display:inline-block" title="Customised"></span>`:''}
+    </button>`;
+  }).join('');
+  // Auto-open first
+  selectWTType('absent');
+}
+
+function selectWTType(typeId) {
+  wtActiveType = typeId;
+  const t = WT_ALL_TYPES.find(x=>x.id===typeId);
+  // Highlight tab
+  WT_ALL_TYPES.forEach(x => {
+    const btn = document.getElementById('wttab-'+x.id);
+    if (!btn) return;
+    btn.style.background    = x.id===typeId ? x.color : 'var(--card)';
+    btn.style.color         = x.id===typeId ? '#fff' : 'var(--tx)';
+    btn.style.borderColor   = x.id===typeId ? x.color : 'var(--br)';
+  });
+  // Title
+  const titleEl = document.getElementById('wt-editor-title');
+  if (titleEl) titleEl.textContent = t.emoji + ' ' + t.label + ' Template';
+  // Show buttons
+  ['wt-reset-btn','wt-save-btn'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='';});
+  // Variables
+  const varsEl = document.getElementById('wt-vars');
+  if (varsEl) {
+    varsEl.style.display = 'block';
+    varsEl.innerHTML = '<b style="color:var(--tx)">Variables:</b> ' +
+      (WT_VARS[typeId]||'').split(' · ').map(v=>`<code style="background:var(--card);padding:1px 5px;border-radius:3px;border:.5px solid var(--br)">{${v.slice(1,-1)}}</code>`).join(' ');
+  }
+  // Load saved or default templates into textareas
+  loadWTEditors(typeId);
+  switchWTLang(wtActiveLang);
+  refreshWTPreview();
+}
+
+function getWTDefault(typeId, lang) {
+  if (typeId === 'admission') return ADM_TEMPLATES[lang] || ADM_TEMPLATES.en;
+  if (typeId === 'fee_receipt') return FEE_RECEIPT_TEMPLATES[lang] || FEE_RECEIPT_TEMPLATES.en;
+  const tmplArr = WA_TEMPLATES[typeId]?.[lang] || WA_TEMPLATES[typeId]?.en || [''];
+  return tmplArr[0] || '';
+}
+
+function getWTSaved(typeId, lang) {
+  try { return localStorage.getItem(`_erp_wt_${typeId}_${lang}`) || ''; } catch(e) { return ''; }
+}
+
+function setWTSaved(typeId, lang, val) {
+  try { localStorage.setItem(`_erp_wt_${typeId}_${lang}`, val); } catch(e) {}
+}
+
+function loadWTEditors(typeId) {
+  const enEl = document.getElementById('wt-tmpl-en');
+  const taEl = document.getElementById('wt-tmpl-ta');
+  if (enEl) enEl.value = getWTSaved(typeId,'en') || getWTDefault(typeId,'en');
+  if (taEl) taEl.value = getWTSaved(typeId,'ta') || getWTDefault(typeId,'ta');
+}
+
+function switchWTLang(lang) {
+  wtActiveLang = lang;
+  document.getElementById('wt-pane-en').style.display = lang==='en' ? 'block' : 'none';
+  document.getElementById('wt-pane-ta').style.display = lang==='ta' ? 'block' : 'none';
+  const enBtn = document.getElementById('wt-lt-en');
+  const taBtn = document.getElementById('wt-lt-ta');
+  if (enBtn) { enBtn.style.background=lang==='en'?'#185FA5':'var(--card)'; enBtn.style.color=lang==='en'?'#fff':'var(--tx2)'; enBtn.style.borderColor=lang==='en'?'#185FA5':'var(--br)'; }
+  if (taBtn) { taBtn.style.background=lang==='ta'?'#185FA5':'var(--card)'; taBtn.style.color=lang==='ta'?'#fff':'var(--tx2)'; taBtn.style.borderColor=lang==='ta'?'#185FA5':'var(--br)'; }
+  refreshWTPreview();
+}
+
+function refreshWTPreview() {
+  if (!wtActiveType) return;
+  const lang   = wtActiveLang;
+  const tmplEl = document.getElementById(lang==='en'?'wt-tmpl-en':'wt-tmpl-ta');
+  const prevEl = document.getElementById('wt-preview');
+  if (!tmplEl || !prevEl) return;
+  const template = tmplEl.value;
+  const sample   = WT_SAMPLE[wtActiveType] || {};
+  let preview;
+  if (wtActiveType === 'admission') {
+    preview = fillAdmTemplate(template, {
+      name: sample.student_name, parent: sample.parent_name,
+      grade: '10', batch: sample.batch, admNo: sample.admNo, fee: sample.fee,
+    });
+  } else if (wtActiveType === 'fee_receipt') {
+    preview = fillFeeReceiptTemplate(template, sample);
+  } else {
+    // Build a fake student for fillTemplate
+    const fakeStu = {
+      name: sample.student_name, parent: sample.parent_name,
+      grade: sample.grade, phone: sample.center_phone,
+      id: 'ST001', color: '#185FA5',
+    };
+    preview = fillTemplate(template, fakeStu, sample);
+  }
+  prevEl.textContent = preview;
+}
+
+function saveWATypeTemplate() {
+  if (!wtActiveType) return;
+  const enVal = document.getElementById('wt-tmpl-en')?.value || '';
+  const taVal = document.getElementById('wt-tmpl-ta')?.value || '';
+  setWTSaved(wtActiveType, 'en', enVal);
+  setWTSaved(wtActiveType, 'ta', taVal);
+
+  // Also push into live WA_TEMPLATES so changes take effect immediately
+  applyCustomWATemplate(wtActiveType, 'en', enVal);
+  applyCustomWATemplate(wtActiveType, 'ta', taVal);
+
+  showToast(`✅ ${WT_ALL_TYPES.find(t=>t.id===wtActiveType)?.label} template saved!`);
+  initWATemplatesPage(); // refresh tabs to show saved dot
+  selectWTType(wtActiveType);
+}
+
+function resetWATypeTemplate() {
+  if (!wtActiveType) return;
+  if (!confirm('Reset this template to default?')) return;
+  try {
+    localStorage.removeItem(`_erp_wt_${wtActiveType}_en`);
+    localStorage.removeItem(`_erp_wt_${wtActiveType}_ta`);
+  } catch(e) {}
+  loadWTEditors(wtActiveType);
+  // Restore defaults in live WA_TEMPLATES
+  const defEn = getWTDefault(wtActiveType,'en');
+  const defTa = getWTDefault(wtActiveType,'ta');
+  applyCustomWATemplate(wtActiveType,'en',defEn);
+  applyCustomWATemplate(wtActiveType,'ta',defTa);
+  refreshWTPreview();
+  showToast('Template reset to default');
+  initWATemplatesPage();
+  selectWTType(wtActiveType);
+}
+
+function resetAllWATemplates() {
+  if (!confirm('Reset ALL WhatsApp templates to defaults?')) return;
+  WT_ALL_TYPES.forEach(t => {
+    try {
+      localStorage.removeItem(`_erp_wt_${t.id}_en`);
+      localStorage.removeItem(`_erp_wt_${t.id}_ta`);
+    } catch(e) {}
+  });
+  loadAllCustomWATemplates();
+  showToast('All templates reset to defaults');
+  initWATemplatesPage();
+  if (wtActiveType) selectWTType(wtActiveType);
+}
+
+function applyCustomWATemplate(typeId, lang, val) {
+  if (typeId === 'admission') {
+    if (lang==='en') { try { localStorage.setItem('_erp_adm_template', val); } catch(e) {} }
+    return;
+  }
+  if (typeId === 'fee_receipt') {
+    if (lang==='en') { try { localStorage.setItem('_erp_fee_rcpt_template', val); } catch(e) {} }
+    return;
+  }
+  if (WA_TEMPLATES[typeId]) {
+    if (!WA_TEMPLATES[typeId][lang]) WA_TEMPLATES[typeId][lang] = [];
+    WA_TEMPLATES[typeId][lang][0] = val;
+  }
+}
+
+function loadAllCustomWATemplates() {
+  WT_ALL_TYPES.forEach(t => {
+    ['en','ta'].forEach(lang => {
+      const saved = getWTSaved(t.id, lang);
+      if (saved) applyCustomWATemplate(t.id, lang, saved);
+    });
+  });
+}
 const FEE_RECEIPT_TEMPLATES = {
   en:
 `Dear {parent_name},
@@ -5554,6 +5874,14 @@ function loadAllData() {
   loadBatches();
   // Fee structure
   loadFeeStructure();
+  // Load today's attendance for both sessions
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    ['morning','evening'].forEach(sess => {
+      const saved = localStorage.getItem('_erp_att_' + today + '_' + sess);
+      if (saved) Object.assign(attState, JSON.parse(saved));
+    });
+  } catch(e) {}
 
   // Update status bar
   setTimeout(function() {
@@ -5639,6 +5967,7 @@ function _safeInit() {
   document.getElementById('tb-add-btn').style.display='none';
   updateDashStats();
   renderBatchSelect();
+  loadAllCustomWATemplates();
   setTimeout(initCharts, 300);
   setTimeout(initBackup, 800);
   // Dark mode already applied from localStorage at top of _safeInit

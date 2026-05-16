@@ -755,6 +755,9 @@ tbody tr:hover td{background:var(--bg)}
   <div class="toolbar">
     <div class="seg" id="fee-tabs"><button class="seg-b on" onclick="setFeeTab('all',this)">All</button><button class="seg-b" onclick="setFeeTab('paid',this)" id="ft-paid">Paid</button><button class="seg-b" onclick="setFeeTab('pending',this)" id="ft-pend">Pending</button><button class="seg-b" onclick="setFeeTab('overdue',this)" id="ft-over">Overdue</button></div>
     <button class="btn" onclick="showModal('feeStructure')" style="gap:5px"><svg viewBox="0 0 14 14" fill="none" width="12" height="12"><rect x="1" y="1" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.3"/><path d="M3 4h8M3 7h5M3 10h6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>Fee Structure</button>
+    <button class="btn" onclick="openGenerateFees()" style="gap:5px;background:#7c3aed;color:#fff;border-color:#7c3aed">
+      <svg viewBox="0 0 14 14" fill="none" width="12" height="12"><path d="M7 2v10M2 7h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>Generate Monthly Fees
+    </button>
     <button class="btn btn-p" style="margin-left:auto" onclick="showModal('addFee')"><svg viewBox="0 0 14 14" fill="none"><path d="M7 2v10M2 7h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><span id="btn-add-fee">New Fee Entry</span></button>
   </div>
   <div class="tbl-wrap"><table><thead><tr><th style="width:18%">Receipt / Period</th><th style="width:12%">Month</th><th style="width:10%">Total</th><th style="width:10%">Paid</th><th style="width:10%">Balance</th><th style="width:9%">Mode</th><th style="width:10%">Status</th><th style="width:11%">Action</th></tr></thead><tbody id="fee-body"></tbody></table></div>
@@ -2324,7 +2327,195 @@ function saveFeeEntry() {
   runBackup('change');
 }
 
-/* ── Collect payment against an existing pending fee ─── */
+/* ═══════════════════════════════════════════════════════
+   GENERATE MONTHLY FEES — bulk create for existing students
+═══════════════════════════════════════════════════════ */
+function openGenerateFees() {
+  const now = new Date();
+  const defaultMonth = now.toLocaleString('en-IN', {month:'short', year:'numeric'});
+  const activeStudents = students.filter(s => s.status === 'active');
+
+  const root = document.getElementById('modal-root');
+  root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-title">📋 Generate Monthly Fees</div>
+    <div style="font-size:12px;color:var(--tx2);margin-bottom:12px;padding:8px 12px;background:var(--bg);border-radius:8px">
+      Creates <b>pending</b> fee records for all active students for the selected month. Students who already have a record for that month are highlighted — you can skip them.
+    </div>
+
+    <div class="frow" style="margin-bottom:10px">
+      <div class="fg">
+        <label class="fl">Month / Period</label>
+        <input class="fi" id="gf-month" value="${defaultMonth}" placeholder="e.g. Jun 2026" oninput="refreshGenFeeList()">
+      </div>
+      <div class="fg">
+        <label class="fl">Default Fee ₹ <span style="font-size:10px;color:var(--tx3)">(from Fee Structure)</span></label>
+        <input class="fi" id="gf-default-fee" type="number" value="" placeholder="Auto from class" style="color:#7c3aed;font-weight:600">
+      </div>
+      <div class="fg" style="display:flex;align-items:flex-end">
+        <button class="btn btn-sm" onclick="applyDefaultFeeToAll()" style="background:#7c3aed;color:#fff;border-color:#7c3aed;padding:8px 12px">Apply to All</button>
+      </div>
+    </div>
+
+    <!-- Quick select -->
+    <div style="display:flex;gap:6px;margin-bottom:10px;align-items:center">
+      <span style="font-size:11px;color:var(--tx2)">Select:</span>
+      <button class="btn btn-sm" onclick="toggleAllGenFee(true)">☑ All</button>
+      <button class="btn btn-sm" onclick="toggleAllGenFee(false)">☐ None</button>
+      <button class="btn btn-sm" onclick="toggleUnpaidGenFee()">⚡ Only Without Records</button>
+      <span style="margin-left:auto;font-size:11px;color:var(--tx2)" id="gf-count-label">${activeStudents.length} students</span>
+    </div>
+
+    <!-- Student list -->
+    <div style="max-height:340px;overflow-y:auto;border:.5px solid var(--br);border-radius:10px;overflow:hidden" id="gf-student-list">
+      ${buildGenFeeRows(activeStudents, defaultMonth)}
+    </div>
+
+    <div class="modal-foot" style="margin-top:12px">
+      <button class="btn btn-p" style="flex:1;justify-content:center;padding:11px;font-size:13px;font-weight:600" onclick="submitGenerateFees()">
+        ✅ Create Fee Records
+      </button>
+      <button class="btn" onclick="closeModal()">Cancel</button>
+    </div>
+  </div></div>`;
+}
+
+function buildGenFeeRows(activeStudents, monthLabel) {
+  return activeStudents.map((s, i) => {
+    const fs = getFeeForClass(s.grade);
+    const defaultFee = (s.grade === '11' || s.grade === '12') ? '' : (fs.monthlyFee || 0);
+    // Check if this student already has a fee record for this month
+    const existing = fees.find(f =>
+      (f.studentId === s.id || f.student === s.name) &&
+      f.month === monthLabel &&
+      f.type !== 'admission'
+    );
+    const hasPaid   = existing && existing.status === 'paid';
+    const hasPending = existing && existing.status !== 'paid';
+    const bg = i % 2 === 0 ? 'var(--card)' : 'var(--bg)';
+    let statusBadge = '';
+    if (hasPaid)    statusBadge = `<span style="font-size:9px;background:#dcfce7;color:#166534;padding:1px 6px;border-radius:8px;font-weight:600">✅ Paid</span>`;
+    if (hasPending) statusBadge = `<span style="font-size:9px;background:#fef9c3;color:#854d0e;padding:1px 6px;border-radius:8px;font-weight:600">⏳ Pending</span>`;
+
+    return `<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:.5px solid var(--br);background:${existing?'#fef9c3':bg};opacity:${hasPaid?'.6':'1'}" id="gfrow-${s.id}">
+      <input type="checkbox" id="gf-chk-${s.id}" ${existing?'':'checked'} style="width:16px;height:16px;accent-color:#7c3aed;cursor:pointer;flex-shrink:0">
+      <div style="width:30px;height:30px;border-radius:8px;background:${s.color||'#6366f1'};color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0">${(s.name||'?')[0]}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;font-weight:600;color:var(--tx)">${s.name} ${statusBadge}</div>
+        <div style="font-size:10px;color:var(--tx3)">${s.grade==='KG'?'KG':'Gr.'+s.grade} · ${s.course||'No batch'} · ${s.parent}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
+        <span style="font-size:11px;color:var(--tx3)">₹</span>
+        <input type="number" id="gf-fee-${s.id}" value="${existing ? (existing.total||defaultFee) : defaultFee}"
+          style="width:80px;border:.5px solid var(--br);border-radius:6px;padding:5px 7px;font-size:12px;font-weight:600;font-family:inherit;background:var(--bg);color:${s.grade==='11'||s.grade==='12'?'#7c3aed':'var(--tx)'};text-align:right">
+      </div>
+      <select id="gf-status-${s.id}" style="border:.5px solid var(--br);border-radius:6px;padding:5px 7px;font-size:11px;font-family:inherit;background:var(--bg);color:var(--tx);cursor:pointer">
+        <option value="pending" ${(!existing||hasPending)?'selected':''}>⏳ Pending</option>
+        <option value="paid" ${hasPaid?'selected':''}>✅ Paid</option>
+      </select>
+    </div>`;
+  }).join('') || `<div style="padding:20px;text-align:center;color:var(--tx3);font-size:12px">No active students found.</div>`;
+}
+
+function refreshGenFeeList() {
+  const month = document.getElementById('gf-month')?.value.trim();
+  const activeStudents = students.filter(s => s.status === 'active');
+  const listEl = document.getElementById('gf-student-list');
+  if (listEl) listEl.innerHTML = buildGenFeeRows(activeStudents, month);
+  const lbl = document.getElementById('gf-count-label');
+  if (lbl) lbl.textContent = activeStudents.length + ' students';
+}
+
+function applyDefaultFeeToAll() {
+  const override = parseFloat(document.getElementById('gf-default-fee')?.value);
+  students.filter(s=>s.status==='active').forEach(s => {
+    const el = document.getElementById('gf-fee-'+s.id);
+    if (el) {
+      if (!isNaN(override) && override > 0) {
+        el.value = override;
+      } else {
+        const fs = getFeeForClass(s.grade);
+        el.value = fs.monthlyFee || 0;
+      }
+    }
+  });
+}
+
+function toggleAllGenFee(checked) {
+  students.filter(s=>s.status==='active').forEach(s => {
+    const chk = document.getElementById('gf-chk-'+s.id);
+    if (chk) chk.checked = checked;
+  });
+}
+
+function toggleUnpaidGenFee() {
+  const month = document.getElementById('gf-month')?.value.trim();
+  students.filter(s=>s.status==='active').forEach(s => {
+    const existing = fees.find(f =>
+      (f.studentId === s.id || f.student === s.name) &&
+      f.month === month && f.type !== 'admission'
+    );
+    const chk = document.getElementById('gf-chk-'+s.id);
+    if (chk) chk.checked = !existing;
+  });
+}
+
+function submitGenerateFees() {
+  const month = document.getElementById('gf-month')?.value.trim();
+  if (!month) { showToast('Enter a month/period first'); return; }
+
+  const activeStudents = students.filter(s => s.status === 'active');
+  let created = 0, skipped = 0, updated = 0;
+
+  activeStudents.forEach(s => {
+    const chk = document.getElementById('gf-chk-'+s.id);
+    if (!chk?.checked) { skipped++; return; }
+
+    const feeAmt = parseFloat(document.getElementById('gf-fee-'+s.id)?.value) || 0;
+    const status = document.getElementById('gf-status-'+s.id)?.value || 'pending';
+    if (feeAmt <= 0) { skipped++; return; }
+
+    // Check if record already exists for this student + month
+    const existingIdx = fees.findIndex(f =>
+      (f.studentId === s.id || f.student === s.name) &&
+      f.month === month && f.type !== 'admission'
+    );
+
+    const feeRecord = {
+      rcpt      : 'RCP-MF-' + Date.now().toString().slice(-5) + Math.random().toString(36).slice(-2),
+      student   : s.name,
+      studentId : s.id,
+      month,
+      total     : feeAmt,
+      paid      : status === 'paid' ? feeAmt : 0,
+      balance   : status === 'paid' ? 0 : feeAmt,
+      mode      : 'Cash',
+      status,
+      type      : 'monthly',
+      paidOn    : status === 'paid' ? new Date().toLocaleDateString('en-IN') : '',
+    };
+
+    if (existingIdx !== -1) {
+      fees[existingIdx] = { ...fees[existingIdx], ...feeRecord, rcpt: fees[existingIdx].rcpt };
+      updated++;
+    } else {
+      fees.unshift(feeRecord);
+      created++;
+    }
+  });
+
+  saveFees();
+  closeModal();
+  updateDashStats();
+
+  // Show pending tab with newly created records
+  const pendBtn = document.getElementById('ft-pend');
+  if (pendBtn) setFeeTab('pending', pendBtn);
+  else renderFees(fees);
+
+  showToast(`✅ ${created} created, ${updated} updated, ${skipped} skipped for ${month}`);
+  runBackup('change');
+}
 function openCollectModal(rcpt) {
   const f = fees.find(fe => fe.rcpt === rcpt);
   if (!f) return;
@@ -5351,8 +5542,8 @@ function submitAdmission() {
     fees.unshift({
       rcpt: 'RCP-ADM-' + Date.now().toString().slice(-5),
       student: name, studentId: newStudent.id, month: 'Admission Fee',
-      total: parseFloat(admFee), paid: parseFloat(admFee), balance: 0,
-      mode: 'Cash', status: 'paid', type: 'admission',
+      total: parseFloat(admFee), paid: 0, balance: parseFloat(admFee),
+      mode: 'Cash', status: 'pending', type: 'admission',
     });
   }
 
@@ -5416,8 +5607,8 @@ function showAdmSuccess(s, message, phone) {
     <div style="background:var(--bg);border-radius:8px;padding:10px 12px;margin-bottom:14px;text-align:left;border:.5px solid var(--br)">
       <div style="font-size:10px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Fee Records Created</div>
       ${admFeeRec ? `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:.5px dashed var(--br)">
-        <span style="font-size:11px;color:var(--tx2)">✅ Admission Fee</span>
-        <span style="font-size:11px;font-weight:600;color:#16a34a">₹${(admFeeRec.total||0).toLocaleString('en-IN')} Paid</span>
+        <span style="font-size:11px;color:var(--tx2)">⏳ Admission Fee</span>
+        <span style="font-size:11px;font-weight:600;color:#dc2626">₹${(admFeeRec.total||0).toLocaleString('en-IN')} Pending</span>
       </div>` : ''}
       ${pendingRecs.map(f=>`<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:.5px dashed var(--br)">
         <span style="font-size:11px;color:var(--tx2)">⏳ ${f.month}${f.subject?' · '+f.subject:''}</span>

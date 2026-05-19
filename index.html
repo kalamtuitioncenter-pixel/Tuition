@@ -1109,11 +1109,11 @@ tbody tr:hover td{background:var(--bg)}
 
     <!-- EN editor -->
     <div id="wt-pane-en">
-      <textarea class="fi" id="wt-tmpl-en" rows="10" style="font-size:12px;font-family:'Noto Sans Tamil',system-ui;line-height:1.7;resize:vertical;width:100%;box-sizing:border-box" oninput="refreshWTPreview()"></textarea>
+      <textarea class="fi" id="wt-tmpl-en" rows="10" style="font-size:12px;font-family:'Noto Sans Tamil',system-ui;line-height:1.7;resize:vertical;width:100%;box-sizing:border-box" oninput="refreshWTPreview();autoSaveWTTemplate()"></textarea>
     </div>
     <!-- TA editor -->
     <div id="wt-pane-ta" style="display:none">
-      <textarea class="fi" id="wt-tmpl-ta" rows="10" style="font-size:12px;font-family:'Noto Sans Tamil',system-ui;line-height:1.7;resize:vertical;width:100%;box-sizing:border-box" oninput="refreshWTPreview()"></textarea>
+      <textarea class="fi" id="wt-tmpl-ta" rows="10" style="font-size:12px;font-family:'Noto Sans Tamil',system-ui;line-height:1.7;resize:vertical;width:100%;box-sizing:border-box" oninput="refreshWTPreview();autoSaveWTTemplate()"></textarea>
     </div>
 
     <!-- Live preview -->
@@ -1737,15 +1737,27 @@ const MODALS = {
     <div class="fg"><label class="fl">${t('course')}</label><select class="fi" id="m-course">${batches.map(b=>`<option value="${b.name}">${b.name} – ${b.time==='Morning'?'☀️ Morning':'🌙 Evening'}</option>`).join('')}</select></div>
     <div class="modal-foot"><button class="btn btn-p" onclick="saveStudent()">${t('saveStudent')}</button><button class="btn" onclick="closeModal()">${t('cancel')}</button></div>`,
 
-  addFee: () => `<div class="modal-title">${t('newFee')}</div>
-    <div class="fg"><label class="fl">Student</label><select class="fi" id="m-fee-st">${students.map(s=>`<option value="${s.id}">${s.name} (${s.id})</option>`).join('')}</select></div>
+  addFee: () => {
+    // Only show students who have pending/partial/overdue fees OR have no fee records yet (new students)
+    const pendingIds = new Set(fees.filter(f=>f.status==='pending'||f.status==='partial'||f.status==='overdue').map(f=>f.studentId||f.student));
+    const filtered = students.filter(s => {
+      if (s.status !== 'active') return false;
+      const hasPending = pendingIds.has(s.id) || pendingIds.has(s.name);
+      const hasFees    = fees.some(f => f.studentId === s.id || f.student === s.name);
+      return hasPending || !hasFees; // pending OR brand-new (no fee records)
+    });
+    const list = filtered.length > 0 ? filtered : students.filter(s=>s.status==='active');
+    return `<div class="modal-title">${t('newFee')}</div>
+    <div style="font-size:11px;color:#ca8a04;background:#fef9c3;padding:6px 10px;border-radius:6px;margin-bottom:8px;border:.5px solid #fde68a">⚠️ Showing ${list.length} student${list.length!==1?'s':''} with pending fees or no records yet</div>
+    <div class="fg"><label class="fl">Student</label><select class="fi" id="m-fee-st">${list.map(s=>`<option value="${s.id}">${s.name} (${s.id})</option>`).join('')}</select></div>
     <div class="frow"><div class="fg"><label class="fl">Fee Amount ₹</label><input class="fi" id="m-famt" value="2500" type="number" oninput="calcFeeM()"></div>
     <div class="fg"><label class="fl">Discount ₹</label><input class="fi" id="m-fdisc" value="0" type="number" oninput="calcFeeM()"></div></div>
     <div class="frow"><div class="fg"><label class="fl">Late Fee ₹</label><input class="fi" id="m-flate" value="0" type="number" oninput="calcFeeM()"></div>
     <div class="fg"><label class="fl">Paid Amount ₹</label><input class="fi" id="m-fpaid" value="2500" type="number" oninput="calcFeeM()"></div></div>
     <div style="background:var(--bg);border-radius:8px;padding:10px 13px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:var(--tx2)">Total Due</span><span style="font-size:18px;font-weight:700;color:var(--pr)" id="m-ftotal">₹2,500</span></div>
     <div class="fg"><label class="fl">Payment Mode</label><select class="fi" id="m-fmode"><option>Cash</option><option>UPI</option><option>Bank Transfer</option></select></div>
-    <div class="modal-foot"><button class="btn btn-p" onclick="saveFeeEntry()">${t('saveFee')}</button><button class="btn" onclick="closeModal()">${t('cancel')}</button></div>`,
+    <div class="modal-foot"><button class="btn btn-p" onclick="saveFeeEntry()">${t('saveFee')}</button><button class="btn" onclick="closeModal()">${t('cancel')}</button></div>`;
+  },
 
   addStaff: () => `<div class="modal-title">Add Staff Member</div>
     <div class="frow">
@@ -2070,14 +2082,18 @@ function renderAttList() {
   const date = dateEl.value;
   const session = document.getElementById('att-session')?.value || 'morning';
 
+  // Clear THIS session's keys from attState before loading (prevents session bleed)
+  const sessKeyPrefix = '|' + session;
+  Object.keys(attState).forEach(k => { if (k.endsWith(sessKeyPrefix)) delete attState[k]; });
+
   // Load saved attendance for this date + session from localStorage
   const storageKey = '_erp_att_' + date + '_' + session;
   try {
     const saved = localStorage.getItem(storageKey);
     if (saved) {
       const parsed = JSON.parse(saved);
-      // Merge saved into attState (don't wipe other sessions)
-      Object.assign(attState, parsed);
+      // Only load session-specific keys (sid|session format)
+      Object.keys(parsed).forEach(k => { if (k.endsWith(sessKeyPrefix)) attState[k] = parsed[k]; });
     }
   } catch(e) {}
 
@@ -2135,23 +2151,30 @@ function setAtt(sid, v, btn, session) {
   row.querySelectorAll('.att-btn').forEach(b => b.classList.remove('ps','as','ls'));
   btn.classList.add(v==='P'?'ps':v==='A'?'as':'ls');
   updateAttCounts();
-  // Auto-persist to localStorage immediately
+  // Auto-persist to localStorage immediately — save ONLY this session's keys
   const date = document.getElementById('att-date')?.value || new Date().toISOString().split('T')[0];
   const sess  = session || document.getElementById('att-session')?.value || 'morning';
   const storageKey = '_erp_att_' + date + '_' + sess;
-  try { localStorage.setItem(storageKey, JSON.stringify(attState)); } catch(e) {}
+  const sessionData = {};
+  Object.keys(attState).forEach(k => { if (k.endsWith('|' + sess)) sessionData[k] = attState[k]; });
+  try { localStorage.setItem(storageKey, JSON.stringify(sessionData)); } catch(e) {}
 }
 function markAllAtt(v, btn) {
   document.querySelectorAll('.seg .seg-b').forEach(b=>b.classList.remove('on'));
   btn.classList.add('on');
-  students.filter(s=>s.status==='active').forEach(s => { attState[s.id] = v; });
+  const currSess = document.getElementById('att-session')?.value || 'morning';
+  students.filter(s=>s.status==='active').forEach(s => {
+    attState[s.id + '|' + currSess] = v;  // session-aware key
+    attState[s.id] = v;                    // legacy key for WA/AI compatibility
+  });
   renderAttList();
 }
 function updateAttCounts() {
   const active = students.filter(s=>s.status==='active');
+  const currSess = document.getElementById('att-session')?.value || 'morning';
   let p=0, a=0, l=0;
   active.forEach(s => {
-    const v = attState[s.id]||'';
+    const v = attState[s.id + '|' + currSess] || attState[s.id] || '';
     if(v==='P') p++; else if(v==='A') a++; else if(v==='L') l++;
     else p++; // unmarked = present by default
   });
@@ -2175,7 +2198,10 @@ function saveAttendance() {
   const date = document.getElementById('att-date')?.value || new Date().toISOString().split('T')[0];
   const session = document.getElementById('att-session')?.value || 'morning';
   const key = '_erp_att_' + date + '_' + session;
-  try { localStorage.setItem(key, JSON.stringify(attState)); } catch(e) {}
+  // Save ONLY this session's keys to avoid cross-session contamination
+  const sessionData = {};
+  Object.keys(attState).forEach(k => { if (k.endsWith('|' + session)) sessionData[k] = attState[k]; });
+  try { localStorage.setItem(key, JSON.stringify(sessionData)); } catch(e) {}
   // Also save a master index of which date+session keys exist
   try {
     const idx = JSON.parse(localStorage.getItem('_erp_att_index') || '[]');
@@ -4968,6 +4994,22 @@ function refreshWTPreview() {
   prevEl.textContent = preview;
 }
 
+/* Auto-save WA templates on every keystroke (debounced 600ms) */
+let _wtAutoSaveTimer;
+function autoSaveWTTemplate() {
+  clearTimeout(_wtAutoSaveTimer);
+  _wtAutoSaveTimer = setTimeout(() => {
+    if (!wtActiveType) return;
+    const enVal = document.getElementById('wt-tmpl-en')?.value || '';
+    const taVal = document.getElementById('wt-tmpl-ta')?.value || '';
+    if (enVal) { setWTSaved(wtActiveType, 'en', enVal); applyCustomWATemplate(wtActiveType, 'en', enVal); }
+    if (taVal) { setWTSaved(wtActiveType, 'ta', taVal); applyCustomWATemplate(wtActiveType, 'ta', taVal); }
+    // Visual flash to confirm auto-save
+    const saveBtn = document.getElementById('wt-save-btn');
+    if (saveBtn) { const orig=saveBtn.textContent; saveBtn.textContent='✅ Saved'; setTimeout(()=>{ saveBtn.textContent=orig; }, 1200); }
+  }, 600);
+}
+
 function saveWATypeTemplate() {
   if (!wtActiveType) return;
   const enVal = document.getElementById('wt-tmpl-en')?.value || '';
@@ -5160,12 +5202,15 @@ function refreshFeeReceiptPreview() {
   if (!tmplEl || !prevEl) return;
   // Load correct default if field is blank or matches a default
   const saved = localStorage.getItem('_erp_fee_rcpt_template');
-  const isDefault = !saved || tmplEl.value === FEE_RECEIPT_TEMPLATES.en || tmplEl.value === FEE_RECEIPT_TEMPLATES.ta;
-  if (isDefault) {
+  const currentVal = tmplEl.value;
+  const isShowingDefault = currentVal === FEE_RECEIPT_TEMPLATES.en || currentVal === FEE_RECEIPT_TEMPLATES.ta || currentVal === '';
+  if (isShowingDefault) {
     if (lang === 'ta') tmplEl.value = FEE_RECEIPT_TEMPLATES.ta;
     else if (lang === 'both') tmplEl.value = FEE_RECEIPT_TEMPLATES.en + '\n\n─────────────\n\n' + FEE_RECEIPT_TEMPLATES.ta;
     else tmplEl.value = FEE_RECEIPT_TEMPLATES.en;
   }
+  // Auto-save template whenever previewed
+  try { localStorage.setItem('_erp_fee_rcpt_template', tmplEl.value); } catch(e) {}
   try { localStorage.setItem('_erp_fee_rcpt_lang', lang); } catch(e) {}
   // Preview with sample data
   prevEl.textContent = fillFeeReceiptTemplate(tmplEl.value, {
@@ -5446,13 +5491,19 @@ function refreshAdmPreview() {
   if (!langSel || !tmplEl || !prevEl) return;
 
   const lang_ = langSel.value;
-  // When language changes, update textarea to matching default (only if user hasn't customised)
-  const savedCustom = localStorage.getItem('_erp_adm_template');
-  if (!savedCustom || tmplEl.value === ADM_TEMPLATES.en || tmplEl.value === ADM_TEMPLATES.ta) {
+  // Only switch to language default if the textarea currently contains a default template
+  // (i.e. the user hasn't made custom edits). Never overwrite custom content.
+  const currentVal = tmplEl.value;
+  const isShowingDefault = currentVal === ADM_TEMPLATES.en || currentVal === ADM_TEMPLATES.ta ||
+    currentVal === ADM_TEMPLATES.en + '\n\n─────────────\n\n' + ADM_TEMPLATES.ta || currentVal === '';
+  if (isShowingDefault) {
     if (lang_ === 'en') tmplEl.value = ADM_TEMPLATES.en;
     else if (lang_ === 'ta') tmplEl.value = ADM_TEMPLATES.ta;
     else tmplEl.value = ADM_TEMPLATES.en + '\n\n─────────────\n\n' + ADM_TEMPLATES.ta;
   }
+
+  // Auto-save any edit immediately so it persists across navigations
+  try { localStorage.setItem('_erp_adm_template', tmplEl.value); } catch(e) {}
 
   // Save choice
   try { localStorage.setItem('_erp_adm_lang', lang_); } catch(e) {}

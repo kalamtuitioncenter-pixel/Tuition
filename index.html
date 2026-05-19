@@ -1738,18 +1738,21 @@ const MODALS = {
     <div class="modal-foot"><button class="btn btn-p" onclick="saveStudent()">${t('saveStudent')}</button><button class="btn" onclick="closeModal()">${t('cancel')}</button></div>`,
 
   addFee: () => {
-    // Only show students who have pending/partial/overdue fees OR have no fee records yet (new students)
-    const pendingIds = new Set(fees.filter(f=>f.status==='pending'||f.status==='partial'||f.status==='overdue').map(f=>f.studentId||f.student));
-    const filtered = students.filter(s => {
+    // Exclude students where ALL their fee records are paid (fully settled)
+    const list = students.filter(s => {
       if (s.status !== 'active') return false;
-      const hasPending = pendingIds.has(s.id) || pendingIds.has(s.name);
-      const hasFees    = fees.some(f => f.studentId === s.id || f.student === s.name);
-      return hasPending || !hasFees; // pending OR brand-new (no fee records)
+      const studentFees = fees.filter(f => f.studentId === s.id || f.student === s.name);
+      if (studentFees.length === 0) return true; // new student, no fees yet — include
+      // Include if ANY fee is not fully paid
+      return studentFees.some(f => f.status !== 'paid');
     });
-    const list = filtered.length > 0 ? filtered : students.filter(s=>s.status==='active');
+    const display = list.length > 0 ? list : students.filter(s => s.status === 'active');
+    const info = list.length < students.filter(s=>s.status==='active').length
+      ? `<div style="font-size:11px;color:#16a34a;background:#dcfce7;padding:5px 10px;border-radius:6px;margin-bottom:8px;border:.5px solid #bbf7d0">✅ ${students.filter(s=>s.status==='active').length - list.length} fully-paid student(s) hidden</div>`
+      : '';
     return `<div class="modal-title">${t('newFee')}</div>
-    <div style="font-size:11px;color:#ca8a04;background:#fef9c3;padding:6px 10px;border-radius:6px;margin-bottom:8px;border:.5px solid #fde68a">⚠️ Showing ${list.length} student${list.length!==1?'s':''} with pending fees or no records yet</div>
-    <div class="fg"><label class="fl">Student</label><select class="fi" id="m-fee-st">${list.map(s=>`<option value="${s.id}">${s.name} (${s.id})</option>`).join('')}</select></div>
+    ${info}
+    <div class="fg"><label class="fl">Student</label><select class="fi" id="m-fee-st">${display.map(s=>`<option value="${s.id}">${s.name} (Gr.${s.grade==='KG'?'KG':s.grade})</option>`).join('')}</select></div>
     <div class="frow"><div class="fg"><label class="fl">Fee Amount ₹</label><input class="fi" id="m-famt" value="2500" type="number" oninput="calcFeeM()"></div>
     <div class="fg"><label class="fl">Discount ₹</label><input class="fi" id="m-fdisc" value="0" type="number" oninput="calcFeeM()"></div></div>
     <div class="frow"><div class="fg"><label class="fl">Late Fee ₹</label><input class="fi" id="m-flate" value="0" type="number" oninput="calcFeeM()"></div>
@@ -2339,17 +2342,37 @@ function calcFeeM() {
   if(el) el.textContent='₹'+Math.round(a-d+l).toLocaleString('en-IN');
 }
 function saveFeeEntry() {
-  const amt=parseFloat(document.getElementById('m-famt')?.value)||2500;
-  const paid=parseFloat(document.getElementById('m-fpaid')?.value)||0;
-  const stEl=document.getElementById('m-fee-st');
-  const stName=stEl?stEl.options[stEl.selectedIndex].text.split(' (')[0]:'Student';
-  const bal=Math.max(0,amt-paid);
-  const rcpt='RCP-'+Date.now().toString().slice(-6);
-  fees.unshift({rcpt,student:stName,month:new Date().toLocaleString('en-IN',{month:'short',year:'numeric'}),total:amt,paid,balance:bal,mode:document.getElementById('m-fmode')?.value||'Cash',status:paid>=amt?'paid':paid>0?'partial':'pending'});
+  const amt   = parseFloat(document.getElementById('m-famt')?.value) || 0;
+  const disc  = parseFloat(document.getElementById('m-fdisc')?.value) || 0;
+  const late  = parseFloat(document.getElementById('m-flate')?.value) || 0;
+  const paid  = parseFloat(document.getElementById('m-fpaid')?.value) || 0;
+  const total = Math.max(0, amt - disc + late);
+  if (total <= 0) { showToast('Enter a valid fee amount'); return; }
+
+  const stEl    = document.getElementById('m-fee-st');
+  const stId    = stEl?.value || '';
+  const student = students.find(s => s.id === stId) || null;
+  const stName  = student ? student.name : (stEl?.options[stEl.selectedIndex]?.text || 'Student');
+  const bal     = Math.max(0, total - paid);
+  const status  = paid >= total ? 'paid' : paid > 0 ? 'partial' : 'pending';
+  const rcpt    = 'RCP-' + Date.now().toString().slice(-6);
+  const month   = new Date().toLocaleString('en-IN', {month:'short', year:'numeric'});
+
+  fees.unshift({
+    rcpt, student: stName, studentId: stId,
+    month, total, paid, balance: bal,
+    mode: document.getElementById('m-fmode')?.value || 'Cash',
+    status, type: 'monthly',
+    paidOn: paid > 0 ? new Date().toLocaleDateString('en-IN') : '',
+  });
   saveFees();
-  renderFees(fees);
+  // Refresh to pending tab
+  const pendBtn = document.getElementById('ft-pend');
+  if (pendBtn && status !== 'paid') setFeeTab('pending', pendBtn);
+  else renderFees(fees);
+  updateDashStats();
   closeModal();
-  showToast('✅ Fee saved! Receipt: '+rcpt);
+  showToast('✅ Fee saved! Receipt: ' + rcpt);
   runBackup('change');
 }
 
@@ -5588,53 +5611,10 @@ function submitAdmission() {
   admRecentList.unshift({ admNo, name, grade, parent, phone, date: new Date().toLocaleDateString('en-IN'), message });
   if (admRecentList.length > 20) admRecentList.pop();
 
-  // Add admission fee record if non-zero
-  if (parseFloat(admFee) > 0) {
-    fees.unshift({
-      rcpt: 'RCP-ADM-' + Date.now().toString().slice(-5),
-      student: name, studentId: newStudent.id, month: 'Admission Fee',
-      total: parseFloat(admFee), paid: 0, balance: parseFloat(admFee),
-      mode: 'Cash', status: 'pending', type: 'admission',
-    });
-  }
-
-  // Monthly / subject fee records
-  const monthFee = parseFloat(fee) || 0;
-  const nowDate = new Date();
-  const monthLabel = nowDate.toLocaleString('en-IN',{month:'short',year:'numeric'});
-
-  if ((grade === '11' || grade === '12') && selectedSubjects.length > 0) {
-    // Per-subject fee records for 11th / 12th
-    const fs = getFeeForClass(grade);
-    selectedSubjects.forEach((subj, si) => {
-      const key = subj.replace(/\s/g,'');
-      const feeInp = document.getElementById('sfee-'+key);
-      const subjFee = feeInp ? parseFloat(feeInp.value)||0 : (fs?.subjectFees?.[subj]||0);
-      if (subjFee > 0) {
-        fees.unshift({
-          rcpt: 'RCP-S'+si+'-'+(Date.now()+si).toString().slice(-5),
-          student: name, studentId: newStudent.id, month: monthLabel,
-          total: subjFee, paid: 0, balance: subjFee,
-          mode: 'Cash', status: 'pending', type: 'subject', subject: subj,
-        });
-      }
-    });
-    showToast(`✅ Admitted! Admission fee + ${selectedSubjects.length} subject fee records created.`);
-  } else if (monthFee > 0) {
-    // Standard monthly fee record
-    fees.unshift({
-      rcpt: 'RCP-MF-' + (Date.now()+1).toString().slice(-5),
-      student: name, studentId: newStudent.id, month: monthLabel,
-      total: monthFee, paid: 0, balance: monthFee,
-      mode: 'Cash', status: 'pending', type: 'monthly',
-    });
-    showToast('✅ Admitted! Admission fee + Monthly fee records created.');
-  } else {
-    showToast('✅ ' + name + ' admitted successfully!');
-  }
+  // NO auto fee records — fees are added manually via the Fees page
+  showToast('✅ ' + name + ' admitted successfully!');
 
   runBackup('change');
-  saveFees();
   renderStudents(students);
   renderAdmRecent();
   updateAdmCounter();
@@ -5648,46 +5628,22 @@ function submitAdmission() {
 
 function showAdmSuccess(s, message, phone) {
   const root = document.getElementById('modal-root');
-  // Build fee summary for this new student
-  const studentFees = fees.filter(f => f.studentId === s.id || f.student === s.name);
-  const admFeeRec   = studentFees.find(f => f.type === 'admission');
-  const pendingRecs = studentFees.filter(f => f.status === 'pending');
-  const pendingTotal = pendingRecs.reduce((sum, f) => sum + (f.balance || 0), 0);
-
-  const feeHTML = studentFees.length > 0 ? `
-    <div style="background:var(--bg);border-radius:8px;padding:10px 12px;margin-bottom:14px;text-align:left;border:.5px solid var(--br)">
-      <div style="font-size:10px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Fee Records Created</div>
-      ${admFeeRec ? `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:.5px dashed var(--br)">
-        <span style="font-size:11px;color:var(--tx2)">⏳ Admission Fee</span>
-        <span style="font-size:11px;font-weight:600;color:#dc2626">₹${(admFeeRec.total||0).toLocaleString('en-IN')} Pending</span>
-      </div>` : ''}
-      ${pendingRecs.map(f=>`<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:.5px dashed var(--br)">
-        <span style="font-size:11px;color:var(--tx2)">⏳ ${f.month}${f.subject?' · '+f.subject:''}</span>
-        <span style="font-size:11px;font-weight:600;color:#dc2626">₹${(f.balance||0).toLocaleString('en-IN')} Pending</span>
-      </div>`).join('')}
-      ${pendingTotal > 0 ? `<div style="display:flex;justify-content:space-between;padding-top:6px;margin-top:2px">
-        <span style="font-size:12px;font-weight:700;color:var(--tx)">Total Pending</span>
-        <span style="font-size:14px;font-weight:800;color:#dc2626">₹${pendingTotal.toLocaleString('en-IN')}</span>
-      </div>` : ''}
-    </div>` : '';
-
   root.innerHTML = `<div class="modal-bg"><div class="modal" style="max-width:420px">
     <div style="text-align:center;padding:8px 0 6px">
       <div style="font-size:44px;margin-bottom:8px">🎉</div>
       <div style="font-size:16px;font-weight:700;color:var(--tx);margin-bottom:4px">${s.name} Admitted!</div>
       <div style="font-size:12px;color:var(--tx2);margin-bottom:14px">${s.admNo} · Class ${s.grade==='KG'?'KG':s.grade} · ${new Date().toLocaleDateString('en-IN')}</div>
-      ${feeHTML}
-      <div style="background:#dcfce7;border-radius:8px;padding:12px;font-size:11px;color:#166534;font-family:'Noto Sans Tamil',system-ui;line-height:1.6;text-align:left;max-height:140px;overflow-y:auto;white-space:pre-wrap;margin-bottom:14px">${message}</div>
+      <div style="background:#dcfce7;border-radius:8px;padding:12px;font-size:11px;color:#166534;font-family:'Noto Sans Tamil',system-ui;line-height:1.6;text-align:left;max-height:160px;overflow-y:auto;white-space:pre-wrap;margin-bottom:14px">${message}</div>
       <div style="display:flex;gap:8px;margin-bottom:8px">
         <button class="btn btn-wa" style="flex:1;justify-content:center;padding:11px;font-weight:600" onclick="var _msg=document.querySelector('.modal div[style*=dcfce7]')?.textContent||''; closeModal(); openWA('${phone}', _msg);">
           📱 Send via WhatsApp
         </button>
         <button class="btn" style="padding:11px 14px" onclick="closeModal()">Skip</button>
       </div>
-      ${pendingTotal > 0 ? `<button class="btn" style="width:100%;justify-content:center;padding:10px;font-size:12px;font-weight:600;color:#dc2626;border-color:#dc2626"
-        onclick="closeModal(); navTo('fees'); setTimeout(()=>{ const pb=document.getElementById('ft-pend'); if(pb){ setFeeTab('pending',pb); } },100)">
-        ⏳ View Pending Fees (₹${pendingTotal.toLocaleString('en-IN')})
-      </button>` : ''}
+      <button class="btn" style="width:100%;justify-content:center;padding:10px;font-size:12px;font-weight:600;color:#185FA5;border-color:#185FA5"
+        onclick="closeModal(); navTo('fees');">
+        💰 Go to Fees to Add Fee Record
+      </button>
     </div>
   </div></div>`;
 }

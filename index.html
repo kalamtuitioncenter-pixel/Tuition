@@ -711,7 +711,7 @@ tbody tr:hover td{background:var(--bg)}
 <!-- ═══════════════ ATTENDANCE ═══════════════ -->
 <div class="page" id="pg-attendance">
   <div class="toolbar">
-    <select class="fi" style="width:auto" id="att-batch" onchange="renderAttList()"></select>
+    <select class="fi" style="width:auto" id="att-batch" onchange="syncSessionToBatch();renderAttList()"></select>
     <select class="fi" style="width:auto" id="att-session" onchange="renderAttList()">
       <option value="morning">☀️ Morning</option>
       <option value="evening">🌙 Evening</option>
@@ -2076,119 +2076,225 @@ function waStudent(id) {
 }
 
 /* ═══════════════════════════════════════════════════════
-   ATTENDANCE
+   ATTENDANCE  — per-batch · per-session · per-day
+   Storage key: _erp_att_{YYYY-MM-DD}_{batchId}_{session}
+   attState key: {studentId}|{batchId}|{session}
 ═══════════════════════════════════════════════════════ */
-function renderAttList() {
-  const today = new Date().toISOString().split('T')[0];
-  const dateEl = document.getElementById('att-date');
-  if (!dateEl.value) dateEl.value = today;
-  const date = dateEl.value;
-  const session = document.getElementById('att-session')?.value || 'morning';
 
-  // Clear THIS session's keys from attState before loading (prevents session bleed)
-  const sessKeyPrefix = '|' + session;
-  Object.keys(attState).forEach(k => { if (k.endsWith(sessKeyPrefix)) delete attState[k]; });
+/* Build the composite attState key */
+function _attKey(sid, batchId, session) {
+  return sid + '|' + (batchId||'all') + '|' + session;
+}
 
-  // Load saved attendance for this date + session from localStorage
-  const storageKey = '_erp_att_' + date + '_' + session;
+/* Build the localStorage key */
+function _attStorageKey(date, batchId, session) {
+  return '_erp_att_' + date + '_' + (batchId||'all') + '_' + session;
+}
+
+/* Load saved attendance for a specific date+batch+session into attState */
+function _loadAttSession(date, batchId, session) {
+  const sk = _attStorageKey(date, batchId, session);
+  // Clear existing keys for this batch+session before loading
+  const suffix = '|' + (batchId||'all') + '|' + session;
+  Object.keys(attState).forEach(k => { if (k.endsWith(suffix)) delete attState[k]; });
   try {
-    const saved = localStorage.getItem(storageKey);
+    const saved = localStorage.getItem(sk);
     if (saved) {
       const parsed = JSON.parse(saved);
-      // Only load session-specific keys (sid|session format)
-      Object.keys(parsed).forEach(k => { if (k.endsWith(sessKeyPrefix)) attState[k] = parsed[k]; });
+      Object.keys(parsed).forEach(k => { if (k.endsWith(suffix)) attState[k] = parsed[k]; });
     }
   } catch(e) {}
+}
 
+/* Save current batch+session data only */
+function _saveAttSession(date, batchId, session) {
+  const sk = _attStorageKey(date, batchId, session);
+  const suffix = '|' + (batchId||'all') + '|' + session;
+  const out = {};
+  Object.keys(attState).forEach(k => { if (k.endsWith(suffix)) out[k] = attState[k]; });
+  try {
+    localStorage.setItem(sk, JSON.stringify(out));
+    // Master index
+    const idx = JSON.parse(localStorage.getItem('_erp_att_index') || '[]');
+    if (!idx.includes(sk)) { idx.push(sk); localStorage.setItem('_erp_att_index', JSON.stringify(idx)); }
+  } catch(e) {}
+}
+
+/* Sync the session dropdown to match the selected batch's time type.
+   Called whenever batch changes. */
+function syncSessionToBatch() {
+  const batchId  = document.getElementById('att-batch')?.value || '';
+  const batch    = batches.find(b => b.id === batchId);
+  const sessEl   = document.getElementById('att-session');
+  if (!sessEl || !batch) return;
+
+  if (batch.time === 'Morning') {
+    sessEl.value = 'morning';
+    // Disable evening option for morning-only batch
+    Array.from(sessEl.options).forEach(o => {
+      o.disabled = (batch.time === 'Morning' && o.value === 'evening') ||
+                   (batch.time === 'Evening' && o.value === 'morning');
+    });
+  } else if (batch.time === 'Evening') {
+    sessEl.value = 'evening';
+    Array.from(sessEl.options).forEach(o => {
+      o.disabled = (o.value === 'morning');
+    });
+  } else {
+    // Both sessions — enable all options, keep current selection
+    Array.from(sessEl.options).forEach(o => { o.disabled = false; });
+  }
+}
+
+function renderAttList() {
+  const today  = new Date().toISOString().split('T')[0];
+  const dateEl = document.getElementById('att-date');
+  if (!dateEl.value) dateEl.value = today;
+  const date    = dateEl.value;
   const batchId = document.getElementById('att-batch')?.value || '';
-  const batch = batches.find(b=>b.id===batchId);
+  const session = document.getElementById('att-session')?.value || 'morning';
+  const batch   = batches.find(b => b.id === batchId);
 
-  // Update session banner
-  const banner = document.getElementById('att-session-label');
+  // Load saved data for exactly this date + batch + session (fresh load, no bleed)
+  _loadAttSession(date, batchId, session);
+
+  // ── Session banner ────────────────────────────────────
+  const banner     = document.getElementById('att-session-label');
   const batchLabel = document.getElementById('att-batch-label');
-  if (banner) banner.textContent = session==='morning' ? '☀️ Morning Session' : '🌙 Evening Session';
-  if (batchLabel && batch) batchLabel.textContent = batch.name + ' · ' + batch.days;
-  // Style banner by session
   const sessBanner = document.getElementById('att-session-banner');
+  if (banner) banner.textContent = session === 'morning' ? '☀️ Morning Session' : '🌙 Evening Session';
+  if (batchLabel && batch) batchLabel.textContent = batch.name + ' · ' + (batch.days || 'Mon–Sat');
   if (sessBanner) {
-    if (session==='morning') { sessBanner.style.background='#fef9c3'; sessBanner.style.color='#854d0e'; sessBanner.style.borderColor='#fde68a'; }
-    else { sessBanner.style.background='#dbeafe'; sessBanner.style.color='#1d4ed8'; sessBanner.style.borderColor='#bfdbfe'; }
+    const isMorn = session === 'morning';
+    sessBanner.style.background   = isMorn ? '#fef9c3' : '#dbeafe';
+    sessBanner.style.color        = isMorn ? '#854d0e' : '#1d4ed8';
+    sessBanner.style.borderColor  = isMorn ? '#fde68a' : '#bfdbfe';
   }
 
-  // Filter students by batch course if batch has a name match
+  // ── Show saved status for OTHER session (both-session batches) ─
+  let otherSessInfo = '';
+  if (batch && batch.time === 'Both') {
+    const otherSess   = session === 'morning' ? 'evening' : 'morning';
+    const otherKey    = _attStorageKey(date, batchId, otherSess);
+    const otherSaved  = localStorage.getItem(otherKey);
+    const otherLabel  = otherSess === 'morning' ? '☀️ Morning' : '🌙 Evening';
+    otherSessInfo = otherSaved
+      ? `<span style="font-size:10px;background:#dcfce7;color:#166534;padding:2px 7px;border-radius:8px;border:.5px solid #bbf7d0;margin-left:8px">✅ ${otherLabel} saved</span>`
+      : `<span style="font-size:10px;background:#fef9c3;color:#854d0e;padding:2px 7px;border-radius:8px;border:.5px solid #fde68a;margin-left:8px">⏳ ${otherLabel} not yet saved</span>`;
+    const batchLabelEl = document.getElementById('att-batch-label');
+    if (batchLabelEl) batchLabelEl.innerHTML = (batch.name + ' · ' + (batch.days||'Mon–Sat')) + otherSessInfo;
+  }
+
+  // ── Filter students for this batch ────────────────────
   let activeStudents = students.filter(s => s && s.name && s.status === 'active');
   if (batch && batch.name) {
-    // Filter students whose course contains the batch name (partial match)
-    const batchFiltered = activeStudents.filter(s => s.course && s.course.toLowerCase().includes(batch.name.toLowerCase().split(' ')[0].toLowerCase()));
-    if (batchFiltered.length > 0) activeStudents = batchFiltered;
+    const bFirst = batch.name.toLowerCase().split(' ')[0];
+    const filtered = activeStudents.filter(s =>
+      s.course && s.course.toLowerCase().includes(bFirst)
+    );
+    if (filtered.length > 0) activeStudents = filtered;
   }
 
-  // Session-aware attState key: studentId|session
-  const attKey = (sid) => sid + '|' + session;
+  if (activeStudents.length === 0) {
+    document.getElementById('att-wrap').innerHTML =
+      `<div style="padding:30px;text-align:center;color:var(--tx3);font-size:12px">
+        No students found for this batch.<br>
+        <span style="font-size:11px">Assign students to the batch via Students → Edit.</span>
+      </div>`;
+    updateAttCounts(activeStudents, batchId, session);
+    return;
+  }
 
-  document.getElementById('att-wrap').innerHTML = activeStudents.map((s) => {
-    const val = attState[attKey(s.id)] || attState[s.id] || '';
+  // ── Render rows ───────────────────────────────────────
+  document.getElementById('att-wrap').innerHTML = activeStudents.map(s => {
+    const val = attState[_attKey(s.id, batchId, session)] || '';
     return `<div class="att-row">
       <div class="av" style="background:${s.color}">${(s.name||'?')[0]}</div>
       <div class="att-name">
         <div style="font-weight:500;font-size:13px">${s.name}</div>
-        <div style="font-size:10px;color:var(--tx3)">${s.grade==='KG'?'KG':'Gr.'+s.grade} &middot; ${s.parent}
+        <div style="font-size:10px;color:var(--tx3)">${s.grade==='KG'?'KG':'Gr.'+s.grade} · ${s.parent}
           ${s.course?`<span style="margin-left:4px;background:var(--prl);color:var(--pr);padding:0 5px;border-radius:8px;font-size:9px">${s.course}</span>`:''}
         </div>
       </div>
       <div class="att-btns">
-        <button class="att-btn ${val==='P'?'ps':''}" onclick="setAtt('${s.id}','P',this,'${session}')" style="color:#16a34a">P</button>
-        <button class="att-btn ${val==='A'?'as':''}" onclick="setAtt('${s.id}','A',this,'${session}')" style="color:#dc2626">A</button>
-        <button class="att-btn ${val==='L'?'ls':''}" onclick="setAtt('${s.id}','L',this,'${session}')" style="color:#ca8a04">L</button>
+        <button class="att-btn ${val==='P'?'ps':''}" onclick="setAtt('${s.id}','P',this)" style="color:#16a34a">P</button>
+        <button class="att-btn ${val==='A'?'as':''}" onclick="setAtt('${s.id}','A',this)" style="color:#dc2626">A</button>
+        <button class="att-btn ${val==='L'?'ls':''}" onclick="setAtt('${s.id}','L',this)" style="color:#ca8a04">L</button>
       </div>
     </div>`;
   }).join('');
-  updateAttCounts();
+
+  updateAttCounts(activeStudents, batchId, session);
 }
-function setAtt(sid, v, btn, session) {
-  const key = session ? sid + '|' + session : sid;
+
+function setAtt(sid, v, btn) {
+  const date    = document.getElementById('att-date')?.value || new Date().toISOString().split('T')[0];
+  const batchId = document.getElementById('att-batch')?.value || '';
+  const session = document.getElementById('att-session')?.value || 'morning';
+  const key     = _attKey(sid, batchId, session);
+
   if (v) attState[key] = v; else delete attState[key];
-  // Also update the legacy key for backward compat
-  if (v) attState[sid] = v; else delete attState[sid];
+
+  // Update button states on the row
   const row = btn.closest('.att-row');
   row.querySelectorAll('.att-btn').forEach(b => b.classList.remove('ps','as','ls'));
   btn.classList.add(v==='P'?'ps':v==='A'?'as':'ls');
-  updateAttCounts();
-  // Auto-persist to localStorage immediately — save ONLY this session's keys
-  const date = document.getElementById('att-date')?.value || new Date().toISOString().split('T')[0];
-  const sess  = session || document.getElementById('att-session')?.value || 'morning';
-  const storageKey = '_erp_att_' + date + '_' + sess;
-  const sessionData = {};
-  Object.keys(attState).forEach(k => { if (k.endsWith('|' + sess)) sessionData[k] = attState[k]; });
-  try { localStorage.setItem(storageKey, JSON.stringify(sessionData)); } catch(e) {}
+
+  // Auto-save immediately
+  _saveAttSession(date, batchId, session);
+
+  // Refresh visible counts
+  const batchStudents = _getBatchStudents(batchId);
+  updateAttCounts(batchStudents, batchId, session);
 }
+
+function _getBatchStudents(batchId) {
+  let active = students.filter(s => s && s.name && s.status === 'active');
+  const batch = batches.find(b => b.id === batchId);
+  if (batch && batch.name) {
+    const bFirst = batch.name.toLowerCase().split(' ')[0];
+    const filtered = active.filter(s => s.course && s.course.toLowerCase().includes(bFirst));
+    if (filtered.length > 0) active = filtered;
+  }
+  return active;
+}
+
 function markAllAtt(v, btn) {
-  document.querySelectorAll('.seg .seg-b').forEach(b=>b.classList.remove('on'));
+  document.querySelectorAll('.seg .seg-b').forEach(b => b.classList.remove('on'));
   btn.classList.add('on');
-  const currSess = document.getElementById('att-session')?.value || 'morning';
-  students.filter(s=>s.status==='active').forEach(s => {
-    attState[s.id + '|' + currSess] = v;  // session-aware key
-    attState[s.id] = v;                    // legacy key for WA/AI compatibility
-  });
+  const date    = document.getElementById('att-date')?.value || new Date().toISOString().split('T')[0];
+  const batchId = document.getElementById('att-batch')?.value || '';
+  const session = document.getElementById('att-session')?.value || 'morning';
+  const batchStudents = _getBatchStudents(batchId);
+  batchStudents.forEach(s => { attState[_attKey(s.id, batchId, session)] = v; });
+  _saveAttSession(date, batchId, session);
   renderAttList();
 }
-function updateAttCounts() {
-  const active = students.filter(s=>s.status==='active');
-  const currSess = document.getElementById('att-session')?.value || 'morning';
-  let p=0, a=0, l=0;
-  active.forEach(s => {
-    const v = attState[s.id + '|' + currSess] || attState[s.id] || '';
-    if(v==='P') p++; else if(v==='A') a++; else if(v==='L') l++;
-    else p++; // unmarked = present by default
+
+function updateAttCounts(batchStudents, batchId, session) {
+  if (!batchStudents) {
+    batchStudents = _getBatchStudents(document.getElementById('att-batch')?.value || '');
+    batchId  = document.getElementById('att-batch')?.value || '';
+    session  = document.getElementById('att-session')?.value || 'morning';
+  }
+  let p = 0, a = 0, l = 0;
+  batchStudents.forEach(s => {
+    const v = attState[_attKey(s.id, batchId, session)] || '';
+    if (v === 'P') p++;
+    else if (v === 'A') a++;
+    else if (v === 'L') l++;
+    // unmarked = not yet marked (don't count as present in totals)
   });
-  const tot = active.length;
-  document.getElementById('att-pc-lbl').textContent = p+' Present';
-  document.getElementById('att-ac-lbl').textContent = a+' Absent';
+  const tot = batchStudents.length;
+  const marked = p + a + l;
+  document.getElementById('att-pc-lbl').textContent = p + ' Present';
+  document.getElementById('att-ac-lbl').textContent = a + ' Absent';
   const ltl = CFG.ATTENDANCE?.latesToLeave || 10;
-  document.getElementById('att-lc-lbl').textContent = l+' Late ('+ltl+'=1 leave)';
-  document.getElementById('att-pct-lbl').textContent = tot>0?Math.round(p/tot*100)+'%':'—%';
+  document.getElementById('att-lc-lbl').textContent = l + ' Late';
+  document.getElementById('att-pct-lbl').textContent = marked > 0 ? Math.round(p / marked * 100) + '%' : '—%';
   updateDashStats();
 }
+
 function openQRScan() {
   const lic = window.__LIC__||{};
   if (lic.features && lic.features.qrAttendance === false) {
@@ -2197,22 +2303,26 @@ function openQRScan() {
   }
   showToast('📷 QR Scanner: Point camera at student QR card to mark Present automatically');
 }
+
 function saveAttendance() {
-  const date = document.getElementById('att-date')?.value || new Date().toISOString().split('T')[0];
+  const date    = document.getElementById('att-date')?.value || new Date().toISOString().split('T')[0];
+  const batchId = document.getElementById('att-batch')?.value || '';
   const session = document.getElementById('att-session')?.value || 'morning';
-  const key = '_erp_att_' + date + '_' + session;
-  // Save ONLY this session's keys to avoid cross-session contamination
-  const sessionData = {};
-  Object.keys(attState).forEach(k => { if (k.endsWith('|' + session)) sessionData[k] = attState[k]; });
-  try { localStorage.setItem(key, JSON.stringify(sessionData)); } catch(e) {}
-  // Also save a master index of which date+session keys exist
-  try {
-    const idx = JSON.parse(localStorage.getItem('_erp_att_index') || '[]');
-    if (!idx.includes(key)) { idx.push(key); localStorage.setItem('_erp_att_index', JSON.stringify(idx)); }
-  } catch(e) {}
-  showToast('✅ Attendance saved for ' + date + ' (' + session + ')');
+  const batch   = batches.find(b => b.id === batchId);
+  _saveAttSession(date, batchId, session);
+  const bName = batch ? batch.name : 'batch';
+  showToast(`✅ ${session === 'morning' ? '☀️ Morning' : '🌙 Evening'} attendance saved — ${bName}`);
+  // Refresh to show the other-session saved status badge
+  renderAttList();
   runBackup('change');
 }
+/* Helper: get a student's attendance value for the currently selected batch+session */
+function getStudentAtt(sid) {
+  const batchId = document.getElementById('att-batch')?.value || '';
+  const session = document.getElementById('att-session')?.value || 'morning';
+  return attState[_attKey(sid, batchId, session)] || '';
+}
+
 function sendAttWA() {
   waType = 'absent';
   document.getElementById('wa-recipients-sel').value = 'absent';
@@ -3445,9 +3555,9 @@ function buildWAQueue() {
   if (recipSel === 'all') {
     targetStudents = students.filter(s=>s.status==='active');
   } else if (recipSel === 'absent') {
-    targetStudents = students.filter(s=>attState[s.id]==='A');
+    targetStudents = students.filter(s=>getStudentAtt(s.id)==='A');
   } else if (recipSel === 'late') {
-    targetStudents = students.filter(s=>attState[s.id]==='L');
+    targetStudents = students.filter(s=>getStudentAtt(s.id)==='L');
   } else if (recipSel === 'pending') {
     targetStudents = students.filter(s=>fees.some(f=>f.student===s.name&&(f.status==='pending'||f.status==='partial')));
   } else if (recipSel === 'overdue') {
@@ -3766,7 +3876,7 @@ function builtInAI(id) {
 
   // New module IDs mapped from old ones
   if (id==='weak' || id==='weak_subject') {
-    const atRisk = students.filter(s=>attState[s.id]==='A'||attState[s.id]==='L');
+    const atRisk = students.filter(s=>getStudentAtt(s.id)==='A'||getStudentAtt(s.id)==='L');
     const inactive = students.filter(s=>s.status==='inactive');
     const header = ta
       ? `📊 ${ctr} — பலவீன மாணவர் பகுப்பாய்வு\n${'='.repeat(40)}\n\nமொத்த மாணவர்கள்: ${students.length}\nவருகை: ${attPct}%  ${attPct>=75?'✅':'⚠️'}\nசெயலற்றவர்கள்: ${inactive.length}\n\n`
@@ -3821,7 +3931,7 @@ function builtInAI(id) {
     const paid = fees.filter(f=>f.status==='paid').length;
     const fr = fees.length>0?Math.round(paid/fees.length*100):0;
     const rows = students.slice(0,5).map((s,i)=>{
-      const sAtt = attState[s.id]==='P'?(ta?'வந்தனர்':'Present'):attState[s.id]==='A'?(ta?'வரவில்லை':'Absent'):(ta?'தாமதம்':'Late');
+      const sAtt = getStudentAtt(s.id)==='P'?(ta?'வந்தனர்':'Present'):getStudentAtt(s.id)==='A'?(ta?'வரவில்லை':'Absent'):(ta?'தாமதம்':'Late');
       const sFee = fees.find(f=>f.student===s.name);
       const feeStatus = sFee?(sFee.status==='paid'?(ta?'✅ செலுத்தியது':'✅ Paid'):(ta?'⚠️ நிலுவை':'⚠️ '+sFee.status)):(ta?'—':'—');
       return ta
@@ -3877,9 +3987,9 @@ function builtInAI(id) {
 
   // ── NEW MODULE IDs ──────────────────────────────────────
   if (id === 'attend_late') {
-    const lateStudents = students.filter(s=>attState[s.id]==='L');
-    const absentStudents = students.filter(s=>attState[s.id]==='A');
-    const lowAtt = students.filter(s=>!attState[s.id]||attState[s.id]==='A');
+    const lateStudents = students.filter(s=>getStudentAtt(s.id)==='L');
+    const absentStudents = students.filter(s=>getStudentAtt(s.id)==='A');
+    const lowAtt = students.filter(s=>!getStudentAtt(s.id)||getStudentAtt(s.id)==='A');
     return ta
       ? `📊 ${ctr} — வருகை & தாமத பகுப்பாய்வு\n${'='.repeat(42)}\n\nவருகை: ${attPct}% | மொத்த மாணவர்கள்: ${students.length}\n\n⚠️ இன்று வரவில்லை (${absentStudents.length}):${absentStudents.map(s=>`\n• ${s.name} — ${s.parent} 📞 ${s.phone}`).join('')||' — இல்லை'}\n\n🕐 தாமதமாக வந்தவர்கள் (${lateStudents.length}):${lateStudents.map(s=>`\n• ${s.name}`).join('')||' — இல்லை'}\n\n📋 பரிந்துரைகள்:\n1. 3 நாட்கள் தொடர்ச்சியாக வராதவர்களை உடனே அழைக்கவும்\n2. அடிக்கடி தாமதமாக வருபவர்களுக்கு எச்சரிக்கை அனுப்பவும்\n3. 75% கீழ் வருகை உள்ளவர்களுக்கு தனிக் கவனிப்பு தேவை`
       : `📊 ${ctr} — Attendance & Late Arrival Analysis\n${'='.repeat(44)}\n\nToday's Attendance: ${attPct}% | Total Students: ${students.length}\n\n⚠️ Absent Today (${absentStudents.length}):${absentStudents.map(s=>`\n• ${s.name} — Parent: ${s.parent} 📞 ${s.phone}`).join('')||' — None'}\n\n🕐 Late Arrivals (${lateStudents.length}):${lateStudents.map(s=>`\n• ${s.name}`).join('')||' — None'}\n\n📋 Action Steps:\n1. Call parents of students absent 3+ consecutive days\n2. Send WhatsApp late arrival warning (use WA module)\n3. Students below 75% attendance need personal intervention\n4. Check if late arrivals are from same area (transport issue)`;
@@ -3901,7 +4011,7 @@ function builtInAI(id) {
   }
 
   if (id === 'late_pattern') {
-    const lateToday = students.filter(s=>attState[s.id]==='L');
+    const lateToday = students.filter(s=>getStudentAtt(s.id)==='L');
     return ta
       ? `🕐 ${ctr} — தாமத வருகை வடிவ பகுப்பாய்வு\n${'='.repeat(42)}\n\nவருகை: ${attPct}%\nதாமதமாக வந்தவர்கள் (இன்று): ${lateToday.length}\n\n${lateToday.map((s,i)=>`${i+1}. ${s.name} (${s.id}) — ${s.parent} 📞 ${s.phone}`).join('\n')||'இன்று தாமதம் இல்லை'}\n\n📊 தாமத வடிவ கண்டுபிடிப்பு:\n• திங்கள் & வெள்ளி: அதிக தாமதம் (தொடக்கம் & முடிவு வாரம்)\n• காலை நேர வகுப்பு: கோடை காலத்தில் அதிக தாமதம்\n\n📋 தீர்வு நடவடிக்கைகள்:\n1. அடிக்கடி தாமதமாக வருபவர்களுக்கு WhatsApp எச்சரிக்கை\n2. பெற்றோரிடம் தாமத காரணம் கேட்கவும்\n3. பேருந்து / போக்குவரத்து சிக்கல் என்றால் Batch நேரம் மாற்றவும்`
       : `🕐 ${ctr} — Late Arrival Pattern Analysis\n${'='.repeat(44)}\n\nAttendance: ${attPct}%\nLate Today: ${lateToday.length}\n\n${lateToday.map((s,i)=>`${i+1}. ${s.name} (${s.id}) — Parent: ${s.parent} 📞 ${s.phone}`).join('\n')||'No late arrivals today'}\n\n📊 Pattern Observations:\n• Monday & Friday: Highest late rate (start/end of week)\n• Morning batches: More late arrivals in summer months\n\n📋 Corrective Actions:\n1. Send WhatsApp warning to frequent late-comers\n2. Ask parents reason for repeated lateness\n3. If transport issue — adjust batch timing\n4. Track if late patterns correlate with poor marks`;
@@ -4444,8 +4554,12 @@ function renderBatchSelect() {
   const sel = document.getElementById('att-batch');
   if (!sel) return;
   const prev = sel.value;
-  sel.innerHTML = batches.map(b=>`<option value="${b.id}">${b.name} – ${b.time}</option>`).join('');
-  if (prev && batches.find(b=>b.id===prev)) sel.value = prev;
+  sel.innerHTML = batches.map(b => {
+    const icon = b.time === 'Morning' ? '☀️' : b.time === 'Evening' ? '🌙' : '☀️🌙';
+    return `<option value="${b.id}">${icon} ${b.name} (${b.time})</option>`;
+  }).join('');
+  if (prev && batches.find(b => b.id === prev)) sel.value = prev;
+  syncSessionToBatch(); // auto-set session dropdown to match batch
 }
 function addBatch() {
   // Legacy: used by old modal — now delegates to saveBatchFull
@@ -4719,9 +4833,15 @@ function updateDashStats() {
   const pend=fees.filter(f=>f.status!=='paid').reduce((s,f)=>s+(f.balance||0),0);
   if(el2) el2.textContent='₹'+paid.toLocaleString('en-IN');
   if(el3) el3.textContent='₹'+pend.toLocaleString('en-IN');
-  const attVals=Object.values(attState),p=attVals.filter(v=>v==='P').length,tot=attVals.length;
-  const el4=document.getElementById('sv-att');
-  if(el4) el4.textContent=tot>0?Math.round(p/tot*100)+'%':'—%';
+  const batchId  = document.getElementById('att-batch')?.value || '';
+  const session  = document.getElementById('att-session')?.value || 'morning';
+  const bStu     = _getBatchStudents(batchId);
+  const suffix   = '|' + (batchId||'all') + '|' + session;
+  const attVals  = bStu.map(s => attState[s.id + suffix] || '');
+  const pCount   = attVals.filter(v => v === 'P').length;
+  const marked   = attVals.filter(v => v !== '').length;
+  const el4 = document.getElementById('sv-att');
+  if(el4) el4.textContent = marked > 0 ? Math.round(pCount / marked * 100) + '%' : '—%';
   // Refresh dashboard charts with real data
   if(window.Chart && document.getElementById('chart-income')) setTimeout(initCharts,50);
 }
@@ -6072,14 +6192,8 @@ function loadAllData() {
   loadBatches();
   // Fee structure
   loadFeeStructure();
-  // Load today's attendance for both sessions
-  try {
-    const today = new Date().toISOString().split('T')[0];
-    ['morning','evening'].forEach(sess => {
-      const saved = localStorage.getItem('_erp_att_' + today + '_' + sess);
-      if (saved) Object.assign(attState, JSON.parse(saved));
-    });
-  } catch(e) {}
+  // NOTE: Attendance is loaded on-demand by renderAttList() per batch+session+date.
+  // Do NOT pre-load here — it causes session bleed across batches.
 
   // Update status bar
   setTimeout(function() {

@@ -153,7 +153,101 @@ tbody tr:hover td{background:var(--bg)}
 .plan-name{font-weight:700;color:var(--tx);margin-bottom:4px;font-size:13px}
 .plan-price{font-size:22px;font-weight:700;color:var(--pr);margin-bottom:10px}
 .plan-feat{font-size:11px;color:var(--tx2);line-height:1.9}
-/* WA module */
+/* ── Dark mode: attendance buttons ── */
+.dark .att-btn.ps{background:#064e3b;border-color:#16a34a;color:#6ee7b7}
+.dark .att-btn.as{background:#7f1d1d;border-color:#dc2626;color:#fca5a5}
+.dark .att-btn.ls{background:#78350f;border-color:#ca8a04;color:#fcd34d}
+
+/* ── Dark mode: stat icons ── */
+.dark .stat-icon-green{background:#064e3b!important}
+.dark .stat-icon-red{background:#7f1d1d!important}
+.dark .stat-icon-blue{background:#1e3a8a!important}
+
+/* ── Dark mode: green info boxes (dcfce7 / f0fdf4 / bbf7d0) ── */
+.dark [style*="background:#dcfce7"],
+.dark [style*="background:#f0fdf4"],
+.dark [style*="background:#ecfdf5"]{background:#064e3b!important;border-color:#166534!important}
+.dark [style*="color:#166534"]{color:#6ee7b7!important}
+.dark [style*="color:#15803d"]{color:#6ee7b7!important}
+
+/* ── Dark mode: yellow/amber warning boxes (fef9c3 / fffbeb / fef3c7) ── */
+.dark [style*="background:#fef9c3"],
+.dark [style*="background:#fffbeb"],
+.dark [style*="background:#fef3c7"]{background:#78350f!important;border-color:#92400e!important}
+.dark [style*="color:#854d0e"]{color:#fcd34d!important}
+.dark [style*="color:#92400e"]{color:#fcd34d!important}
+
+/* ── Dark mode: red error boxes (fee2e2 / fff1f2 / fecdd3) ── */
+.dark [style*="background:#fee2e2"],
+.dark [style*="background:#fff1f2"]{background:#7f1d1d!important;border-color:#991b1b!important}
+.dark [style*="color:#991b1b"]{color:#fca5a5!important}
+.dark [style*="border-color:#fecdd3"]{border-color:#991b1b!important}
+
+/* ── Dark mode: blue info boxes (dbeafe / eff6ff / bfdbfe) ── */
+.dark [style*="background:#dbeafe"],
+.dark [style*="background:#eff6ff"]{background:#1e3a8a!important;border-color:#1d4ed8!important}
+.dark [style*="color:#1d4ed8"]{color:#93c5fd!important}
+.dark [style*="color:#1e40af"]{color:#93c5fd!important}
+.dark [style*="color:#2563eb"]{color:#93c5fd!important}
+.dark [style*="color:#185FA5"]{color:#93c5fd!important}
+.dark [style*="color:#0891b2"]{color:#67e8f9!important}
+.dark [style*="color:#0c4a6e"]{color:#67e8f9!important}
+
+/* ── Dark mode: purple boxes (ede9fe / f5f3ff) ── */
+.dark [style*="background:#ede9fe"],
+.dark [style*="background:#f5f3ff"]{background:#4c1d95!important;border-color:#5b21b6!important}
+.dark [style*="color:#4c1d95"]{color:#c4b5fd!important}
+.dark [style*="color:#7c3aed"]{color:#c4b5fd!important}
+.dark [style*="color:#5b21b6"]{color:#c4b5fd!important}
+
+/* ── Dark mode: cyan/teal (f0f9ff / ccfbf1) ── */
+.dark [style*="background:#f0f9ff"]{background:#164e63!important;border-color:#0e7490!important}
+
+/* ── Dark mode: plain white backgrounds in modals / cards ── */
+.dark [style*="background:#fff;"]{background:var(--card)!important}
+.dark [style*="background:#fff )"]{background:var(--card)!important}
+.dark [style*="background:white"]{background:var(--card)!important}
+
+/* ── Dark mode: hardcoded dark text on light bg ── */
+.dark [style*="color:#0f172a"]{color:var(--tx)!important}
+.dark [style*="color:#1e293b"]{color:var(--tx)!important}
+
+/* ── Dark mode: net pay / staff salary calc area ── */
+.dark [style*="background:#fef9c3"][style*="border"][style*="fde68a"]{
+  background:#78350f!important;border-color:#92400e!important;color:#fcd34d!important
+}
+
+/* ── Dark mode: WA / green preview boxes (inline) ── */
+.dark #fee-wa-preview,
+.dark #sal-wa-preview,
+.dark #adm-wa-preview,
+.dark #wt-preview,
+.dark #fee-rcpt-preview{background:#064e3b!important;color:#6ee7b7!important;border-color:#166534!important}
+
+/* ── Dark mode: form input netpay yellow highlight (Add Staff modal) ── */
+.dark input[style*="background:#fef9c3"],
+.dark div[style*="background:#fef9c3"]{background:#78350f!important;color:#fcd34d!important}
+
+/* ── Dark mode: bt badge (ccfbf1 teal) ── */
+.dark .bt{background:#134e4a;color:#5eead4}
+
+/* ── Named utility classes for dark-safe colored boxes ── */
+.dm-amber-box{background:#fef3c7;color:#92400e}
+.dark .dm-amber-box{background:#78350f!important;color:#fcd34d!important;border-color:#92400e!important}
+.dm-green-box{background:#dcfce7;color:#166534;border:.5px solid #bbf7d0}
+.dark .dm-green-box{background:#064e3b!important;color:#6ee7b7!important;border-color:#166534!important}
+.dm-red-box{background:#fee2e2;color:#991b1b;border:.5px solid #fecdd3}
+.dark .dm-red-box{background:#7f1d1d!important;color:#fca5a5!important;border-color:#991b1b!important}
+.dm-blue-box{background:#dbeafe;color:#1d4ed8;border:.5px solid #bfdbfe}
+.dark .dm-blue-box{background:#1e3a8a!important;color:#93c5fd!important;border-color:#1d4ed8!important}
+.dm-purple-box{background:#ede9fe;color:#5b21b6;border:.5px solid #c4b5fd}
+.dark .dm-purple-box{background:#4c1d95!important;color:#c4b5fd!important;border-color:#5b21b6!important}
+
+/* ── Dark mode: delete buttons (red outline) ── */
+.dark .btn[style*="color:#dc2626"]{color:#fca5a5!important;border-color:#991b1b!important;background:#7f1d1d!important}
+
+/* ── Dark mode: WA template page preview boxes ── */
+.dark .wa-preview{background:#064e3b;color:#6ee7b7}
 .wa-msg-card{background:var(--card);border:.5px solid var(--br);border-radius:10px;padding:14px;margin-bottom:10px}
 .wa-msg-header{display:flex;align-items:center;gap:10px;margin-bottom:10px}
 .wa-type-badge{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
@@ -346,10 +440,10 @@ tbody tr:hover td{background:var(--bg)}
 <!-- ═══════════════ DASHBOARD ═══════════════ -->
 <div class="page active" id="pg-dashboard">
   <div class="stat-grid">
-    <div class="stat" onclick="navTo('students')" style="cursor:pointer" title="Go to Students"><div class="stat-icon" style="background:#dcfce7"><svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="3" stroke="#16a34a" stroke-width="1.4"/><path d="M2 14c0-3.3 2.7-5 6-5s6 1.7 6 5" stroke="#16a34a" stroke-width="1.4" stroke-linecap="round"/></svg></div><div class="stat-lbl" id="sl-1">Total Students</div><div class="stat-val" id="sv-students">0</div><div class="stat-sub" id="ss-students">Active enrolled</div></div>
-    <div class="stat" onclick="navTo('fees')" style="cursor:pointer" title="Go to Fees"><div class="stat-icon" style="background:#dcfce7"><svg viewBox="0 0 16 16" fill="none"><rect x="2" y="4" width="12" height="9" rx="1.5" stroke="#16a34a" stroke-width="1.4"/><path d="M2 7h12M7 10h2" stroke="#16a34a" stroke-width="1.3" stroke-linecap="round"/></svg></div><div class="stat-lbl" id="sl-2">Monthly Income</div><div class="stat-val" style="color:#16a34a" id="sv-income">₹0</div><div class="stat-sub">Collected this month</div></div>
-    <div class="stat" onclick="navTo('fees')" style="cursor:pointer" title="Go to Pending Fees"><div class="stat-icon" style="background:#fee2e2"><svg viewBox="0 0 16 16" fill="none"><path d="M8 5v4M8 10.5v.5" stroke="#dc2626" stroke-width="1.6" stroke-linecap="round"/><path d="M2 13L8 2l6 11H2z" stroke="#dc2626" stroke-width="1.3" stroke-linejoin="round"/></svg></div><div class="stat-lbl" id="sl-3">Pending Fees</div><div class="stat-val" style="color:#dc2626" id="sv-pending">₹0</div><div class="stat-sub" id="ss-pending">Outstanding</div></div>
-    <div class="stat"><div class="stat-icon" style="background:#dbeafe"><svg viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="1.5" stroke="#2563eb" stroke-width="1.4"/><path d="M5 2v2M11 2v2M2 7h12M5.5 10.5l1.5 1.5 3-3" stroke="#2563eb" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="stat-lbl" id="sl-4">Attendance Today</div><div class="stat-val" style="color:#2563eb" id="sv-att">—%</div><div class="stat-sub" id="ss-att">Present today</div></div>
+    <div class="stat" onclick="navTo('students')" style="cursor:pointer" title="Go to Students"><div class="stat-icon dm-green-box" style="background:#dcfce7"><svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="3" stroke="#16a34a" stroke-width="1.4"/><path d="M2 14c0-3.3 2.7-5 6-5s6 1.7 6 5" stroke="#16a34a" stroke-width="1.4" stroke-linecap="round"/></svg></div><div class="stat-lbl" id="sl-1">Total Students</div><div class="stat-val" id="sv-students">0</div><div class="stat-sub" id="ss-students">Active enrolled</div></div>
+    <div class="stat" onclick="navTo('fees')" style="cursor:pointer" title="Go to Fees"><div class="stat-icon dm-green-box" style="background:#dcfce7"><svg viewBox="0 0 16 16" fill="none"><rect x="2" y="4" width="12" height="9" rx="1.5" stroke="#16a34a" stroke-width="1.4"/><path d="M2 7h12M7 10h2" stroke="#16a34a" stroke-width="1.3" stroke-linecap="round"/></svg></div><div class="stat-lbl" id="sl-2">Monthly Income</div><div class="stat-val" style="color:#16a34a" id="sv-income">₹0</div><div class="stat-sub">Collected this month</div></div>
+    <div class="stat" onclick="navTo('fees')" style="cursor:pointer" title="Go to Pending Fees"><div class="stat-icon dm-red-box" style="background:#fee2e2"><svg viewBox="0 0 16 16" fill="none"><path d="M8 5v4M8 10.5v.5" stroke="#dc2626" stroke-width="1.6" stroke-linecap="round"/><path d="M2 13L8 2l6 11H2z" stroke="#dc2626" stroke-width="1.3" stroke-linejoin="round"/></svg></div><div class="stat-lbl" id="sl-3">Pending Fees</div><div class="stat-val" style="color:#dc2626" id="sv-pending">₹0</div><div class="stat-sub" id="ss-pending">Outstanding</div></div>
+    <div class="stat"><div class="stat-icon dm-blue-box" style="background:#dbeafe"><svg viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="1.5" stroke="#2563eb" stroke-width="1.4"/><path d="M5 2v2M11 2v2M2 7h12M5.5 10.5l1.5 1.5 3-3" stroke="#2563eb" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="stat-lbl" id="sl-4">Attendance Today</div><div class="stat-val" style="color:#2563eb" id="sv-att">—%</div><div class="stat-sub" id="ss-att">Present today</div></div>
   </div>
   <div class="row2">
     <div class="card">
@@ -838,7 +932,7 @@ tbody tr:hover td{background:var(--bg)}
       </div>
     </div>
     <!-- Summary cards -->
-    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px" id="sf-pay-summary"></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:14px" id="sf-pay-summary"></div>
     <!-- Payroll cards list -->
     <div id="sf-pay-body"></div>
   </div>
@@ -1328,6 +1422,7 @@ const exams = [
 const staffData = []; // loaded from localStorage by loadAllData()
 // Staff attendance: staffAtt[staffId][YYYY-MM-DD] = 'P'|'A'|'H'|'L'
 let staffAtt = {};
+let salaryPayments = {}; // { "staffId|YYYY-MM": { paid: true, amount, mode, date, note } }
 const prods = [
   {name:'Geometry Box',price:120,cost:80,stock:45,qty:0},
   {name:'A4 Notebook (200pg)',price:80,cost:50,stock:120,qty:0},
@@ -1792,7 +1887,7 @@ const MODALS = {
       <div class="fg"><label class="fl">Other Deduction ₹</label><input class="fi" id="m-sfother" type="number" placeholder="0" oninput="calcStaffSalary()"></div>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:10px;border-top:.5px solid var(--br)">
         <div><div style="font-size:10px;color:var(--tx3)">Net Pay (before LOP)</div><span style="font-size:20px;font-weight:700;color:#16a34a" id="m-sf-net">₹0</span></div>
-        <div style="font-size:11px;color:var(--amber);background:#fef3c7;border-radius:6px;padding:6px 10px;max-width:160px;line-height:1.5">LOP auto-calculated from attendance absent days</div>
+        <div style="font-size:11px;color:#92400e;background:#fef3c7;border-radius:6px;padding:6px 10px;max-width:160px;line-height:1.5" class="dm-amber-box">LOP auto-calculated from attendance absent days</div>
       </div>
     </div>
     <div class="modal-foot"><button class="btn btn-p" onclick="saveStaff()">Save Staff</button><button class="btn" onclick="closeModal()">${t('cancel')}</button></div>`,
@@ -2481,8 +2576,27 @@ function saveFeeEntry() {
   if (pendBtn && status !== 'paid') setFeeTab('pending', pendBtn);
   else renderFees(fees);
   updateDashStats();
+
+  // ── Build WA receipt and show modal ───────────────────
+  const now        = new Date();
+  const dateStr    = now.toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric'});
+  const timeStr    = now.toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit', hour12:true});
+  const dateTimeStr = dateStr + ' at ' + timeStr;
+  const stuObj     = students.find(s => s.id === stId) || null;
+  const phone      = stuObj?.phone || '';
+  const parent     = stuObj?.parent || 'Parent';
+  const grade      = stuObj ? (stuObj.grade === 'KG' ? 'KG' : 'Class ' + stuObj.grade) : '';
+  const course     = stuObj?.course || '';
+
+  const waMsg = buildFeeReceiptWA({
+    studentName: stName, parent, grade, course,
+    rcpt, month, subject: '',
+    collected: paid, totalFee: total, totalPaid: paid, balance: bal,
+    mode: document.getElementById('m-fmode')?.value || 'Cash',
+    dateTime: dateTimeStr, isFullyPaid: bal <= 0,
+  });
   closeModal();
-  showToast('✅ Fee saved! Receipt: ' + rcpt);
+  showFeeReceiptModal(phone, waMsg, stName, paid, bal, dateTimeStr);
   runBackup('change');
 }
 
@@ -2821,7 +2935,7 @@ function submitCollect(rcpt) {
   });
 
   // Show WA send modal
-  showFeeReceiptModal(phone, waMsg, f.student, collecting, f.balance, dateTimeStr);
+  showFeeReceiptModal(phone, waMsg, f.student, collecting, f.balance, dateTimeStr, f.rcpt);
 }
 
 function buildFeeReceiptWA(d) {
@@ -2829,7 +2943,7 @@ function buildFeeReceiptWA(d) {
   return fillFeeReceiptTemplate(template, d);
 }
 
-function showFeeReceiptModal(phone, waMsg, studentName, collected, balance, dateTimeStr) {
+function showFeeReceiptModal(phone, waMsg, studentName, collected, balance, dateTimeStr, rcptNo) {
   const root = document.getElementById('modal-root');
   root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()">
   <div class="modal" style="max-width:440px">
@@ -2837,6 +2951,7 @@ function showFeeReceiptModal(phone, waMsg, studentName, collected, balance, date
       <div style="font-size:36px;margin-bottom:6px">💰</div>
       <div style="font-size:15px;font-weight:700;color:var(--tx)">Payment Collected!</div>
       <div style="font-size:12px;color:var(--tx2);margin-top:3px">₹${collected.toLocaleString('en-IN')} received from <b>${studentName}</b></div>
+      ${rcptNo ? `<div style="font-size:11px;color:#185FA5;margin-top:3px;font-family:monospace;font-weight:600">📋 ${rcptNo}</div>` : ''}
       <div style="font-size:11px;color:var(--tx3);margin-top:2px">${dateTimeStr}</div>
       ${balance <= 0
         ? `<div style="margin-top:8px;display:inline-block;background:#dcfce7;color:#166534;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700">✅ Fully Paid — No balance</div>`
@@ -2844,11 +2959,14 @@ function showFeeReceiptModal(phone, waMsg, studentName, collected, balance, date
     </div>
 
     <!-- WA message preview -->
-    <div style="font-size:10px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">WhatsApp Receipt Preview</div>
-    <div style="background:#dcfce7;border-radius:10px;padding:12px 14px;font-size:11px;color:#166534;line-height:1.7;white-space:pre-wrap;max-height:220px;overflow-y:auto;font-family:'Noto Sans Tamil',system-ui;margin-bottom:14px;border:.5px solid #bbf7d0" id="fee-wa-preview">${waMsg}</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <div style="font-size:10px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em">WhatsApp Receipt Preview</div>
+      <button onclick="closeModal();navTo('wa-templates')" style="font-size:10px;color:#7c3aed;background:none;border:none;cursor:pointer;font-family:inherit;padding:0;text-decoration:underline">✏️ Customize Template</button>
+    </div>
+    <div style="background:#dcfce7;border-radius:10px;padding:12px 14px;font-size:11px;color:#166534;line-height:1.7;white-space:pre-wrap;max-height:220px;overflow-y:auto;font-family:'Noto Sans Tamil',system-ui;margin-bottom:12px;border:.5px solid #bbf7d0" id="fee-wa-preview">${waMsg}</div>
 
     <div class="fg" style="margin-bottom:12px">
-      <label class="fl">Edit message before sending</label>
+      <label class="fl">Edit before sending (optional)</label>
       <textarea class="fi" id="fee-wa-edit" rows="3" style="resize:vertical;font-size:11px;font-family:'Noto Sans Tamil',system-ui" oninput="document.getElementById('fee-wa-preview').textContent=this.value">${waMsg}</textarea>
     </div>
 
@@ -3230,10 +3348,20 @@ function generatePayroll() {
 
   var totalNet = payData.reduce(function(a,b){return a+b.net;}, 0);
 
+  var paidCount   = payData.filter(function(item) {
+    return salaryPayments[getSalaryPayKey(item.s.id, monthEl.value)]?.paid;
+  }).length;
+  var unpaidCount = payData.length - paidCount;
+  var paidTotal   = payData
+    .filter(function(item) { return salaryPayments[getSalaryPayKey(item.s.id, monthEl.value)]?.paid; })
+    .reduce(function(a,b) { return a + (salaryPayments[getSalaryPayKey(b.s.id, monthEl.value)]?.amount || b.net); }, 0);
+
   // Summary
   document.getElementById('sf-pay-summary').innerHTML = [
-    {l:'Total Staff',   v:staffData.length,                      c:'#185FA5', icon:'👥'},
-    {l:'Total Net Pay', v:'&#8377;'+totalNet.toLocaleString('en-IN'), c:'#16a34a', icon:'💰'},
+    {l:'Total Staff',         v:staffData.length,                          c:'#185FA5', icon:'👥'},
+    {l:'Total Net Pay',       v:'&#8377;'+totalNet.toLocaleString('en-IN'), c:'#16a34a', icon:'💰'},
+    {l:'Salaries Paid',       v:paidCount + ' / ' + payData.length,         c:'#16a34a', icon:'✅'},
+    {l:'Pending Disbursement',v:'&#8377;'+(totalNet-paidTotal).toLocaleString('en-IN'), c:'#dc2626', icon:'⏳'},
   ].map(function(b) {
     return '<div class="stat" style="border-left:3px solid '+b.c+'"><div style="font-size:20px;margin-bottom:4px">'+b.icon+'</div><div class="stat-val" style="font-size:18px;color:'+b.c+'">'+b.v+'</div><div class="stat-lbl">'+b.l+' &middot; '+monthLabel+'</div></div>';
   }).join('');
@@ -3252,6 +3380,10 @@ function generatePayroll() {
     var lopFmt    = item.lopDed.toLocaleString('en-IN');
     var netFmt    = item.net.toLocaleString('en-IN');
     var extraNote = s.extraDedNote ? ' ('+s.extraDedNote+')' : '';
+
+    // Salary payment status for this month
+    var salKey  = getSalaryPayKey(s.id, monthEl.value);
+    var salPaid = salaryPayments[salKey];
 
     var lopRow = item.lopDays > 0
       ? '<div style="display:flex;justify-content:space-between;padding:4px 0;border-top:.5px dashed #fde68a">'
@@ -3275,8 +3407,16 @@ function generatePayroll() {
       + '</div>'
       : '<div style="font-size:11px;color:var(--tx3);padding:4px 0">&#10003; Full attendance</div>';
 
+    // Paid status banner
+    var paidBanner = salPaid && salPaid.paid
+      ? '<div style="background:#dcfce7;border:.5px solid #bbf7d0;border-radius:8px;padding:7px 12px;margin:8px 0;font-size:11px;color:#166534;display:flex;align-items:center;justify-content:space-between">'
+      + '  <div>&#10003; <b>Salary Paid</b> — &#8377;'+(salPaid.amount||item.net).toLocaleString('en-IN')+' on '+salPaid.date+' via '+salPaid.mode+'</div>'
+      + '  <button onclick="openSalaryPaidModal(\''+s.id+'\')" style="font-size:10px;background:none;border:none;cursor:pointer;color:#166534;text-decoration:underline;font-family:inherit;padding:0">Edit</button>'
+      + '</div>'
+      : '';
+
     cards +=
-      '<div class="card" style="margin-bottom:10px;padding:0;overflow:hidden">'
+      '<div class="card" style="margin-bottom:10px;padding:0;overflow:hidden;border-left:3px solid '+(salPaid&&salPaid.paid?'#16a34a':'var(--br)')+';">'
       // Header
       +'<div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:.5px solid var(--br)">'
       +'  <div class="av" style="background:'+s.color+';width:38px;height:38px;font-size:16px;font-weight:700;flex-shrink:0">'+(s.name||'?')[0]+'</div>'
@@ -3287,6 +3427,7 @@ function generatePayroll() {
       +'  <div style="text-align:right">'
       +'    <div style="font-size:20px;font-weight:800;color:#16a34a">&#8377;'+netFmt+'</div>'
       +'    <div style="font-size:10px;color:var(--tx3)">Net Pay</div>'
+      +'    '+(salPaid&&salPaid.paid?'<div style="font-size:9px;background:#dcfce7;color:#166534;padding:2px 8px;border-radius:20px;font-weight:700;margin-top:3px">&#10003; PAID</div>':'')
       +'  </div>'
       +'</div>'
       // Salary breakdown
@@ -3298,6 +3439,7 @@ function generatePayroll() {
       +attRow
       +lopRow
       +extraRow
+      +paidBanner
       // Add deduction row
       +'  <div style="display:flex;align-items:center;gap:8px;margin-top:8px;padding-top:8px;border-top:.5px solid var(--br)">'
       +'    <input type="number" placeholder="Extra &#8377;" id="xtra-amt-'+s.id+'" value="'+(s.extraDed||'')+'" '
@@ -3309,6 +3451,10 @@ function generatePayroll() {
       +'</div>'
       // Footer
       +'<div style="display:flex;justify-content:flex-end;padding:8px 14px;background:var(--bg);gap:8px;border-top:.5px solid var(--br)">'
+      +(salPaid&&salPaid.paid
+        ? '  <button class="btn btn-wa btn-sm" onclick="openSalaryPaidModal(\''+s.id+'\')">&#128242; Resend Slip WA</button>'
+        : '  <button class="btn btn-p btn-sm" style="background:#16a34a;border-color:#16a34a;" onclick="openSalaryPaidModal(\''+s.id+'\')">&#10003; Mark Salary Paid</button>'
+      )
       +'  <button class="btn btn-wa btn-sm" onclick="waStaff(\''+s.phone+'\',\''+s.name+'\')">&#128242; Salary Slip WA</button>'
       +'</div>'
       +'</div>';
@@ -3318,6 +3464,203 @@ function generatePayroll() {
 }
 
 
+
+function saveSalaryPayments() {
+  try { localStorage.setItem('_erp_salary_payments', JSON.stringify(salaryPayments)); } catch(e) {}
+}
+
+function getSalaryPayKey(staffId, monthVal) {
+  return staffId + '|' + monthVal; // e.g. "s_abc|2026-05"
+}
+
+function openSalaryPaidModal(staffId) {
+  const s = staffData.find(x => x.id === staffId);
+  if (!s) return;
+  const monthEl = document.getElementById('sf-pay-month');
+  const monthVal = monthEl?.value || new Date().toISOString().slice(0, 7);
+  const [yr, mo] = monthVal.split('-').map(Number);
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const monthLabel = months[mo - 1] + ' ' + yr;
+  const key = getSalaryPayKey(staffId, monthVal);
+  const existing = salaryPayments[key];
+
+  // Recalculate net pay
+  const daysInMonth = new Date(yr, mo, 0).getDate();
+  let lopDays = 0;
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dt = yr + '-' + String(mo).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+    if ((staffAtt[s.id + '|' + dt] || '') === 'LOP') lopDays++;
+  }
+  const pay       = s.consolidatedPay || s.baseSalary || 0;
+  const dailyRate = pay / 26;
+  const lopDed    = Math.round(lopDays * dailyRate);
+  const extraDed  = s.extraDed || 0;
+  const net       = Math.max(0, pay - lopDed - extraDed);
+
+  const root = document.getElementById('modal-root');
+  root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()">
+  <div class="modal" style="max-width:420px">
+    <div style="text-align:center;margin-bottom:16px">
+      <div style="font-size:40px;margin-bottom:6px">💼</div>
+      <div style="font-size:15px;font-weight:700;color:var(--tx)">${s.name}</div>
+      <div style="font-size:12px;color:var(--tx2)">${s.desg} · ${monthLabel}</div>
+    </div>
+
+    <!-- Salary breakdown -->
+    <div style="background:var(--bg);border-radius:10px;padding:12px 14px;margin-bottom:14px;border:.5px solid var(--br)">
+      <div style="display:flex;justify-content:space-between;padding:4px 0">
+        <span style="font-size:12px;color:var(--tx2)">Consolidated Pay</span>
+        <span style="font-size:12px;font-weight:600">₹${pay.toLocaleString('en-IN')}</span>
+      </div>
+      ${lopDed > 0 ? `<div style="display:flex;justify-content:space-between;padding:4px 0">
+        <span style="font-size:12px;color:#92400e">LOP Deduction (${lopDays} days)</span>
+        <span style="font-size:12px;font-weight:600;color:#92400e">− ₹${lopDed.toLocaleString('en-IN')}</span>
+      </div>` : ''}
+      ${extraDed > 0 ? `<div style="display:flex;justify-content:space-between;padding:4px 0">
+        <span style="font-size:12px;color:#7c3aed">Extra Deduction${s.extraDedNote ? ' ('+s.extraDedNote+')' : ''}</span>
+        <span style="font-size:12px;font-weight:600;color:#7c3aed">− ₹${extraDed.toLocaleString('en-IN')}</span>
+      </div>` : ''}
+      <div style="display:flex;justify-content:space-between;padding:8px 0 4px;border-top:.5px solid var(--br);margin-top:4px">
+        <span style="font-size:13px;font-weight:700;color:var(--tx)">Net Pay</span>
+        <span style="font-size:22px;font-weight:800;color:#16a34a">₹${net.toLocaleString('en-IN')}</span>
+      </div>
+    </div>
+
+    ${existing && existing.paid ? `
+    <div style="background:#dcfce7;border-radius:8px;padding:10px 14px;margin-bottom:14px;border:.5px solid #bbf7d0;font-size:12px;color:#166534">
+      ✅ <b>Already Paid</b> — ₹${(existing.amount||net).toLocaleString('en-IN')} on ${existing.date||'—'} via ${existing.mode||'Cash'}
+      ${existing.note ? `<br><span style="font-size:11px;color:var(--tx3)">${existing.note}</span>` : ''}
+    </div>` : ''}
+
+    <div class="frow">
+      <div class="fg">
+        <label class="fl">Amount Paying ₹</label>
+        <input class="fi" id="sp-amount" type="number" value="${existing?.amount||net}" style="font-size:18px;font-weight:700;color:#16a34a;text-align:center">
+      </div>
+      <div class="fg">
+        <label class="fl">Payment Mode</label>
+        <select class="fi" id="sp-mode">
+          <option value="Cash">Cash</option>
+          <option value="Bank Transfer">Bank Transfer</option>
+          <option value="UPI">UPI</option>
+          <option value="Cheque">Cheque</option>
+        </select>
+      </div>
+    </div>
+    <div class="fg">
+      <label class="fl">Note (optional)</label>
+      <input class="fi" id="sp-note" placeholder="e.g. Partial advance, bonus…" value="${existing?.note||''}">
+    </div>
+
+    <div class="modal-foot">
+      <button class="btn btn-p" style="background:#16a34a;border-color:#16a34a;flex:1;justify-content:center;padding:11px;font-size:13px;font-weight:600"
+        onclick="confirmSalaryPaid('${staffId}','${monthVal}',${net})">
+        ✅ Mark Salary Paid
+      </button>
+      <button class="btn" onclick="closeModal()">Cancel</button>
+    </div>
+  </div>
+</div>`;
+  // Set existing mode if already paid
+  if (existing?.mode) {
+    const sel = document.getElementById('sp-mode');
+    if (sel) sel.value = existing.mode;
+  }
+}
+
+function confirmSalaryPaid(staffId, monthVal, netPay) {
+  const s = staffData.find(x => x.id === staffId);
+  if (!s) return;
+  const amount = parseFloat(document.getElementById('sp-amount')?.value) || netPay;
+  const mode   = document.getElementById('sp-mode')?.value || 'Cash';
+  const note   = document.getElementById('sp-note')?.value.trim() || '';
+  const key    = getSalaryPayKey(staffId, monthVal);
+  const now    = new Date();
+  const dateStr = now.toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric'});
+
+  salaryPayments[key] = { paid: true, amount, mode, note, date: dateStr, staffId, monthVal };
+  saveSalaryPayments();
+
+  // Build WA slip message
+  const [yr, mo] = monthVal.split('-').map(Number);
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const monthLabel = months[mo - 1] + ' ' + yr;
+  const waMsg = buildSalarySlipWA(s, amount, mode, monthLabel, dateStr, note);
+
+  closeModal();
+  generatePayroll(); // refresh cards to show paid badge
+
+  // Show WA confirmation
+  showSalaryPaidModal(s, amount, mode, monthLabel, dateStr, waMsg);
+}
+
+function buildSalarySlipWA(s, amount, mode, monthLabel, dateStr, note) {
+  return `Dear *${s.name}*,
+
+🏫 *${CFG.CENTER.name}*
+━━━━━━━━━━━━━━━━━━━━
+💼 *Salary Payment Confirmation*
+━━━━━━━━━━━━━━━━━━━━
+
+Your salary for *${monthLabel}* has been processed:
+
+👤 Name    : ${s.name}
+💼 Role    : ${s.desg}
+📅 Month   : ${monthLabel}
+
+💵 Amount  : ₹${amount.toLocaleString('en-IN')}
+💳 Mode    : ${mode}
+📆 Date    : ${dateStr}
+${note ? `📝 Note    : ${note}\n` : ''}
+✅ *Payment Confirmed*
+
+Thank you for your dedication! 🙏
+
+📞 ${CFG.CENTER.phone}
+_${CFG.CENTER.name}_`;
+}
+
+function showSalaryPaidModal(s, amount, mode, monthLabel, dateStr, waMsg) {
+  const root = document.getElementById('modal-root');
+  root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()">
+  <div class="modal" style="max-width:430px">
+    <div style="text-align:center;margin-bottom:14px">
+      <div style="font-size:40px;margin-bottom:6px">✅</div>
+      <div style="font-size:15px;font-weight:700;color:var(--tx)">Salary Marked as Paid!</div>
+      <div style="font-size:12px;color:var(--tx2);margin-top:3px">₹${amount.toLocaleString('en-IN')} to <b>${s.name}</b> — ${monthLabel}</div>
+      <div style="font-size:11px;color:var(--tx3);margin-top:2px">${dateStr} · ${mode}</div>
+    </div>
+
+    <div style="font-size:10px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Salary Slip Preview</div>
+    <div style="background:#dcfce7;border-radius:10px;padding:12px 14px;font-size:11px;color:#166534;line-height:1.7;white-space:pre-wrap;max-height:200px;overflow-y:auto;font-family:'Noto Sans Tamil',system-ui;margin-bottom:12px;border:.5px solid #bbf7d0" id="sal-wa-preview">${waMsg}</div>
+
+    <div class="fg" style="margin-bottom:12px">
+      <label class="fl">Edit before sending (optional)</label>
+      <textarea class="fi" id="sal-wa-edit" rows="3" style="resize:vertical;font-size:11px;font-family:inherit" oninput="document.getElementById('sal-wa-preview').textContent=this.value">${waMsg}</textarea>
+    </div>
+
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-wa" style="flex:1;justify-content:center;padding:12px;font-size:13px;font-weight:700"
+        onclick="sendSalarySlipWA('${s.phone || ''}')">
+        <svg viewBox="0 0 16 16" fill="none" width="16"><circle cx="8" cy="8" r="7" fill="#25d366"/><path d="M11.5 9.8c-.2-.1-1.2-.6-1.4-.7-.2-.1-.3-.1-.5.1-.1.2-.5.7-.6.8-.1.1-.2.1-.4 0-.2-.1-.9-.3-1.7-1-.6-.6-1-1.3-1.1-1.5-.1-.2 0-.3.1-.4l.3-.4c.1-.1.1-.2.2-.4 0-.1 0-.3 0-.4-.1-.1-.5-1.1-.6-1.5-.2-.4-.3-.3-.5-.3h-.4c-.1 0-.4.1-.6.3-.2.2-.8.8-.8 1.9s.8 2.2.9 2.4c.1.1 1.6 2.4 3.8 3.4.5.2.9.4 1.2.5.5.2 1 .1 1.3-.1.4-.2.8-.8.9-1.5.1-.4 0-.6-.1-.7z" fill="#fff"/></svg>
+        📱 Send Salary Slip on WhatsApp
+      </button>
+      <button class="btn" style="padding:12px 14px" onclick="closeModal()">Done</button>
+    </div>
+  </div>
+</div>`;
+}
+
+function sendSalarySlipWA(phone) {
+  const msg = document.getElementById('sal-wa-edit')?.value
+           || document.getElementById('sal-wa-preview')?.textContent || '';
+  closeModal();
+  if (!phone || phone.replace(/\D/g,'').length < 10) {
+    showToast('⚠️ No phone number saved for this staff. Add it in Staff profile.');
+    return;
+  }
+  setTimeout(() => openWA(phone, msg), 200);
+}
 
 function applyExtraDed(staffId) {
   var s = staffData.find(function(x){ return x.id===staffId; });
@@ -6254,6 +6597,11 @@ function _safeInit() {
   try {
     const savedStaffAtt = localStorage.getItem('_erp_staff_att');
     if (savedStaffAtt) { Object.assign(staffAtt, JSON.parse(savedStaffAtt)); }
+  } catch(e) {}
+  // Restore salary payments
+  try {
+    const savedSalPay = localStorage.getItem('_erp_salary_payments');
+    if (savedSalPay) { Object.assign(salaryPayments, JSON.parse(savedSalPay)); }
   } catch(e) {}
   // Restore late-to-leave config
   try {

@@ -416,6 +416,7 @@ tbody tr:hover td{background:var(--bg)}
     <button class="nav-item" data-page="ai"><svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="5" stroke="currentColor" stroke-width="1.3"/><path d="M6 6.5c.5-1.5 3.5-1.5 3 .5-.5 1.5-3 1-3 2.5M8 12v.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg><span id="nl-ai">AI Features</span></button>
     <button class="nav-item" data-page="backup"><svg viewBox="0 0 16 16" fill="none"><path d="M8 2v7M5 6l3 3 3-3M2 11v2a1 1 0 001 1h10a1 1 0 001-1v-2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg><span id="nl-backup">Backup & Sync</span></button>
     <button class="nav-item" data-page="wa-templates"><svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" fill="#25d366"/><path d="M11.5 9.8c-.2-.1-1.2-.6-1.4-.7-.2-.1-.3-.1-.5.1-.1.2-.5.7-.6.8-.1.1-.2.1-.4 0-.2-.1-.9-.3-1.7-1-.6-.6-1-1.3-1.1-1.5-.1-.2 0-.3.1-.4l.3-.4c.1-.1.1-.2.2-.4 0-.1 0-.3 0-.4-.1-.1-.5-1.1-.6-1.5-.2-.4-.3-.3-.5-.3h-.4c-.1 0-.4.1-.6.3-.2.2-.8.8-.8 1.9s.8 2.2.9 2.4c.1.1 1.6 2.4 3.8 3.4.5.2.9.4 1.2.5.5.2 1 .1 1.3-.1.4-.2.8-.8.9-1.5.1-.4 0-.6-.1-.7z" fill="#fff"/></svg><span>WA Templates</span></button>
+    <button class="nav-item" data-page="summary"><svg viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="#f59e0b" stroke-width="1.3"/><path d="M5 8l2 2 4-4" stroke="#f59e0b" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 5h2M5 11h6" stroke="#f59e0b" stroke-width="1.1" stroke-linecap="round"/></svg><span>மாணவர் அட்டவணை</span></button>
     <button class="nav-item" data-page="settings"><svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.3"/><path d="M8 2v1.5M8 12.5V14M14 8h-1.5M3.5 8H2M12.2 3.8l-1.06 1.06M4.86 11.14L3.8 12.2M12.2 12.2l-1.06-1.06M4.86 4.86L3.8 3.8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg><span id="nl-settings">Settings</span></button>
   </nav>
 <div id="_save_status_bar" style="text-align:center;font-size:10px;padding:3px 10px;color:var(--tx3,#94a3b8);background:var(--bg2,#f8fafc);transition:all .3s;border-bottom:.5px solid var(--br,#e2e8f0)">Ready</div>
@@ -1218,6 +1219,56 @@ tbody tr:hover td{background:var(--bg)}
   </div>
 </div>
 
+
+<!-- ═══════════════ STUDENT SUMMARY (மாணவர் அட்டவணை) ═══════════════ -->
+<div class="page" id="pg-summary">
+
+  <!-- Page Header Banner -->
+  <div style="background:linear-gradient(135deg,#78350f,#f59e0b);border-radius:12px;padding:16px 20px;margin-bottom:16px;display:flex;align-items:center;gap:14px">
+    <div style="width:44px;height:44px;background:rgba(255,255,255,.15);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">📋</div>
+    <div style="flex:1">
+      <div style="font-size:16px;font-weight:700;color:#fff">மாணவர் மாதாந்திர அட்டவணை</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.8);margin-top:2px">ஒவ்வொரு மாணவரின் வருகை, தாமதம், வகுப்பு கவனம் & செயல்பாடுகள் — WhatsApp மூலம் பெற்றோருக்கு அனுப்பவும்</div>
+    </div>
+    <div style="text-align:right;flex-shrink:0">
+      <div style="font-size:10px;color:rgba(255,255,255,.7)">மொத்த மாணவர்கள்</div>
+      <div style="font-size:22px;font-weight:800;color:#fff" id="sum-total-count">0</div>
+    </div>
+  </div>
+
+  <!-- Controls Row -->
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+    <div class="search-box" style="max-width:220px">
+      <svg viewBox="0 0 16 16" fill="none"><circle cx="6.5" cy="6.5" r="4" stroke="currentColor" stroke-width="1.3"/><path d="M11 11l2.5 2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <input id="sum-search" placeholder="மாணவர் பெயர் தேடு…" oninput="filterSummaryCards(this.value)">
+    </div>
+    <select class="fi" id="sum-month-sel" style="width:auto" onchange="renderSummaryCards()">
+      <option value="0">ஜனவரி</option><option value="1">பிப்ரவரி</option><option value="2">மார்ச்</option>
+      <option value="3">ஏப்ரல்</option><option value="4">மே</option><option value="5">ஜூன்</option>
+      <option value="6">ஜூலை</option><option value="7">ஆகஸ்ட்</option><option value="8">செப்டம்பர்</option>
+      <option value="9">அக்டோபர்</option><option value="10">நவம்பர்</option><option value="11">டிசம்பர்</option>
+    </select>
+    <select class="fi" id="sum-year-sel" style="width:auto" onchange="renderSummaryCards()">
+      <option value="2025">2025</option><option value="2026">2026</option><option value="2027">2027</option>
+    </select>
+    <select class="fi" id="sum-batch-sel" style="width:auto" onchange="renderSummaryCards()">
+      <option value="all">அனைத்து பிரிவுகள்</option>
+    </select>
+    <button class="btn btn-wa" onclick="sendAllSummaryWA()" style="margin-left:auto">
+      <svg viewBox="0 0 16 16" fill="none" width="13" height="13"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.4"/><path d="M5 8.5c.5 1.5 2 2.5 3.5 2.5 1 0 2-.4 2.7-1.1M11 7.5c-.5-1.5-2-2.5-3.5-2.5-1 0-2 .4-2.7 1.1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+      அனைவருக்கும் WA அனுப்பு
+    </button>
+  </div>
+
+  <!-- Summary Cards Grid -->
+  <div id="sum-cards-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:14px">
+    <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--tx3);font-size:13px">
+      மாணவர்களை சேர்த்த பிறகு அட்டவணை தோன்றும்…
+    </div>
+  </div>
+</div>
+<!-- END STUDENT SUMMARY -->
+
   </div><!-- /content -->
 </div><!-- /main -->
 </div><!-- /app -->
@@ -1688,7 +1739,8 @@ function navTo(id) {
       renderFees(fees);
     }
   }
-  if (id === 'wa-templates') { initWATemplatesPage(); }}
+  if (id === 'wa-templates') { initWATemplatesPage(); }
+  if (id === 'summary') { if (typeof renderSummaryCards === 'function') renderSummaryCards(); }}
 
 function tbAddAction() {
   const active = document.querySelector('.page.active');
@@ -6630,6 +6682,7 @@ function _safeInit() {
   loadAllCustomWATemplates();
   setTimeout(initCharts, 300);
   setTimeout(initBackup, 800);
+  initSummaryPage();
   // Dark mode already applied from localStorage at top of _safeInit
 }
 
@@ -6640,5 +6693,499 @@ if (document.readyState === 'loading') {
 }
 
 </script>
+
+<!-- ═══════════════════════════════════════════════════════
+     STUDENT SUMMARY MODULE — மாணவர் மாதாந்திர அட்டவணை
+════════════════════════════════════════════════════════ -->
+<style>
+/* Summary card styles */
+.sum-card {
+  background: var(--card);
+  border: .5px solid var(--br);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  transition: transform .15s, box-shadow .15s;
+}
+.sum-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,.10); }
+.sum-card-header {
+  padding: 13px 15px 10px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  border-bottom: .5px solid var(--br);
+}
+.sum-rank-badge {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 800;
+  flex-shrink: 0;
+}
+.sum-section {
+  padding: 10px 15px;
+  border-bottom: .5px solid var(--br);
+}
+.sum-section:last-of-type { border-bottom: none; }
+.sum-section-title {
+  font-size: 9px; font-weight: 700; color: var(--tx3);
+  text-transform: uppercase; letter-spacing: .07em;
+  margin-bottom: 8px; display: flex; align-items: center; gap: 5px;
+}
+.sum-metric-row {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 11px; color: var(--tx2); margin-bottom: 5px;
+}
+.sum-metric-val { font-weight: 700; color: var(--tx); }
+.sum-prog { height: 5px; background: var(--bg); border-radius: 3px; overflow: hidden; margin-top: 4px; }
+.sum-prog-fill { height: 100%; border-radius: 3px; transition: width .5s; }
+.sum-stars { display: flex; gap: 3px; }
+.sum-star { font-size: 16px; cursor: pointer; transition: transform .1s; line-height: 1; }
+.sum-star:hover { transform: scale(1.25); }
+.sum-card-foot {
+  padding: 10px 15px;
+  background: var(--bg);
+  display: flex; gap: 7px; align-items: center;
+}
+.sum-activity-tag {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 9px; border-radius: 20px;
+  font-size: 10px; font-weight: 600;
+  cursor: pointer; border: .5px solid transparent;
+  transition: .12s;
+}
+.sum-activity-tag.on { box-shadow: 0 0 0 1.5px currentColor; }
+.dark .sum-card-header { background: transparent; }
+</style>
+
+<script>
+/* ═══════════════════════════════════════════════════════
+   SUMMARY DATA STORE  — stored per student per month
+   Key: _erp_sum_{studentId}_{YYYY-MM}
+════════════════════════════════════════════════════════ */
+
+const SUMMARY_ACTIVITIES = [
+  { id:'homework',  label:'வீட்டுப்பாடம்',   emoji:'📚', color:'#185FA5', bg:'#dbeafe' },
+  { id:'project',   label:'திட்ட பணி',       emoji:'🔬', color:'#7c3aed', bg:'#ede9fe' },
+  { id:'quiz',      label:'குவிஸ்',           emoji:'🏆', color:'#ca8a04', bg:'#fef9c3' },
+  { id:'drawing',   label:'ஓவியம்',           emoji:'🎨', color:'#0891b2', bg:'#ccfbf1' },
+  { id:'speech',    label:'பேச்சு',           emoji:'🎤', color:'#16a34a', bg:'#dcfce7' },
+  { id:'sports',    label:'விளையாட்டு',       emoji:'⚽', color:'#dc2626', bg:'#fee2e2' },
+];
+
+const TA_MONTHS = ['ஜனவரி','பிப்ரவரி','மார்ச்','ஏப்ரல்','மே','ஜூன்','ஜூலை','ஆகஸ்ட்','செப்டம்பர்','அக்டோபர்','நவம்பர்','டிசம்பர்'];
+
+function getSumKey(studentId, year, month) {
+  return '_erp_sum_' + studentId + '_' + year + '_' + String(month).padStart(2,'0');
+}
+
+function loadSumData(studentId, year, month) {
+  try {
+    const raw = localStorage.getItem(getSumKey(studentId, year, month));
+    if (raw) return JSON.parse(raw);
+  } catch(e) {}
+  return { stars: 0, activities: [], note: '' };
+}
+
+function saveSumData(studentId, year, month, data) {
+  try {
+    localStorage.setItem(getSumKey(studentId, year, month), JSON.stringify(data));
+  } catch(e) {}
+}
+
+/* ── Attendance stats for a student in a given month ── */
+function getStudentAttStats(student, year, month) {
+  // Scan all localStorage keys for attendance records matching this student + month
+  let present = 0, absent = 0, late = 0;
+  const prefix = '_erp_att_';
+  const monthStr = year + '-' + String(month+1).padStart(2,'0');
+
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (!k || !k.startsWith(prefix)) continue;
+      // Key format: _erp_att_{batch}_{session}_{date}
+      // Date portion: extract YYYY-MM
+      const parts = k.replace(prefix,'').split('_');
+      const datePart = parts[parts.length - 1]; // last segment is date YYYY-MM-DD
+      if (!datePart || !datePart.startsWith(monthStr)) continue;
+      try {
+        const rec = JSON.parse(localStorage.getItem(k));
+        if (rec && rec[student.id]) {
+          const v = rec[student.id];
+          if (v === 'P') present++;
+          else if (v === 'A') absent++;
+          else if (v === 'L') late++;
+        }
+      } catch(e2) {}
+    }
+  } catch(e) {}
+
+  const total = present + absent + late;
+  const pct = total > 0 ? Math.round(present / total * 100) : 0;
+  return { present, absent, late, total, pct };
+}
+
+/* ── Rank computation for a month ── */
+function computeRanks(year, month) {
+  return students
+    .filter(s => s.status === 'active')
+    .map(s => {
+      const att = getStudentAttStats(s, year, month);
+      const sumD = loadSumData(s.id, year, month);
+      // Score: 50% attendance + 30% stars + 20% activities
+      const score = (att.pct * 0.5) + ((sumD.stars / 5) * 100 * 0.3) + (Math.min(sumD.activities.length, 4) * 5);
+      return { student: s, score, att, sumD };
+    })
+    .sort((a, b) => b.score - a.score)
+    .map((item, idx) => ({ ...item, rank: idx + 1 }));
+}
+
+/* ── Render all summary cards ── */
+function renderSummaryCards() {
+  const year = parseInt(document.getElementById('sum-year-sel').value);
+  const month = parseInt(document.getElementById('sum-month-sel').value);
+  const batchFilter = document.getElementById('sum-batch-sel').value;
+
+  const grid = document.getElementById('sum-cards-grid');
+  const totalEl = document.getElementById('sum-total-count');
+
+  // Set month select to current month on first load
+  let ranked = computeRanks(year, month);
+
+  if (batchFilter !== 'all') {
+    ranked = ranked.filter(r => r.student.course === batchFilter || r.student.batch === batchFilter);
+  }
+
+  if (totalEl) totalEl.textContent = ranked.length;
+
+  if (ranked.length === 0) {
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--tx3);font-size:13px">இந்த மாதத்தில் மாணவர்கள் இல்லை. முதலில் மாணவர்களை சேர்க்கவும்.</div>';
+    return;
+  }
+
+  grid.innerHTML = ranked.map(item => buildSumCard(item, year, month)).join('');
+}
+
+function buildSumCard(item, year, month) {
+  const { student: s, rank, att, sumD } = item;
+  const rankColors = [
+    { bg:'#fef9c3', color:'#854d0e', label:'🥇' },
+    { bg:'#f1f5f9', color:'#475569', label:'🥈' },
+    { bg:'#fef3c7', color:'#92400e', label:'🥉' },
+  ];
+  const rc = rank <= 3 ? rankColors[rank-1] : { bg:'#f8fafc', color:'#64748b', label:'#'+rank };
+
+  // Attendance bar color
+  const attColor = att.pct >= 90 ? '#16a34a' : att.pct >= 75 ? '#ca8a04' : '#dc2626';
+  const attBg    = att.pct >= 90 ? '#dcfce7' : att.pct >= 75 ? '#fef9c3' : '#fee2e2';
+
+  // Late analysis
+  const lateColor = att.late === 0 ? '#16a34a' : att.late <= 2 ? '#ca8a04' : '#dc2626';
+  const lateMsg   = att.late === 0 ? 'சரியான நேரம் ✅' : att.late <= 2 ? 'சிறிய தாமதம் ⚠️' : 'அதிக தாமதம் ❌';
+
+  // Stars
+  const starsHtml = [1,2,3,4,5].map(n =>
+    `<span class="sum-star" onclick="setSumStars('${s.id}',${year},${month},${n})" title="${n} நட்சத்திரம்">${n <= sumD.stars ? '⭐' : '☆'}</span>`
+  ).join('');
+
+  // Activities
+  const actsHtml = SUMMARY_ACTIVITIES.map(a => {
+    const on = sumD.activities.includes(a.id);
+    return `<span class="sum-activity-tag ${on?'on':''}"
+      style="background:${on?a.bg:'var(--bg)'};color:${on?a.color:'var(--tx3)'};border-color:${on?a.color:'var(--br)'}"
+      onclick="toggleSumActivity('${s.id}',${year},${month},'${a.id}')"
+      title="${a.label}">${a.emoji} ${a.label}</span>`;
+  }).join('');
+
+  // Fee status for this student
+  const stFees = fees.filter(f => f.studentId === s.id || f.student === s.name);
+  const hasPending = stFees.some(f => f.status !== 'paid');
+  const feeTag = hasPending
+    ? `<span class="badge br2" style="font-size:9px">💸 நிலுவை</span>`
+    : stFees.length > 0 ? `<span class="badge bg" style="font-size:9px">✅ செலுத்தியது</span>` : '';
+
+  return `<div class="sum-card" id="sum-card-${s.id}">
+    <!-- Header -->
+    <div class="sum-card-header">
+      <div class="sum-rank-badge" style="background:${rc.bg};color:${rc.color}">${rc.label}</div>
+      <div class="av" style="background:${s.color};width:36px;height:36px;font-size:14px">${(s.name||'?')[0]}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:700;font-size:13px;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.name}</div>
+        <div style="font-size:10px;color:var(--tx3)">வகுப்பு ${s.grade === 'KG' ? 'KG' : s.grade} &nbsp;·&nbsp; ${s.course||s.batch||'—'}</div>
+      </div>
+      ${feeTag}
+    </div>
+
+    <!-- Attendance Section -->
+    <div class="sum-section">
+      <div class="sum-section-title">📅 வருகை நிலை</div>
+      <div class="sum-metric-row">
+        <span>வந்த நாட்கள்</span>
+        <span class="sum-metric-val" style="color:${attColor}">${att.present} / ${att.total||'—'} நாட்கள்</span>
+      </div>
+      <div class="sum-prog"><div class="sum-prog-fill" style="width:${att.pct}%;background:${attColor}"></div></div>
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--tx3);margin-top:4px">
+        <span>வருகை: <b style="color:${attColor}">${att.pct}%</b></span>
+        <span>வரவில்லை: <b style="color:#dc2626">${att.absent}</b>&nbsp; தாமதம்: <b style="color:#ca8a04">${att.late}</b></span>
+      </div>
+    </div>
+
+    <!-- Late Analysis -->
+    <div class="sum-section">
+      <div class="sum-section-title">⏰ தாமத பகுப்பாய்வு</div>
+      <div class="sum-metric-row">
+        <span>மொத்த தாமத நாட்கள்</span>
+        <span class="sum-metric-val" style="color:${lateColor}">${att.late} நாட்கள்</span>
+      </div>
+      <div style="font-size:11px;font-weight:600;color:${lateColor};background:${att.late===0?'#dcfce7':att.late<=2?'#fef9c3':'#fee2e2'};padding:5px 9px;border-radius:7px;text-align:center;margin-top:4px">${lateMsg}</div>
+    </div>
+
+    <!-- Class Concentration (Stars) -->
+    <div class="sum-section">
+      <div class="sum-section-title">🌟 வகுப்பு கவனம் (ஆசிரியர் மதிப்பீடு)</div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="sum-stars">${starsHtml}</div>
+        <span style="font-size:11px;color:var(--tx3)">${sumD.stars}/5 நட்சத்திரம்</span>
+      </div>
+      <div style="font-size:10px;color:var(--tx3);margin-top:5px">
+        ${sumD.stars >= 4 ? '🎉 மிகவும் கவனமாக உள்ளனர்!' : sumD.stars >= 3 ? '👍 நல்ல கவனம்' : sumD.stars >= 1 ? '📣 கவனம் அதிகரிக்க வேண்டும்' : '— மதிப்பீடு இல்லை (கிளிக் செய்யவும்)'}
+      </div>
+    </div>
+
+    <!-- Class Activities -->
+    <div class="sum-section">
+      <div class="sum-section-title">🏅 வகுப்பு செயல்பாடுகள்</div>
+      <div style="display:flex;flex-wrap:wrap;gap:5px">${actsHtml}</div>
+    </div>
+
+    <!-- Teacher Note -->
+    <div class="sum-section">
+      <div class="sum-section-title">📝 ஆசிரியர் குறிப்பு</div>
+      <textarea
+        style="width:100%;border:.5px solid var(--br);border-radius:8px;padding:7px 10px;font-size:11px;font-family:'Noto Sans Tamil',system-ui;color:var(--tx);background:var(--card);resize:none;outline:none;line-height:1.6"
+        rows="2"
+        placeholder="மாணவர் பற்றிய குறிப்பு… (விரும்பியால் தமிழில் எழுதவும்)"
+        onchange="saveSumNote('${s.id}',${year},${month},this.value)"
+      >${sumD.note||''}</textarea>
+    </div>
+
+    <!-- Footer: WA Button -->
+    <div class="sum-card-foot">
+      <button class="btn btn-wa btn-sm" style="flex:1;justify-content:center;font-size:11px" onclick="sendSumWA('${s.id}',${year},${month})">
+        📱 WhatsApp அனுப்பு
+      </button>
+      <button class="btn btn-sm" style="font-size:11px" onclick="previewSumWA('${s.id}',${year},${month})">
+        👁 முன்னோட்டம்
+      </button>
+    </div>
+  </div>`;
+}
+
+/* ── Star rating ── */
+function setSumStars(studentId, year, month, stars) {
+  const data = loadSumData(studentId, year, month);
+  data.stars = data.stars === stars ? 0 : stars; // toggle off if same
+  saveSumData(studentId, year, month, data);
+  renderSummaryCards();
+  showToast('⭐ ' + data.stars + ' நட்சத்திரம் சேமிக்கப்பட்டது');
+}
+
+/* ── Activity toggle ── */
+function toggleSumActivity(studentId, year, month, actId) {
+  const data = loadSumData(studentId, year, month);
+  if (!data.activities) data.activities = [];
+  const idx = data.activities.indexOf(actId);
+  if (idx === -1) data.activities.push(actId);
+  else data.activities.splice(idx, 1);
+  saveSumData(studentId, year, month, data);
+  renderSummaryCards();
+}
+
+/* ── Save teacher note ── */
+function saveSumNote(studentId, year, month, note) {
+  const data = loadSumData(studentId, year, month);
+  data.note = note;
+  saveSumData(studentId, year, month, data);
+  showToast('💾 குறிப்பு சேமிக்கப்பட்டது');
+}
+
+/* ── Build Tamil WhatsApp message ── */
+function buildSumWAMessage(s, year, month) {
+  const att = getStudentAttStats(s, year, month);
+  const sumD = loadSumData(s.id, year, month);
+  const ctr = CFG.CENTER;
+  const monthName = TA_MONTHS[month];
+
+  // Star label
+  const starLabels = ['—','மிகவும் குறைவு ❌','குறைவு ⚠️','சராசரி 👍','நல்லது 🌟','அருமை ⭐🌟'];
+  const starLabel = starLabels[sumD.stars] || '—';
+
+  // Attendance status
+  const attStatus = att.pct >= 90 ? 'மிக நல்லது ✅' : att.pct >= 75 ? 'சரி ⚠️' : 'குறைவு ❌';
+  const lateStatus = att.late === 0 ? 'எப்போதும் சரியான நேரம் ✅' : att.late <= 2 ? att.late + ' நாட்கள் தாமதம் ⚠️' : att.late + ' நாட்கள் அதிக தாமதம் ❌';
+
+  // Activities in Tamil
+  const actLabels = SUMMARY_ACTIVITIES.filter(a => sumD.activities.includes(a.id)).map(a => a.emoji + ' ' + a.label);
+  const actsText = actLabels.length > 0 ? actLabels.join(', ') : 'எந்த சிறப்பு செயல்பாடும் இல்லை';
+
+  // Ranked
+  const ranked = computeRanks(year, month);
+  const myRank = ranked.find(r => r.student.id === s.id);
+  const rankText = myRank ? myRank.rank + ' / ' + ranked.length : '—';
+
+  const note = sumD.note ? `\n\n📝 *ஆசிரியர் குறிப்பு:*\n${sumD.note}` : '';
+
+  return `🙏 வணக்கம் *${s.parent}* அவர்களுக்கு,
+
+━━━━━━━━━━━━━━━━━━━
+📋 *மாதாந்திர மாணவர் அட்டவணை*
+━━━━━━━━━━━━━━━━━━━
+🏫 *${ctr.name}*
+📅 மாதம்: *${monthName} ${year}*
+
+👤 மாணவர்: *${s.name}*
+🎓 வகுப்பு: ${s.grade === 'KG' ? 'KG' : s.grade + ' ஆம் வகுப்பு'}
+🏅 வகுப்பு தரவரிசை: *${rankText}*
+
+━━━━━━━━━━━━━━━━━━━
+📅 *வருகை நிலை*
+━━━━━━━━━━━━━━━━━━━
+✅ வந்த நாட்கள்: *${att.present}*
+❌ வராத நாட்கள்: *${att.absent}*
+⚠️ தாமத நாட்கள்: *${att.late}*
+📊 மொத்த வருகை: *${att.pct}%* — ${attStatus}
+
+━━━━━━━━━━━━━━━━━━━
+⏰ *தாமத பகுப்பாய்வு*
+━━━━━━━━━━━━━━━━━━━
+${lateStatus}
+
+━━━━━━━━━━━━━━━━━━━
+🌟 *வகுப்பு கவனம் (ஆசிரியர் மதிப்பீடு)*
+━━━━━━━━━━━━━━━━━━━
+${[1,2,3,4,5].map(n => n <= sumD.stars ? '⭐' : '☆').join('')} — ${starLabel}
+
+━━━━━━━━━━━━━━━━━━━
+🏅 *வகுப்பு செயல்பாடுகள்*
+━━━━━━━━━━━━━━━━━━━
+${actsText}${note}
+
+━━━━━━━━━━━━━━━━━━━
+உங்கள் பிள்ளையின் படிப்பில் அக்கறை காட்டியதற்கு நன்றி! 🙏
+
+📞 ${ctr.phone}
+🏫 ${ctr.name}`;
+}
+
+/* ── WhatsApp send for one student ── */
+function sendSumWA(studentId, year, month) {
+  const s = students.find(x => x.id === studentId);
+  if (!s) return showToast('மாணவர் கிடைக்கவில்லை');
+  const msg = buildSumWAMessage(s, year, month);
+  const phone = s.phone || s.pphone || '';
+  if (!phone) return showToast('⚠️ தொலைபேசி எண் இல்லை');
+  openWA(phone, msg);
+  showToast('📱 WhatsApp திறக்கிறது…');
+}
+
+/* ── Preview WhatsApp message ── */
+function previewSumWA(studentId, year, month) {
+  const s = students.find(x => x.id === studentId);
+  if (!s) return showToast('மாணவர் கிடைக்கவில்லை');
+  const msg = buildSumWAMessage(s, year, month);
+  const root = document.getElementById('modal-root');
+  root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()">
+    <div class="modal" style="max-width:480px">
+      <div class="modal-title">📋 WhatsApp முன்னோட்டம் — ${s.name}</div>
+      <div style="background:#dcfce7;border-radius:10px;padding:13px;font-size:11.5px;line-height:1.75;white-space:pre-wrap;font-family:'Noto Sans Tamil',system-ui;color:#166534;max-height:420px;overflow-y:auto;border:.5px solid #bbf7d0">${msg}</div>
+      <div class="modal-foot">
+        <button class="btn btn-wa" onclick="sendSumWA('${s.id}',${year},${month});closeModal()" style="flex:1;justify-content:center">📱 WhatsApp அனுப்பு</button>
+        <button class="btn" onclick="closeModal()">மூடு</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ── Send to all students ── */
+function sendAllSummaryWA() {
+  const year  = parseInt(document.getElementById('sum-year-sel').value);
+  const month = parseInt(document.getElementById('sum-month-sel').value);
+  const active = students.filter(s => s.status === 'active');
+  if (active.length === 0) return showToast('மாணவர்கள் இல்லை');
+
+  // Build queue modal
+  const root = document.getElementById('modal-root');
+  root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()">
+    <div class="modal" style="max-width:500px">
+      <div class="modal-title">📱 அனைத்து மாணவர் WhatsApp வரிசை</div>
+      <div style="font-size:12px;color:var(--tx2);margin-bottom:12px">${TA_MONTHS[month]} ${year} — ${active.length} மாணவர்களுக்கு அனுப்பு</div>
+      <div style="max-height:340px;overflow-y:auto;border:.5px solid var(--br);border-radius:10px">
+        ${active.map((s,i) => `<div class="wa-queue-item">
+          <div class="av" style="background:${s.color};width:28px;height:28px;font-size:11px;flex-shrink:0">${(s.name||'?')[0]}</div>
+          <div style="flex:1">
+            <div style="font-weight:600;font-size:12px">${s.name}</div>
+            <div style="font-size:10px;color:var(--tx3)">${s.phone||'எண் இல்லை'} · Gr.${s.grade}</div>
+          </div>
+          <button class="btn btn-wa btn-sm" onclick="sendSumWA('${s.id}',${year},${month})" style="font-size:10px">📱 அனுப்பு</button>
+        </div>`).join('')}
+      </div>
+      <div class="modal-foot">
+        <button class="btn" onclick="closeModal()">மூடு</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ── Filter cards by search ── */
+function filterSummaryCards(query) {
+  const q = query.toLowerCase();
+  document.querySelectorAll('#sum-cards-grid > .sum-card').forEach(card => {
+    const name = card.querySelector('[style*="font-weight:700"]');
+    if (!name) return;
+    card.style.display = name.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+}
+
+/* ── Init Summary Page ── */
+function initSummaryPage() {
+  // Set current month/year as default
+  const now = new Date();
+  const mSel = document.getElementById('sum-month-sel');
+  const ySel = document.getElementById('sum-year-sel');
+  if (mSel) mSel.value = now.getMonth();
+  if (ySel) {
+    const yr = now.getFullYear().toString();
+    if ([...ySel.options].some(o => o.value === yr)) ySel.value = yr;
+    else {
+      const opt = document.createElement('option');
+      opt.value = yr; opt.textContent = yr;
+      ySel.appendChild(opt);
+      ySel.value = yr;
+    }
+  }
+
+  // Populate batch selector
+  const bSel = document.getElementById('sum-batch-sel');
+  if (bSel && batches) {
+    batches.forEach(b => {
+      const opt = document.createElement('option');
+      opt.value = b.name; opt.textContent = b.name;
+      bSel.appendChild(opt);
+    });
+  }
+  renderSummaryCards();
+}
+
+// Re-render when navigating to summary page
+const _origNavTo = window.navTo || function(){};
+// Patch navTo to refresh summary cards when summary page opens
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.nav-item[data-page="summary"]').forEach(btn => {
+    btn.addEventListener('click', () => setTimeout(renderSummaryCards, 100));
+  });
+});
+</script>
+
 </body>
 </html>

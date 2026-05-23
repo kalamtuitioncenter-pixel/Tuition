@@ -3074,7 +3074,7 @@ function selectExam(i) {
     </tr>`).join('')}
     </tbody></table></div>
     <div style="display:flex;gap:8px;margin-top:12px">
-      <button class="btn btn-p" onclick="showToast('✅ Marks saved! Auto-ranking applied.')"><svg viewBox="0 0 14 14" fill="none" width="12" height="12"><path d="M2 7l4 4 6-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Save Marks</button>
+      <button class="btn btn-p" onclick="saveMarksToStorage(${i})"><svg viewBox="0 0 14 14" fill="none" width="12" height="12"><path d="M2 7l4 4 6-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Save Marks</button>
       <button class="btn btn-wa" onclick="showModal('marksWA')">Send Results via WhatsApp</button>
     </div>`;
 }
@@ -3091,6 +3091,58 @@ function saveExam() {
   const colors=['#185FA5','#534AB7','#854F0B','#1D9E75'];
   exams.unshift({id:'ex'+Date.now(),name,subject:document.getElementById('m-exsub')?.value||'Mathematics',type:document.getElementById('m-extype')?.value||'monthly',maxMarks:parseInt(document.getElementById('m-exmarks')?.value)||100,date:document.getElementById('m-exdate')?.value||new Date().toLocaleDateString('en-IN'),color:colors[exams.length%colors.length]});
   saveExams();renderExams();closeModal();showToast('✅ Exam scheduled!');
+}
+
+/* ── Save marks from the marks panel to localStorage ── */
+function saveMarksToStorage(examIdx) {
+  const e = exams[examIdx];
+  if (!e) return;
+  const key = '_erp_marks_' + e.id;
+  const marksMap = {};
+  students.filter(s=>s&&s.name&&s.status==='active').slice(0,6).forEach((s,j) => {
+    const inp = document.querySelector('#marks-panel .mk:nth-of-type('+(j+1)+')') ||
+                document.querySelectorAll('#marks-panel .mk')[j];
+    const abCb = document.querySelectorAll('#marks-panel input[type=checkbox]')[j];
+    if (abCb && abCb.checked) {
+      marksMap[s.id] = { marks: null, absent: true };
+    } else if (inp) {
+      const val = parseFloat(inp.value);
+      if (!isNaN(val)) marksMap[s.id] = { marks: val, absent: false };
+    }
+  });
+  try {
+    localStorage.setItem(key, JSON.stringify({ examId: e.id, examName: e.name, subject: e.subject, maxMarks: e.maxMarks, date: e.date, marks: marksMap }));
+    // Also update index
+    const idx = JSON.parse(localStorage.getItem('_erp_marks_index') || '[]');
+    if (!idx.includes(key)) { idx.push(key); localStorage.setItem('_erp_marks_index', JSON.stringify(idx)); }
+  } catch(err) {}
+  showToast('✅ Marks saved for ' + e.name + '!');
+  runBackup('change');
+}
+
+/* ── Load all marks for a student ── */
+function getStudentMarks(studentId) {
+  const results = [];
+  try {
+    const idx = JSON.parse(localStorage.getItem('_erp_marks_index') || '[]');
+    idx.forEach(key => {
+      try {
+        const rec = JSON.parse(localStorage.getItem(key));
+        if (rec && rec.marks && rec.marks[studentId] !== undefined) {
+          const entry = rec.marks[studentId];
+          results.push({
+            examName: rec.examName,
+            subject: rec.subject,
+            maxMarks: rec.maxMarks,
+            marks: entry.marks,
+            absent: entry.absent,
+            date: rec.date,
+          });
+        }
+      } catch(e2) {}
+    });
+  } catch(e) {}
+  return results;
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -6793,82 +6845,129 @@ function saveSumData(studentId, year, month, data) {
   } catch(e) {}
 }
 
-/* ── Attendance stats for a student in a given month ── */
+/* ════════════════════════════════════════════════════════
+   AUTO ATTENDANCE  — reads real localStorage data
+   Key: _erp_att_{YYYY-MM-DD}_{batchId}_{session}
+   Value JSON keys: "{studentId}|{batchId}|{session}" : "P"/"A"/"L"
+════════════════════════════════════════════════════════ */
 function getStudentAttStats(student, year, month) {
-  // Scan all localStorage keys for attendance records matching this student + month
   let present = 0, absent = 0, late = 0;
-  const prefix = '_erp_att_';
-  const monthStr = year + '-' + String(month+1).padStart(2,'0');
-
+  const prefix   = '_erp_att_';
+  const monthStr = year + '-' + String(month + 1).padStart(2, '0'); // e.g. "2025-05"
   try {
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i);
       if (!k || !k.startsWith(prefix)) continue;
-      // Key format: _erp_att_{batch}_{session}_{date}
-      // Date portion: extract YYYY-MM
-      const parts = k.replace(prefix,'').split('_');
-      const datePart = parts[parts.length - 1]; // last segment is date YYYY-MM-DD
-      if (!datePart || !datePart.startsWith(monthStr)) continue;
+      // Key: _erp_att_{YYYY-MM-DD}_{batchId}_{session}
+      // The date is always at position [prefix.length .. prefix.length+10]
+      const datePart = k.slice(prefix.length, prefix.length + 10); // "2025-05-20"
+      if (!datePart.startsWith(monthStr)) continue;
       try {
         const rec = JSON.parse(localStorage.getItem(k));
-        if (rec && rec[student.id]) {
-          const v = rec[student.id];
-          if (v === 'P') present++;
+        if (!rec || typeof rec !== 'object') continue;
+        // Keys inside rec: "ST-001|batch1|morning"
+        Object.keys(rec).forEach(rk => {
+          if (!rk.startsWith(student.id + '|')) return;
+          const v = rec[rk];
+          if      (v === 'P') present++;
           else if (v === 'A') absent++;
           else if (v === 'L') late++;
+        });
+      } catch(e2) {}
+    }
+  } catch(e) {}
+  const total = present + absent + late;
+  const pct   = total > 0 ? Math.round(present / total * 100) : 0;
+  return { present, absent, late, total, pct };
+}
+
+/* ════════════════════════════════════════════════════════
+   AUTO MARKS  — reads _erp_marks_{examId} from localStorage
+════════════════════════════════════════════════════════ */
+function getStudentMarksAuto(studentId) {
+  const results = [];
+  const seen    = new Set();
+  try {
+    // 1) Try the index first (fast path)
+    const idxRaw = localStorage.getItem('_erp_marks_index');
+    const idx    = idxRaw ? JSON.parse(idxRaw) : [];
+    idx.forEach(key => {
+      try {
+        const rec = JSON.parse(localStorage.getItem(key));
+        if (rec && rec.marks && rec.marks[studentId] !== undefined) {
+          seen.add(key);
+          const e = rec.marks[studentId];
+          results.push({ examName: rec.examName, subject: rec.subject, maxMarks: rec.maxMarks, marks: e.marks, absent: e.absent, date: rec.date });
+        }
+      } catch(e2) {}
+    });
+    // 2) Full scan fallback for any keys not in the index
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (!k || !k.startsWith('_erp_marks_') || k === '_erp_marks_index' || seen.has(k)) continue;
+      try {
+        const rec = JSON.parse(localStorage.getItem(k));
+        if (rec && rec.marks && rec.marks[studentId] !== undefined) {
+          const e = rec.marks[studentId];
+          results.push({ examName: rec.examName, subject: rec.subject, maxMarks: rec.maxMarks, marks: e.marks, absent: e.absent, date: rec.date });
         }
       } catch(e2) {}
     }
   } catch(e) {}
-
-  const total = present + absent + late;
-  const pct = total > 0 ? Math.round(present / total * 100) : 0;
-  return { present, absent, late, total, pct };
+  return results;
 }
 
-/* ── Rank computation for a month ── */
+/* ── Grade helper ── */
+function _gradeFromPct(pct) {
+  return pct >= 91 ? 'A+' : pct >= 81 ? 'A' : pct >= 71 ? 'B+' : pct >= 61 ? 'B' : pct >= 51 ? 'C' : pct >= 35 ? 'D' : 'F';
+}
+
+/* ════════════════════════════════════════════════════════
+   RANK COMPUTATION  (att 40% + marks 30% + stars 20% + activities 10%)
+════════════════════════════════════════════════════════ */
 function computeRanks(year, month) {
   return students
-    .filter(s => s.status === 'active')
+    .filter(s => s && s.name && s.status === 'active')
     .map(s => {
-      const att = getStudentAttStats(s, year, month);
-      const sumD = loadSumData(s.id, year, month);
-      // Score: 50% attendance + 30% stars + 20% activities
-      const score = (att.pct * 0.5) + ((sumD.stars / 5) * 100 * 0.3) + (Math.min(sumD.activities.length, 4) * 5);
-      return { student: s, score, att, sumD };
+      const att   = getStudentAttStats(s, year, month);
+      const sumD  = loadSumData(s.id, year, month);
+      const marks = getStudentMarksAuto(s.id);
+      const validM = marks.filter(m => !m.absent && m.marks !== null && m.maxMarks > 0);
+      const avgPct = validM.length > 0
+        ? Math.round(validM.reduce((acc, m) => acc + (m.marks / m.maxMarks * 100), 0) / validM.length)
+        : 0;
+      const score = (att.pct * 0.4) + (avgPct * 0.3) + ((sumD.stars / 5) * 100 * 0.2) + (Math.min(sumD.activities.length, 4) * 2.5);
+      return { student: s, score, att, sumD, marks, avgPct };
     })
     .sort((a, b) => b.score - a.score)
     .map((item, idx) => ({ ...item, rank: idx + 1 }));
 }
 
-/* ── Render all summary cards ── */
+/* ════════════════════════════════════════════════════════
+   RENDER CARDS
+════════════════════════════════════════════════════════ */
 function renderSummaryCards() {
-  const year = parseInt(document.getElementById('sum-year-sel').value);
-  const month = parseInt(document.getElementById('sum-month-sel').value);
+  const year        = parseInt(document.getElementById('sum-year-sel').value);
+  const month       = parseInt(document.getElementById('sum-month-sel').value);
   const batchFilter = document.getElementById('sum-batch-sel').value;
+  const grid        = document.getElementById('sum-cards-grid');
+  const totalEl     = document.getElementById('sum-total-count');
 
-  const grid = document.getElementById('sum-cards-grid');
-  const totalEl = document.getElementById('sum-total-count');
-
-  // Set month select to current month on first load
   let ranked = computeRanks(year, month);
-
   if (batchFilter !== 'all') {
     ranked = ranked.filter(r => r.student.course === batchFilter || r.student.batch === batchFilter);
   }
-
   if (totalEl) totalEl.textContent = ranked.length;
 
   if (ranked.length === 0) {
-    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--tx3);font-size:13px">இந்த மாதத்தில் மாணவர்கள் இல்லை. முதலில் மாணவர்களை சேர்க்கவும்.</div>';
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--tx3);font-size:13px">மாணவர்களை சேர்த்த பிறகு அட்டவணை தோன்றும்…</div>';
     return;
   }
-
   grid.innerHTML = ranked.map(item => buildSumCard(item, year, month)).join('');
 }
 
 function buildSumCard(item, year, month) {
-  const { student: s, rank, att, sumD } = item;
+  const { student: s, rank, att, sumD, marks, avgPct } = item;
   const rankColors = [
     { bg:'#fef9c3', color:'#854d0e', label:'🥇' },
     { bg:'#f1f5f9', color:'#475569', label:'🥈' },
@@ -6876,108 +6975,149 @@ function buildSumCard(item, year, month) {
   ];
   const rc = rank <= 3 ? rankColors[rank-1] : { bg:'#f8fafc', color:'#64748b', label:'#'+rank };
 
-  // Attendance bar color
-  const attColor = att.pct >= 90 ? '#16a34a' : att.pct >= 75 ? '#ca8a04' : '#dc2626';
-  const attBg    = att.pct >= 90 ? '#dcfce7' : att.pct >= 75 ? '#fef9c3' : '#fee2e2';
-
-  // Late analysis
+  // Attendance colours
+  const attColor  = att.pct >= 90 ? '#16a34a' : att.pct >= 75 ? '#ca8a04' : '#dc2626';
   const lateColor = att.late === 0 ? '#16a34a' : att.late <= 2 ? '#ca8a04' : '#dc2626';
-  const lateMsg   = att.late === 0 ? 'சரியான நேரம் ✅' : att.late <= 2 ? 'சிறிய தாமதம் ⚠️' : 'அதிக தாமதம் ❌';
+  const lateMsg   = att.late === 0 ? 'சரியான நேரம் ✅' : att.late <= 2 ? att.late + ' நாட்கள் தாமதம் ⚠️' : att.late + ' நாட்கள் அதிக தாமதம் ❌';
 
   // Stars
   const starsHtml = [1,2,3,4,5].map(n =>
-    `<span class="sum-star" onclick="setSumStars('${s.id}',${year},${month},${n})" title="${n} நட்சத்திரம்">${n <= sumD.stars ? '⭐' : '☆'}</span>`
+    `<span class="sum-star" onclick="setSumStars('${s.id}',${year},${month},${n})">${n <= sumD.stars ? '⭐' : '☆'}</span>`
   ).join('');
 
   // Activities
   const actsHtml = SUMMARY_ACTIVITIES.map(a => {
-    const on = sumD.activities.includes(a.id);
+    const on = (sumD.activities||[]).includes(a.id);
     return `<span class="sum-activity-tag ${on?'on':''}"
       style="background:${on?a.bg:'var(--bg)'};color:${on?a.color:'var(--tx3)'};border-color:${on?a.color:'var(--br)'}"
-      onclick="toggleSumActivity('${s.id}',${year},${month},'${a.id}')"
-      title="${a.label}">${a.emoji} ${a.label}</span>`;
+      onclick="toggleSumActivity('${s.id}',${year},${month},'${a.id}')">${a.emoji} ${a.label}</span>`;
   }).join('');
 
-  // Fee status for this student
-  const stFees = fees.filter(f => f.studentId === s.id || f.student === s.name);
+  // Marks rows (AUTO)
+  let marksHtml;
+  if (marks.length > 0) {
+    marksHtml = marks.map(m => {
+      const pct   = m.absent ? 0 : Math.round((m.marks / m.maxMarks) * 100);
+      const grade = m.absent ? 'AB' : _gradeFromPct(pct);
+      const gc    = m.absent ? '#6b7280' : pct >= 60 ? '#16a34a' : pct >= 35 ? '#ca8a04' : '#dc2626';
+      return `<div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--tx2);margin-bottom:6px">
+        <span style="max-width:55%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${m.examName} <span style="color:var(--tx3);font-size:10px">(${m.subject})</span></span>
+        <span style="display:flex;align-items:center;gap:5px">
+          <b style="color:${gc}">${m.absent ? 'வரவில்லை' : m.marks+'/'+m.maxMarks}</b>
+          <span style="background:${gc}22;color:${gc};padding:1px 6px;border-radius:8px;font-size:10px;font-weight:700">${grade}</span>
+        </span>
+      </div>`;
+    }).join('');
+  } else {
+    marksHtml = `<div style="font-size:11px;color:var(--tx3);text-align:center;padding:8px 0">மதிப்பெண்கள் இன்னும் உள்ளிடப்படவில்லை<br><span style="font-size:10px">Marks & Exams தாவலில் சேமிக்கவும்</span></div>`;
+  }
+
+  const avgBadge = (avgPct > 0)
+    ? `<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;
+        background:${avgPct>=60?'#dcfce7':avgPct>=35?'#fef9c3':'#fee2e2'};
+        color:${avgPct>=60?'#166534':avgPct>=35?'#854d0e':'#991b1b'}">சராசரி ${avgPct}%</span>`
+    : '';
+
+  // Fee tag
+  const stFees     = fees.filter(f => f.studentId === s.id || f.student === s.name);
   const hasPending = stFees.some(f => f.status !== 'paid');
-  const feeTag = hasPending
+  const feeTag     = hasPending
     ? `<span class="badge br2" style="font-size:9px">💸 நிலுவை</span>`
-    : stFees.length > 0 ? `<span class="badge bg" style="font-size:9px">✅ செலுத்தியது</span>` : '';
+    : stFees.length > 0 ? `<span class="badge bg" style="font-size:9px">✅ கட்டணம்</span>` : '';
+
+  const AUTO_BADGE = `<span style="font-size:9px;background:#dcfce7;color:#166534;padding:1px 6px;border-radius:8px;font-weight:700;margin-left:4px">AUTO</span>`;
 
   return `<div class="sum-card" id="sum-card-${s.id}">
-    <!-- Header -->
+
+    <!-- ── Header ── -->
     <div class="sum-card-header">
       <div class="sum-rank-badge" style="background:${rc.bg};color:${rc.color}">${rc.label}</div>
       <div class="av" style="background:${s.color};width:36px;height:36px;font-size:14px">${(s.name||'?')[0]}</div>
       <div style="flex:1;min-width:0">
         <div style="font-weight:700;font-size:13px;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.name}</div>
-        <div style="font-size:10px;color:var(--tx3)">வகுப்பு ${s.grade === 'KG' ? 'KG' : s.grade} &nbsp;·&nbsp; ${s.course||s.batch||'—'}</div>
+        <div style="font-size:10px;color:var(--tx3)">வகுப்பு ${s.grade==='KG'?'KG':s.grade} &nbsp;·&nbsp; ${s.course||s.batch||'—'}</div>
       </div>
       ${feeTag}
     </div>
 
-    <!-- Attendance Section -->
+    <!-- ── Attendance (AUTO) ── -->
     <div class="sum-section">
-      <div class="sum-section-title">📅 வருகை நிலை</div>
-      <div class="sum-metric-row">
-        <span>வந்த நாட்கள்</span>
-        <span class="sum-metric-val" style="color:${attColor}">${att.present} / ${att.total||'—'} நாட்கள்</span>
-      </div>
-      <div class="sum-prog"><div class="sum-prog-fill" style="width:${att.pct}%;background:${attColor}"></div></div>
-      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--tx3);margin-top:4px">
-        <span>வருகை: <b style="color:${attColor}">${att.pct}%</b></span>
-        <span>வரவில்லை: <b style="color:#dc2626">${att.absent}</b>&nbsp; தாமதம்: <b style="color:#ca8a04">${att.late}</b></span>
-      </div>
+      <div class="sum-section-title">📅 வருகை நிலை ${AUTO_BADGE}</div>
+      ${att.total === 0
+        ? `<div style="font-size:11px;color:var(--tx3);text-align:center;padding:6px 0">இந்த மாதம் வருகை தரவு இல்லை</div>`
+        : `<div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--tx2)">
+            <span>வந்த நாட்கள்</span>
+            <b style="color:${attColor}">${att.present} / ${att.total} நாட்கள்</b>
+           </div>
+           <div class="sum-prog" style="margin-top:5px"><div class="sum-prog-fill" style="width:${att.pct}%;background:${attColor}"></div></div>
+           <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--tx3);margin-top:4px">
+             <span>வருகை: <b style="color:${attColor}">${att.pct}%</b></span>
+             <span>வரவில்லை: <b style="color:#dc2626">${att.absent}</b> &nbsp; தாமதம்: <b style="color:#ca8a04">${att.late}</b></span>
+           </div>`
+      }
     </div>
 
-    <!-- Late Analysis -->
+    <!-- ── Late Analysis (AUTO) ── -->
     <div class="sum-section">
-      <div class="sum-section-title">⏰ தாமத பகுப்பாய்வு</div>
-      <div class="sum-metric-row">
-        <span>மொத்த தாமத நாட்கள்</span>
-        <span class="sum-metric-val" style="color:${lateColor}">${att.late} நாட்கள்</span>
-      </div>
-      <div style="font-size:11px;font-weight:600;color:${lateColor};background:${att.late===0?'#dcfce7':att.late<=2?'#fef9c3':'#fee2e2'};padding:5px 9px;border-radius:7px;text-align:center;margin-top:4px">${lateMsg}</div>
+      <div class="sum-section-title">⏰ தாமத பகுப்பாய்வு ${AUTO_BADGE}</div>
+      ${att.total === 0
+        ? `<div style="font-size:11px;color:var(--tx3);text-align:center;padding:4px 0">தரவு இல்லை</div>`
+        : `<div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--tx2);margin-bottom:6px">
+            <span>மொத்த தாமத நாட்கள்</span>
+            <b style="color:${lateColor}">${att.late} நாட்கள்</b>
+           </div>
+           <div style="font-size:11px;font-weight:600;color:${lateColor};
+             background:${att.late===0?'#dcfce7':att.late<=2?'#fef9c3':'#fee2e2'};
+             padding:5px 9px;border-radius:7px;text-align:center">${lateMsg}</div>`
+      }
     </div>
 
-    <!-- Class Concentration (Stars) -->
+    <!-- ── Marks (AUTO) ── -->
+    <div class="sum-section">
+      <div class="sum-section-title" style="justify-content:space-between">
+        <span>📝 மதிப்பெண் சுருக்கம் ${AUTO_BADGE}</span>
+        ${avgBadge}
+      </div>
+      ${marksHtml}
+    </div>
+
+    <!-- ── Class Concentration — Teacher fills ── -->
     <div class="sum-section">
       <div class="sum-section-title">🌟 வகுப்பு கவனம் (ஆசிரியர் மதிப்பீடு)</div>
       <div style="display:flex;align-items:center;gap:10px">
         <div class="sum-stars">${starsHtml}</div>
-        <span style="font-size:11px;color:var(--tx3)">${sumD.stars}/5 நட்சத்திரம்</span>
+        <span style="font-size:11px;color:var(--tx3)">${sumD.stars}/5</span>
       </div>
-      <div style="font-size:10px;color:var(--tx3);margin-top:5px">
-        ${sumD.stars >= 4 ? '🎉 மிகவும் கவனமாக உள்ளனர்!' : sumD.stars >= 3 ? '👍 நல்ல கவனம்' : sumD.stars >= 1 ? '📣 கவனம் அதிகரிக்க வேண்டும்' : '— மதிப்பீடு இல்லை (கிளிக் செய்யவும்)'}
+      <div style="font-size:10px;color:var(--tx3);margin-top:4px">
+        ${sumD.stars>=4?'🎉 மிகவும் கவனமாக உள்ளனர்!':sumD.stars>=3?'👍 நல்ல கவனம்':sumD.stars>=1?'📣 கவனம் அதிகரிக்க வேண்டும்':'— கிளிக் செய்து மதிப்பீடு கொடுக்கவும்'}
       </div>
     </div>
 
-    <!-- Class Activities -->
+    <!-- ── Activities — Teacher fills ── -->
     <div class="sum-section">
       <div class="sum-section-title">🏅 வகுப்பு செயல்பாடுகள்</div>
       <div style="display:flex;flex-wrap:wrap;gap:5px">${actsHtml}</div>
     </div>
 
-    <!-- Teacher Note -->
+    <!-- ── Teacher Note ── -->
     <div class="sum-section">
       <div class="sum-section-title">📝 ஆசிரியர் குறிப்பு</div>
       <textarea
-        style="width:100%;border:.5px solid var(--br);border-radius:8px;padding:7px 10px;font-size:11px;font-family:'Noto Sans Tamil',system-ui;color:var(--tx);background:var(--card);resize:none;outline:none;line-height:1.6"
+        style="width:100%;border:.5px solid var(--br);border-radius:8px;padding:7px 10px;
+               font-size:11px;font-family:'Noto Sans Tamil',system-ui;color:var(--tx);
+               background:var(--card);resize:none;outline:none;line-height:1.6;box-sizing:border-box"
         rows="2"
-        placeholder="மாணவர் பற்றிய குறிப்பு… (விரும்பியால் தமிழில் எழுதவும்)"
+        placeholder="மாணவர் பற்றிய குறிப்பு…"
         onchange="saveSumNote('${s.id}',${year},${month},this.value)"
       >${sumD.note||''}</textarea>
     </div>
 
-    <!-- Footer: WA Button -->
+    <!-- ── Footer ── -->
     <div class="sum-card-foot">
-      <button class="btn btn-wa btn-sm" style="flex:1;justify-content:center;font-size:11px" onclick="sendSumWA('${s.id}',${year},${month})">
-        📱 WhatsApp அனுப்பு
-      </button>
-      <button class="btn btn-sm" style="font-size:11px" onclick="previewSumWA('${s.id}',${year},${month})">
-        👁 முன்னோட்டம்
-      </button>
+      <button class="btn btn-wa btn-sm" style="flex:1;justify-content:center;font-size:11px"
+        onclick="sendSumWA('${s.id}',${year},${month})">📱 WhatsApp அனுப்பு</button>
+      <button class="btn btn-sm" style="font-size:11px"
+        onclick="previewSumWA('${s.id}',${year},${month})">👁 முன்னோட்டம்</button>
     </div>
   </div>`;
 }
@@ -6985,7 +7125,7 @@ function buildSumCard(item, year, month) {
 /* ── Star rating ── */
 function setSumStars(studentId, year, month, stars) {
   const data = loadSumData(studentId, year, month);
-  data.stars = data.stars === stars ? 0 : stars; // toggle off if same
+  data.stars = data.stars === stars ? 0 : stars;
   saveSumData(studentId, year, month, data);
   renderSummaryCards();
   showToast('⭐ ' + data.stars + ' நட்சத்திரம் சேமிக்கப்பட்டது');
@@ -6996,8 +7136,7 @@ function toggleSumActivity(studentId, year, month, actId) {
   const data = loadSumData(studentId, year, month);
   if (!data.activities) data.activities = [];
   const idx = data.activities.indexOf(actId);
-  if (idx === -1) data.activities.push(actId);
-  else data.activities.splice(idx, 1);
+  if (idx === -1) data.activities.push(actId); else data.activities.splice(idx, 1);
   saveSumData(studentId, year, month, data);
   renderSummaryCards();
 }
@@ -7005,36 +7144,62 @@ function toggleSumActivity(studentId, year, month, actId) {
 /* ── Save teacher note ── */
 function saveSumNote(studentId, year, month, note) {
   const data = loadSumData(studentId, year, month);
-  data.note = note;
+  data.note  = note;
   saveSumData(studentId, year, month, data);
   showToast('💾 குறிப்பு சேமிக்கப்பட்டது');
 }
 
-/* ── Build Tamil WhatsApp message ── */
+/* ════════════════════════════════════════════════════════
+   WHATSAPP MESSAGE BUILDER (Tamil only, fully auto)
+════════════════════════════════════════════════════════ */
 function buildSumWAMessage(s, year, month) {
-  const att = getStudentAttStats(s, year, month);
-  const sumD = loadSumData(s.id, year, month);
-  const ctr = CFG.CENTER;
+  const att       = getStudentAttStats(s, year, month);
+  const sumD      = loadSumData(s.id, year, month);
+  const marks     = getStudentMarksAuto(s.id);
+  const ctr       = CFG.CENTER;
   const monthName = TA_MONTHS[month];
 
-  // Star label
   const starLabels = ['—','மிகவும் குறைவு ❌','குறைவு ⚠️','சராசரி 👍','நல்லது 🌟','அருமை ⭐🌟'];
-  const starLabel = starLabels[sumD.stars] || '—';
+  const starLabel  = starLabels[sumD.stars] || '—';
+  const attStatus  = att.pct >= 90 ? 'மிக நல்லது ✅' : att.pct >= 75 ? 'சரி ⚠️' : 'குறைவு ❌';
+  const lateStatus = att.late === 0
+    ? 'எப்போதும் சரியான நேரம் ✅'
+    : att.late <= 2
+      ? att.late + ' நாட்கள் தாமதம் ⚠️'
+      : att.late + ' நாட்கள் அதிக தாமதம் ❌';
 
-  // Attendance status
-  const attStatus = att.pct >= 90 ? 'மிக நல்லது ✅' : att.pct >= 75 ? 'சரி ⚠️' : 'குறைவு ❌';
-  const lateStatus = att.late === 0 ? 'எப்போதும் சரியான நேரம் ✅' : att.late <= 2 ? att.late + ' நாட்கள் தாமதம் ⚠️' : att.late + ' நாட்கள் அதிக தாமதம் ❌';
+  const actLabels = SUMMARY_ACTIVITIES
+    .filter(a => (sumD.activities||[]).includes(a.id))
+    .map(a => a.emoji + ' ' + a.label);
+  const actsText  = actLabels.length > 0 ? actLabels.join(', ') : 'பதிவு செய்யப்படவில்லை';
 
-  // Activities in Tamil
-  const actLabels = SUMMARY_ACTIVITIES.filter(a => sumD.activities.includes(a.id)).map(a => a.emoji + ' ' + a.label);
-  const actsText = actLabels.length > 0 ? actLabels.join(', ') : 'எந்த சிறப்பு செயல்பாடும் இல்லை';
+  const ranked  = computeRanks(year, month);
+  const myRank  = ranked.find(r => r.student.id === s.id);
+  const rankTxt = myRank ? myRank.rank + ' / ' + ranked.length : '—';
 
-  // Ranked
-  const ranked = computeRanks(year, month);
-  const myRank = ranked.find(r => r.student.id === s.id);
-  const rankText = myRank ? myRank.rank + ' / ' + ranked.length : '—';
+  // Auto marks section
+  let marksSec = '';
+  if (marks.length > 0) {
+    const lines   = marks.map(m => {
+      if (m.absent) return `• ${m.examName} (${m.subject}): வரவில்லை`;
+      const pct   = Math.round((m.marks / m.maxMarks) * 100);
+      const grade = _gradeFromPct(pct);
+      return `• ${m.examName} (${m.subject}): *${m.marks}/${m.maxMarks}* — ${grade} (${pct}%)`;
+    });
+    const valid   = marks.filter(m => !m.absent && m.marks !== null && m.maxMarks > 0);
+    const avgPct  = valid.length > 0
+      ? Math.round(valid.reduce((a, m) => a + (m.marks / m.maxMarks * 100), 0) / valid.length)
+      : 0;
+    marksSec = `\n\n━━━━━━━━━━━━━━━━━━━\n📝 *தேர்வு மதிப்பெண்கள்*\n━━━━━━━━━━━━━━━━━━━\n`
+      + lines.join('\n')
+      + (avgPct > 0 ? `\n\n📊 சராசரி: *${avgPct}%*` : '');
+  }
 
   const note = sumD.note ? `\n\n📝 *ஆசிரியர் குறிப்பு:*\n${sumD.note}` : '';
+
+  const attBlock = att.total === 0
+    ? 'இந்த மாதம் வருகை தரவு இல்லை'
+    : `✅ வந்த நாட்கள்: *${att.present}*\n❌ வராத நாட்கள்: *${att.absent}*\n⚠️ தாமத நாட்கள்: *${att.late}*\n📊 மொத்த வருகை: *${att.pct}%* — ${attStatus}`;
 
   return `🙏 வணக்கம் *${s.parent}* அவர்களுக்கு,
 
@@ -7045,26 +7210,23 @@ function buildSumWAMessage(s, year, month) {
 📅 மாதம்: *${monthName} ${year}*
 
 👤 மாணவர்: *${s.name}*
-🎓 வகுப்பு: ${s.grade === 'KG' ? 'KG' : s.grade + ' ஆம் வகுப்பு'}
-🏅 வகுப்பு தரவரிசை: *${rankText}*
+🎓 வகுப்பு: ${s.grade==='KG'?'KG':s.grade+' ஆம் வகுப்பு'}
+🏅 வகுப்பு தரவரிசை: *${rankTxt}*
 
 ━━━━━━━━━━━━━━━━━━━
 📅 *வருகை நிலை*
 ━━━━━━━━━━━━━━━━━━━
-✅ வந்த நாட்கள்: *${att.present}*
-❌ வராத நாட்கள்: *${att.absent}*
-⚠️ தாமத நாட்கள்: *${att.late}*
-📊 மொத்த வருகை: *${att.pct}%* — ${attStatus}
+${attBlock}
 
 ━━━━━━━━━━━━━━━━━━━
 ⏰ *தாமத பகுப்பாய்வு*
 ━━━━━━━━━━━━━━━━━━━
-${lateStatus}
+${att.total===0?'தரவு இல்லை':lateStatus}${marksSec}
 
 ━━━━━━━━━━━━━━━━━━━
-🌟 *வகுப்பு கவனம் (ஆசிரியர் மதிப்பீடு)*
+🌟 *வகுப்பு கவனம்*
 ━━━━━━━━━━━━━━━━━━━
-${[1,2,3,4,5].map(n => n <= sumD.stars ? '⭐' : '☆').join('')} — ${starLabel}
+${[1,2,3,4,5].map(n=>n<=sumD.stars?'⭐':'☆').join('')} — ${starLabel}
 
 ━━━━━━━━━━━━━━━━━━━
 🏅 *வகுப்பு செயல்பாடுகள்*
@@ -7078,57 +7240,63 @@ ${actsText}${note}
 🏫 ${ctr.name}`;
 }
 
-/* ── WhatsApp send for one student ── */
+/* ── Send WA ── */
 function sendSumWA(studentId, year, month) {
   const s = students.find(x => x.id === studentId);
   if (!s) return showToast('மாணவர் கிடைக்கவில்லை');
-  const msg = buildSumWAMessage(s, year, month);
   const phone = s.phone || s.pphone || '';
   if (!phone) return showToast('⚠️ தொலைபேசி எண் இல்லை');
-  openWA(phone, msg);
+  openWA(phone, buildSumWAMessage(s, year, month));
   showToast('📱 WhatsApp திறக்கிறது…');
 }
 
-/* ── Preview WhatsApp message ── */
+/* ── Preview WA ── */
 function previewSumWA(studentId, year, month) {
   const s = students.find(x => x.id === studentId);
   if (!s) return showToast('மாணவர் கிடைக்கவில்லை');
-  const msg = buildSumWAMessage(s, year, month);
+  const msg  = buildSumWAMessage(s, year, month);
   const root = document.getElementById('modal-root');
   root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()">
     <div class="modal" style="max-width:480px">
       <div class="modal-title">📋 WhatsApp முன்னோட்டம் — ${s.name}</div>
-      <div style="background:#dcfce7;border-radius:10px;padding:13px;font-size:11.5px;line-height:1.75;white-space:pre-wrap;font-family:'Noto Sans Tamil',system-ui;color:#166534;max-height:420px;overflow-y:auto;border:.5px solid #bbf7d0">${msg}</div>
+      <div style="background:#dcfce7;border-radius:10px;padding:13px;font-size:11.5px;
+           line-height:1.75;white-space:pre-wrap;font-family:'Noto Sans Tamil',system-ui;
+           color:#166534;max-height:420px;overflow-y:auto;border:.5px solid #bbf7d0">${msg}</div>
       <div class="modal-foot">
-        <button class="btn btn-wa" onclick="sendSumWA('${s.id}',${year},${month});closeModal()" style="flex:1;justify-content:center">📱 WhatsApp அனுப்பு</button>
+        <button class="btn btn-wa" onclick="sendSumWA('${s.id}',${year},${month});closeModal()"
+          style="flex:1;justify-content:center">📱 WhatsApp அனுப்பு</button>
         <button class="btn" onclick="closeModal()">மூடு</button>
       </div>
     </div>
   </div>`;
 }
 
-/* ── Send to all students ── */
+/* ── Send all ── */
 function sendAllSummaryWA() {
   const year  = parseInt(document.getElementById('sum-year-sel').value);
   const month = parseInt(document.getElementById('sum-month-sel').value);
   const active = students.filter(s => s.status === 'active');
   if (active.length === 0) return showToast('மாணவர்கள் இல்லை');
-
-  // Build queue modal
   const root = document.getElementById('modal-root');
   root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()">
     <div class="modal" style="max-width:500px">
       <div class="modal-title">📱 அனைத்து மாணவர் WhatsApp வரிசை</div>
-      <div style="font-size:12px;color:var(--tx2);margin-bottom:12px">${TA_MONTHS[month]} ${year} — ${active.length} மாணவர்களுக்கு அனுப்பு</div>
+      <div style="font-size:12px;color:var(--tx2);margin-bottom:12px">
+        ${TA_MONTHS[month]} ${year} — ${active.length} மாணவர்களுக்கு அனுப்பு
+      </div>
       <div style="max-height:340px;overflow-y:auto;border:.5px solid var(--br);border-radius:10px">
-        ${active.map((s,i) => `<div class="wa-queue-item">
-          <div class="av" style="background:${s.color};width:28px;height:28px;font-size:11px;flex-shrink:0">${(s.name||'?')[0]}</div>
-          <div style="flex:1">
-            <div style="font-weight:600;font-size:12px">${s.name}</div>
-            <div style="font-size:10px;color:var(--tx3)">${s.phone||'எண் இல்லை'} · Gr.${s.grade}</div>
-          </div>
-          <button class="btn btn-wa btn-sm" onclick="sendSumWA('${s.id}',${year},${month})" style="font-size:10px">📱 அனுப்பு</button>
-        </div>`).join('')}
+        ${active.map(s => {
+          const att = getStudentAttStats(s, year, month);
+          const lbl = att.total > 0 ? att.pct + '% வருகை' : 'வருகை தரவு இல்லை';
+          return `<div class="wa-queue-item">
+            <div class="av" style="background:${s.color};width:28px;height:28px;font-size:11px;flex-shrink:0">${(s.name||'?')[0]}</div>
+            <div style="flex:1">
+              <div style="font-weight:600;font-size:12px">${s.name}</div>
+              <div style="font-size:10px;color:var(--tx3)">${s.phone||'எண் இல்லை'} · Gr.${s.grade} · ${lbl}</div>
+            </div>
+            <button class="btn btn-wa btn-sm" onclick="sendSumWA('${s.id}',${year},${month})" style="font-size:10px">📱</button>
+          </div>`;
+        }).join('')}
       </div>
       <div class="modal-foot">
         <button class="btn" onclick="closeModal()">மூடு</button>
@@ -7137,20 +7305,19 @@ function sendAllSummaryWA() {
   </div>`;
 }
 
-/* ── Filter cards by search ── */
+/* ── Filter ── */
 function filterSummaryCards(query) {
   const q = query.toLowerCase();
   document.querySelectorAll('#sum-cards-grid > .sum-card').forEach(card => {
-    const name = card.querySelector('[style*="font-weight:700"]');
-    if (!name) return;
-    card.style.display = name.textContent.toLowerCase().includes(q) ? '' : 'none';
+    const nameEl = card.querySelector('[style*="font-weight:700"]');
+    if (!nameEl) return;
+    card.style.display = nameEl.textContent.toLowerCase().includes(q) ? '' : 'none';
   });
 }
 
 /* ── Init Summary Page ── */
 function initSummaryPage() {
-  // Set current month/year as default
-  const now = new Date();
+  const now  = new Date();
   const mSel = document.getElementById('sum-month-sel');
   const ySel = document.getElementById('sum-year-sel');
   if (mSel) mSel.value = now.getMonth();
@@ -7160,14 +7327,11 @@ function initSummaryPage() {
     else {
       const opt = document.createElement('option');
       opt.value = yr; opt.textContent = yr;
-      ySel.appendChild(opt);
-      ySel.value = yr;
+      ySel.appendChild(opt); ySel.value = yr;
     }
   }
-
-  // Populate batch selector
   const bSel = document.getElementById('sum-batch-sel');
-  if (bSel && batches) {
+  if (bSel && typeof batches !== 'undefined') {
     batches.forEach(b => {
       const opt = document.createElement('option');
       opt.value = b.name; opt.textContent = b.name;
@@ -7177,14 +7341,6 @@ function initSummaryPage() {
   renderSummaryCards();
 }
 
-// Re-render when navigating to summary page
-const _origNavTo = window.navTo || function(){};
-// Patch navTo to refresh summary cards when summary page opens
-document.addEventListener('DOMContentLoaded', function() {
-  document.querySelectorAll('.nav-item[data-page="summary"]').forEach(btn => {
-    btn.addEventListener('click', () => setTimeout(renderSummaryCards, 100));
-  });
-});
 </script>
 
 </body>

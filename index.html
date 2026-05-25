@@ -1068,6 +1068,22 @@ tbody tr:hover td{background:var(--bg)}
   </div>
   <div id="ai-predict-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-bottom:16px"></div>
 
+  <!-- AI Study Planner Section -->
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;margin-top:4px">
+    <div style="font-size:11px;font-weight:700;color:#0369a1;text-transform:uppercase;letter-spacing:.06em">📚 AI Study Planner</div>
+    <div style="flex:1;height:.5px;background:#bae6fd"></div>
+    <span style="font-size:9px;background:#e0f2fe;color:#0369a1;padding:2px 8px;border-radius:8px;font-weight:700">தனிப்பட்ட அட்டவணை</span>
+  </div>
+  <div id="ai-study-planner-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-bottom:16px"></div>
+
+  <!-- AI Growth Forecast Section -->
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;margin-top:4px">
+    <div style="font-size:11px;font-weight:700;color:#065f46;text-transform:uppercase;letter-spacing:.06em">📈 AI Growth Forecast</div>
+    <div style="flex:1;height:.5px;background:#a7f3d0"></div>
+    <span style="font-size:9px;background:#d1fae5;color:#065f46;padding:2px 8px;border-radius:8px;font-weight:700">வளர்ச்சி கணிப்பு</span>
+  </div>
+  <div id="ai-growth-forecast-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-bottom:16px"></div>
+
   <!-- Report Panel (hidden until a module is run) -->
   <div id="ai-report-panel" style="display:none">
     <!-- Report header -->
@@ -5052,7 +5068,539 @@ function saveAIKey(){}
 function toggleAIKeyVis(){}
 function updateAIHint(){}
 function testAI(){}
-function initAI(){renderAICards();renderPredictCards();}
+
+/* ══════════════════════════════════════════════════════════
+   AI STUDY PLANNER
+   Auto timetable: weak subjects · exam dates · attendance · performance
+══════════════════════════════════════════════════════════ */
+
+const _SP_SUBJ_EN = ['Tamil','English','Maths','Science','Social Science'];
+const _SP_SUBJ_TA = ['தமிழ்','ஆங்கிலம்','கணிதம்','அறிவியல்','சமூக அறிவியல்'];
+const _SP_DAYS_EN = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+const _SP_DAYS_TA = ['திங்கள்','செவ்வாய்','புதன்','வியாழன்','வெள்ளி','சனி','ஞாயிறு'];
+
+/* Returns subjects sorted weakest-first from saved marks */
+function _spWeakSubjects(studentId) {
+  const marks = (typeof getStudentMarksAuto === 'function') ? getStudentMarksAuto(studentId) : [];
+  const map = {};
+  marks.forEach(m => {
+    if (!m.absent && m.marks !== null && m.maxMarks > 0 && m.subject) {
+      if (!map[m.subject]) map[m.subject] = [];
+      map[m.subject].push((m.marks / m.maxMarks) * 100);
+    }
+  });
+  return Object.entries(map)
+    .map(([sub, pcts]) => ({ sub, avg: Math.round(pcts.reduce((a,b)=>a+b,0)/pcts.length) }))
+    .sort((a,b) => a.avg - b.avg);
+}
+
+/* Returns exams within next 30 days */
+function _spUpcomingExams() {
+  const now = new Date();
+  return (exams||[]).filter(e => {
+    try { const diff=(new Date(e.date)-now)/(864e5); return diff>=0&&diff<=30; }
+    catch(err){return false;}
+  }).sort((a,b)=>new Date(a.date)-new Date(b.date));
+}
+
+/* Build one-day plan for a student, dayOffset=0 means today */
+function _spBuildDayPlan(student, dayOffset) {
+  const ta      = lang==='ta';
+  const weak    = _spWeakSubjects(student.id);
+  const upcoming= _spUpcomingExams();
+  const att     = (typeof getStudentAttStats==='function')
+    ? getStudentAttStats(student, new Date().getFullYear(), new Date().getMonth())
+    : {pct:75,total:0};
+  const marks   = (typeof getStudentMarksAuto==='function') ? getStudentMarksAuto(student.id) : [];
+  const validM  = marks.filter(m=>!m.absent&&m.marks!==null&&m.maxMarks>0);
+  const avgPct  = validM.length>0
+    ? Math.round(validM.reduce((a,m)=>a+(m.marks/m.maxMarks*100),0)/validM.length) : 60;
+
+  const today = new Date();
+  today.setDate(today.getDate() + dayOffset);
+  const di = today.getDay(); // 0=Sun
+  const dayName = ta ? _SP_DAYS_TA[di===0?6:di-1] : _SP_DAYS_EN[di===0?6:di-1];
+
+  // Total minutes based on avg performance
+  const totalMins = avgPct<40?180 : avgPct<60?150 : avgPct<75?120 : 90;
+  let remaining   = totalMins;
+  const slots     = [];
+
+  // 1. Urgent exam boost (within 7 days)
+  const urgentExam = upcoming.find(e=>{
+    const diff=(new Date(e.date)-today)/(864e5);
+    return diff>=0&&diff<=7;
+  });
+  if (urgentExam && remaining>0) {
+    const mins = Math.min(60, Math.round(remaining*0.4));
+    slots.push({subject:urgentExam.subject||(ta?'தேர்வு பாடம்':'Exam Subject'),
+      mins, tag:ta?'🚨 தேர்வு முன்':'🚨 Pre-Exam', color:'#dc2626', bg:'#fee2e2'});
+    remaining -= mins;
+  }
+
+  // 2. Weak subjects
+  const wColors=[{c:'#d97706',bg:'#fef3c7'},{c:'#7c3aed',bg:'#ede9fe'},{c:'#0891b2',bg:'#e0f2fe'}];
+  weak.slice(0,2).forEach((ws,i)=>{
+    if(remaining<=0) return;
+    const mins=Math.min(45,Math.max(20,Math.round(remaining*(ws.avg<40?0.35:ws.avg<60?0.28:0.22))));
+    slots.push({subject:ws.sub, mins,
+      tag:ta?(ws.avg<40?'❗ மிக பலவீனம்':'⚠️ பலவீனம்'):(ws.avg<40?'❗ Very Weak':'⚠️ Weak'),
+      color:wColors[i].c, bg:wColors[i].bg});
+    remaining-=mins;
+  });
+
+  // 3. Daily rotation subject
+  if(remaining>=20){
+    const idx=di===0?4:((di-1)%_SP_SUBJ_EN.length);
+    const sub=ta?_SP_SUBJ_TA[idx]:_SP_SUBJ_EN[idx];
+    const dup=slots.find(s=>s.subject===sub);
+    if(dup) dup.mins+=remaining;
+    else slots.push({subject:sub,mins:remaining,
+      tag:ta?'📖 அன்றாட பாடம்':'📖 Daily Topic',color:'#16a34a',bg:'#dcfce7'});
+  }
+
+  const breakMins=Math.floor(totalMins/45)*5;
+  return {dayName, today, slots, totalMins, breakMins, avgPct, att, urgentExam, weak};
+}
+
+/* ── Render all Study Planner cards ── */
+function renderStudyPlannerCards() {
+  const grid=document.getElementById('ai-study-planner-cards');
+  if(!grid) return;
+  const ta=lang==='ta';
+  const active=students.filter(s=>s&&s.name&&s.status==='active');
+
+  if(active.length===0){
+    grid.innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:32px;color:var(--tx3);
+      font-size:13px;background:var(--card);border-radius:12px;border:.5px solid var(--br)">
+      ${ta?'மாணவர்களை சேர்த்த பிறகு AI Study Planner தோன்றும்':'Add students to see AI Study Planner'}</div>`;
+    return;
+  }
+
+  grid.innerHTML = active.slice(0,6).map(s=>{
+    const plan=_spBuildDayPlan(s,0);
+
+    const slotsHtml=plan.slots.map(sl=>{
+      const pct=Math.round((sl.mins/(plan.totalMins||1))*100);
+      return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <div style="width:32px;height:32px;border-radius:8px;background:${sl.bg};display:flex;
+          align-items:center;justify-content:center;font-size:13px;flex-shrink:0">${sl.tag.split(' ')[0]}</div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
+            <span style="font-size:11px;font-weight:600;color:var(--tx)">${sl.subject}</span>
+            <span style="font-size:10px;font-weight:700;color:${sl.color}">${sl.mins} ${ta?'நிமிடம்':'min'}</span>
+          </div>
+          <div style="height:4px;background:var(--bg);border-radius:2px;overflow:hidden">
+            <div style="height:100%;width:${pct}%;background:${sl.color};border-radius:2px"></div>
+          </div>
+          <div style="font-size:9px;color:var(--tx3);margin-top:2px">${sl.tag}</div>
+        </div>
+      </div>`;
+    }).join('');
+
+    const noMark=plan.avgPct===60&&plan.weak.length===0
+      ? `<div style="font-size:10px;color:var(--tx3);margin-top:4px;font-style:italic">
+          ${ta?'மதிப்பெண் சேர்த்த பிறகு திட்டம் துல்லியமாகும்':'Add marks for a more accurate plan'}</div>` : '';
+
+    return `<div class="sum-card">
+      <div class="sum-card-header">
+        <div class="av" style="background:${s.color};width:36px;height:36px;font-size:14px">${(s.name||'?')[0]}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:12px;font-weight:700;color:var(--tx)">${s.name}</div>
+          <div style="font-size:10px;color:var(--tx3)">${ta?'வகுப்பு':'Grade'} ${s.grade} · ${plan.dayName}</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-size:16px;font-weight:800;color:#0369a1">${plan.totalMins}</div>
+          <div style="font-size:9px;color:var(--tx3)">${ta?'நிமிடம்':'min'}</div>
+        </div>
+      </div>
+      <div class="sum-section">
+        <div class="sum-section-title" style="justify-content:space-between">
+          <span>📅 ${ta?'இன்றைய படிப்பு திட்டம்':"Today's Study Plan"}</span>
+          <span style="font-size:9px;background:#e0f2fe;color:#0369a1;padding:1px 6px;border-radius:6px;font-weight:700">AUTO</span>
+        </div>
+        ${slotsHtml}
+        ${plan.breakMins>0?`<div style="font-size:10px;color:var(--tx3);margin-top:4px;padding:4px 8px;background:var(--bg);border-radius:6px">
+          ☕ ${ta?'இடைவேளை':'Break'}: ${plan.breakMins} ${ta?'நிமிடம் (45 நிமிட படிப்புக்கு ஒரு முறை)':'min (every 45 min)'}</div>`:''}
+        ${plan.urgentExam?`<div style="margin-top:6px;padding:5px 9px;border-radius:7px;background:#fee2e2;font-size:10px;font-weight:600;color:#dc2626">
+          🚨 ${ta?'தேர்வு:':'Exam:'} ${plan.urgentExam.name} — ${plan.urgentExam.date}</div>`:''}
+        ${noMark}
+      </div>
+      <div class="sum-card-foot" style="gap:6px">
+        <button class="btn btn-sm" style="flex:1;justify-content:center;font-size:10px;background:#0369a1;color:#fff;border-color:#0369a1"
+          onclick="runStudyPlanReport('${s.id}')">📋 ${ta?'7 நாள் திட்டம்':'7-Day Plan'}</button>
+        <button class="btn btn-sm" style="font-size:10px"
+          onclick="sendStudyPlanWA('${s.id}')">📱 WA</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  if(active.length>6){
+    grid.innerHTML+=`<div style="display:flex;align-items:center;justify-content:center;
+      background:var(--card);border:.5px solid var(--br);border-radius:12px;padding:20px;
+      color:#0369a1;font-size:12px;font-weight:600">
+      +${active.length-6} ${lang==='ta'?'மாணவர்கள் — வார திட்டம் காண':'more students'}</div>`;
+  }
+}
+
+/* ── 7-Day report ── */
+function runStudyPlanReport(studentId) {
+  const s=students.find(x=>x.id===studentId);
+  if(!s) return showToast('மாணவர் கிடைக்கவில்லை');
+  const ta=lang==='ta';
+  const panel=document.getElementById('ai-report-panel');
+  const loading=document.getElementById('ai-loading');
+  const output=document.getElementById('ai-output');
+  if(!panel) return;
+  const titleEl=document.getElementById('ai-report-title');
+  const subEl=document.getElementById('ai-report-sub');
+  const iconEl=document.getElementById('ai-report-icon');
+  if(titleEl) titleEl.textContent=ta?`${s.name} — 7 நாள் படிப்பு திட்டம்`:`${s.name} — 7-Day Study Plan`;
+  if(subEl)   subEl.textContent=ta?'பலவீன பாடம், தேர்வு தேதி & வருகை அடிப்படையில்':'Based on weak subjects, exams & attendance';
+  if(iconEl){ iconEl.textContent='📚'; iconEl.style.background='#e0f2fe'; }
+  panel.style.display='block'; loading.style.display='block'; output.style.display='none';
+  panel.scrollIntoView({behavior:'smooth',block:'start'});
+  setTimeout(()=>{
+    const result=_spBuildReport(s,ta);
+    loading.style.display='none'; output.style.display='block'; output.textContent='';
+    let i=0; const iv=setInterval(()=>{ output.textContent+=result[i++]; if(i>=result.length) clearInterval(iv); },5);
+  },500);
+}
+
+function _spBuildReport(student, ta) {
+  const ctr=CFG.CENTER.name||'Academy';
+  const sep='═'.repeat(44); const dash='─'.repeat(44);
+  const weak=_spWeakSubjects(student.id);
+  const upcoming=_spUpcomingExams();
+  const att=(typeof getStudentAttStats==='function')
+    ? getStudentAttStats(student,new Date().getFullYear(),new Date().getMonth()) : {pct:75,total:0};
+  const marks=(typeof getStudentMarksAuto==='function')?getStudentMarksAuto(student.id):[];
+  const validM=marks.filter(m=>!m.absent&&m.marks!==null&&m.maxMarks>0);
+  const avgPct=validM.length>0
+    ? Math.round(validM.reduce((a,m)=>a+(m.marks/m.maxMarks*100),0)/validM.length):60;
+
+  let hdr=ta
+    ?`📚 ${ctr} — 7 நாள் படிப்பு திட்டம்\n${sep}\nமாணவர்: ${student.name} | வகுப்பு: ${student.grade}\nவருகை: ${att.total>0?att.pct+'%':'தரவு இல்லை'} | சராசரி: ${avgPct}%\n\n`
+    :`📚 ${ctr} — 7-Day Personalised Study Plan\n${sep}\nStudent: ${student.name} | Grade: ${student.grade}\nAttendance: ${att.total>0?att.pct+'%':'no data'} | Avg: ${avgPct}%\n\n`;
+
+  let weakSec=ta?'⚠️ பலவீன பாடங்கள்:\n':'⚠️ Weak Subjects:\n';
+  if(weak.length>0){
+    weak.forEach(w=>{ weakSec+=`  • ${w.sub}: ${w.avg}% ${w.avg<40?(ta?'(அவசர கவனிப்பு)':'(urgent!)'):(ta?'(மேம்படுத்தல்)':'(improve)')}\n`; });
+  } else { weakSec+=ta?'  — மதிப்பெண் தரவு இல்லை\n':'  — No marks data\n'; }
+
+  let examSec=ta?'\n📅 வரவிருக்கும் தேர்வுகள்:\n':'\n📅 Upcoming Exams:\n';
+  if(upcoming.length>0){
+    upcoming.slice(0,3).forEach(e=>{
+      const diff=Math.round((new Date(e.date)-new Date())/(864e5));
+      examSec+=`  • ${e.name} (${e.subject}) — ${e.date}${diff>=0?' ['+diff+(ta?' நாட்களில்':' days away')+']':''}\n`;
+    });
+  } else { examSec+=ta?'  — தேர்வுகள் இல்லை\n':'  — No upcoming exams\n'; }
+
+  let planSec=ta?`\n${dash}\n📅 7 நாள் அட்டவணை\n${dash}\n`:`\n${dash}\n📅 7-Day Schedule\n${dash}\n`;
+  for(let d=0;d<7;d++){
+    const p=_spBuildDayPlan(student,d);
+    const dt=p.today.toLocaleDateString('en-IN',{day:'2-digit',month:'short'});
+    const slots=p.slots.map(sl=>`${sl.subject} ${sl.mins}${ta?'நி':'m'}`).join(' → ');
+    planSec+=`${p.dayName.padEnd(12)} ${dt}  |  ${slots}\n`;
+  }
+
+  const tips=ta
+    ?`\n\n${dash}\n💡 படிப்பு குறிப்புகள்:\n${dash}\n1. ஒவ்வொரு 45 நிமிடத்திற்கும் 5 நிமிட இடைவேளை\n2. பலவீன பாடங்களை முதலில் படிக்கவும்\n3. Mobile phone வேறு அறையில் வையுங்கள்\n4. ஒவ்வொரு நாளும் 10 நிமிட முந்தைய பாடம் மீளாய்வு\n5. தேர்வுக்கு 2 நாள் முன் — revision மட்டும்`
+    :`\n\n${dash}\n💡 Study Tips:\n${dash}\n1. Take a 5-min break every 45 minutes (Pomodoro method)\n2. Study weakest subjects first when focus is highest\n3. Keep phone away during study sessions\n4. First 10 min each day: revise yesterday's lesson\n5. 2 days before exam: full revision only — no new topics`;
+
+  return hdr+weakSec+examSec+planSec+tips;
+}
+
+/* ── WA ── */
+function sendStudyPlanWA(studentId) {
+  const s=students.find(x=>x.id===studentId);
+  if(!s) return showToast('மாணவர் கிடைக்கவில்லை');
+  const phone=s.phone||s.pphone||'';
+  if(!phone) return showToast('⚠️ தொலைபேசி எண் இல்லை');
+  const ta=lang==='ta';
+  const plan=_spBuildDayPlan(s,0);
+  const ctr=CFG.CENTER.name||'Academy';
+  const slotStr=plan.slots.map(sl=>`• ${sl.subject}: ${sl.mins} ${ta?'நிமிடம்':'min'} — ${sl.tag}`).join('\n');
+  const msg=ta
+    ?`🙏 வணக்கம் *${s.parent}* அவர்களுக்கு,\n\n📚 *${s.name}* — இன்றைய AI படிப்பு திட்டம்\n🏫 *${ctr}*\n\n${slotStr}\n\n☕ 45 நிமிடத்திற்கு ஒரு முறை 5 நிமிட இடைவேளை\nமொத்தம்: *${plan.totalMins} நிமிடம்*\n\n📞 ${CFG.CENTER.phone}`
+    :`Dear *${s.parent}*, here is *${s.name}*'s AI Study Plan for today:\n🏫 *${ctr}*\n\n${slotStr}\n\n☕ 5-min break every 45 min\nTotal: *${plan.totalMins} min*\n\n📞 ${CFG.CENTER.phone}`;
+  openWA(phone, msg);
+  showToast('📱 Study Plan WhatsApp திறக்கிறது…');
+}
+
+
+/* ══════════════════════════════════════════════════════════
+   AI GROWTH FORECAST
+   Predicts: future marks · board exam score · rank probability
+══════════════════════════════════════════════════════════ */
+
+function _gfGrade(pct){
+  return pct>=91?'A+':pct>=81?'A':pct>=71?'B+':pct>=61?'B':pct>=51?'C':pct>=35?'D':'F';
+}
+
+/* Compute all forecast numbers for one student */
+function _gfCompute(student) {
+  const marks  =(typeof getStudentMarksAuto==='function')?getStudentMarksAuto(student.id):[];
+  const validM =marks.filter(m=>!m.absent&&m.marks!==null&&m.maxMarks>0);
+  const att    =(typeof getStudentAttStats==='function')
+    ? getStudentAttStats(student,new Date().getFullYear(),new Date().getMonth()) : {pct:75,total:0};
+  const ranked =(typeof computeRanks==='function')
+    ? computeRanks(new Date().getFullYear(),new Date().getMonth()) : [];
+  const myRank =ranked.find(r=>r.student.id===student.id);
+  const totalSt=ranked.length||students.filter(s=>s.status==='active').length;
+
+  const avgPct=validM.length>0
+    ? validM.reduce((a,m)=>a+(m.marks/m.maxMarks*100),0)/validM.length : 60;
+
+  // Trend: first-half vs second-half
+  let trend=0;
+  if(validM.length>=2){
+    const h=Math.floor(validM.length/2);
+    const first=validM.slice(0,h).reduce((a,m)=>a+(m.marks/m.maxMarks*100),0)/h;
+    const second=validM.slice(h).reduce((a,m)=>a+(m.marks/m.maxMarks*100),0)/(validM.length-h);
+    trend=second-first;
+  }
+
+  const attFactor=att.total>0?(att.pct/100):0.75;
+  const trendBoost=Math.max(-10,Math.min(10,trend*0.5));
+  const predictedAvg=Math.min(98,Math.max(20,avgPct+trendBoost+(attFactor-0.75)*10));
+  const boardPct=Math.min(97,predictedAvg*attFactor*1.02);
+  const boardScore=Math.round(boardPct*5);
+  const boardGrade=_gfGrade(boardPct);
+  const predictedRank=myRank?Math.max(1,Math.round(myRank.rank*(1-trendBoost/100))):Math.round(totalSt*0.4);
+
+  // Subject map
+  const subMap={};
+  validM.forEach(m=>{
+    const sub=m.subject||'General';
+    if(!subMap[sub]) subMap[sub]=[];
+    subMap[sub].push(m.marks/m.maxMarks*100);
+  });
+
+  return {
+    avgPct:Math.round(avgPct), predictedAvg:Math.round(predictedAvg),
+    trend:Math.round(trend*10)/10, boardScore, boardPct:Math.round(boardPct),
+    boardGrade, predictedRank, totalStudents:totalSt,
+    currentRank:myRank?myRank.rank:null, attFactor:Math.round(attFactor*100),
+    subMap, hasData:validM.length>0,
+  };
+}
+
+/* ── Render Growth Forecast cards ── */
+function renderGrowthForecastCards() {
+  const grid=document.getElementById('ai-growth-forecast-cards');
+  if(!grid) return;
+  const ta=lang==='ta';
+  const active=students.filter(s=>s&&s.name&&s.status==='active');
+
+  if(active.length===0){
+    grid.innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:32px;color:var(--tx3);
+      font-size:13px;background:var(--card);border-radius:12px;border:.5px solid var(--br)">
+      ${ta?'மாணவர்களை சேர்த்த பிறகு AI Growth Forecast தோன்றும்':'Add students to see AI Growth Forecast'}</div>`;
+    return;
+  }
+
+  const bar=(score,max,color)=>{
+    const pct=Math.round((score/max)*100);
+    return `<div style="height:5px;background:var(--bg);border-radius:3px;overflow:hidden;margin-top:3px">
+      <div style="height:100%;width:${pct}%;background:${color};border-radius:3px;transition:width .6s"></div>
+    </div>`;
+  };
+
+  grid.innerHTML=active.slice(0,6).map(s=>{
+    const fc=_gfCompute(s);
+    const trendIcon =fc.trend>2?'📈':fc.trend<-2?'📉':'➡️';
+    const trendColor=fc.trend>2?'#16a34a':fc.trend<-2?'#dc2626':'#ca8a04';
+    const trendLabel=fc.trend>2?(ta?'முன்னேற்றம்':'Improving'):fc.trend<-2?(ta?'சரிவு':'Declining'):(ta?'நிலையான':'Stable');
+    const noData=!fc.hasData
+      ?`<div style="font-size:10px;color:var(--tx3);text-align:center;padding:6px;font-style:italic">
+          ${ta?'மதிப்பெண்கள் சேர்த்த பிறகு துல்லியமான கணிப்பு கிடைக்கும்':'Add marks data for accurate forecast'}</div>`:''
+
+    return `<div class="sum-card">
+      <div class="sum-card-header" style="background:linear-gradient(135deg,#064e3b10,#065f4610)">
+        <div class="av" style="background:${s.color};width:36px;height:36px;font-size:14px">${(s.name||'?')[0]}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:12px;font-weight:700;color:var(--tx)">${s.name}</div>
+          <div style="font-size:10px;color:var(--tx3)">${ta?'வகுப்பு':'Grade'} ${s.grade}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:20px">${trendIcon}</div>
+          <div style="font-size:9px;font-weight:700;color:${trendColor}">${trendLabel}</div>
+        </div>
+      </div>
+
+      <div class="sum-section">
+        <div class="sum-section-title">📊 ${ta?'தற்போதைய நிலை':'Current Performance'}</div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--tx2);margin-bottom:3px">
+          <span>${ta?'சராசரி மதிப்பெண்':'Avg Marks'}</span>
+          <b style="color:var(--tx)">${fc.avgPct}%</b>
+        </div>
+        ${bar(fc.avgPct,100,'#2563eb')}
+        ${noData}
+      </div>
+
+      <div class="sum-section">
+        <div class="sum-section-title">🔮 ${ta?'அடுத்த மாத கணிப்பு':'Next Month Forecast'}</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <span style="font-size:11px;color:var(--tx2)">${ta?'கணிக்கப்பட்ட சராசரி':'Predicted Average'}</span>
+          <span style="font-size:15px;font-weight:800;color:${fc.predictedAvg>=fc.avgPct?'#16a34a':'#dc2626'}">${fc.predictedAvg}%</span>
+        </div>
+        ${bar(fc.predictedAvg,100,fc.predictedAvg>=fc.avgPct?'#16a34a':'#dc2626')}
+        <div style="font-size:10px;color:${trendColor};margin-top:4px;font-weight:600">
+          ${trendIcon} ${fc.trend>0?'+':''}${fc.trend}% ${ta?'போக்கு':'trend'} · ${fc.attFactor}% ${ta?'வருகை காரணி':'att factor'}
+        </div>
+      </div>
+
+      <div class="sum-section" style="background:linear-gradient(135deg,#064e3b08,#065f4608);border-radius:8px;padding:10px 12px">
+        <div class="sum-section-title">🏆 ${ta?'Public Exam கணிப்பு':'Board Exam Forecast'}</div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="text-align:center">
+            <div style="font-size:24px;font-weight:900;color:#065f46">${fc.boardScore}</div>
+            <div style="font-size:9px;color:var(--tx3)">/500</div>
+          </div>
+          <div style="flex:1">
+            ${bar(fc.boardScore,500,'#065f46')}
+            <div style="display:flex;justify-content:space-between;margin-top:4px">
+              <span style="font-size:10px;font-weight:700;padding:1px 7px;border-radius:8px;background:#d1fae5;color:#065f46">${ta?'தரம்':'Grade'}: ${fc.boardGrade}</span>
+              <span style="font-size:10px;color:var(--tx3)">${fc.boardPct}%</span>
+            </div>
+          </div>
+        </div>
+        <div style="font-size:10px;color:var(--tx3);margin-top:6px;font-style:italic">
+          "${ta?'எதிர்பார்க்கப்படும் Public Exam மதிப்பெண்':'Expected board exam score'}: ${fc.boardScore}/500"
+        </div>
+      </div>
+
+      <div class="sum-section">
+        <div class="sum-section-title">🥇 ${ta?'தரவரிசை கணிப்பு':'Rank Probability'}</div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div style="font-size:10px;color:var(--tx3)">${ta?'தற்போது':'Current'}</div>
+            <div style="font-size:18px;font-weight:800;color:var(--tx)">#${fc.currentRank||'—'} <span style="font-size:10px;color:var(--tx3)">/ ${fc.totalStudents}</span></div>
+          </div>
+          <div style="font-size:20px;color:var(--tx3)">→</div>
+          <div style="text-align:right">
+            <div style="font-size:10px;color:var(--tx3)">${ta?'கணிப்பு':'Predicted'}</div>
+            <div style="font-size:18px;font-weight:800;color:${fc.predictedRank<=(fc.currentRank||999)?'#16a34a':'#dc2626'}">#${fc.predictedRank} <span style="font-size:10px;color:var(--tx3)">/ ${fc.totalStudents}</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sum-card-foot">
+        <button class="btn btn-sm" style="flex:1;justify-content:center;font-size:10px;background:#065f46;color:#fff;border-color:#065f46"
+          onclick="runGrowthForecastReport('${s.id}')">📈 ${ta?'முழு அறிக்கை':'Full Forecast'}</button>
+        <button class="btn btn-sm" style="font-size:10px"
+          onclick="sendGrowthWA('${s.id}')">📱 WA</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  if(active.length>6){
+    grid.innerHTML+=`<div style="display:flex;align-items:center;justify-content:center;
+      background:var(--card);border:.5px solid var(--br);border-radius:12px;padding:20px;
+      color:#065f46;font-size:12px;font-weight:600">
+      +${active.length-6} ${lang==='ta'?'மாணவர்கள் மேலும் உள்ளனர்':'more students'}</div>`;
+  }
+}
+
+/* ── Full growth report ── */
+function runGrowthForecastReport(studentId) {
+  const s=students.find(x=>x.id===studentId);
+  if(!s) return showToast('மாணவர் கிடைக்கவில்லை');
+  const ta=lang==='ta';
+  const panel=document.getElementById('ai-report-panel');
+  const loading=document.getElementById('ai-loading');
+  const output=document.getElementById('ai-output');
+  if(!panel) return;
+  const titleEl=document.getElementById('ai-report-title');
+  const subEl=document.getElementById('ai-report-sub');
+  const iconEl=document.getElementById('ai-report-icon');
+  if(titleEl) titleEl.textContent=ta?`${s.name} — வளர்ச்சி கணிப்பு`:`${s.name} — Growth Forecast`;
+  if(subEl)   subEl.textContent=ta?'தற்போதைய மதிப்பெண், வருகை & போக்கு அடிப்படையில்':'Based on current marks, attendance & trend';
+  if(iconEl){ iconEl.textContent='📈'; iconEl.style.background='#d1fae5'; }
+  panel.style.display='block'; loading.style.display='block'; output.style.display='none';
+  panel.scrollIntoView({behavior:'smooth',block:'start'});
+  setTimeout(()=>{
+    const result=_gfBuildReport(s,ta);
+    loading.style.display='none'; output.style.display='block'; output.textContent='';
+    let i=0; const iv=setInterval(()=>{ output.textContent+=result[i++]; if(i>=result.length) clearInterval(iv); },5);
+  },600);
+}
+
+function _gfBuildReport(student,ta){
+  const ctr=CFG.CENTER.name||'Academy';
+  const sep='═'.repeat(44); const dash='─'.repeat(44);
+  const fc=_gfCompute(student);
+  const att=(typeof getStudentAttStats==='function')
+    ? getStudentAttStats(student,new Date().getFullYear(),new Date().getMonth()) : {pct:75,total:0};
+
+  const trendArrow=fc.trend>2?(ta?'↑ உயர்வு':'↑ Improving'):fc.trend<-2?(ta?'↓ சரிவு':'↓ Declining'):(ta?'→ நிலையான':'→ Stable');
+
+  // Subject-wise
+  let subSec=ta?`\n${dash}\n📊 பாடம் வாரியான கணிப்பு:\n${dash}\n`:`\n${dash}\n📊 Subject-wise Forecast:\n${dash}\n`;
+  const subEntries=Object.entries(fc.subMap);
+  if(subEntries.length>0){
+    subEntries.forEach(([sub,pcts])=>{
+      const avg=Math.round(pcts.reduce((a,b)=>a+b,0)/pcts.length);
+      const boost=fc.trend>0?Math.round(fc.trend*0.4):Math.round(fc.trend*0.3);
+      const pred=Math.min(98,Math.max(20,avg+boost));
+      const gr=_gfGrade(pred);
+      const bl='█'.repeat(Math.round(pred/10))+'░'.repeat(10-Math.round(pred/10));
+      subSec+=`  ${sub.padEnd(16)} ${ta?'இப்போது':'Now'}: ${avg}% → ${ta?'கணிப்பு':'Pred'}: ${pred}% [${gr}]  ${bl}\n`;
+    });
+  } else { subSec+=ta?'  — மதிப்பெண் தரவு இல்லை\n':'  — No marks data\n'; }
+
+  // 3-month projection
+  let projSec=ta?`\n${dash}\n📅 3 மாத கணிப்பு:\n${dash}\n`:`\n${dash}\n📅 3-Month Projection:\n${dash}\n`;
+  const now=new Date();
+  for(let m=1;m<=3;m++){
+    const d=new Date(now.getFullYear(),now.getMonth()+m,1);
+    const mon=d.toLocaleDateString('en-IN',{month:'long'});
+    const pred=Math.min(98,Math.max(20,fc.avgPct+(fc.trend*m*0.4)+(fc.attFactor-75)*0.1*m));
+    projSec+=`  ${mon.padEnd(12)} → ${Math.round(pred)}% [${_gfGrade(pred)}]\n`;
+  }
+
+  // Milestones
+  let ms=ta?`\n${dash}\n🏆 மைல்கல் இலக்குகள்:\n${dash}\n`:`\n${dash}\n🏆 Score Milestones:\n${dash}\n`;
+  [[60,'C'],[70,'B'],[80,'A'],[90,'A+'],[95,'Distinction']].forEach(([t,label])=>{
+    const done=fc.avgPct>=t;
+    const mths=done?0:Math.max(1,Math.ceil((t-fc.avgPct)/Math.max(0.5,Math.abs(fc.trend))));
+    ms+=done
+      ?`  ✅ ${label} (${t}%) — ${ta?'அடைந்தனர்':'Achieved!'}\n`
+      :`  ⭕ ${label} (${t}%) — ${ta?'அனுமான':'Est'}: ${mths} ${ta?'மாதம்':'month(s)'}\n`;
+  });
+
+  // Action
+  const action=ta
+    ?`\n${dash}\n📋 வளர்ச்சி திட்டம்:\n${dash}\n1. ${fc.trend>=0?'நல்ல போக்கு — தொடர்ந்து முயற்சிக்கவும்!':'⚠️ மதிப்பெண் சரிவு — கூடுதல் கவனிப்பு தேவை'}\n2. வருகை ${fc.attFactor}% → ${fc.attFactor<85?'85% மேல் வர வேண்டும்':'மிகவும் நல்லது!'}\n3. பலவீன பாடங்களை தினமும் 20 கூடுதல் நிமிடம் படிக்கவும்\n4. வாராந்திர model test மூலம் கண்காணிக்கவும்\n5. Public Exam இலக்கு: ${fc.boardScore+20}/500`
+    :`\n${dash}\n📋 Growth Action Plan:\n${dash}\n1. ${fc.trend>=0?'Good trend — keep the momentum!':'⚠️ Marks declining — schedule personal coaching immediately'}\n2. Attendance ${fc.attFactor}% → ${fc.attFactor<85?'Improve to 85%+ for better results':'Excellent — keep it up!'}\n3. Study weak subjects 20 extra minutes daily\n4. Weekly model test to track improvement\n5. Board exam target: ${fc.boardScore+20}/500`;
+
+  const hdr=ta
+    ?`📈 ${ctr} — AI வளர்ச்சி கணிப்பு அறிக்கை\n${sep}\nமாணவர்: ${student.name} | வகுப்பு: ${student.grade}\n\n📊 தற்போதைய சராசரி   : ${fc.avgPct}%\n🔮 கணிக்கப்பட்ட சராசரி: ${fc.predictedAvg}%\n📈 மதிப்பெண் போக்கு   : ${trendArrow} (${fc.trend>0?'+':''}${fc.trend}%)\n🎓 வருகை காரணி       : ${fc.attFactor}%\n\n🏆 Public Exam கணிப்பு (5 பாடம் × 100):\n   எதிர்பார்க்கப்படும் மதிப்பெண்: *${fc.boardScore}/500*\n   தரம்: ${fc.boardGrade} | சதவீதம்: ${fc.boardPct}%\n\n🥇 தரவரிசை: #${fc.currentRank||'—'} → கணிப்பு #${fc.predictedRank} / ${fc.totalStudents}`
+    :`📈 ${ctr} — AI Growth Forecast Report\n${sep}\nStudent: ${student.name} | Grade: ${student.grade}\n\n📊 Current Average     : ${fc.avgPct}%\n🔮 Predicted Average   : ${fc.predictedAvg}%\n📈 Marks Trend         : ${trendArrow} (${fc.trend>0?'+':''}${fc.trend}%)\n🎓 Attendance Factor   : ${fc.attFactor}%\n\n🏆 Board Exam Forecast (5 subjects × 100):\n   Expected Score: *${fc.boardScore}/500*\n   Grade: ${fc.boardGrade} | Percentage: ${fc.boardPct}%\n\n🥇 Rank: #${fc.currentRank||'—'} → Predicted #${fc.predictedRank} / ${fc.totalStudents}`;
+
+  return hdr+subSec+projSec+ms+action;
+}
+
+/* ── Growth Forecast WA ── */
+function sendGrowthWA(studentId) {
+  const s=students.find(x=>x.id===studentId);
+  if(!s) return showToast('மாணவர் கிடைக்கவில்லை');
+  const phone=s.phone||s.pphone||'';
+  if(!phone) return showToast('⚠️ தொலைபேசி எண் இல்லை');
+  const ta=lang==='ta';
+  const fc=_gfCompute(s);
+  const ctr=CFG.CENTER.name||'Academy';
+  const trendIcon=fc.trend>2?'📈':fc.trend<-2?'📉':'➡️';
+  const msg=ta
+    ?`🙏 வணக்கம் *${s.parent}* அவர்களுக்கு,\n\n📈 *${s.name}* — AI வளர்ச்சி கணிப்பு\n🏫 *${ctr}*\n\n━━━━━━━━━━━━━━━━━━━\n📊 *தற்போதைய சராசரி:* ${fc.avgPct}%\n🔮 *அடுத்த மாத கணிப்பு:* ${fc.predictedAvg}%\n${trendIcon} *போக்கு:* ${fc.trend>0?'+':''}${fc.trend}%\n\n🏆 *Public Exam கணிப்பு:*\nஎதிர்பார்க்கப்படும் மதிப்பெண்: *${fc.boardScore}/500*\nதரம்: *${fc.boardGrade}*\n\n🥇 தரவரிசை: #${fc.currentRank||'—'} → கணிப்பு #${fc.predictedRank} / ${fc.totalStudents}\n━━━━━━━━━━━━━━━━━━━\nதொடர்ந்து வாருங்கள்! 🌟\n📞 ${CFG.CENTER.phone}`
+    :`Dear *${s.parent}*,\n\n📈 *${s.name}* — AI Growth Forecast\n🏫 *${ctr}*\n\n━━━━━━━━━━━━━━━━━━━\n📊 *Current Average:* ${fc.avgPct}%\n🔮 *Predicted:* ${fc.predictedAvg}%\n${trendIcon} *Trend:* ${fc.trend>0?'+':''}${fc.trend}%\n\n🏆 *Board Exam Forecast:*\nExpected Score: *${fc.boardScore}/500*\nGrade: *${fc.boardGrade}*\n\n🥇 Rank: #${fc.currentRank||'—'} → Predicted #${fc.predictedRank} / ${fc.totalStudents}\n━━━━━━━━━━━━━━━━━━━\nKeep attending regularly! 🌟\n📞 ${CFG.CENTER.phone}`;
+  openWA(phone, msg);
+  showToast('📱 Growth Forecast WhatsApp திறக்கிறது…');
+}
+
+
+function initAI(){renderAICards();renderPredictCards();renderStudyPlannerCards();renderGrowthForecastCards();}
 
 
 /* ═══════════════════════════════════════════════════════

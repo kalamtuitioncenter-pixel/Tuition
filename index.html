@@ -836,7 +836,8 @@ tbody tr:hover td{background:var(--bg)}
   <div class="card" style="padding:0;overflow:hidden;margin-bottom:12px" id="att-wrap"></div>
   <div style="display:flex;gap:8px">
     <button class="btn btn-p" onclick="saveAttendance()" style="padding:9px 20px"><svg viewBox="0 0 14 14" fill="none"><path d="M2 7l4 4 6-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span id="btn-save-att">Save Attendance</span></button>
-    <button class="btn btn-wa" onclick="sendAttWA()" style="padding:9px 14px"><svg viewBox="0 0 16 16" fill="none" width="14" height="14"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3"/><path d="M5 11l-.5 1.5L6 12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span id="btn-att-wa">Alert Absent Parents</span></button>
+    <button class="btn btn-wa" onclick="sendAttWA()" style="padding:9px 14px"><svg viewBox="0 0 16 16" fill="none" width="14" height="14"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3"/><path d="M5 11l-.5 1.5L6 12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span id="btn-att-wa">Alert Absent</span></button>
+    <button class="btn btn-wa" onclick="sendLateWA()" style="padding:9px 14px;background:#ca8a04;border-color:#a16207"><svg viewBox="0 0 16 16" fill="none" width="14" height="14"><circle cx="8" cy="8" r="5" stroke="currentColor" stroke-width="1.3"/><path d="M8 5v3l2 1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>Alert Late</button>
   </div>
 </div>
 
@@ -1614,6 +1615,7 @@ const WA_TYPES = [
   {id:'holiday',  label:'Holiday Notice', labelTA:'விடுமுறை அறிவிப்பு',  color:'#0891b2', bg:'#ccfbf1'},
   {id:'birthday', label:'Birthday Wish',  labelTA:'பிறந்தநாள் வாழ்த்து',  color:'#16a34a', bg:'#dcfce7'},
   {id:'fees',     label:'Fee Reminder',   labelTA:'கட்டண நினைவூட்டல்',   color:'#854f0b', bg:'#fef3c7'},
+  {id:'exam_notice', label:'Exam Notice',  labelTA:'தேர்வு அறிவிப்பு',      color:'#0369a1', bg:'#e0f2fe'},
 ];
 
 const WA_TEMPLATES = {
@@ -1629,10 +1631,12 @@ const WA_TEMPLATES = {
   },
   late: {
     en: [
-      `Dear {parent_name},\n\n{student_name} arrived *LATE* to class today at {center_name}.\n\nPunctuality is important for effective learning. Please ensure they arrive on time.\n\nThank you,\n{center_name}`,
+      `Dear {parent_name},\n\n⏰ *Late Arrival Notice*\n\nYour ward *{student_name}* (Grade {grade}) arrived *LATE* to class today at {center_name}.\n\n📅 Date: {date}\n\nPunctuality is important for effective learning. Please ensure they arrive on time.\n\nFor queries: 📞 {center_phone}\n\nThank you,\n{center_name}`,
+      `Hello {parent_name},\n\n{student_name} was late to class today. Consistent late arrivals affect learning progress.\n\nKindly ensure on-time arrival from tomorrow.\n\nRegards,\n{center_name}`,
     ],
     ta: [
-      `அன்பான {parent_name},\n\n{student_name} இன்று வகுப்பிற்கு *தாமதமாக* வந்தார்.\n\nசரியான நேரத்தில் வருவது மிக முக்கியம். தயவுசெய்து கவனிக்கவும்.\n\nநன்றி,\n{center_name}`,
+      `அன்பான {parent_name},\n\n⏰ *தாமத வருகை அறிவிப்பு*\n\nஉங்கள் பிள்ளை *{student_name}* (வகுப்பு {grade}) இன்று {center_name}-ல் *தாமதமாக* வந்தார்.\n\n📅 தேதி: {date}\n\nசரியான நேரத்தில் வருவது மிக முக்கியம். நாளை சரியான நேரத்தில் அனுப்பவும்.\n\nதொடர்புக்கு: 📞 {center_phone}\n\nநன்றி,\n{center_name}`,
+      `வணக்கம் {parent_name},\n\n{student_name} இன்று வகுப்பிற்கு தாமதமாக வந்தார். தொடர்ந்து தாமதமாக வந்தால் கற்றல் பாதிக்கும்.\n\nநாளை சரியான நேரத்தில் வரட்டும்.\n\n{center_name}`,
     ],
   },
   monthly: {
@@ -1649,6 +1653,50 @@ const WA_TEMPLATES = {
     ],
     ta: [
       `அன்பான {parent_name},\n\n📝 *தேர்வு முடிவு — {student_name}*\n\nதேர்வு: {exam_name}\nபாடம்: {subject}\nமதிப்பெண்: *{marks}/{max_marks}*\nசதவீதம்: {percentage}%\nதரம்: *{grade_letter}*\n\n{remarks}\n\n{center_name}`,
+    ],
+  },
+  exam_notice: {
+    en: [
+      `Dear {parent_name},
+
+📝 *Exam Notice — {center_name}*
+
+🎓 Student: *{student_name}* (Grade {grade})
+📚 Exam: *{exam_name}*
+📖 Subject: {subject}
+📅 Date: *{exam_date}*
+
+📊 *Marks Details:*
+• Full Marks: *{max_marks}*
+• Pass Marks: *{pass_marks}*
+
+📋 Syllabus: {syllabus}
+
+✏️ Please ensure your child is well-prepared.
+
+For queries: 📞 {center_phone}
+{center_name}`,
+    ],
+    ta: [
+      `அன்பான {parent_name},
+
+📝 *தேர்வு அறிவிப்பு — {center_name}*
+
+🎓 மாணவர்: *{student_name}* (வகுப்பு {grade})
+📚 தேர்வு: *{exam_name}*
+📖 பாடம்: {subject}
+📅 தேதி: *{exam_date}*
+
+📊 *மதிப்பெண் விவரம்:*
+• மொத்த மதிப்பெண்: *{max_marks}*
+• தேர்ச்சி மதிப்பெண்: *{pass_marks}*
+
+📋 பாடத்திட்டம்: {syllabus}
+
+✏️ உங்கள் பிள்ளை நன்கு தயாராக இருக்க வேண்டும்.
+
+தொடர்புக்கு: 📞 {center_phone}
+{center_name}`,
     ],
   },
   holiday: {
@@ -1695,6 +1743,7 @@ function fillTemplate(template, student, extra={}) {
     .replace(/{grade}/g, 'Grade '+student.grade)
     .replace(/{center_name}/g, ctr.name)
     .replace(/{center_phone}/g, ctr.phone)
+    .replace(/{date}/g, new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}))
     .replace(/{att_pct}/g, attPct+'')
     .replace(/{present_days}/g, presentCount+'')
     .replace(/{absent_days}/g, absentCount+'')
@@ -1997,13 +2046,40 @@ const MODALS = {
     </div>
     <div class="modal-foot"><button class="btn btn-p" onclick="saveStaff()">Save Staff</button><button class="btn" onclick="closeModal()">${t('cancel')}</button></div>`,
 
-  addExam: () => `<div class="modal-title">Schedule Exam</div>
+  addExam: () => `<div class="modal-title">📝 Schedule Exam</div>
     <div class="fg"><label class="fl">Exam Name *</label><input class="fi" id="m-exname" placeholder="e.g. Monthly Test"></div>
-    <div class="frow"><div class="fg"><label class="fl">Subject</label><select class="fi" id="m-exsub"><option>Mathematics</option><option>Science</option><option>Tamil</option><option>English</option><option>Social Science</option></select></div>
-    <div class="fg"><label class="fl">Type</label><select class="fi" id="m-extype"><option>unit_test</option><option>monthly</option><option>quarterly</option><option>halfyearly</option><option>annual</option><option>model</option></select></div></div>
-    <div class="frow"><div class="fg"><label class="fl">Date</label><input class="fi" type="date" id="m-exdate"></div>
-    <div class="fg"><label class="fl">Max Marks</label><input class="fi" type="number" id="m-exmarks" value="100"></div></div>
-    <div class="modal-foot"><button class="btn btn-p" onclick="saveExam()">Save Exam</button><button class="btn" onclick="closeModal()">${t('cancel')}</button></div>`,
+    <div class="frow">
+      <div class="fg"><label class="fl">Subject</label><select class="fi" id="m-exsub"><option>Mathematics</option><option>Science</option><option>Tamil</option><option>English</option><option>Social Science</option><option>All Subjects</option></select></div>
+      <div class="fg"><label class="fl">Type</label><select class="fi" id="m-extype"><option value="unit_test">Unit Test</option><option value="monthly">Monthly Test</option><option value="quarterly">Quarterly Exam</option><option value="halfyearly">Half-Yearly</option><option value="annual">Annual Exam</option><option value="model">Model Exam</option><option value="public">Public Exam</option></select></div>
+    </div>
+    <div class="frow">
+      <div class="fg"><label class="fl">Date *</label><input class="fi" type="date" id="m-exdate"></div>
+      <div class="fg"><label class="fl">Batch / Grade</label><input class="fi" id="m-exbatch" placeholder="e.g. Grade 10 / All"></div>
+    </div>
+    <div class="frow">
+      <div class="fg"><label class="fl">Full Marks (Max) *</label><input class="fi" type="number" id="m-exmarks" value="100" min="1" oninput="syncPassMarks()"></div>
+      <div class="fg"><label class="fl">Pass Marks *</label><input class="fi" type="number" id="m-expass" value="35" min="1" placeholder="35" onfocus="this.dataset.auto='no'"></div>
+    </div>
+    <div class="fg"><label class="fl">Syllabus / Topics</label><textarea class="fi" id="m-exsyllabus" rows="2" placeholder="e.g. Chapter 1-4, Algebra, Geometry…" style="resize:none;font-family:inherit;line-height:1.5"></textarea></div>
+    <div style="background:var(--bg);border-radius:8px;padding:10px 12px;border:.5px solid var(--br);margin-top:4px">
+      <div style="font-size:11px;font-weight:700;color:var(--tx);margin-bottom:8px">📱 WhatsApp Notification</div>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--tx2)">
+        <input type="checkbox" id="m-exwa" style="width:14px;height:14px">
+        Send exam notice to all parents via WhatsApp when saved
+      </label>
+      <div style="margin-top:8px">
+        <label style="font-size:11px;color:var(--tx3)">Message Language:</label>
+        <div style="display:flex;gap:8px;margin-top:4px">
+          <label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer"><input type="radio" name="ex-wa-lang" value="en" checked> English</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer"><input type="radio" name="ex-wa-lang" value="ta"> தமிழ்</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer"><input type="radio" name="ex-wa-lang" value="both"> Both</label>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-p" onclick="saveExam()">📝 Save Exam</button>
+      <button class="btn" onclick="closeModal()">${t('cancel')}</button>
+    </div>`,
 
   addProduct: () => `<div class="modal-title">Add Product</div>
     <div class="fg"><label class="fl">Product Name *</label><input class="fi" id="m-pname2" placeholder="e.g. Geometry Box"></div>
@@ -2408,10 +2484,16 @@ function renderAttList() {
   // ── Render rows ───────────────────────────────────────
   document.getElementById('att-wrap').innerHTML = activeStudents.map(s => {
     const val = attState[_attKey(s.id, batchId, session)] || '';
-    return `<div class="att-row">
+    const rowBg = val==='L'?'#fefce8':val==='A'?'#fff5f5':'var(--card)';
+    const rowBorder = val==='L'?'border-left:3px solid #ca8a04':val==='A'?'border-left:3px solid #dc2626':'';
+    return `<div class="att-row" style="background:${rowBg};${rowBorder}">
       <div class="av" style="background:${s.color}">${(s.name||'?')[0]}</div>
       <div class="att-name">
-        <div style="font-weight:500;font-size:13px">${s.name}</div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="font-weight:500;font-size:13px">${s.name}</span>
+          ${val==='L'?'<span style="font-size:9px;background:#fef9c3;color:#ca8a04;padding:1px 6px;border-radius:8px;font-weight:700">⏰ Late</span>':''}
+          ${val==='A'?'<span style="font-size:9px;background:#fee2e2;color:#dc2626;padding:1px 6px;border-radius:8px;font-weight:700">✗ Absent</span>':''}
+        </div>
         <div style="font-size:10px;color:var(--tx3)">${s.grade==='KG'?'KG':'Gr.'+s.grade} · ${s.parent}
           ${s.course?`<span style="margin-left:4px;background:var(--prl);color:var(--pr);padding:0 5px;border-radius:8px;font-size:9px">${s.course}</span>`:''}
         </div>
@@ -2420,6 +2502,7 @@ function renderAttList() {
         <button class="att-btn ${val==='P'?'ps':''}" onclick="setAtt('${s.id}','P',this)" style="color:#16a34a">P</button>
         <button class="att-btn ${val==='A'?'as':''}" onclick="setAtt('${s.id}','A',this)" style="color:#dc2626">A</button>
         <button class="att-btn ${val==='L'?'ls':''}" onclick="setAtt('${s.id}','L',this)" style="color:#ca8a04">L</button>
+        ${val==='L'||val==='A'?`<button class="btn btn-wa btn-sm" style="font-size:9px;padding:2px 7px" onclick="sendOneAttWA('${s.id}','${val}')">📱</button>`:''}
       </div>
     </div>`;
   }).join('');
@@ -2529,6 +2612,225 @@ function sendAttWA() {
   buildWAQueue();
   navTo('whatsapp');
   showToast('Opening WhatsApp alerts for absent students');
+}
+
+/* ── Send Late WA Alert — opens inline modal on attendance page ── */
+function sendLateWA() {
+  const lateStudents = students.filter(s => s && s.name && s.status === 'active' && getStudentAtt(s.id) === 'L');
+  if (lateStudents.length === 0) {
+    showToast('⏰ No late students marked today');
+    return;
+  }
+  const root = document.getElementById('modal-root');
+  const ctr  = CFG.CENTER;
+  const today = new Date().toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric'});
+
+  /* Build customisable message using the saved late template */
+  function getLateMsg(s, lang) {
+    const tmplArr  = WA_TEMPLATES.late?.[lang] || WA_TEMPLATES.late?.en || [''];
+    const saved    = getWTSaved ? getWTSaved('late', lang) : '';
+    const template = saved || tmplArr[0] || '';
+    return template
+      .replace(/{parent_name}/g,  s.parent  || 'Parent')
+      .replace(/{student_name}/g, s.name    || 'Student')
+      .replace(/{grade}/g,        s.grade   || '—')
+      .replace(/{date}/g,         today)
+      .replace(/{center_name}/g,  ctr.name  || '')
+      .replace(/{center_phone}/g, ctr.phone || '');
+  }
+
+  root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()">
+    <div class="modal" style="max-width:500px">
+      <div class="modal-title" style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:18px">⏰</span>
+        Late Alert — WhatsApp
+      </div>
+
+      <!-- Summary strip -->
+      <div style="display:flex;gap:10px;margin-bottom:12px">
+        <div style="flex:1;background:#fef9c3;border:.5px solid #fde047;border-radius:8px;padding:8px 12px;text-align:center">
+          <div style="font-size:20px;font-weight:800;color:#ca8a04">${lateStudents.length}</div>
+          <div style="font-size:10px;color:#92400e">⏰ Late Students</div>
+        </div>
+        <div style="flex:1;background:#e0f2fe;border:.5px solid #bae6fd;border-radius:8px;padding:8px 12px;text-align:center">
+          <div style="font-size:20px;font-weight:800;color:#0369a1">${lateStudents.filter(s=>s.phone||s.pphone).length}</div>
+          <div style="font-size:10px;color:#0369a1">📱 With Phone</div>
+        </div>
+        <div style="flex:1;background:#f1f5f9;border:.5px solid var(--br);border-radius:8px;padding:8px 12px;text-align:center">
+          <div style="font-size:12px;font-weight:700;color:var(--tx)">${today}</div>
+          <div style="font-size:10px;color:var(--tx3)">📅 Today</div>
+        </div>
+      </div>
+
+      <!-- Language + Template selector -->
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap">
+        <div style="font-size:11px;font-weight:600;color:var(--tx2)">Message Language:</div>
+        <label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer"><input type="radio" name="la-lang" value="en" checked onchange="refreshLatePreview()"> English</label>
+        <label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer"><input type="radio" name="la-lang" value="ta" onchange="refreshLatePreview()"> தமிழ்</label>
+        <label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer"><input type="radio" name="la-lang" value="both" onchange="refreshLatePreview()"> Both</label>
+      </div>
+
+      <!-- Template selector -->
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <div style="font-size:11px;color:var(--tx3)">Template:</div>
+        <select class="fi" id="late-tmpl-sel" style="width:auto;font-size:11px" onchange="refreshLatePreview()">
+          <option value="0">Template 1 (Formal)</option>
+          <option value="1">Template 2 (Friendly)</option>
+        </select>
+        <button class="btn btn-sm" style="font-size:10px" onclick="navTo('wa-templates');closeModal();showToast('Edit Late templates in WA Templates page')">✏️ Customise</button>
+      </div>
+
+      <!-- Message Preview -->
+      <div style="font-size:10px;font-weight:600;color:var(--tx3);margin-bottom:4px">Preview (${lateStudents[0]?.name}):</div>
+      <div id="late-wa-preview" style="background:#dcfce7;border-radius:8px;padding:10px 12px;font-size:11px;
+        line-height:1.7;white-space:pre-wrap;font-family:'Noto Sans Tamil',system-ui;color:#166534;
+        max-height:160px;overflow-y:auto;border:.5px solid #bbf7d0;margin-bottom:12px">
+        ${getLateMsg(lateStudents[0], 'en')}
+      </div>
+
+      <!-- Student Queue -->
+      <div style="font-size:11px;font-weight:600;color:var(--tx2);margin-bottom:6px">Send to ${lateStudents.length} parent${lateStudents.length!==1?'s':''}:</div>
+      <div style="max-height:240px;overflow-y:auto;border:.5px solid var(--br);border-radius:10px">
+        ${lateStudents.map(s => {
+          const phone = s.phone || s.pphone || '';
+          return `<div class="wa-queue-item" id="lwq-${s.id}">
+            <div style="font-size:14px">⏰</div>
+            <div class="av" style="background:${s.color};width:26px;height:26px;font-size:10px;flex-shrink:0">${(s.name||'?')[0]}</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-weight:600;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.name}</div>
+              <div style="font-size:10px;color:var(--tx3)">${s.parent} · ${phone || '⚠️ No phone'}</div>
+            </div>
+            ${phone
+              ? `<button class="btn btn-wa btn-sm" style="font-size:10px;flex-shrink:0"
+                  onclick="sendOneLateWA('${s.id}')">📱 Send</button>`
+              : `<span style="font-size:10px;color:#dc2626;flex-shrink:0">No phone</span>`}
+          </div>`;
+        }).join('')}
+      </div>
+
+      <div class="modal-foot" style="margin-top:12px">
+        <button class="btn btn-wa" onclick="sendAllLateWA()" style="flex:1;justify-content:center;background:#ca8a04;border-color:#a16207">
+          📱 Send to All ${lateStudents.length} Parents
+        </button>
+        <button class="btn" onclick="closeModal()">Close</button>
+      </div>
+    </div>
+  </div>`;
+
+  // Store for preview refresh
+  window._lateStudents = lateStudents;
+  window._getLateMsg   = getLateMsg;
+}
+
+/* Refresh preview when lang/template changes */
+function refreshLatePreview() {
+  const lang    = document.querySelector('input[name="la-lang"]:checked')?.value || 'en';
+  const tmplIdx = parseInt(document.getElementById('late-tmpl-sel')?.value || '0');
+  const el      = document.getElementById('late-wa-preview');
+  if (!el || !window._getLateMsg || !window._lateStudents?.[0]) return;
+
+  // Temporarily swap template index
+  const saved = getWTSaved ? getWTSaved('late', lang) : '';
+  const tmplArr = WA_TEMPLATES.late?.[lang==='both'?'en':lang] || [];
+  const ctr = CFG.CENTER;
+  const s   = window._lateStudents[0];
+  const today = new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
+
+  function buildWithIdx(lg, idx) {
+    const arr   = WA_TEMPLATES.late?.[lg] || WA_TEMPLATES.late?.en || [''];
+    const sv    = getWTSaved ? getWTSaved('late', lg) : '';
+    const tmpl  = sv || arr[Math.min(idx, arr.length-1)] || '';
+    return tmpl
+      .replace(/{parent_name}/g,  s.parent  || 'Parent')
+      .replace(/{student_name}/g, s.name    || 'Student')
+      .replace(/{grade}/g,        s.grade   || '—')
+      .replace(/{date}/g,         today)
+      .replace(/{center_name}/g,  ctr.name  || '')
+      .replace(/{center_phone}/g, ctr.phone || '');
+  }
+
+  if (lang === 'both') {
+    el.textContent = buildWithIdx('en', tmplIdx) + '\n\n─────────────\n\n' + buildWithIdx('ta', tmplIdx);
+  } else {
+    el.textContent = buildWithIdx(lang, tmplIdx);
+  }
+}
+
+/* Send to one student from the queue */
+function sendOneLateWA(studentId) {
+  if (!window._getLateMsg || !window._lateStudents) return;
+  const s     = window._lateStudents.find(x => x.id === studentId);
+  if (!s) return;
+  const lang  = document.querySelector('input[name="la-lang"]:checked')?.value || 'en';
+  const idx   = parseInt(document.getElementById('late-tmpl-sel')?.value || '0');
+  const ctr   = CFG.CENTER;
+  const today = new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
+  const phone = s.phone || s.pphone || '';
+  if (!phone) return showToast('⚠️ ' + s.name + ' has no phone number');
+
+  function build(lg) {
+    const arr  = WA_TEMPLATES.late?.[lg] || WA_TEMPLATES.late?.en || [''];
+    const sv   = getWTSaved ? getWTSaved('late', lg) : '';
+    const tmpl = sv || arr[Math.min(idx, arr.length-1)] || '';
+    return tmpl
+      .replace(/{parent_name}/g,  s.parent  || 'Parent')
+      .replace(/{student_name}/g, s.name    || 'Student')
+      .replace(/{grade}/g,        s.grade   || '—')
+      .replace(/{date}/g,         today)
+      .replace(/{center_name}/g,  ctr.name  || '')
+      .replace(/{center_phone}/g, ctr.phone || '');
+  }
+  const msg = lang==='both' ? build('en')+'\n\n─────────────\n\n'+build('ta') : build(lang);
+  openWA(phone, msg);
+  showToast('📱 Opening WA for ' + s.name + '…');
+
+  // Mark sent visually
+  const row = document.getElementById('lwq-' + studentId);
+  if (row) {
+    const btn = row.querySelector('.btn-wa');
+    if (btn) { btn.textContent = '✅ Sent'; btn.disabled = true; btn.style.background='#16a34a'; }
+  }
+}
+
+/* Send to all late students */
+function sendAllLateWA() {
+  if (!window._lateStudents) return;
+  const withPhone = window._lateStudents.filter(s => s.phone || s.pphone);
+  if (withPhone.length === 0) return showToast('⚠️ No late students have phone numbers');
+  let delay = 0;
+  withPhone.forEach(s => {
+    setTimeout(() => sendOneLateWA(s.id), delay);
+    delay += 800; // stagger 800ms to avoid browser popup blocker
+  });
+  showToast(`📱 Sending to ${withPhone.length} parents…`);
+}
+
+/* ── Send WA for a single student from the att row (P/A/L button) ── */
+function sendOneAttWA(studentId, status) {
+  const s = students.find(x => x.id === studentId);
+  if (!s) return;
+  const phone = s.phone || s.pphone || '';
+  if (!phone) return showToast('⚠️ ' + s.name + ' has no phone number');
+  const ctr   = CFG.CENTER;
+  const today = new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
+
+  function buildMsg(type, lang) {
+    const arr  = WA_TEMPLATES[type]?.[lang] || WA_TEMPLATES[type]?.en || [''];
+    const sv   = getWTSaved ? getWTSaved(type, lang) : '';
+    const tmpl = sv || arr[0] || '';
+    return tmpl
+      .replace(/{parent_name}/g,  s.parent  || 'Parent')
+      .replace(/{student_name}/g, s.name    || 'Student')
+      .replace(/{grade}/g,        s.grade   || '—')
+      .replace(/{date}/g,         today)
+      .replace(/{center_name}/g,  ctr.name  || '')
+      .replace(/{center_phone}/g, ctr.phone || '');
+  }
+
+  const type = status === 'L' ? 'late' : 'absent';
+  const msg  = buildMsg(type, lang || 'en');
+  openWA(phone, msg);
+  showToast('📱 WA opening for ' + s.name + ' (' + (status==='L'?'Late':'Absent') + ')');
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -3102,75 +3404,489 @@ function sendFeeReceiptWA(phone) {
    MARKS
 ═══════════════════════════════════════════════════════ */
 function renderExams() {
-  document.getElementById('exam-list').innerHTML = exams.map((e,i)=>`
-    <div onclick="selectExam(${i})" style="padding:9px 10px;border-radius:8px;cursor:pointer;margin-bottom:5px;border:.5px solid ${selExam===i?'var(--pr)':'var(--br)'};background:${selExam===i?'var(--prl)':'var(--card)'};transition:.12s">
-      <div style="font-size:12px;font-weight:500;color:var(--tx)">${e.name}</div>
-      <div style="font-size:11px;color:${e.color};margin-top:2px;font-weight:500">${e.subject}</div>
-      <div style="font-size:10px;color:var(--tx3);margin-top:2px">${e.maxMarks} marks · ${e.date}</div>
-    </div>`).join('');
+  document.getElementById('exam-list').innerHTML = (exams.length === 0
+    ? '<div style="text-align:center;padding:30px 0;color:var(--tx3);font-size:12px">No exams yet.<br>Click below to schedule one.</div>'
+    : exams.map((e,i) => {
+        const pass = e.passMarks || Math.round((e.maxMarks||100)*0.35);
+        const typeLabel = {unit_test:'Unit Test',monthly:'Monthly',quarterly:'Quarterly',halfyearly:'Half-Yearly',annual:'Annual',model:'Model',public:'Public Exam'}[e.type] || e.type;
+        const dateStr = e.date ? new Date(e.date+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) : e.date;
+        return `<div style="padding:10px 12px;border-radius:9px;cursor:pointer;margin-bottom:6px;
+          border:.5px solid ${selExam===i?'var(--pr)':'var(--br)'};
+          background:${selExam===i?'var(--prl)':'var(--card)'};transition:.12s;position:relative"
+          onclick="selectExam(${i})">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px">
+            <div style="flex:1;min-width:0">
+              <div style="font-size:12px;font-weight:700;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${e.name}</div>
+              <div style="font-size:11px;color:${e.color};margin-top:2px;font-weight:600">${e.subject}</div>
+              <div style="font-size:10px;color:var(--tx3);margin-top:3px;display:flex;gap:8px;flex-wrap:wrap">
+                <span>📅 ${dateStr}</span>
+                <span>✏️ ${e.maxMarks}M</span>
+                <span style="color:${pass<=Math.round((e.maxMarks||100)*0.4)?'#16a34a':'#dc2626'}">✅ Pass:${pass}</span>
+              </div>
+              ${e.batch&&e.batch!=='All'?`<div style="font-size:9px;margin-top:3px;display:inline-block;padding:1px 7px;border-radius:8px;background:var(--prl);color:var(--pr);font-weight:600">${e.batch}</div>`:''}
+              ${e.syllabus?`<div style="font-size:9px;color:var(--tx3);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">📋 ${e.syllabus}</div>`:''}
+            </div>
+            <div style="flex-shrink:0">
+              <span style="font-size:9px;padding:2px 6px;border-radius:6px;background:${e.color}22;color:${e.color};font-weight:700">${typeLabel}</span>
+            </div>
+          </div>
+          <div style="display:flex;gap:5px;margin-top:7px">
+            <button class="btn btn-wa btn-sm" style="font-size:10px;flex:1;justify-content:center"
+              onclick="event.stopPropagation();showExamNoticeWAModal(${i})">📱 Send Notice</button>
+            <button class="btn btn-sm" style="font-size:10px"
+              onclick="event.stopPropagation();editExam(${i})">✏️</button>
+            <button class="btn btn-sm" style="font-size:10px;color:#dc2626"
+              onclick="event.stopPropagation();deleteExam(${i})">🗑️</button>
+          </div>
+        </div>`;
+      }).join(''));
 }
 function selectExam(i) {
   selExam = i; renderExams();
-  const e = exams[i];
+  const e    = exams[i];
+  const pass = e.passMarks || Math.round((e.maxMarks||100)*0.35);
+  const dateStr = e.date ? new Date(e.date+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) : e.date;
+  const typeLabel = {unit_test:'Unit Test',monthly:'Monthly Test',quarterly:'Quarterly',halfyearly:'Half-Yearly',annual:'Annual',model:'Model Exam',public:'Public Exam'}[e.type] || e.type;
+  const activeStudents = students.filter(s => s && s.name && s.status === 'active');
+
+  // Load existing saved marks for this exam
+  const savedKey = '_erp_marks_' + e.id;
+  let savedMarks = {};
+  try { const raw = localStorage.getItem(savedKey); if (raw) savedMarks = JSON.parse(raw).marks || {}; } catch(er) {}
+
+  const rows = activeStudents.map((s,j) => {
+    const saved   = savedMarks[s.id];
+    const marksVal = saved && !saved.absent ? saved.marks : '';
+    const isAbsent = saved ? saved.absent : false;
+    return `<tr id="mr-${s.id}">
+      <td>
+        <div style="display:flex;align-items:center;gap:6px">
+          <div class="av" style="background:${s.color};width:22px;height:22px;font-size:9px;flex-shrink:0">${(s.name||'?')[0]}</div>
+          <div>
+            <div style="font-size:12px;font-weight:500;color:var(--tx)">${s.name}</div>
+            <div style="font-size:9px;color:var(--tx3)">${s.grade==='KG'?'KG':'Gr.'+s.grade}</div>
+          </div>
+        </div>
+      </td>
+      <td style="text-align:center">
+        <input type="checkbox" id="ab-${s.id}" ${isAbsent?'checked':''} style="width:14px;height:14px;cursor:pointer"
+          onchange="toggleAbsent('${s.id}','${e.id}')">
+      </td>
+      <td>
+        <input class="mk fi" id="mk-${s.id}" type="number" min="0" max="${e.maxMarks}"
+          value="${marksVal}" placeholder="—"
+          style="width:65px;padding:4px 7px;text-align:center;font-size:13px;font-weight:600;${isAbsent?'opacity:.4;pointer-events:none':''}"
+          oninput="calcGradeEx(this,'${e.id}',${e.maxMarks},${pass},'${s.id}')">
+      </td>
+      <td style="font-size:12px;font-weight:700;text-align:center" id="grd-${s.id}">
+        ${marksVal!==''&&!isAbsent?_gradeLabel(marksVal,e.maxMarks,pass):''}
+      </td>
+      <td>
+        <div id="pf-${s.id}" style="font-size:10px;font-weight:600;text-align:center">
+          ${isAbsent?'<span style="color:#6b7280">AB</span>':marksVal!==''?`<span style="color:${parseFloat(marksVal)>=pass?'#16a34a':'#dc2626'}">${parseFloat(marksVal)>=pass?'PASS':'FAIL'}</span>`:''}
+        </div>
+        <div class="prog" style="margin-top:3px"><div class="prog-fill" id="pb-${s.id}" style="width:${marksVal!==''&&!isAbsent?Math.min(100,(marksVal/e.maxMarks)*100):0}%;background:${marksVal!==''&&parseFloat(marksVal)>=pass?'#16a34a':marksVal!==''?'#dc2626':'#16a34a'}"></div></div>
+      </td>
+    </tr>`;
+  }).join('');
+
   document.getElementById('marks-panel').innerHTML = `
-    <div style="background:${e.color}18;border-radius:8px;padding:11px;margin-bottom:12px;border-left:3px solid ${e.color}">
-      <div style="font-size:13px;font-weight:600;color:var(--tx)">${e.name} — ${e.subject}</div>
-      <div style="font-size:11px;color:${e.color};margin-top:2px">Max: ${e.maxMarks} · Pass: ${Math.round(e.maxMarks*.35)}</div>
+    <!-- Exam Header -->
+    <div style="background:${e.color}18;border-radius:10px;padding:12px 14px;margin-bottom:12px;border-left:4px solid ${e.color}">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap">
+        <div>
+          <div style="font-size:14px;font-weight:700;color:var(--tx)">${e.name}</div>
+          <div style="font-size:11px;color:${e.color};margin-top:3px;font-weight:600">${e.subject} &nbsp;·&nbsp; ${typeLabel}</div>
+          ${e.batch&&e.batch!=='All'?`<div style="font-size:10px;color:var(--tx3);margin-top:2px">📚 ${e.batch}</div>`:''}
+          ${e.syllabus?`<div style="font-size:10px;color:var(--tx3);margin-top:2px">📋 ${e.syllabus}</div>`:''}
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-size:10px;color:var(--tx3)">📅 ${dateStr}</div>
+          <div style="display:flex;gap:8px;margin-top:4px">
+            <div style="text-align:center;background:var(--card);border:.5px solid var(--br);border-radius:7px;padding:4px 10px">
+              <div style="font-size:16px;font-weight:800;color:var(--tx)">${e.maxMarks}</div>
+              <div style="font-size:9px;color:var(--tx3)">Full Marks</div>
+            </div>
+            <div style="text-align:center;background:#dcfce7;border:.5px solid #bbf7d0;border-radius:7px;padding:4px 10px">
+              <div style="font-size:16px;font-weight:800;color:#16a34a">${pass}</div>
+              <div style="font-size:9px;color:#166534">Pass Marks</div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="tbl-wrap"><table><thead><tr><th style="width:30%">Student</th><th style="width:8%">AB</th><th style="width:18%">Marks</th><th style="width:12%">Grade</th><th style="width:32%">Progress</th></tr></thead><tbody>
-    ${students.slice(0,6).map((s,j)=>`<tr>
-      <td><div class="flex-c"><div class="av" style="background:${s.color};width:24px;height:24px;font-size:10px">${(s.name||'?')[0]}</div>${s.name}</div></td>
-      <td><input type="checkbox" style="width:14px;height:14px" onchange="this.closest('tr').querySelector('.mk').disabled=this.checked"></td>
-      <td><input class="mk fi" type="number" min="0" max="${e.maxMarks}" placeholder="0" style="width:60px;padding:4px 7px;text-align:center;font-size:13px" oninput="calcGrade(this,${e.maxMarks},${j})"></td>
-      <td style="font-size:12px;font-weight:700" id="grd-${j}"></td>
-      <td><div class="prog"><div class="prog-fill" id="pb-${j}" style="width:0%;background:#16a34a"></div></div></td>
-    </tr>`).join('')}
-    </tbody></table></div>
-    <div style="display:flex;gap:8px;margin-top:12px">
-      <button class="btn btn-p" onclick="saveMarksToStorage(${i})"><svg viewBox="0 0 14 14" fill="none" width="12" height="12"><path d="M2 7l4 4 6-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Save Marks</button>
-      <button class="btn btn-wa" onclick="showModal('marksWA')">Send Results via WhatsApp</button>
+    <!-- Stats bar (auto-updates) -->
+    <div id="marks-stats-${e.id}" style="display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap"></div>
+    <!-- Marks Table -->
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:28%">Student</th>
+            <th style="width:8%;text-align:center">AB</th>
+            <th style="width:18%">Marks / ${e.maxMarks}</th>
+            <th style="width:10%;text-align:center">Grade</th>
+            <th style="width:36%">Pass / Fail</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+    <!-- Actions -->
+    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+      <button class="btn btn-p" onclick="saveMarksToStorage(${i})" style="flex:1;justify-content:center">
+        <svg viewBox="0 0 14 14" fill="none" width="12" height="12"><path d="M2 7l4 4 6-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Save Marks
+      </button>
+      <button class="btn btn-wa" onclick="showModal('marksWA')" style="flex:1;justify-content:center">📱 Send Results</button>
+      <button class="btn btn-sm" onclick="showExamNoticeWAModal(${i})" style="font-size:11px">📢 Exam Notice WA</button>
     </div>`;
+
+  updateMarksStats(e.id, e.maxMarks, pass, activeStudents);
+}
+
+/* Helper: return grade letter respecting custom passMarks */
+function _gradeLabel(marks, max, pass) {
+  const pct = (parseFloat(marks)/max)*100;
+  if (parseFloat(marks) < pass) return `<span style="color:#dc2626">F</span>`;
+  return `<span style="color:${pct>=60?'#16a34a':'#ca8a04'}">${pct>=91?'A+':pct>=81?'A':pct>=71?'B+':pct>=61?'B':pct>=51?'C':'D'}</span>`;
+}
+
+/* Toggle absent checkbox in marks panel */
+function toggleAbsent(sid, examId) {
+  const cb   = document.getElementById('ab-'+sid);
+  const mkEl = document.getElementById('mk-'+sid);
+  const pfEl = document.getElementById('pf-'+sid);
+  const pbEl = document.getElementById('pb-'+sid);
+  const grEl = document.getElementById('grd-'+sid);
+  const isAb = cb.checked;
+  if (mkEl) { mkEl.style.opacity = isAb ? '0.4' : '1'; mkEl.style.pointerEvents = isAb ? 'none' : ''; }
+  if (pfEl) pfEl.innerHTML = isAb ? '<span style="color:#6b7280">AB</span>' : '';
+  if (grEl) grEl.innerHTML = '';
+  if (pbEl) { pbEl.style.width = '0%'; }
+  const exam = exams.find(e => e.id === examId);
+  if (exam) {
+    const pass = exam.passMarks || Math.round(exam.maxMarks * 0.35);
+    updateMarksStats(examId, exam.maxMarks, pass, students.filter(s=>s&&s.name&&s.status==='active'));
+  }
+}
+
+/* Live grade calc using custom passMarks */
+function calcGradeEx(inp, examId, max, pass, sid) {
+  const val = parseFloat(inp.value) || 0;
+  const pct = (val / max) * 100;
+  const grEl = document.getElementById('grd-'+sid);
+  const pfEl = document.getElementById('pf-'+sid);
+  const pbEl = document.getElementById('pb-'+sid);
+  if (grEl) grEl.innerHTML = inp.value ? _gradeLabel(val, max, pass) : '';
+  if (pfEl) pfEl.innerHTML = inp.value
+    ? `<span style="color:${val>=pass?'#16a34a':'#dc2626'};font-weight:700">${val>=pass?'PASS':'FAIL'}</span>`
+    : '';
+  if (pbEl) {
+    pbEl.style.width = Math.min(100, pct) + '%';
+    pbEl.style.background = val >= pass ? '#16a34a' : '#dc2626';
+  }
+  updateMarksStats(examId, max, pass, students.filter(s=>s&&s.name&&s.status==='active'));
+}
+
+/* Update live pass/fail stats strip */
+function updateMarksStats(examId, max, pass, activeStudents) {
+  const el = document.getElementById('marks-stats-'+examId);
+  if (!el) return;
+  let passed=0, failed=0, absent=0, notEntered=0;
+  activeStudents.forEach(s => {
+    const cb = document.getElementById('ab-'+s.id);
+    if (cb && cb.checked) { absent++; return; }
+    const mk = document.getElementById('mk-'+s.id);
+    if (!mk || mk.value === '') { notEntered++; return; }
+    parseFloat(mk.value) >= pass ? passed++ : failed++;
+  });
+  el.innerHTML = [
+    { l:'✅ Pass', v:passed,     c:'#16a34a', bg:'#dcfce7' },
+    { l:'❌ Fail', v:failed,     c:'#dc2626', bg:'#fee2e2' },
+    { l:'⚪ Absent',v:absent,    c:'#6b7280', bg:'#f3f4f6' },
+    { l:'— Pending',v:notEntered,c:'#ca8a04',bg:'#fef9c3' },
+  ].map(s => `<div style="padding:5px 12px;border-radius:8px;background:${s.bg};font-size:11px;font-weight:700;color:${s.c}">${s.l}: ${s.v}</div>`).join('');
 }
 function calcGrade(inp, max, j) {
+  // Legacy fallback — new marks panel uses calcGradeEx per student ID
   const pct = (parseFloat(inp.value)||0)/max*100;
-  const g = pct>=91?'A+':pct>=81?'A':pct>=71?'B+':pct>=61?'B':pct>=51?'C':pct>=35?'D':'F';
+  const pass = selExam>=0&&exams[selExam]?.passMarks ? exams[selExam].passMarks : Math.round(max*0.35);
+  const g = parseFloat(inp.value)<pass?'F':pct>=91?'A+':pct>=81?'A':pct>=71?'B+':pct>=61?'B':pct>=51?'C':'D';
   const gEl=document.getElementById('grd-'+j), pb=document.getElementById('pb-'+j);
-  if(gEl){gEl.textContent=inp.value?g:'';gEl.style.color=pct>=35?'#16a34a':'#dc2626';}
-  if(pb){pb.style.width=Math.min(100,pct)+'%';pb.style.background=pct>=60?'#16a34a':pct>=35?'#ca8a04':'#dc2626';}
+  if(gEl){gEl.textContent=inp.value?g:'';gEl.style.color=parseFloat(inp.value)>=pass?'#16a34a':'#dc2626';}
+  if(pb){pb.style.width=Math.min(100,pct)+'%';pb.style.background=parseFloat(inp.value)>=pass?'#16a34a':pct>=(pass/max*100*0.8)?'#ca8a04':'#dc2626';}
+}
+function syncPassMarks() {
+  const full = parseInt(document.getElementById('m-exmarks')?.value) || 100;
+  const passEl = document.getElementById('m-expass');
+  if (passEl && (!passEl.value || passEl.dataset.auto !== 'no')) {
+    passEl.value = Math.round(full * 0.35);
+    passEl.dataset.auto = 'yes';
+  }
 }
 function saveExam() {
-  const name=document.getElementById('m-exname')?.value.trim();
-  if(!name){showToast('Enter exam name');return;}
-  const colors=['#185FA5','#534AB7','#854F0B','#1D9E75'];
-  exams.unshift({id:'ex'+Date.now(),name,subject:document.getElementById('m-exsub')?.value||'Mathematics',type:document.getElementById('m-extype')?.value||'monthly',maxMarks:parseInt(document.getElementById('m-exmarks')?.value)||100,date:document.getElementById('m-exdate')?.value||new Date().toLocaleDateString('en-IN'),color:colors[exams.length%colors.length]});
-  saveExams();renderExams();closeModal();showToast('✅ Exam scheduled!');
+  const name = document.getElementById('m-exname')?.value.trim();
+  if (!name) { showToast('Enter exam name'); return; }
+  const dateEl = document.getElementById('m-exdate');
+  if (!dateEl?.value) { showToast('Select exam date'); return; }
+  const colors = ['#185FA5','#534AB7','#854F0B','#1D9E75','#0369a1','#6d28d9'];
+  const maxMarks  = parseInt(document.getElementById('m-exmarks')?.value) || 100;
+  const passMarks = parseInt(document.getElementById('m-expass')?.value) || Math.round(maxMarks * 0.35);
+  const syllabus  = document.getElementById('m-exsyllabus')?.value.trim() || '';
+  const batch     = document.getElementById('m-exbatch')?.value.trim() || 'All';
+  const sendWA    = document.getElementById('m-exwa')?.checked || false;
+  const waLang    = document.querySelector('input[name="ex-wa-lang"]:checked')?.value || 'en';
+  const exam = {
+    id: 'ex'+Date.now(), name,
+    subject:  document.getElementById('m-exsub')?.value  || 'Mathematics',
+    type:     document.getElementById('m-extype')?.value || 'monthly',
+    date:     dateEl.value,
+    maxMarks, passMarks, syllabus, batch,
+    color:    colors[exams.length % colors.length],
+  };
+  exams.unshift(exam);
+  saveExams(); renderExams(); closeModal();
+  showToast('✅ Exam scheduled — ' + name);
+  if (sendWA) { setTimeout(() => sendExamNoticeToAll(exam, waLang), 400); }
 }
 
 /* ── Save marks from the marks panel to localStorage ── */
 function saveMarksToStorage(examIdx) {
   const e = exams[examIdx];
   if (!e) return;
-  const key = '_erp_marks_' + e.id;
+  const key  = '_erp_marks_' + e.id;
+  const pass = e.passMarks || Math.round((e.maxMarks||100) * 0.35);
   const marksMap = {};
-  students.filter(s=>s&&s.name&&s.status==='active').slice(0,6).forEach((s,j) => {
-    const inp = document.querySelector('#marks-panel .mk:nth-of-type('+(j+1)+')') ||
-                document.querySelectorAll('#marks-panel .mk')[j];
-    const abCb = document.querySelectorAll('#marks-panel input[type=checkbox]')[j];
-    if (abCb && abCb.checked) {
+  const activeStudents = students.filter(s => s && s.name && s.status === 'active');
+
+  activeStudents.forEach(s => {
+    // New per-student IDs (from upgraded marks panel)
+    const mkEl = document.getElementById('mk-' + s.id);
+    const abEl = document.getElementById('ab-' + s.id);
+    if (abEl && abEl.checked) {
       marksMap[s.id] = { marks: null, absent: true };
-    } else if (inp) {
-      const val = parseFloat(inp.value);
-      if (!isNaN(val)) marksMap[s.id] = { marks: val, absent: false };
+    } else if (mkEl && mkEl.value !== '') {
+      const val = parseFloat(mkEl.value);
+      if (!isNaN(val)) marksMap[s.id] = { marks: val, absent: false, pass: val >= pass };
     }
   });
+
   try {
-    localStorage.setItem(key, JSON.stringify({ examId: e.id, examName: e.name, subject: e.subject, maxMarks: e.maxMarks, date: e.date, marks: marksMap }));
-    // Also update index
+    localStorage.setItem(key, JSON.stringify({
+      examId: e.id, examName: e.name, subject: e.subject,
+      maxMarks: e.maxMarks, passMarks: pass,
+      syllabus: e.syllabus||'', batch: e.batch||'All',
+      date: e.date, marks: marksMap,
+    }));
     const idx = JSON.parse(localStorage.getItem('_erp_marks_index') || '[]');
     if (!idx.includes(key)) { idx.push(key); localStorage.setItem('_erp_marks_index', JSON.stringify(idx)); }
   } catch(err) {}
-  showToast('✅ Marks saved for ' + e.name + '!');
+
+  const count = Object.keys(marksMap).length;
+  showToast('✅ Marks saved for ' + e.name + ' (' + count + ' students)');
   runBackup('change');
+}
+
+
+/* ── Edit existing exam ── */
+function editExam(i) {
+  const e = exams[i];
+  if (!e) return;
+  const root = document.getElementById('modal-root');
+  const pass = e.passMarks || Math.round((e.maxMarks||100)*0.35);
+  root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()">
+    <div class="modal" style="max-width:480px">
+      <div class="modal-title">✏️ Edit Exam</div>
+      <div class="fg"><label class="fl">Exam Name *</label><input class="fi" id="ee-name" value="${e.name}"></div>
+      <div class="frow">
+        <div class="fg"><label class="fl">Subject</label>
+          <select class="fi" id="ee-sub">
+            ${['Mathematics','Science','Tamil','English','Social Science','All Subjects'].map(s=>`<option ${e.subject===s?'selected':''}>${s}</option>`).join('')}
+          </select>
+        </div>
+        <div class="fg"><label class="fl">Type</label>
+          <select class="fi" id="ee-type">
+            ${[['unit_test','Unit Test'],['monthly','Monthly Test'],['quarterly','Quarterly'],['halfyearly','Half-Yearly'],['annual','Annual'],['model','Model Exam'],['public','Public Exam']].map(([v,l])=>`<option value="${v}" ${e.type===v?'selected':''}>${l}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label class="fl">Date</label><input class="fi" type="date" id="ee-date" value="${e.date}"></div>
+        <div class="fg"><label class="fl">Batch / Grade</label><input class="fi" id="ee-batch" value="${e.batch||'All'}"></div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label class="fl">Full Marks</label><input class="fi" type="number" id="ee-max" value="${e.maxMarks}"></div>
+        <div class="fg"><label class="fl">Pass Marks</label><input class="fi" type="number" id="ee-pass" value="${pass}"></div>
+      </div>
+      <div class="fg"><label class="fl">Syllabus / Topics</label>
+        <textarea class="fi" id="ee-syl" rows="2" style="resize:none;font-family:inherit;line-height:1.5">${e.syllabus||''}</textarea>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-p" onclick="applyEditExam(${i})">✅ Update Exam</button>
+        <button class="btn" onclick="closeModal()">Cancel</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function applyEditExam(i) {
+  const e = exams[i];
+  if (!e) return;
+  e.name       = document.getElementById('ee-name')?.value.trim() || e.name;
+  e.subject    = document.getElementById('ee-sub')?.value  || e.subject;
+  e.type       = document.getElementById('ee-type')?.value || e.type;
+  e.date       = document.getElementById('ee-date')?.value || e.date;
+  e.batch      = document.getElementById('ee-batch')?.value.trim() || 'All';
+  e.maxMarks   = parseInt(document.getElementById('ee-max')?.value) || e.maxMarks;
+  e.passMarks  = parseInt(document.getElementById('ee-pass')?.value) || Math.round(e.maxMarks*0.35);
+  e.syllabus   = document.getElementById('ee-syl')?.value.trim() || '';
+  saveExams(); renderExams(); closeModal();
+  showToast('✅ Exam updated — ' + e.name);
+  if (selExam === i) selectExam(i);
+}
+
+/* ── Delete exam ── */
+function deleteExam(i) {
+  const e = exams[i];
+  if (!e) return;
+  if (!confirm('Delete exam "' + e.name + '"? This cannot be undone.')) return;
+  exams.splice(i, 1);
+  if (selExam === i) {
+    selExam = -1;
+    document.getElementById('marks-panel').innerHTML = '<div style="color:var(--tx3);text-align:center;padding:50px 0;font-size:13px" id="marks-ph">← Select an exam to enter marks</div>';
+  } else if (selExam > i) { selExam--; }
+  saveExams(); renderExams();
+  showToast('🗑️ Exam deleted');
+}
+
+/* ── Show Exam Notice WA Modal (customise per exam) ── */
+function showExamNoticeWAModal(examIdx) {
+  const e = exams[examIdx];
+  if (!e) return;
+  const pass     = e.passMarks || Math.round((e.maxMarks||100)*0.35);
+  const dateStr  = e.date ? new Date(e.date+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) : e.date;
+  const ctr      = CFG.CENTER;
+  const active   = students.filter(s => s && s.name && s.status === 'active');
+
+  // Build preview for first student
+  function buildMsg(lang, student) {
+    const s = student || active[0] || { name:'Student', parent:'Parent', grade:'10', phone:'' };
+    const tmplArr = WA_TEMPLATES.exam_notice?.[lang] || WA_TEMPLATES.exam_notice?.en || [''];
+    const saved   = (typeof getWTSaved==='function') ? getWTSaved('exam_notice', lang) : '';
+    const tmpl    = saved || tmplArr[0] || '';
+    return tmpl
+      .replace(/{parent_name}/g, s.parent||'Parent')
+      .replace(/{student_name}/g, s.name||'Student')
+      .replace(/{grade}/g, s.grade||'—')
+      .replace(/{exam_name}/g, e.name)
+      .replace(/{subject}/g, e.subject)
+      .replace(/{exam_date}/g, dateStr)
+      .replace(/{max_marks}/g, e.maxMarks)
+      .replace(/{pass_marks}/g, pass)
+      .replace(/{syllabus}/g, e.syllabus || (lang==='ta'?'முழு பாடத்திட்டம்':'Full syllabus'))
+      .replace(/{center_name}/g, ctr.name||'')
+      .replace(/{center_phone}/g, ctr.phone||'');
+  }
+
+  const root = document.getElementById('modal-root');
+  root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()">
+    <div class="modal" style="max-width:500px">
+      <div class="modal-title">📱 Exam Notice — WhatsApp</div>
+      <div style="background:${e.color}18;border-radius:8px;padding:10px 12px;margin-bottom:12px;border-left:3px solid ${e.color}">
+        <div style="font-weight:700;font-size:13px;color:var(--tx)">${e.name}</div>
+        <div style="font-size:11px;color:var(--tx3);margin-top:2px">${e.subject} · 📅 ${dateStr} · Full: ${e.maxMarks} · Pass: ${pass}</div>
+        ${e.syllabus?`<div style="font-size:10px;color:var(--tx3);margin-top:2px">📋 ${e.syllabus}</div>`:''}
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:10px">
+        <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer"><input type="radio" name="en-lang" value="en" checked onchange="updateENPreview(${examIdx})"> English</label>
+        <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer"><input type="radio" name="en-lang" value="ta" onchange="updateENPreview(${examIdx})"> தமிழ்</label>
+        <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer"><input type="radio" name="en-lang" value="both" onchange="updateENPreview(${examIdx})"> Both</label>
+      </div>
+      <div id="en-preview" style="background:#dcfce7;border-radius:10px;padding:12px;font-size:11px;line-height:1.75;
+        white-space:pre-wrap;font-family:'Noto Sans Tamil',system-ui;color:#166534;max-height:280px;overflow-y:auto;
+        border:.5px solid #bbf7d0;margin-bottom:12px">${buildMsg('en')}</div>
+      <div style="font-size:11px;color:var(--tx2);margin-bottom:8px">
+        📤 Send to: <b>${active.length} active students</b>' parents
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-wa" onclick="sendExamNoticeToAll(exams[${examIdx}], document.querySelector('input[name=\'en-lang\'\]:checked')?.value||'en');closeModal()"
+          style="flex:1;justify-content:center">📱 Send to All Parents</button>
+        <button class="btn" onclick="closeModal()">Cancel</button>
+      </div>
+    </div>
+  </div>`;
+
+  // Store buildMsg globally for preview refresh
+  window._enBuildMsg = buildMsg;
+  window._enExamIdx  = examIdx;
+}
+
+function updateENPreview(examIdx) {
+  const lang = document.querySelector('input[name="en-lang"]:checked')?.value || 'en';
+  const el   = document.getElementById('en-preview');
+  if (!el || !window._enBuildMsg) return;
+  const e    = exams[examIdx];
+  const active = students.filter(s=>s&&s.name&&s.status==='active');
+  if (lang === 'both') {
+    el.textContent = window._enBuildMsg('en') + '\n\n─────────────\n\n' + window._enBuildMsg('ta');
+  } else {
+    el.textContent = window._enBuildMsg(lang);
+  }
+}
+
+/* ── Send exam notice to all parents ── */
+function sendExamNoticeToAll(exam, lang) {
+  if (!exam) return;
+  const pass     = exam.passMarks || Math.round((exam.maxMarks||100)*0.35);
+  const dateStr  = exam.date ? new Date(exam.date+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) : exam.date;
+  const ctr      = CFG.CENTER;
+  const active   = students.filter(s => s && s.name && s.status === 'active' && (s.phone||s.pphone));
+
+  if (active.length === 0) { showToast('⚠️ No students with phone numbers'); return; }
+
+  const root = document.getElementById('modal-root');
+  root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()">
+    <div class="modal" style="max-width:480px">
+      <div class="modal-title">📱 Sending Exam Notice — ${exam.name}</div>
+      <div style="font-size:12px;color:var(--tx2);margin-bottom:10px">${active.length} parents · Click each to open WhatsApp</div>
+      <div style="max-height:360px;overflow-y:auto;border:.5px solid var(--br);border-radius:10px">
+        ${active.map(s => {
+          function buildOneMsg(lg, st) {
+            const tmplArr = WA_TEMPLATES.exam_notice?.[lg] || WA_TEMPLATES.exam_notice?.en || [''];
+            const saved   = (typeof getWTSaved==='function') ? getWTSaved('exam_notice', lg) : '';
+            const tmpl    = saved || tmplArr[0] || '';
+            return tmpl
+              .replace(/{parent_name}/g, st.parent||'Parent')
+              .replace(/{student_name}/g, st.name)
+              .replace(/{grade}/g, st.grade||'—')
+              .replace(/{exam_name}/g, exam.name)
+              .replace(/{subject}/g, exam.subject)
+              .replace(/{exam_date}/g, dateStr)
+              .replace(/{max_marks}/g, exam.maxMarks)
+              .replace(/{pass_marks}/g, pass)
+              .replace(/{syllabus}/g, exam.syllabus || (lg==='ta'?'முழு பாடத்திட்டம்':'Full syllabus'))
+              .replace(/{center_name}/g, ctr.name||'')
+              .replace(/{center_phone}/g, ctr.phone||'');
+          }
+          const msg = lang==='both'
+            ? buildOneMsg('en',s)+'\n\n─────────────\n\n'+buildOneMsg('ta',s)
+            : buildOneMsg(lang,s);
+          const phone = s.phone||s.pphone||'';
+          return `<div class="wa-queue-item">
+            <div class="av" style="background:${s.color};width:28px;height:28px;font-size:11px;flex-shrink:0">${(s.name||'?')[0]}</div>
+            <div style="flex:1">
+              <div style="font-weight:600;font-size:12px">${s.name}</div>
+              <div style="font-size:10px;color:var(--tx3)">${s.parent} · ${phone||'No phone'}</div>
+            </div>
+            <button class="btn btn-wa btn-sm" style="font-size:10px" ${!phone?'disabled':''}
+              onclick="openWA('${phone}',\`${msg.replace(/`/g,"'")}\`)">📱</button>
+          </div>`;
+        }).join('')}
+      </div>
+      <div class="modal-foot"><button class="btn" onclick="closeModal()">Close</button></div>
+    </div>
+  </div>`;
 }
 
 /* ── Load all marks for a student ── */
@@ -3185,11 +3901,13 @@ function getStudentMarks(studentId) {
           const entry = rec.marks[studentId];
           results.push({
             examName: rec.examName,
-            subject: rec.subject,
+            subject:  rec.subject,
             maxMarks: rec.maxMarks,
-            marks: entry.marks,
-            absent: entry.absent,
-            date: rec.date,
+            passMarks: rec.passMarks || Math.round((rec.maxMarks||100)*0.35),
+            marks:    entry.marks,
+            absent:   entry.absent,
+            pass:     entry.pass,
+            date:     rec.date,
           });
         }
       } catch(e2) {}
@@ -3395,7 +4113,7 @@ function renderStaffAttGrid() {
   var bannerTxt = isSun ? '#dc2626' : isWeekend ? '#92400e' : 'var(--pr)';
   var wkTag     = isWeekend ? ('<span style="font-size:10px;background:' + (isSun?'#fee2e2':'#fef9c3') + ';color:' + bannerTxt + ';padding:2px 8px;border-radius:8px;margin-left:8px">' + (isSun?'Sunday':'Saturday') + '</span>') : '';
 
-  var pCount=0, clCount=0, lopCount=0, hCount=0;
+  var pCount=0, lateCount=0, clCount=0, lopCount=0, hCount=0;
   var rows = '';
   for (var i=0; i<staffData.length; i++) {
     var s   = staffData[i];
@@ -3404,26 +4122,29 @@ function renderStaffAttGrid() {
     var pay = s.consolidatedPay || s.baseSalary || 0;
     var net = pay - (s.extraDed||0);
 
-    if (val==='CL')  clCount++;
+    if (val==='L')   lateCount++;
+    else if (val==='CL')  clCount++;
     else if (val==='LOP') lopCount++;
     else if (val==='H')   hCount++;
     else pCount++;
 
     var badge = '';
+    if (val==='L')   badge = '<span style="font-size:10px;background:#fef9c3;color:#ca8a04;padding:2px 8px;border-radius:10px;font-weight:700;margin-left:6px">⏰ Late</span>';
     if (val==='CL')  badge = '<span style="font-size:10px;background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:10px;font-weight:700;margin-left:6px">CL</span>';
     if (val==='LOP') badge = '<span style="font-size:10px;background:#ede9fe;color:#5b21b6;padding:2px 8px;border-radius:10px;font-weight:700;margin-left:6px">LOP</span>';
     if (val==='H')   badge = '<span style="font-size:10px;background:#dbeafe;color:#1e40af;padding:2px 8px;border-radius:10px;font-weight:700;margin-left:6px">Holiday</span>';
 
-    var rowBg  = val==='LOP'?'#faf5ff' : val==='CL'?'#fffbeb' : val==='H'?'#eff6ff' : 'var(--card)';
-    var bdr    = val==='LOP'?'#c4b5fd' : val==='CL'?'#fde68a'  : val==='H'?'#bfdbfe' : 'var(--br)';
-    var selBg  = val==='LOP'?'#ede9fe' : val==='CL'?'#fef3c7'  : val==='H'?'#dbeafe' : 'var(--bg)';
-    var selClr = val==='LOP'?'#5b21b6' : val==='CL'?'#92400e'  : val==='H'?'#1e40af' : 'var(--tx2)';
+    var rowBg  = val==='L'?'#fefce8' : val==='LOP'?'#faf5ff' : val==='CL'?'#fffbeb' : val==='H'?'#eff6ff' : 'var(--card)';
+    var bdr    = val==='L'?'#fde047' : val==='LOP'?'#c4b5fd' : val==='CL'?'#fde68a'  : val==='H'?'#bfdbfe' : 'var(--br)';
+    var selBg  = val==='L'?'#fef9c3' : val==='LOP'?'#ede9fe' : val==='CL'?'#fef3c7'  : val==='H'?'#dbeafe' : 'var(--bg)';
+    var selClr = val==='L'?'#ca8a04' : val==='LOP'?'#5b21b6' : val==='CL'?'#92400e'  : val==='H'?'#1e40af' : 'var(--tx2)';
     var selWt  = val ? '700' : '500';
 
-    var pOpt  = '<option value=""'   + (val===''   ?' selected':'') + '>&#10003; Present</option>';
-    var clOpt = '<option value="CL"' + (val==='CL' ?' selected':'') + '>CL &mdash; Casual Leave</option>';
-    var lOpt  = '<option value="LOP"'+ (val==='LOP'?' selected':'') + '>LOP &mdash; Loss of Pay</option>';
-    var hOpt  = '<option value="H"'  + (val==='H'  ?' selected':'') + '>H &mdash; Holiday</option>';
+    var pOpt  = '<option value=""'    + (val===''    ?' selected':'') + '>&#10003; Present</option>';
+    var ltOpt = '<option value="L"'  + (val==='L'   ?' selected':'') + '>&#9200; Late Arrival</option>';
+    var clOpt = '<option value="CL"' + (val==='CL'  ?' selected':'') + '>CL &mdash; Casual Leave</option>';
+    var lOpt  = '<option value="LOP"'+ (val==='LOP' ?' selected':'') + '>LOP &mdash; Loss of Pay</option>';
+    var hOpt  = '<option value="H"'  + (val==='H'   ?' selected':'') + '>H &mdash; Holiday</option>';
 
     rows += '<div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:.5px solid '+ bdr +';background:'+rowBg+'">';
     rows += '<div class="av" style="background:'+s.color+';width:38px;height:38px;font-size:16px;font-weight:700;flex-shrink:0">'+(s.name||'?')[0]+'</div>';
@@ -3435,7 +4156,7 @@ function renderStaffAttGrid() {
     rows += '  style="border:1.5px solid '+(val?bdr:'var(--br)')+';background:'+selBg+';color:'+selClr+';';
     rows += '         font-size:12px;font-weight:'+selWt+';border-radius:8px;padding:8px 10px;';
     rows += '         cursor:pointer;font-family:inherit;min-width:140px">';
-    rows += pOpt + clOpt + lOpt + hOpt + '</select>';
+    rows += pOpt + ltOpt + clOpt + lOpt + hOpt + '</select>';
     rows += '</div>';
   }
 
@@ -3449,6 +4170,7 @@ function renderStaffAttGrid() {
     + rows
     + '<div style="padding:10px 16px;background:var(--bg);font-size:11px;color:var(--tx2);display:flex;gap:14px;flex-wrap:wrap;border-top:.5px solid var(--br)">'
     + '  <span><b style="color:#16a34a">&#10003; Present:</b> '+pCount+'</span>'
+    + '  <span><b style="color:#ca8a04">&#9200; Late:</b> '+lateCount+'</span>'
     + '  <span><b style="color:#ca8a04">CL:</b> '+clCount+'</span>'
     + '  <span><b style="color:#5b21b6">LOP:</b> '+lopCount+'</span>'
     + '  <span><b style="color:#1e40af">H:</b> '+hCount+'</span>'
@@ -3486,21 +4208,28 @@ function generatePayroll() {
   var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   var monthLabel = months[mo-1] + ' ' + yr;
 
+  var latesToLeave = CFG.ATTENDANCE?.latesToLeave || 10;
   var payData = staffData.map(function(s) {
-    var lopDays=0, clDays=0, hDays=0;
+    var lopDays=0, clDays=0, hDays=0, lateDays=0;
     for (var d=1; d<=daysInMonth; d++) {
       var dt = yr+'-'+String(mo).padStart(2,'0')+'-'+String(d).padStart(2,'0');
       var v  = staffAtt[s.id+'|'+dt] || '';
       if (v==='LOP') lopDays++;
       if (v==='CL')  clDays++;
       if (v==='H')   hDays++;
+      if (v==='L')   lateDays++;
     }
+    // Convert lates to leave days per setting
+    var lateAsLop = latesToLeave > 0 ? Math.floor(lateDays / latesToLeave) : 0;
     var pay        = s.consolidatedPay || s.baseSalary || 0;
     var dailyRate  = pay / 26;
     var lopDed     = Math.round(lopDays * dailyRate);
     var extraDed   = s.extraDed || 0;
     var net        = Math.max(0, pay - lopDed - extraDed);
-    return { s:s, pay:pay, lopDays:lopDays, clDays:clDays, hDays:hDays, lopDed:lopDed, extraDed:extraDed, net:net, dailyRate:dailyRate };
+    var effectiveLop = lopDays + lateAsLop;
+    lopDed = Math.round(effectiveLop * dailyRate);
+    net    = Math.max(0, pay - lopDed - extraDed);
+    return { s:s, pay:pay, lopDays:lopDays, clDays:clDays, hDays:hDays, lateDays:lateDays, lateAsLop:lateAsLop, lopDed:lopDed, extraDed:extraDed, net:net, dailyRate:dailyRate };
   });
 
   var totalNet = payData.reduce(function(a,b){return a+b.net;}, 0);
@@ -3556,11 +4285,12 @@ function generatePayroll() {
       + '</div>'
       : '';
 
-    var attRow = (item.lopDays+item.clDays+item.hDays) > 0
+    var attRow = (item.lopDays+item.clDays+item.hDays+item.lateDays) > 0
       ? '<div style="font-size:11px;color:var(--tx3);padding:4px 0">'
-      + '<span style="color:#ca8a04">CL:'+item.clDays+'</span> '
-      + '<span style="color:#5b21b6;margin:0 4px">LOP:'+item.lopDays+'</span>'
-      + '<span style="color:#1e40af">H:'+item.hDays+'</span>'
+      + (item.lateDays>0?'<span style="color:#ca8a04;margin-right:6px">&#9200; Late:'+item.lateDays+(item.lateAsLop>0?' → '+item.lateAsLop+'d LOP':'')+' </span>':'')
+      + (item.clDays>0?'<span style="color:#ca8a04;margin-right:4px">CL:'+item.clDays+'</span> ':'')
+      + (item.lopDays>0?'<span style="color:#5b21b6;margin-right:4px">LOP:'+item.lopDays+'</span>':'')
+      + (item.hDays>0?'<span style="color:#1e40af">H:'+item.hDays+'</span>':'')
       + '</div>'
       : '<div style="font-size:11px;color:var(--tx3);padding:4px 0">&#10003; Full attendance</div>';
 
@@ -3643,14 +4373,18 @@ function openSalaryPaidModal(staffId) {
 
   // Recalculate net pay
   const daysInMonth = new Date(yr, mo, 0).getDate();
-  let lopDays = 0;
+  let lopDays = 0, lateDaysM = 0;
+  const ltlM = CFG.ATTENDANCE?.latesToLeave || 10;
   for (let d = 1; d <= daysInMonth; d++) {
     const dt = yr + '-' + String(mo).padStart(2,'0') + '-' + String(d).padStart(2,'0');
-    if ((staffAtt[s.id + '|' + dt] || '') === 'LOP') lopDays++;
+    const v = staffAtt[s.id + '|' + dt] || '';
+    if (v === 'LOP') lopDays++;
+    if (v === 'L')   lateDaysM++;
   }
+  const lateAsLopM  = ltlM > 0 ? Math.floor(lateDaysM / ltlM) : 0;
   const pay       = s.consolidatedPay || s.baseSalary || 0;
   const dailyRate = pay / 26;
-  const lopDed    = Math.round(lopDays * dailyRate);
+  const lopDed    = Math.round((lopDays + lateAsLopM) * dailyRate);
   const extraDed  = s.extraDed || 0;
   const net       = Math.max(0, pay - lopDed - extraDed);
 
@@ -4013,6 +4747,7 @@ function getWAExtra(student) {
   const feeRecord = fees.find(f=>f.student===student.name&&f.status!=='paid');
   return {
     month: 'December 2024',
+    date: new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}),
     amount: feeRecord?.balance||'2500',
     dueDate: '5th January 2025',
     overdue: feeRecord?.status==='overdue',
@@ -4678,7 +5413,7 @@ function getAICtx() {
   const tot = students.length || 1;
   const paid = fees.filter(f=>f.status==='paid').length;
   return {
-    students, attPct: Math.round(p/tot*100), feeRate: fees.length>0?Math.round(paid/fees.length*100):0,
+    students, date: dateStr, center_phone: CFG.CENTER.phone||'', attPct: Math.round(p/tot*100), feeRate: fees.length>0?Math.round(paid/fees.length*100):0,
     totalCollected: fees.filter(f=>f.status==='paid').reduce((s,f)=>s+(f.paid||0),0),
     totalPending: fees.filter(f=>f.status!=='paid').reduce((s,f)=>s+(f.balance||0),0),
   };
@@ -7800,7 +8535,7 @@ function getStudentMarksAuto(studentId) {
         if (rec && rec.marks && rec.marks[studentId] !== undefined) {
           seen.add(key);
           const e = rec.marks[studentId];
-          results.push({ examName: rec.examName, subject: rec.subject, maxMarks: rec.maxMarks, marks: e.marks, absent: e.absent, date: rec.date });
+          results.push({ examName: rec.examName, subject: rec.subject, maxMarks: rec.maxMarks, passMarks: rec.passMarks||Math.round((rec.maxMarks||100)*0.35), marks: e.marks, absent: e.absent, pass: e.pass, date: rec.date });
         }
       } catch(e2) {}
     });
@@ -7812,7 +8547,7 @@ function getStudentMarksAuto(studentId) {
         const rec = JSON.parse(localStorage.getItem(k));
         if (rec && rec.marks && rec.marks[studentId] !== undefined) {
           const e = rec.marks[studentId];
-          results.push({ examName: rec.examName, subject: rec.subject, maxMarks: rec.maxMarks, marks: e.marks, absent: e.absent, date: rec.date });
+          results.push({ examName: rec.examName, subject: rec.subject, maxMarks: rec.maxMarks, passMarks: rec.passMarks||Math.round((rec.maxMarks||100)*0.35), marks: e.marks, absent: e.absent, pass: e.pass, date: rec.date });
         }
       } catch(e2) {}
     }

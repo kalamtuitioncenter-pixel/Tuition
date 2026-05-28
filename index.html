@@ -838,6 +838,7 @@ tbody tr:hover td{background:var(--bg)}
     <button class="btn btn-p" onclick="saveAttendance()" style="padding:9px 20px"><svg viewBox="0 0 14 14" fill="none"><path d="M2 7l4 4 6-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span id="btn-save-att">Save Attendance</span></button>
     <button class="btn btn-wa" onclick="sendAttWA()" style="padding:9px 14px"><svg viewBox="0 0 16 16" fill="none" width="14" height="14"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3"/><path d="M5 11l-.5 1.5L6 12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span id="btn-att-wa">Alert Absent</span></button>
     <button class="btn btn-wa" onclick="sendLateWA()" style="padding:9px 14px;background:#ca8a04;border-color:#a16207"><svg viewBox="0 0 16 16" fill="none" width="14" height="14"><circle cx="8" cy="8" r="5" stroke="currentColor" stroke-width="1.3"/><path d="M8 5v3l2 1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>Alert Late</button>
+    <button class="btn" onclick="showMonthlyAttSummary()" style="padding:9px 14px"><svg viewBox="0 0 16 16" fill="none" width="14" height="14"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.3"/><path d="M5 8h6M5 5h4M5 11h6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>Monthly Report</button>
   </div>
 </div>
 
@@ -1146,14 +1147,26 @@ tbody tr:hover td{background:var(--bg)}
     </div>
     <div class="card" style="margin-bottom:12px">
       <div class="card-title" style="margin-bottom:12px" style="color:#16a34a">Google Sheets Backup</div>
-      <div style="background:#f0fdf4;border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:12px;color:#15803d;line-height:1.6"><strong>3 steps:</strong> (1) Paste apps-script.gs into Google Apps Script → Deploy as Web App (2) Copy Web App URL (3) Paste below</div>
+      <div style="background:#f0fdf4;border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:12px;color:#15803d;line-height:1.8">
+        <div style="font-weight:700;margin-bottom:4px">📋 Setup (one time only):</div>
+        <div>1️⃣ Click <b>View Script</b> → Copy the code</div>
+        <div>2️⃣ Open Google Sheets → <b>Extensions → Apps Script</b> → Paste code</div>
+        <div>3️⃣ Replace <code>YOUR_SPREADSHEET_ID_HERE</code> with your Sheet's ID (from its URL)</div>
+        <div>4️⃣ Click <b>Deploy → New Deployment → Web App → Anyone → Deploy</b></div>
+        <div>5️⃣ Copy the <b>Web App URL</b> → paste below → click <b>🔗 Test</b></div>
+        <div style="margin-top:6px;padding:5px 8px;background:#dcfce7;border-radius:6px">✅ Syncs: Students · Fees · Staff · Exams · Attendance to separate sheets</div>
+      </div>
       <div class="fg"><label class="fl">Apps Script Web App URL</label><input class="fi" id="sheets-url" placeholder="https://script.google.com/macros/s/…/exec" oninput="valSheetUrl(this.value)" style="font-family:monospace;font-size:12px"></div>
       <div id="sheet-url-status" style="font-size:11px;margin-bottom:8px"></div>
       <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:.5px solid var(--br);margin-bottom:10px">
         <div><div style="font-size:13px;font-weight:500;color:var(--tx)">Auto Sync to Google Sheets</div><div style="font-size:11px;color:var(--tx2);margin-top:2px">Push backup to Sheets on every save</div></div>
         <input type="checkbox" id="sheets-auto-sync" style="width:16px;height:16px;cursor:pointer">
       </div>
-      <div style="display:flex;gap:8px"><button class="btn btn-g" onclick="syncSheets()" id="btn-sync-sheets"><svg viewBox="0 0 16 16" fill="none" width="13" height="13"><path d="M3 8a5 5 0 015-5 5 5 0 013.54 1.46M13 8a5 5 0 01-5 5 5 5 0 01-3.54-1.46" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M11 4l2.54 1.46L11 7M5 9l-2.54 1.46L5 12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Sync Now</button><button class="btn btn-sm" onclick="showAppsScript()">View Script</button></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-g" onclick="syncSheets()" id="btn-sync-sheets"><svg viewBox="0 0 16 16" fill="none" width="13" height="13"><path d="M3 8a5 5 0 015-5 5 5 0 013.54 1.46M13 8a5 5 0 01-5 5 5 5 0 01-3.54-1.46" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M11 4l2.54 1.46L11 7M5 9l-2.54 1.46L5 12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Sync Now</button>
+        <button class="btn btn-sm" onclick="testSheetConnection()" style="background:#0369a1;color:#fff;border-color:#0369a1">🔗 Test</button>
+        <button class="btn btn-sm" onclick="showAppsScript()">View Script</button>
+      </div>
       <div id="sheets-sync-status" style="margin-top:8px;font-size:12px"></div>
     </div>
     <div class="card" style="margin-bottom:12px">
@@ -2606,6 +2619,311 @@ function getStudentAtt(sid) {
   return attState[_attKey(sid, batchId, session)] || '';
 }
 
+
+/* ══════════════════════════════════════════════════════════
+   MONTHLY ATTENDANCE SUMMARY — Absent & Late only
+   Shows every active student's absent days + late days
+   with teacher review/remarks per student
+══════════════════════════════════════════════════════════ */
+
+function showMonthlyAttSummary() {
+  const now   = new Date();
+  const root  = document.getElementById('modal-root');
+  const ctr   = CFG.CENTER;
+
+  // Build month/year selectors
+  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const curMo  = now.getMonth();
+  const curYr  = now.getFullYear();
+
+  root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()">
+    <div class="modal" style="max-width:680px;height:90vh;display:flex;flex-direction:column">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-shrink:0">
+        <div style="font-size:14px;font-weight:700;color:var(--tx)">📋 Monthly Attendance Summary</div>
+        <button onclick="closeModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--tx2)">×</button>
+      </div>
+
+      <!-- Controls -->
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-shrink:0;flex-wrap:wrap">
+        <select class="fi" id="mas-month" style="width:auto" onchange="renderMAS()">
+          ${MONTHS.map((m,i)=>`<option value="${i}" ${i===curMo?'selected':''}>${m}</option>`).join('')}
+        </select>
+        <select class="fi" id="mas-year" style="width:auto" onchange="renderMAS()">
+          ${[curYr-1,curYr,curYr+1].map(y=>`<option value="${y}" ${y===curYr?'selected':''}>${y}</option>`).join('')}
+        </select>
+        <select class="fi" id="mas-batch" style="width:auto" onchange="renderMAS()">
+          <option value="all">All Batches</option>
+          ${(batches||[]).map(b=>`<option value="${b.name}">${b.name}</option>`).join('')}
+        </select>
+        <button class="btn btn-wa btn-sm" onclick="sendAllMASWA()" style="margin-left:auto">📱 Send All WA</button>
+        <button class="btn btn-sm" onclick="downloadMASReport()">⬇ Download</button>
+      </div>
+
+      <!-- Summary Stats -->
+      <div id="mas-stats" style="display:flex;gap:8px;margin-bottom:10px;flex-shrink:0;flex-wrap:wrap"></div>
+
+      <!-- Table -->
+      <div style="flex:1;overflow-y:auto;border:.5px solid var(--br);border-radius:10px">
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead style="position:sticky;top:0;z-index:1">
+            <tr style="background:var(--bg)">
+              <th style="padding:8px 10px;text-align:left;font-weight:700;color:var(--tx2);border-bottom:.5px solid var(--br)">Student</th>
+              <th style="padding:8px 8px;text-align:center;font-weight:700;color:#dc2626;border-bottom:.5px solid var(--br)">Absent</th>
+              <th style="padding:8px 8px;text-align:center;font-weight:700;color:#ca8a04;border-bottom:.5px solid var(--br)">Late</th>
+              <th style="padding:8px 8px;text-align:center;font-weight:700;color:var(--tx2);border-bottom:.5px solid var(--br)">Status</th>
+              <th style="padding:8px 10px;text-align:left;font-weight:700;color:var(--tx2);border-bottom:.5px solid var(--br)">Review / Remarks</th>
+              <th style="padding:8px 8px;text-align:center;font-weight:700;color:var(--tx2);border-bottom:.5px solid var(--br)">WA</th>
+            </tr>
+          </thead>
+          <tbody id="mas-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>`;
+
+  renderMAS();
+}
+
+function renderMAS() {
+  const mo     = parseInt(document.getElementById('mas-month')?.value ?? new Date().getMonth());
+  const yr     = parseInt(document.getElementById('mas-year')?.value  ?? new Date().getFullYear());
+  const batch  = document.getElementById('mas-batch')?.value || 'all';
+  const tbody  = document.getElementById('mas-tbody');
+  const stats  = document.getElementById('mas-stats');
+  if (!tbody) return;
+
+  const monthStr = yr + '-' + String(mo+1).padStart(2,'0'); // "2025-05"
+
+  // Collect all attendance keys for this month from localStorage
+  const monthData = {}; // sid → { absent: N, late: N }
+
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (!k || !k.startsWith('_erp_att_')) continue;
+    const datePart = k.slice('_erp_att_'.length, '_erp_att_'.length + 10);
+    if (!datePart.startsWith(monthStr)) continue;
+    try {
+      const rec = JSON.parse(localStorage.getItem(k));
+      Object.keys(rec).forEach(rk => {
+        const sid = rk.split('|')[0];
+        if (!monthData[sid]) monthData[sid] = { absent:0, late:0 };
+        if (rec[rk] === 'A') monthData[sid].absent++;
+        if (rec[rk] === 'L') monthData[sid].late++;
+      });
+    } catch(e) {}
+  }
+
+  // Filter active students
+  let activeStudents = students.filter(s => s && s.name && s.status === 'active');
+  if (batch !== 'all') {
+    activeStudents = activeStudents.filter(s => s.course === batch || s.batch === batch);
+  }
+
+  // Sort: most absent first, then most late
+  activeStudents = activeStudents.map(s => ({
+    ...s,
+    absent: (monthData[s.id]?.absent || 0),
+    late:   (monthData[s.id]?.late   || 0),
+  })).sort((a,b) => (b.absent + b.late*0.1) - (a.absent + a.late*0.1));
+
+  // Stats strip
+  const totalAbsent = activeStudents.reduce((a,s)=>a+s.absent,0);
+  const totalLate   = activeStudents.reduce((a,s)=>a+s.late,0);
+  const perfectAtt  = activeStudents.filter(s=>s.absent===0&&s.late===0).length;
+  const critical    = activeStudents.filter(s=>s.absent>=5||s.late>=5).length;
+
+  if (stats) stats.innerHTML = [
+    { l:'🔴 Critical', v: critical,    bg:'#fee2e2', c:'#dc2626' },
+    { l:'❌ Total Absent Days', v: totalAbsent, bg:'#fef2f2', c:'#dc2626' },
+    { l:'⏰ Total Late Days',   v: totalLate,   bg:'#fefce8', c:'#ca8a04' },
+    { l:'✅ Perfect Attendance',v: perfectAtt,  bg:'#f0fdf4', c:'#16a34a' },
+  ].map(s=>`<div style="padding:6px 12px;border-radius:8px;background:${s.bg};font-size:11px;font-weight:700;color:${s.c}">${s.l}: ${s.v}</div>`).join('');
+
+  // Render rows — only students who have absent or late (rest show as ✅)
+  const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  tbody.innerHTML = activeStudents.map(s => {
+    const rk       = `_mas_review_${s.id}_${yr}_${String(mo).padStart(2,'0')}`;
+    const saved    = (() => { try { return localStorage.getItem(rk)||''; } catch(e){ return ''; } })();
+    const abLevel  = s.absent >= 5 ? 'critical' : s.absent >= 3 ? 'high' : s.absent >= 1 ? 'some' : 'none';
+    const ltLevel  = s.late   >= 5 ? 'critical' : s.late   >= 3 ? 'high' : s.late   >= 1 ? 'some' : 'none';
+    const abColor  = abLevel==='critical'?'#dc2626':abLevel==='high'?'#ea580c':abLevel==='some'?'#d97706':'#16a34a';
+    const ltColor  = ltLevel==='critical'?'#dc2626':ltLevel==='high'?'#ea580c':ltLevel==='some'?'#ca8a04':'#16a34a';
+    const statusIcon = s.absent===0&&s.late===0 ? '<span style="color:#16a34a;font-weight:700">✅ Perfect</span>'
+      : s.absent>=5||s.late>=5 ? '<span style="color:#dc2626;font-weight:700">🔴 Critical</span>'
+      : s.absent>=3||s.late>=3 ? '<span style="color:#ea580c;font-weight:700">🟠 Poor</span>'
+      : '<span style="color:#ca8a04;font-weight:700">⚠️ Fair</span>';
+    const rowBg = s.absent===0&&s.late===0 ? '' : s.absent>=5||s.late>=5 ? 'background:#fff5f5' : 'background:#fffbeb';
+
+    return `<tr style="${rowBg}">
+      <td style="padding:8px 10px;border-bottom:.5px solid var(--br)">
+        <div style="display:flex;align-items:center;gap:7px">
+          <div class="av" style="background:${s.color};width:24px;height:24px;font-size:10px;flex-shrink:0">${(s.name||'?')[0]}</div>
+          <div>
+            <div style="font-weight:600;font-size:12px;color:var(--tx)">${s.name}</div>
+            <div style="font-size:9px;color:var(--tx3)">Gr.${s.grade} · ${s.course||'—'}</div>
+          </div>
+        </div>
+      </td>
+      <td style="padding:8px;text-align:center;border-bottom:.5px solid var(--br)">
+        <span style="font-size:16px;font-weight:800;color:${abColor}">${s.absent}</span>
+        <div style="font-size:9px;color:${abColor}">days</div>
+      </td>
+      <td style="padding:8px;text-align:center;border-bottom:.5px solid var(--br)">
+        <span style="font-size:16px;font-weight:800;color:${ltColor}">${s.late}</span>
+        <div style="font-size:9px;color:${ltColor}">days</div>
+      </td>
+      <td style="padding:8px;text-align:center;border-bottom:.5px solid var(--br);font-size:11px">${statusIcon}</td>
+      <td style="padding:6px 8px;border-bottom:.5px solid var(--br)">
+        <input class="fi" style="font-size:11px;padding:4px 8px;width:100%;min-width:140px"
+          id="mas-rev-${s.id}"
+          value="${saved.replace(/"/g,'&quot;')}"
+          placeholder="${s.absent===0&&s.late===0?'No issues ✅':'Add review / parent remark…'}"
+          onchange="saveMASReview('${s.id}',${yr},${mo},this.value)">
+      </td>
+      <td style="padding:6px 8px;text-align:center;border-bottom:.5px solid var(--br)">
+        ${s.phone||s.pphone
+          ? `<button class="btn btn-wa btn-sm" style="font-size:10px;padding:3px 8px"
+              onclick="sendMASWA('${s.id}',${yr},${mo})">📱</button>`
+          : '<span style="font-size:10px;color:var(--tx3)">—</span>'}
+      </td>
+    </tr>`;
+  }).join('');
+
+  if (activeStudents.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--tx3)">No active students found</td></tr>';
+  }
+}
+
+/* Save a review remark */
+function saveMASReview(sid, yr, mo, val) {
+  try {
+    const k = `_mas_review_${sid}_${yr}_${String(mo).padStart(2,'0')}`;
+    if (val.trim()) localStorage.setItem(k, val.trim());
+    else localStorage.removeItem(k);
+  } catch(e) {}
+  showToast('💾 Review saved');
+}
+
+/* Build WA message for one student */
+function buildMASWA(s, yr, mo) {
+  const monthStr  = yr + '-' + String(mo+1).padStart(2,'0');
+  const MONTHS    = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const MONTHS_TA = ['ஜனவரி','பிப்ரவரி','மார்ச்','ஏப்ரல்','மே','ஜூன்','ஜூலை','ஆகஸ்ட்','செப்டம்பர்','அக்டோபர்','நவம்பர்','டிசம்பர்'];
+
+  // Scan localStorage for this month
+  let absent = 0, late = 0;
+  const absentDates = [], lateDates = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (!k || !k.startsWith('_erp_att_')) continue;
+    const datePart = k.slice('_erp_att_'.length, '_erp_att_'.length+10);
+    if (!datePart.startsWith(monthStr)) continue;
+    try {
+      const rec = JSON.parse(localStorage.getItem(k));
+      Object.keys(rec).forEach(rk => {
+        if (!rk.startsWith(s.id+'|')) return;
+        if (rec[rk]==='A') { absent++; absentDates.push(datePart.slice(8)); }
+        if (rec[rk]==='L') { late++;   lateDates.push(datePart.slice(8));   }
+      });
+    } catch(e) {}
+  }
+
+  const rk      = `_mas_review_${s.id}_${yr}_${String(mo).padStart(2,'0')}`;
+  const review  = (() => { try { return localStorage.getItem(rk)||''; } catch(e){ return ''; } })();
+  const ctr     = CFG.CENTER;
+  const isTa    = lang === 'ta';
+  const monName = isTa ? MONTHS_TA[mo] : MONTHS[mo];
+  const status  = absent===0&&late===0 ? (isTa?'மிகவும் நல்லது ✅':'Excellent ✅')
+    : absent>=5||late>=5 ? (isTa?'கவலைப்படத்தக்கது ⚠️':'Needs attention ⚠️')
+    : (isTa?'சரி 👍':'Fair 👍');
+
+  if (isTa) {
+    const abLine  = absent>0 ? `❌ வரவில்லை: *${absent} நாட்கள்*${absentDates.length?` (${absentDates.join(', ')} ${monName.slice(0,3)})`:''}\n` : '';
+    const ltLine  = late>0   ? `⏰ தாமதம்: *${late} நாட்கள்*${lateDates.length?` (${lateDates.join(', ')} ${monName.slice(0,3)})`:''}\n` : '';
+    const rvLine  = review   ? `\n📝 ஆசிரியர் கருத்து: ${review}` : '';
+    const noIssue = absent===0&&late===0 ? `✅ ${monName} மாதம் முழுவதும் சரியாக வந்தார். அருமை!\n` : '';
+    return `🙏 வணக்கம் *${s.parent}* அவர்களுக்கு,\n\n📋 *மாதாந்திர வருகை அறிக்கை*\n🏫 ${ctr.name}\n📅 மாதம்: *${monName} ${yr}*\n\n👤 *${s.name}* (வகுப்பு ${s.grade})\n\n${noIssue}${abLine}${ltLine}📊 நிலை: ${status}${rvLine}\n\nகவலைகளுக்கு தொடர்புகொள்ளவும்.\n📞 ${ctr.phone}`;
+  } else {
+    const abLine  = absent>0 ? `❌ Absent: *${absent} day(s)*${absentDates.length?` (${absentDates.join(', ')} ${MONTHS[mo].slice(0,3)})`:''}\n` : '';
+    const ltLine  = late>0   ? `⏰ Late: *${late} day(s)*${lateDates.length?` (${lateDates.join(', ')} ${MONTHS[mo].slice(0,3)})`:''}\n` : '';
+    const rvLine  = review   ? `\n📝 Teacher's Remark: ${review}` : '';
+    const noIssue = absent===0&&late===0 ? `✅ ${s.name} had perfect attendance this month. Well done!\n` : '';
+    return `Dear *${s.parent}*,\n\n📋 *Monthly Attendance Report*\n🏫 ${ctr.name}\n📅 Month: *${MONTHS[mo]} ${yr}*\n\n👤 *${s.name}* (Grade ${s.grade})\n\n${noIssue}${abLine}${ltLine}📊 Status: ${status}${rvLine}\n\nFor any queries contact us.\n📞 ${ctr.phone}`;
+  }
+}
+
+/* Send WA for one student from the table */
+function sendMASWA(sid, yr, mo) {
+  const s = students.find(x=>x.id===sid);
+  if (!s) return;
+  const phone = s.phone || s.pphone || '';
+  if (!phone) return showToast('⚠️ No phone number for '+s.name);
+  openWA(phone, buildMASWA(s, yr, mo));
+  showToast('📱 WA opening for '+s.name+'…');
+}
+
+/* Send WA for all students */
+function sendAllMASWA() {
+  const mo    = parseInt(document.getElementById('mas-month')?.value ?? new Date().getMonth());
+  const yr    = parseInt(document.getElementById('mas-year')?.value  ?? new Date().getFullYear());
+  const batch = document.getElementById('mas-batch')?.value || 'all';
+  let list    = students.filter(s=>s&&s.name&&s.status==='active'&&(s.phone||s.pphone));
+  if (batch !== 'all') list = list.filter(s=>s.course===batch||s.batch===batch);
+  if (list.length===0) return showToast('⚠️ No students with phone numbers');
+
+  let delay = 0;
+  list.forEach(s => {
+    setTimeout(() => {
+      openWA(s.phone||s.pphone, buildMASWA(s, yr, mo));
+    }, delay);
+    delay += 900;
+  });
+  showToast(`📱 Sending to ${list.length} parents…`);
+}
+
+/* Download CSV of the summary */
+function downloadMASReport() {
+  const mo   = parseInt(document.getElementById('mas-month')?.value ?? new Date().getMonth());
+  const yr   = parseInt(document.getElementById('mas-year')?.value  ?? new Date().getFullYear());
+  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const monthStr = yr+'-'+String(mo+1).padStart(2,'0');
+
+  const monthData = {};
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (!k||!k.startsWith('_erp_att_')) continue;
+    const dp = k.slice('_erp_att_'.length, '_erp_att_'.length+10);
+    if (!dp.startsWith(monthStr)) continue;
+    try {
+      const rec = JSON.parse(localStorage.getItem(k));
+      Object.keys(rec).forEach(rk => {
+        const sid = rk.split('|')[0];
+        if (!monthData[sid]) monthData[sid]={absent:0,late:0};
+        if (rec[rk]==='A') monthData[sid].absent++;
+        if (rec[rk]==='L') monthData[sid].late++;
+      });
+    } catch(e){}
+  }
+
+  const rows = [['Name','Grade','Course','Parent','Phone','Absent Days','Late Days','Status','Review']];
+  students.filter(s=>s&&s.name&&s.status==='active').forEach(s => {
+    const d = monthData[s.id]||{absent:0,late:0};
+    const rk = `_mas_review_${s.id}_${yr}_${String(mo).padStart(2,'0')}`;
+    const rv = (() => { try { return localStorage.getItem(rk)||''; } catch(e){ return ''; } })();
+    const st = d.absent===0&&d.late===0?'Perfect':d.absent>=5||d.late>=5?'Critical':d.absent>=3||d.late>=3?'Poor':'Fair';
+    rows.push([s.name,s.grade,s.course||'',s.parent||'',s.phone||'',d.absent,d.late,st,rv]);
+  });
+
+  const csv = rows.map(r=>r.map(v=>'"'+(String(v).replace(/"/g,'""'))+'"').join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href=url; a.download=`attendance-${MONTHS[mo]}-${yr}.csv`; a.click();
+  URL.revokeObjectURL(url);
+  showToast('⬇ Downloaded CSV');
+}
+
+
 function sendAttWA() {
   waType = 'absent';
   document.getElementById('wa-recipients-sel').value = 'absent';
@@ -2838,7 +3156,7 @@ function sendOneAttWA(studentId, status) {
 ═══════════════════════════════════════════════════════ */
 function renderFees(data) {
   const bm = {paid:'bg', partial:'bp', pending:'ba', overdue:'br2'};
-  const source = (data || fees).filter(f => f && f.rcpt);
+  const source = (data || fees).filter(f => f && f.rcpt && !f._deleted);
 
   // Always recalculate summary from the full fees array
   const allFees = fees.filter(f => f && f.rcpt);
@@ -3880,7 +4198,8 @@ function sendExamNoticeToAll(exam, lang) {
               <div style="font-size:10px;color:var(--tx3)">${s.parent} · ${phone||'No phone'}</div>
             </div>
             <button class="btn btn-wa btn-sm" style="font-size:10px" ${!phone?'disabled':''}
-              onclick="openWA('${phone}',\`${msg.replace(/`/g,"'")}\`)">📱</button>
+              data-phone="${phone}" data-sid="${s.id}"
+              onclick="sendExamNoticeOne(this,exams[${examIdx}],lang)">📱</button>
           </div>`;
         }).join('')}
       </div>
@@ -3889,6 +4208,40 @@ function sendExamNoticeToAll(exam, lang) {
   </div>`;
 }
 
+
+/* Helper called from exam notice WA queue buttons */
+function sendExamNoticeOne(btn, exam, waLang) {
+  const phone = btn.getAttribute('data-phone');
+  const sid   = btn.getAttribute('data-sid');
+  if (!phone || !exam) return;
+  const s = students.find(x => x.id === sid);
+  if (!s) return;
+  const pass    = exam.passMarks || Math.round((exam.maxMarks||100)*0.35);
+  const dateStr = exam.date ? new Date(exam.date+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) : exam.date;
+  const ctr     = CFG.CENTER;
+  const lg      = waLang || 'en';
+  function buildMsg(l) {
+    const arr  = WA_TEMPLATES.exam_notice ? (WA_TEMPLATES.exam_notice[l] || WA_TEMPLATES.exam_notice.en || ['']) : [''];
+    const sv   = typeof getWTSaved === 'function' ? getWTSaved('exam_notice', l) : '';
+    return (sv || arr[0] || '')
+      .replace(/{parent_name}/g,  s.parent  || 'Parent')
+      .replace(/{student_name}/g, s.name    || 'Student')
+      .replace(/{grade}/g,        s.grade   || '')
+      .replace(/{exam_name}/g,    exam.name || '')
+      .replace(/{subject}/g,      exam.subject || '')
+      .replace(/{exam_date}/g,    dateStr   || '')
+      .replace(/{max_marks}/g,    exam.maxMarks)
+      .replace(/{pass_marks}/g,   pass)
+      .replace(/{syllabus}/g,     exam.syllabus || (l === 'ta' ? 'Full syllabus' : 'Full syllabus'))
+      .replace(/{center_name}/g,  ctr.name  || '')
+      .replace(/{center_phone}/g, ctr.phone || '');
+  }
+  var msg = lg === 'both' ? buildMsg('en') + '\n\n' + buildMsg('ta') : buildMsg(lg);
+  openWA(phone, msg);
+  btn.textContent = 'Sent';
+  btn.disabled = true;
+  btn.style.background = '#16a34a';
+}
 /* ── Load all marks for a student ── */
 function getStudentMarks(studentId) {
   const results = [];
@@ -6354,12 +6707,36 @@ function doPost(e) {
     const data = JSON.parse(e.postData.contents);
     const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
     const ts = new Date().toLocaleString('en-IN');
-    writeSht(ss,'Students',['Time','ID','Name','Grade','Parent','Phone','Status'],
-      (data.students||[]).map(s=>[ts,s.id,s.name,'Gr.'+s.grade,s.parent,s.phone,s.status]));
+
+    // Students
+    writeSht(ss,'Students',['Time','ID','Name','Grade','Parent','Phone','Course','Status'],
+      (data.students||[]).map(s=>[ts,s.id||'',s.name||'','Gr.'+(s.grade||''),s.parent||'',s.phone||'',s.course||'',s.status||'']));
+
+    // Fees
     writeSht(ss,'Fees',['Time','Receipt','Student','Month','Total','Paid','Balance','Status'],
-      (data.fees||[]).map(f=>[ts,f.rcpt,f.student,f.month,f.total,f.paid,f.balance,f.status]));
+      (data.fees||[]).map(f=>[ts,f.rcpt||'',f.student||'',f.month||'',f.total||0,f.paid||0,f.balance||0,f.status||'']));
+
+    // Staff
+    writeSht(ss,'Staff',['Time','ID','Name','Role','Phone','Salary'],
+      (data.staff||[]).map(s=>[ts,s.id||'',s.name||'',s.role||'',s.phone||'',s.consolidatedPay||s.baseSalary||0]));
+
+    // Exams
+    writeSht(ss,'Exams',['Time','ID','Exam Name','Subject','Type','Date','Full Marks','Pass Marks','Batch'],
+      (data.exams||[]).map(ex=>[ts,ex.id||'',ex.name||'',ex.subject||'',ex.type||'',ex.date||'',ex.maxMarks||100,ex.passMarks||35,ex.batch||'All']));
+
+    // Attendance summary (only today's marked entries)
+    const attRows = Object.entries(data.attendance||{}).slice(0,500).map(([k,v])=>[ts,k,v]);
+    if (attRows.length > 0) {
+      writeSht(ss,'Attendance',['Time','Key (date_batch_session_studentId)','Status'],attRows);
+    }
+
     logEntry(ss,ts,data);
-    return ContentService.createTextOutput(JSON.stringify({status:'ok',ts})).setMimeType(ContentService.MimeType.JSON);
+    return ContentService.createTextOutput(JSON.stringify({status:'ok',ts,counts:{
+      students:(data.students||[]).length,
+      fees:(data.fees||[]).length,
+      staff:(data.staff||[]).length,
+      exams:(data.exams||[]).length,
+    }})).setMimeType(ContentService.MimeType.JSON);
   } catch(err) {
     return ContentService.createTextOutput(JSON.stringify({status:'error',msg:err.toString()})).setMimeType(ContentService.MimeType.JSON);
   }
@@ -6486,7 +6863,13 @@ function valSheetUrl(url) {
   const el=document.getElementById('sheet-url-status'); if(!el) return;
   if(!url){el.style.display='none';return;}
   el.style.display='block';
-  el.innerHTML=url.includes('script.google.com/macros/s/')?'<span style="color:#16a34a">✓ Valid Google Apps Script URL</span>':'<span style="color:#dc2626">✗ Enter a valid Apps Script Web App URL</span>';
+  const isValid = url.includes('script.google.com/macros/s/') && url.includes('/exec');
+  const isPartial = url.includes('script.google.com/macros/s/') && !url.includes('/exec');
+  el.innerHTML = isValid
+    ? '<span style="color:#16a34a">✓ Valid URL — ready to sync</span>'
+    : isPartial
+    ? '<span style="color:#ca8a04">⚠️ URL missing /exec at the end — must be: .../exec</span>'
+    :'<span style="color:#dc2626">✗ Enter a valid Apps Script Web App URL</span>';
 }
 async function syncSheets(silent) {
   const url = (document.getElementById('sheets-url')?.value || '').trim();
@@ -6498,24 +6881,39 @@ async function syncSheets(silent) {
   if (statusEl) { statusEl.style.display='block'; statusEl.textContent='Connecting to Google Sheets…'; }
   try {
     const snapshot = getSnapshot();
+    // Collect saved marks from localStorage
+    const marksIndex = JSON.parse(localStorage.getItem('_erp_marks_index')||'[]');
+    const allMarks = marksIndex.map(k => { try { return JSON.parse(localStorage.getItem(k)); } catch(e){return null;} }).filter(Boolean);
+
     const body = JSON.stringify({
-      center:    CFG.CENTER.name || 'Kalam Tuition',
-      timestamp: new Date().toISOString(),
-      students:  snapshot.students  || [],
-      fees:      snapshot.fees      || [],
-      staff:     snapshot.staffData || [],
-      exams:     snapshot.exams     || [],
-      attendance: snapshot.attState || {}
+      center:     CFG.CENTER.name || 'Kalam Tuition',
+      timestamp:  new Date().toISOString(),
+      source:     'manual',
+      students:   snapshot.students  || [],
+      fees:       snapshot.fees      || [],
+      staff:      snapshot.staffData || [],
+      exams:      snapshot.exams     || [],
+      attendance: snapshot.attState  || {},
+      marks:      allMarks,
     });
-    // Use no-cors — response is opaque but data is sent
-    await fetch(url, {
+    // Send to Apps Script — use no-cors since Google's endpoint requires it
+    // We verify the URL format and Apps Script will receive the data
+    const resp = await fetch(url, {
       method: 'POST',
       mode:   'no-cors',
       headers: { 'Content-Type': 'text/plain' },
       body:   body
     });
+    // no-cors fetch always resolves (opaque response) — verify URL format instead
+    const isValidUrl = url.includes('script.google.com/macros/s/') && url.includes('/exec');
     const now = new Date().toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'});
-    if (statusEl) statusEl.innerHTML = '<span style="color:#16a34a">✅ Synced at ' + now + '</span>';
+    if (isValidUrl) {
+      if (statusEl) statusEl.innerHTML = '<span style="color:#16a34a">✅ Sent to Google Sheets at ' + now + ' — check your Sheet to confirm</span>';
+    } else {
+      if (statusEl) statusEl.innerHTML = '<span style="color:#dc2626">⚠️ URL format looks wrong. Must be: https://script.google.com/macros/s/…/exec</span>';
+      if (!silent) showToast('⚠️ Check your Apps Script URL format');
+      resetBtn(); return;
+    }
     try {
       bkHistory.unshift({ts:new Date().toISOString(),source:'sheets',
         size:(body.length/1024).toFixed(1)+' KB',status:'ok'});
@@ -6532,6 +6930,37 @@ async function syncSheets(silent) {
     resetBtn();
   }
 }
+function testSheetConnection() {
+  const url = (document.getElementById('sheets-url')?.value || '').trim();
+  const statusEl = document.getElementById('sheets-sync-status');
+  if (!url) {
+    showToast('⚠️ Paste your Apps Script URL first');
+    return;
+  }
+  if (!url.includes('script.google.com/macros/s/') || !url.includes('/exec')) {
+    if (statusEl) statusEl.innerHTML = '<span style="color:#dc2626">❌ URL format wrong — must be: https://script.google.com/macros/s/…/exec</span>';
+    showToast('❌ URL format is incorrect');
+    return;
+  }
+  if (statusEl) statusEl.innerHTML = '<span style="color:#ca8a04">🔗 Testing connection…</span>';
+
+  // Send a tiny test ping
+  fetch(url, {
+    method:  'POST',
+    mode:    'no-cors',
+    headers: { 'Content-Type': 'text/plain' },
+    body:    JSON.stringify({ center: CFG.CENTER.name||'Test', timestamp: new Date().toISOString(), source:'test', students:[], fees:[], staff:[], exams:[], attendance:{} })
+  }).then(() => {
+    // no-cors always resolves — if URL is valid format, it reached Google
+    if (statusEl) statusEl.innerHTML = '<span style="color:#16a34a">✅ URL format valid — ping sent to Google. Check your Google Sheet for a new row in Log tab to confirm receipt.</span>';
+    showToast('✅ Test ping sent — check your Google Sheet Log tab!');
+    try { localStorage.setItem('_erp_sheets_url', url); } catch(e){}
+  }).catch(err => {
+    if (statusEl) statusEl.innerHTML = '<span style="color:#dc2626">❌ Network error: ' + (err.message||'Cannot reach URL') + '</span>';
+    showToast('❌ Connection failed — check URL and internet');
+  });
+}
+
 function showAppsScript() {
   const panel=document.getElementById('apps-script-panel');
   const code=document.getElementById('apps-script-code');
@@ -8036,21 +8465,59 @@ function saveEditStudent(idx) {
 function deleteStudent(idx) {
   const s = students[idx];
   if (!s) return;
+  const sid   = s.id;
+  const sname = s.name;
+
+  const paidFees  = fees.filter(f => (f.student===sname||f.studentId===sid) && f.status==='paid');
+  const pendFees  = fees.filter(f => (f.student===sname||f.studentId===sid) && f.status!=='paid');
+  const paidTotal = paidFees.reduce((a,f) => a+(f.paid||0), 0);
+  const examCount = exams.filter(e => e.marks && e.marks[sid]!==undefined).length;
+  let attCount = 0;
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (!k || !k.startsWith('_erp_att_')) continue;
+    try {
+      const rec = JSON.parse(localStorage.getItem(k));
+      Object.keys(rec).forEach(rk => { if (rk.startsWith(sid+'|')) attCount++; });
+    } catch(e) {}
+  }
+
   const root = document.getElementById('modal-root');
-  root.innerHTML = `<div class="modal-bg"><div class="modal" style="max-width:380px">
-    <div style="text-align:center;padding:8px 0 14px">
-      <div style="font-size:36px;margin-bottom:10px">🗑️</div>
-      <div style="font-size:15px;font-weight:700;color:var(--tx);margin-bottom:6px">Remove Student?</div>
-      <div style="font-size:12px;color:var(--tx2);line-height:1.6;margin-bottom:18px">
-        <b>${s.name}</b> (${s.admNo||s.id})<br>
-        This will mark the student as inactive.<br>All records are preserved.
-      </div>
-      <div style="display:flex;gap:8px;justify-content:center">
-        <button class="btn" style="flex:1;justify-content:center;padding:10px" onclick="closeModal()">Cancel</button>
-        <button class="btn" style="flex:1;justify-content:center;padding:10px;background:#dc2626;color:#fff;border-color:#dc2626" onclick="confirmDelete(${idx})">Remove</button>
-      </div>
-    </div>
-  </div></div>`;
+  let html = '<div class="modal-bg"><div class="modal" style="max-width:420px">';
+  html += '<div style="text-align:center;padding:4px 0 6px">';
+  html += '<div style="font-size:32px;margin-bottom:8px">🗑️</div>';
+  html += '<div style="font-size:15px;font-weight:700;color:var(--tx);margin-bottom:4px">Delete Student?</div>';
+  html += '<div style="font-size:13px;color:#dc2626;margin-bottom:12px"><b>' + sname + '</b> &middot; ' + (s.admNo||s.id) + '</div>';
+  html += '</div>';
+
+  // What gets deleted
+  html += '<div style="background:#fee2e2;border-radius:8px;padding:10px 12px;margin-bottom:8px;border:.5px solid #fca5a5">';
+  html += '<div style="font-size:11px;font-weight:700;color:#dc2626;margin-bottom:6px">🗑️ WILL BE DELETED:</div>';
+  html += '<div style="font-size:11px;color:#7f1d1d;line-height:1.9">';
+  html += '✗ Student profile &amp; admission data<br>';
+  html += '✗ Attendance records (' + attCount + ' entries)<br>';
+  html += '✗ Exam marks (' + examCount + ' exams)<br>';
+  html += '✗ Monthly summary data';
+  if (pendFees.length > 0) html += '<br>✗ ' + pendFees.length + ' pending/overdue fee record(s)';
+  html += '</div></div>';
+
+  // What gets preserved
+  if (paidFees.length > 0) {
+    html += '<div style="background:#dcfce7;border-radius:8px;padding:10px 12px;margin-bottom:12px;border:.5px solid #86efac">';
+    html += '<div style="font-size:11px;font-weight:700;color:#16a34a;margin-bottom:6px">✅ INCOME PRESERVED:</div>';
+    html += '<div style="font-size:11px;color:#14532d;line-height:1.9">';
+    html += '✓ ' + paidFees.length + ' paid fee receipt(s) kept for income records<br>';
+    html += '✓ ₹' + paidTotal.toLocaleString('en-IN') + ' collected — stays in income total<br>';
+    html += '✓ Dashboard income figures unchanged';
+    html += '</div></div>';
+  }
+
+  html += '<div style="display:flex;gap:8px">';
+  html += '<button class="btn" style="flex:1;justify-content:center;padding:10px" onclick="closeModal()">Cancel</button>';
+  html += '<button class="btn" style="flex:1;justify-content:center;padding:10px;background:#dc2626;color:#fff;border-color:#dc2626" onclick="confirmDelete(' + idx + ')">🗑️ Delete</button>';
+  html += '</div>';
+  html += '</div></div>';
+  root.innerHTML = html;
 }
 
 function confirmDelete(idx) {
@@ -8059,37 +8526,85 @@ function confirmDelete(idx) {
   var sid   = s.id;
   var sname = s.name;
 
-  // 1. Remove from attendance
+  // 1. Clear today's attState for this student (session-level keys)
   delete attState[sid];
   Object.keys(attState).forEach(function(k) {
     if (k.indexOf(sid + '|') === 0) delete attState[k];
   });
 
-  // 2. Remove all fee records for this student
+  // 2. Clear all localStorage attendance records for this student
+  //    Keys: _erp_att_{YYYY-MM-DD}_{batch}_{session} — value obj has keys like "sid|batch|session"
+  for (var i = 0; i < localStorage.length; i++) {
+    var lk = localStorage.key(i);
+    if (!lk || !lk.startsWith('_erp_att_')) continue;
+    try {
+      var rec = JSON.parse(localStorage.getItem(lk));
+      var changed = false;
+      Object.keys(rec).forEach(function(rk) {
+        if (rk.startsWith(sid + '|')) { delete rec[rk]; changed = true; }
+      });
+      if (changed) localStorage.setItem(lk, JSON.stringify(rec));
+    } catch(e2) {}
+  }
+
+  // 3. Clear student summary data (_erp_sum_)
+  var sumKeys = [];
+  for (var j = 0; j < localStorage.length; j++) {
+    var sk = localStorage.key(j);
+    if (sk && sk.startsWith('_erp_sum_' + sid + '_')) sumKeys.push(sk);
+  }
+  sumKeys.forEach(function(k) { try { localStorage.removeItem(k); } catch(e) {} });
+
+  // 4. PRESERVE paid fees (income) — only remove pending/overdue fees
+  var removedIncome = 0;
   for (var fi = fees.length - 1; fi >= 0; fi--) {
     var f = fees[fi];
     if (f && (f.student === sname || f.studentId === sid)) {
-      fees.splice(fi, 1);
+      if (f.status === 'paid') {
+        // Keep paid records but anonymise the student link for income integrity
+        fees[fi].studentId  = '_deleted_' + sid;
+        fees[fi].student    = sname + ' (Deleted)';
+        fees[fi]._deleted   = true;
+      } else {
+        // Remove pending/overdue fees
+        fees.splice(fi, 1);
+        removedIncome++;
+      }
     }
   }
   saveFees();
 
-  // 3. Remove marks from all exams
+  // 5. Remove from saved marks (localStorage _erp_marks_*)
+  var mIdx = JSON.parse(localStorage.getItem('_erp_marks_index') || '[]');
+  mIdx.forEach(function(mk) {
+    try {
+      var rec = JSON.parse(localStorage.getItem(mk));
+      if (rec && rec.marks && (rec.marks[sid] !== undefined)) {
+        delete rec.marks[sid];
+        localStorage.setItem(mk, JSON.stringify(rec));
+      }
+    } catch(e) {}
+  });
+
+  // 6. Remove marks from in-memory exams
   exams.forEach(function(e) {
     if (e.marks) { delete e.marks[sid]; delete e.marks[sname]; }
   });
   saveExams();
 
-  // 4. Remove student
+  // 7. Remove student from array
   students.splice(idx, 1);
   saveStudents();
 
-  // 5. Refresh pages
+  // 8. Refresh UI
   renderStudents(students);
   renderAttList();
   renderFees(fees);
+  updateDashStats();
   closeModal();
-  showToast('Removed: ' + sname + ' and all their records');
+  var msg = 'Removed: ' + sname;
+  if (removedIncome === 0) msg += ' — Paid fee records preserved in income';
+  showToast(msg);
   runBackup('change');
 }
 

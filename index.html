@@ -1790,55 +1790,6 @@ For queries: 📞 {center_phone}
 📞 {center_phone}
 🏫 {center_name}`
     ],
-    en: [
-`Dear *{parent_name}*,
-
-━━━━━━━━━━━━━━━━━━━
-📋 *Monthly Student Summary*
-━━━━━━━━━━━━━━━━━━━
-🏫 *{center_name}*
-📅 Month: *{month_name} {year}*
-
-👤 Student: *{student_name}*
-🎓 Grade: {grade}
-🏅 Class Rank: *{rank}*
-
-━━━━━━━━━━━━━━━━━━━
-📅 *Attendance*
-━━━━━━━━━━━━━━━━━━━
-✅ Present Days: *{present_days}*
-❌ Absent Days: *{absent_days}*
-⚠️ Late Days: *{late_days}*
-📊 Attendance: *{att_pct}%* — {att_status}
-
-━━━━━━━━━━━━━━━━━━━
-⏰ *Late Analysis*
-━━━━━━━━━━━━━━━━━━━
-{late_status}
-
-━━━━━━━━━━━━━━━━━━━
-📝 *Exam Marks*
-━━━━━━━━━━━━━━━━━━━
-{marks_section}
-
-━━━━━━━━━━━━━━━━━━━
-🌟 *Class Focus*
-━━━━━━━━━━━━━━━━━━━
-{stars} stars — {star_label}
-
-━━━━━━━━━━━━━━━━━━━
-🏅 *Class Activities*
-━━━━━━━━━━━━━━━━━━━
-{activities}
-
-{teacher_note}
-
-━━━━━━━━━━━━━━━━━━━
-Thank you for your support in your child's education! 🙏
-
-📞 {center_phone}
-🏫 {center_name}`
-    ],
   },
 };
 
@@ -7659,9 +7610,10 @@ function initWATemplatesPage() {
   if (!tabs) return;
   tabs.innerHTML = WT_ALL_TYPES.map(t => {
     const hasSaved = !!getWTSaved(t.id, 'en') || !!getWTSaved(t.id, 'ta');
+    const tamilOnly = t.id === 'monthly_summary';
     return `<button onclick="selectWTType('${t.id}')" id="wttab-${t.id}"
       style="display:flex;align-items:center;gap:6px;padding:7px 12px;border-radius:9px;border:1.5px solid var(--br);background:var(--card);color:var(--tx);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:.12s;white-space:nowrap">
-      ${t.emoji} ${t.label}${hasSaved?` <span style="width:6px;height:6px;background:${t.color};border-radius:50%;display:inline-block" title="Customised"></span>`:''}
+      ${t.emoji} ${t.label}${tamilOnly?` <span style="font-size:9px;background:#fef3c7;color:#92400e;padding:1px 5px;border-radius:6px;font-weight:700">தமிழ்</span>`:''}${hasSaved?` <span style="width:6px;height:6px;background:${t.color};border-radius:50%;display:inline-block" title="Customised"></span>`:''}
     </button>`;
   }).join('');
   // Auto-open first
@@ -7690,6 +7642,15 @@ function selectWTType(typeId) {
     varsEl.style.display = 'block';
     varsEl.innerHTML = '<b style="color:var(--tx)">Variables:</b> ' +
       (WT_VARS[typeId]||'').split(' · ').map(v=>`<code style="background:var(--card);padding:1px 5px;border-radius:3px;border:.5px solid var(--br)">{${v.slice(1,-1)}}</code>`).join(' ');
+  }
+  // For monthly_summary: Tamil only — hide EN tab, force Tamil
+  const langTabs = document.getElementById('wt-lang-tabs');
+  if (typeId === 'monthly_summary') {
+    if (langTabs) langTabs.style.display = 'none';
+    wtActiveLang = 'ta';
+  } else {
+    if (langTabs) langTabs.style.display = '';
+    // Restore default lang if needed
   }
   // Load saved or default templates into textareas
   loadWTEditors(typeId);
@@ -9491,9 +9452,9 @@ function buildSumWAMessage(s, year, month) {
 
   const noteText = sumD.note ? `📝 *ஆசிரியர் குறிப்பு:*\n${sumD.note}` : '';
 
-  // ── Check for a saved custom template (via WA Templates page) ──
+  // ── Check for a saved custom Tamil template (via WA Templates page) ──
   const savedTmpl = (typeof getWTSaved === 'function')
-    ? (getWTSaved('monthly_summary', lang === 'ta' ? 'ta' : 'en') || '')
+    ? (getWTSaved('monthly_summary', 'ta') || '')
     : '';
 
   if (savedTmpl) {
@@ -9590,7 +9551,7 @@ function previewSumWA(studentId, year, month) {
   const s = students.find(x => x.id === studentId);
   if (!s) return showToast('மாணவர் கிடைக்கவில்லை');
   const msg  = buildSumWAMessage(s, year, month);
-  const hasSavedTmpl = (typeof getWTSaved === 'function') && !!(getWTSaved('monthly_summary','ta') || getWTSaved('monthly_summary','en'));
+  const hasSavedTmpl = (typeof getWTSaved === 'function') && !!getWTSaved('monthly_summary','ta');
   const root = document.getElementById('modal-root');
   root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()">
     <div class="modal" style="max-width:480px">

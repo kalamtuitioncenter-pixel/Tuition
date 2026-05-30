@@ -1300,6 +1300,10 @@ tbody tr:hover td{background:var(--bg)}
     <div style="text-align:right;flex-shrink:0">
       <div style="font-size:10px;color:rgba(255,255,255,.7)">Total Students</div>
       <div style="font-size:22px;font-weight:800;color:#fff" id="sum-total-count">0</div>
+      <button class="btn btn-sm" onclick="navTo('wa-templates');setTimeout(()=>selectWTType('monthly_summary'),300)"
+        style="margin-top:6px;background:rgba(255,255,255,.18);color:#fff;border-color:rgba(255,255,255,.4);font-size:10px;white-space:nowrap;width:100%">
+        ✏️ Customise WA Template
+      </button>
     </div>
   </div>
 
@@ -1734,6 +1738,106 @@ For queries: 📞 {center_phone}
     ],
     ta: [
       `அன்பான {parent_name},\n\n💰 *கட்டண நினைவூட்டல் — {student_name}*\n\nமாதம்: {month}\nநிலுவை கட்டணம்: ₹{amount}\nகடைசி நாள்: {due_date}\n{overdue_note}\n\n{center_name}-ல் செலுத்தவும்:\n📞 {center_phone}\n\nநன்றி,\n{center_name}`,
+    ],
+  },
+  monthly_summary: {
+    ta: [
+`🙏 வணக்கம் *{parent_name}* அவர்களுக்கு,
+
+━━━━━━━━━━━━━━━━━━━
+📋 *மாதாந்திர மாணவர் அட்டவணை*
+━━━━━━━━━━━━━━━━━━━
+🏫 *{center_name}*
+📅 மாதம்: *{month_name} {year}*
+
+👤 மாணவர்: *{student_name}*
+🎓 வகுப்பு: {grade} ஆம் வகுப்பு
+🏅 வகுப்பு தரவரிசை: *{rank}*
+
+━━━━━━━━━━━━━━━━━━━
+📅 *வருகை நிலை*
+━━━━━━━━━━━━━━━━━━━
+✅ வந்த நாட்கள்: *{present_days}*
+❌ வராத நாட்கள்: *{absent_days}*
+⚠️ தாமத நாட்கள்: *{late_days}*
+📊 வருகை சதவீதம்: *{att_pct}%* — {att_status}
+
+━━━━━━━━━━━━━━━━━━━
+⏰ *தாமத பகுப்பாய்வு*
+━━━━━━━━━━━━━━━━━━━
+{late_status}
+
+━━━━━━━━━━━━━━━━━━━
+📝 *தேர்வு மதிப்பெண்கள்*
+━━━━━━━━━━━━━━━━━━━
+{marks_section}
+
+━━━━━━━━━━━━━━━━━━━
+🌟 *வகுப்பு கவனம்*
+━━━━━━━━━━━━━━━━━━━
+{stars} நட்சத்திரம் — {star_label}
+
+━━━━━━━━━━━━━━━━━━━
+🏅 *வகுப்பு செயல்பாடுகள்*
+━━━━━━━━━━━━━━━━━━━
+{activities}
+
+{teacher_note}
+
+━━━━━━━━━━━━━━━━━━━
+உங்கள் பிள்ளையின் படிப்பில் அக்கறை காட்டியதற்கு நன்றி! 🙏
+
+📞 {center_phone}
+🏫 {center_name}`
+    ],
+    en: [
+`Dear *{parent_name}*,
+
+━━━━━━━━━━━━━━━━━━━
+📋 *Monthly Student Summary*
+━━━━━━━━━━━━━━━━━━━
+🏫 *{center_name}*
+📅 Month: *{month_name} {year}*
+
+👤 Student: *{student_name}*
+🎓 Grade: {grade}
+🏅 Class Rank: *{rank}*
+
+━━━━━━━━━━━━━━━━━━━
+📅 *Attendance*
+━━━━━━━━━━━━━━━━━━━
+✅ Present Days: *{present_days}*
+❌ Absent Days: *{absent_days}*
+⚠️ Late Days: *{late_days}*
+📊 Attendance: *{att_pct}%* — {att_status}
+
+━━━━━━━━━━━━━━━━━━━
+⏰ *Late Analysis*
+━━━━━━━━━━━━━━━━━━━
+{late_status}
+
+━━━━━━━━━━━━━━━━━━━
+📝 *Exam Marks*
+━━━━━━━━━━━━━━━━━━━
+{marks_section}
+
+━━━━━━━━━━━━━━━━━━━
+🌟 *Class Focus*
+━━━━━━━━━━━━━━━━━━━
+{stars} stars — {star_label}
+
+━━━━━━━━━━━━━━━━━━━
+🏅 *Class Activities*
+━━━━━━━━━━━━━━━━━━━
+{activities}
+
+{teacher_note}
+
+━━━━━━━━━━━━━━━━━━━
+Thank you for your support in your child's education! 🙏
+
+📞 {center_phone}
+🏫 {center_name}`
     ],
   },
 };
@@ -7518,6 +7622,7 @@ const WT_VARS = {
   fees:     '{parent_name} · {student_name} · {month} · {amount} · {due_date} · {overdue_note} · {center_name} · {center_phone}',
   admission:'{parent_name} · {student_name} · {class} · {batch} · {admission_no} · {fee} · {center_name} · {center_phone}',
   fee_receipt:'{student_name} · {parent_name} · {class} · {batch} · {receipt_no} · {month} · {amount_paid} · {total_paid} · {total_fee} · {balance} · {payment_mode} · {date_time} · {status} · {center_name} · {center_phone}',
+  monthly_summary:'{parent_name} · {student_name} · {grade} · {month_name} · {year} · {present_days} · {absent_days} · {late_days} · {att_pct} · {att_status} · {late_status} · {stars} · {star_label} · {activities} · {rank} · {total_students} · {marks_section} · {teacher_note} · {center_name} · {center_phone}',
 };
 
 const WT_SAMPLE = {
@@ -7530,18 +7635,20 @@ const WT_SAMPLE = {
   fees:     { parent_name:'Suresh', student_name:'Monisha', month:'May 2026', amount:'1500', due_date:'5 Jun 2026', overdue_note:'', center_name:'KTC', center_phone:'9876543210' },
   admission:{ parent_name:'Suresh', student_name:'Monisha', grade:'10', batch:'Maths Group – Evening', admNo:'ADM-2026-012', fee:'1500', center_name:'KTC', center_phone:'9876543210' },
   fee_receipt:{ studentName:'Monisha', parent:'Suresh', grade:'Class 10', course:'Maths Group – Evening', rcpt:'RCP-MF-51941', month:'May 2026', collected:1200, totalPaid:1200, totalFee:1500, balance:300, mode:'Cash', dateTime:'15 May 2026 at 04:35 PM' },
+  monthly_summary:{ parent_name:'Suresh', student_name:'Monisha', grade:'10', month_name:'மே', year:'2026', present_days:'22', absent_days:'2', late_days:'1', att_pct:'88', att_status:'நல்லது ✅', late_status:'1 நாட்கள் தாமதம் ⚠️', stars:'4', star_label:'நல்லது 🌟', activities:'📚 வீட்டுப்பாடம், 🏆 குவிஸ்', rank:'3 / 12', marks_section:'• Monthly Test (Maths): 87/100 — A (87%)', teacher_note:'மிகவும் கவனமாக உள்ளார்.', center_name:'KTC', center_phone:'9876543210' },
 };
 
 const WT_ALL_TYPES = [
-  {id:'absent',      label:'Absent Alert',      emoji:'🚫', color:'#dc2626'},
-  {id:'late',        label:'Late Alert',         emoji:'⏰', color:'#ca8a04'},
-  {id:'monthly',     label:'Monthly Report',     emoji:'📊', color:'#2563eb'},
-  {id:'marks',       label:'Exam Marks',         emoji:'📝', color:'#7c3aed'},
-  {id:'holiday',     label:'Holiday Notice',     emoji:'🎉', color:'#0891b2'},
-  {id:'birthday',    label:'Birthday Wish',      emoji:'🎂', color:'#16a34a'},
-  {id:'fees',        label:'Fee Reminder',       emoji:'💰', color:'#854f0b'},
-  {id:'admission',   label:'Admission Welcome',  emoji:'🎓', color:'#185FA5'},
-  {id:'fee_receipt', label:'Fee Receipt',        emoji:'🧾', color:'#16a34a'},
+  {id:'absent',          label:'Absent Alert',        emoji:'🚫', color:'#dc2626'},
+  {id:'late',            label:'Late Alert',           emoji:'⏰', color:'#ca8a04'},
+  {id:'monthly',         label:'Monthly Report',       emoji:'📊', color:'#2563eb'},
+  {id:'marks',           label:'Exam Marks',           emoji:'📝', color:'#7c3aed'},
+  {id:'holiday',         label:'Holiday Notice',       emoji:'🎉', color:'#0891b2'},
+  {id:'birthday',        label:'Birthday Wish',        emoji:'🎂', color:'#16a34a'},
+  {id:'fees',            label:'Fee Reminder',         emoji:'💰', color:'#854f0b'},
+  {id:'admission',       label:'Admission Welcome',    emoji:'🎓', color:'#185FA5'},
+  {id:'fee_receipt',     label:'Fee Receipt',          emoji:'🧾', color:'#16a34a'},
+  {id:'monthly_summary', label:'Student Monthly Summary', emoji:'📋', color:'#f59e0b'},
 ];
 
 let wtActiveType = null;
@@ -7593,7 +7700,7 @@ function selectWTType(typeId) {
 function getWTDefault(typeId, lang) {
   if (typeId === 'admission') return ADM_TEMPLATES[lang] || ADM_TEMPLATES.en;
   if (typeId === 'fee_receipt') return FEE_RECEIPT_TEMPLATES[lang] || FEE_RECEIPT_TEMPLATES.en;
-  const tmplArr = WA_TEMPLATES[typeId]?.[lang] || WA_TEMPLATES[typeId]?.en || [''];
+  const tmplArr = WA_TEMPLATES[typeId]?.[lang] || WA_TEMPLATES[typeId]?.en || WA_TEMPLATES[typeId]?.ta || [''];
   return tmplArr[0] || '';
 }
 
@@ -7639,6 +7746,8 @@ function refreshWTPreview() {
     });
   } else if (wtActiveType === 'fee_receipt') {
     preview = fillFeeReceiptTemplate(template, sample);
+  } else if (wtActiveType === 'monthly_summary') {
+    preview = fillMonthlySummaryTemplate(template, sample);
   } else {
     // Build a fake student for fillTemplate
     const fakeStu = {
@@ -9308,7 +9417,36 @@ function saveSumNote(studentId, year, month, note) {
 }
 
 /* ════════════════════════════════════════════════════════
-   WHATSAPP MESSAGE BUILDER (Tamil only, fully auto)
+   MONTHLY SUMMARY TEMPLATE FILLER
+   Fills {variables} in the customizable template
+════════════════════════════════════════════════════════ */
+function fillMonthlySummaryTemplate(template, data) {
+  if (!template) return '';
+  return template
+    .replace(/{parent_name}/g,      data.parent_name     || data.parent || 'Parent')
+    .replace(/{student_name}/g,     data.student_name    || data.name   || 'Student')
+    .replace(/{grade}/g,            data.grade           || '—')
+    .replace(/{month_name}/g,       data.month_name      || '')
+    .replace(/{year}/g,             String(data.year     || new Date().getFullYear()))
+    .replace(/{present_days}/g,     String(data.present_days || 0))
+    .replace(/{absent_days}/g,      String(data.absent_days  || 0))
+    .replace(/{late_days}/g,        String(data.late_days    || 0))
+    .replace(/{att_pct}/g,          String(data.att_pct      || 0))
+    .replace(/{att_status}/g,       data.att_status      || '')
+    .replace(/{late_status}/g,      data.late_status     || '')
+    .replace(/{stars}/g,            String(data.stars    || 0))
+    .replace(/{star_label}/g,       data.star_label      || '—')
+    .replace(/{activities}/g,       data.activities      || '—')
+    .replace(/{rank}/g,             data.rank            || '—')
+    .replace(/{total_students}/g,   String(data.total_students || ''))
+    .replace(/{marks_section}/g,    data.marks_section   || 'மதிப்பெண்கள் இல்லை')
+    .replace(/{teacher_note}/g,     data.teacher_note    || '')
+    .replace(/{center_name}/g,      data.center_name     || CFG.CENTER.name  || '')
+    .replace(/{center_phone}/g,     data.center_phone    || CFG.CENTER.phone || '');
+}
+
+/* ════════════════════════════════════════════════════════
+   WHATSAPP MESSAGE BUILDER — uses custom template if set
 ════════════════════════════════════════════════════════ */
 function buildSumWAMessage(s, year, month) {
   const att       = getStudentAttStats(s, year, month);
@@ -9336,7 +9474,7 @@ function buildSumWAMessage(s, year, month) {
   const rankTxt = myRank ? myRank.rank + ' / ' + ranked.length : '—';
 
   // Auto marks section
-  let marksSec = '';
+  let marksSec = 'மதிப்பெண்கள் இன்னும் உள்ளிடப்படவில்லை';
   if (marks.length > 0) {
     const lines   = marks.map(m => {
       if (m.absent) return `• ${m.examName} (${m.subject}): வரவில்லை`;
@@ -9348,13 +9486,47 @@ function buildSumWAMessage(s, year, month) {
     const avgPct  = valid.length > 0
       ? Math.round(valid.reduce((a, m) => a + (m.marks / m.maxMarks * 100), 0) / valid.length)
       : 0;
-    marksSec = `\n\n━━━━━━━━━━━━━━━━━━━\n📝 *தேர்வு மதிப்பெண்கள்*\n━━━━━━━━━━━━━━━━━━━\n`
-      + lines.join('\n')
-      + (avgPct > 0 ? `\n\n📊 சராசரி: *${avgPct}%*` : '');
+    marksSec = lines.join('\n') + (avgPct > 0 ? `\n\n📊 சராசரி: *${avgPct}%*` : '');
   }
 
-  const note = sumD.note ? `\n\n📝 *ஆசிரியர் குறிப்பு:*\n${sumD.note}` : '';
+  const noteText = sumD.note ? `📝 *ஆசிரியர் குறிப்பு:*\n${sumD.note}` : '';
 
+  // ── Check for a saved custom template (via WA Templates page) ──
+  const savedTmpl = (typeof getWTSaved === 'function')
+    ? (getWTSaved('monthly_summary', lang === 'ta' ? 'ta' : 'en') || '')
+    : '';
+
+  if (savedTmpl) {
+    // Use the custom template with variable substitution
+    const attBlock = att.total === 0
+      ? 'இந்த மாதம் வருகை தரவு இல்லை'
+      : `✅ வந்த நாட்கள்: *${att.present}*\n❌ வராத நாட்கள்: *${att.absent}*\n⚠️ தாமத நாட்கள்: *${att.late}*\n📊 வருகை சதவீதம்: *${att.pct}%* — ${attStatus}`;
+
+    return fillMonthlySummaryTemplate(savedTmpl, {
+      parent_name:    s.parent   || 'Parent',
+      student_name:   s.name     || 'Student',
+      grade:          s.grade === 'KG' ? 'KG' : (s.grade ? s.grade + ' ஆம் வகுப்பு' : '—'),
+      month_name:     monthName,
+      year:           year,
+      present_days:   att.present,
+      absent_days:    att.absent,
+      late_days:      att.late,
+      att_pct:        att.pct,
+      att_status:     attStatus,
+      late_status:    att.total === 0 ? 'தரவு இல்லை' : lateStatus,
+      stars:          [1,2,3,4,5].map(n=>n<=sumD.stars?'⭐':'☆').join(''),
+      star_label:     starLabel,
+      activities:     actsText,
+      rank:           rankTxt,
+      total_students: ranked.length,
+      marks_section:  marksSec,
+      teacher_note:   noteText,
+      center_name:    ctr.name  || '',
+      center_phone:   ctr.phone || '',
+    });
+  }
+
+  // ── Default built-in Tamil message (no custom template saved) ──
   const attBlock = att.total === 0
     ? 'இந்த மாதம் வருகை தரவு இல்லை'
     : `✅ வந்த நாட்கள்: *${att.present}*\n❌ வராத நாட்கள்: *${att.absent}*\n⚠️ தாமத நாட்கள்: *${att.late}*\n📊 வருகை சதவீதம்: *${att.pct}%* — ${attStatus}`;
@@ -9379,7 +9551,12 @@ ${attBlock}
 ━━━━━━━━━━━━━━━━━━━
 ⏰ *தாமத பகுப்பாய்வு*
 ━━━━━━━━━━━━━━━━━━━
-${att.total===0?'தரவு இல்லை':lateStatus}${marksSec}
+${att.total===0?'தரவு இல்லை':lateStatus}
+
+━━━━━━━━━━━━━━━━━━━
+📝 *தேர்வு மதிப்பெண்கள்*
+━━━━━━━━━━━━━━━━━━━
+${marksSec}
 
 ━━━━━━━━━━━━━━━━━━━
 🌟 *வகுப்பு கவனம்*
@@ -9389,7 +9566,7 @@ ${[1,2,3,4,5].map(n=>n<=sumD.stars?'⭐':'☆').join('')} — ${starLabel}
 ━━━━━━━━━━━━━━━━━━━
 🏅 *வகுப்பு செயல்பாடுகள்*
 ━━━━━━━━━━━━━━━━━━━
-${actsText}${note}
+${actsText}${noteText ? '\n\n' + noteText : ''}
 
 ━━━━━━━━━━━━━━━━━━━
 உங்கள் பிள்ளையின் படிப்பில் அக்கறை காட்டியதற்கு நன்றி! 🙏
@@ -9413,10 +9590,18 @@ function previewSumWA(studentId, year, month) {
   const s = students.find(x => x.id === studentId);
   if (!s) return showToast('மாணவர் கிடைக்கவில்லை');
   const msg  = buildSumWAMessage(s, year, month);
+  const hasSavedTmpl = (typeof getWTSaved === 'function') && !!(getWTSaved('monthly_summary','ta') || getWTSaved('monthly_summary','en'));
   const root = document.getElementById('modal-root');
   root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()">
     <div class="modal" style="max-width:480px">
-      <div class="modal-title">📋 WhatsApp முன்னோட்டம் — ${s.name}</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div class="modal-title" style="margin:0">📋 WhatsApp முன்னோட்டம் — ${s.name}</div>
+        <button class="btn btn-sm" onclick="closeModal();navTo('wa-templates');setTimeout(()=>selectWTType('monthly_summary'),300)"
+          style="font-size:10px;background:#f59e0b;color:#fff;border-color:#f59e0b;white-space:nowrap">
+          ✏️ ${hasSavedTmpl?'Edit Template':'Customise'}
+        </button>
+      </div>
+      ${hasSavedTmpl?'':'<div style="font-size:11px;color:#92400e;background:#fef3c7;border-radius:7px;padding:6px 10px;margin-bottom:10px;border:.5px solid #fde68a">📝 Default template in use. Click <b>Customise</b> in WA Templates to personalise.</div>'}
       <div style="background:#dcfce7;border-radius:10px;padding:13px;font-size:11.5px;
            line-height:1.75;white-space:pre-wrap;font-family:'Noto Sans Tamil',system-ui;
            color:#166534;max-height:420px;overflow-y:auto;border:.5px solid #bbf7d0">${msg}</div>

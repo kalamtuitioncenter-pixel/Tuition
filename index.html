@@ -1839,29 +1839,19 @@ function fillTemplate(template, student, extra={}) {
 /* ── WhatsApp opener — hard-close PWA after launch ─────── */
 function openWA(phone, message) {
   const num = (phone || '').replace(/\D/g, '');
-  if (!num) return;
   const ph  = num.startsWith('91') ? num : '91' + num;
   const txt = encodeURIComponent(message);
+  const waURI = 'whatsapp://send?phone=' + ph + '&text=' + txt;
 
-  // Use a hidden <a> click with whatsapp:// deep link.
-  // This opens the WA app directly on Android/iOS without
-  // navigating away from the PWA or showing the wa.me browser preview.
-  const a = document.createElement('a');
-  a.style.display = 'none';
+  // Navigate to whatsapp:// — OS switches focus to WhatsApp
+  window.location.href = waURI;
 
-  // Android intent URI (opens WA app directly, skips browser)
-  const isAndroid = /android/i.test(navigator.userAgent);
-  if (isAndroid) {
-    a.href = 'intent://send?phone=' + ph + '&text=' + txt +
-             '#Intent;scheme=whatsapp;package=com.whatsapp;end';
-  } else {
-    // iOS / desktop — whatsapp:// scheme
-    a.href = 'whatsapp://send?phone=' + ph + '&text=' + txt;
-  }
-
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(() => { try { document.body.removeChild(a); } catch(e){} }, 500);
+  // Hard-close the PWA window after WA has time to open
+  setTimeout(function() {
+    try { window.close(); } catch(e) {}
+    // Fallback: navigate to blank to free memory
+    // (only if still open)
+  }, 800);
 }
 
 function openWAFallback(phone, message) {

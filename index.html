@@ -1761,6 +1761,7 @@ For queries: 📞 {center_phone}
 ❌ வராத நாட்கள்: *{absent_days}*
 ⚠️ தாமத நாட்கள்: *{late_days}*
 📊 வருகை சதவீதம்: *{att_pct}%* — {att_status}
+{session_block}
 
 ━━━━━━━━━━━━━━━━━━━
 ⏰ *தாமத பகுப்பாய்வு*
@@ -7573,7 +7574,7 @@ const WT_VARS = {
   fees:     '{parent_name} · {student_name} · {month} · {amount} · {due_date} · {overdue_note} · {center_name} · {center_phone}',
   admission:'{parent_name} · {student_name} · {class} · {batch} · {admission_no} · {fee} · {center_name} · {center_phone}',
   fee_receipt:'{student_name} · {parent_name} · {class} · {batch} · {receipt_no} · {month} · {amount_paid} · {total_paid} · {total_fee} · {balance} · {payment_mode} · {date_time} · {status} · {center_name} · {center_phone}',
-  monthly_summary:'{parent_name} · {student_name} · {grade} · {month_name} · {year} · {present_days} · {absent_days} · {late_days} · {att_pct} · {att_status} · {late_status} · {stars} · {star_label} · {activities} · {rank} · {total_students} · {marks_section} · {teacher_note} · {center_name} · {center_phone}',
+  monthly_summary:'{parent_name} · {student_name} · {grade} · {month_name} · {year} · {present_days} · {absent_days} · {late_days} · {att_pct} · {att_status} · {late_status} · {morning_absent} · {morning_late} · {evening_absent} · {evening_late} · {session_block} · {stars} · {star_label} · {activities} · {rank} · {total_students} · {marks_section} · {teacher_note} · {center_name} · {center_phone}',
 };
 
 const WT_SAMPLE = {
@@ -7586,7 +7587,7 @@ const WT_SAMPLE = {
   fees:     { parent_name:'Suresh', student_name:'Monisha', month:'May 2026', amount:'1500', due_date:'5 Jun 2026', overdue_note:'', center_name:'KTC', center_phone:'9876543210' },
   admission:{ parent_name:'Suresh', student_name:'Monisha', grade:'10', batch:'Maths Group – Evening', admNo:'ADM-2026-012', fee:'1500', center_name:'KTC', center_phone:'9876543210' },
   fee_receipt:{ studentName:'Monisha', parent:'Suresh', grade:'Class 10', course:'Maths Group – Evening', rcpt:'RCP-MF-51941', month:'May 2026', collected:1200, totalPaid:1200, totalFee:1500, balance:300, mode:'Cash', dateTime:'15 May 2026 at 04:35 PM' },
-  monthly_summary:{ parent_name:'Suresh', student_name:'Monisha', grade:'10', month_name:'மே', year:'2026', present_days:'22', absent_days:'2', late_days:'1', att_pct:'88', att_status:'நல்லது ✅', late_status:'1 நாட்கள் தாமதம் ⚠️', stars:'4', star_label:'நல்லது 🌟', activities:'📚 வீட்டுப்பாடம், 🏆 குவிஸ்', rank:'3 / 12', marks_section:'• Monthly Test (Maths): 87/100 — A (87%)', teacher_note:'மிகவும் கவனமாக உள்ளார்.', center_name:'KTC', center_phone:'9876543210' },
+  monthly_summary:{ parent_name:'Suresh', student_name:'Monisha', grade:'10', month_name:'மே', year:'2026', present_days:'22', absent_days:'2', late_days:'1', att_pct:'88', att_status:'நல்லது ✅', late_status:'1 நாட்கள் தாமதம் ⚠️', morning_absent:'1', morning_late:'1', evening_absent:'1', evening_late:'0', session_block:'☀️ காலை வகுப்பு — வராத நாட்கள்: *1* · தாமதம்: *1*\n🌙 மாலை வகுப்பு — வராத நாட்கள்: *1* · தாமதம்: *0*', stars:'4', star_label:'நல்லது 🌟', activities:'📚 வீட்டுப்பாடம், 🏆 குவிஸ்', rank:'3 / 12', marks_section:'• Monthly Test (Maths): 87/100 — A (87%)', teacher_note:'மிகவும் கவனமாக உள்ளார்.', center_name:'KTC', center_phone:'9876543210' },
 };
 
 const WT_ALL_TYPES = [
@@ -9075,33 +9076,50 @@ function saveSumData(studentId, year, month, data) {
 ════════════════════════════════════════════════════════ */
 function getStudentAttStats(student, year, month) {
   let present = 0, absent = 0, late = 0;
+  let mPresent = 0, mAbsent = 0, mLate = 0;
+  let ePresent = 0, eAbsent = 0, eLate = 0;
   const prefix   = '_erp_att_';
-  const monthStr = year + '-' + String(month + 1).padStart(2, '0'); // e.g. "2025-05"
+  const monthStr = year + '-' + String(month + 1).padStart(2, '0');
   try {
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i);
       if (!k || !k.startsWith(prefix)) continue;
-      // Key: _erp_att_{YYYY-MM-DD}_{batchId}_{session}
-      // The date is always at position [prefix.length .. prefix.length+10]
-      const datePart = k.slice(prefix.length, prefix.length + 10); // "2025-05-20"
+      const datePart = k.slice(prefix.length, prefix.length + 10);
       if (!datePart.startsWith(monthStr)) continue;
+      const isMorning = k.endsWith('_morning');
+      const isEvening = k.endsWith('_evening');
       try {
         const rec = JSON.parse(localStorage.getItem(k));
         if (!rec || typeof rec !== 'object') continue;
-        // Keys inside rec: "ST-001|batch1|morning"
         Object.keys(rec).forEach(rk => {
           if (!rk.startsWith(student.id + '|')) return;
           const v = rec[rk];
           if      (v === 'P') present++;
           else if (v === 'A') absent++;
           else if (v === 'L') late++;
+          if (isMorning) {
+            if      (v === 'P') mPresent++;
+            else if (v === 'A') mAbsent++;
+            else if (v === 'L') mLate++;
+          } else if (isEvening) {
+            if      (v === 'P') ePresent++;
+            else if (v === 'A') eAbsent++;
+            else if (v === 'L') eLate++;
+          }
         });
       } catch(e2) {}
     }
   } catch(e) {}
-  const total = present + absent + late;
-  const pct   = total > 0 ? Math.round(present / total * 100) : 0;
-  return { present, absent, late, total, pct };
+  const total  = present + absent + late;
+  const pct    = total > 0 ? Math.round(present / total * 100) : 0;
+  const mTotal = mPresent + mAbsent + mLate;
+  const eTotal = ePresent + eAbsent + eLate;
+  return {
+    present, absent, late, total, pct,
+    morning: { present: mPresent, absent: mAbsent, late: mLate, total: mTotal },
+    evening: { present: ePresent, absent: eAbsent, late: eLate, total: eTotal },
+    hasBoth: mTotal > 0 && eTotal > 0,
+  };
 }
 
 /* ════════════════════════════════════════════════════════
@@ -9278,6 +9296,35 @@ function buildSumCard(item, year, month) {
               <div style="font-size:9px;color:#854d0e;font-weight:600">Late Days</div>
             </div>
           </div>
+          ${att.hasBoth ? `
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px">
+            <div style="border:.5px solid #fca5a5;border-radius:8px;padding:7px 6px;background:#fff5f5">
+              <div style="font-size:9px;font-weight:700;color:#1d4ed8;margin-bottom:5px">☀️ காலை வகுப்பு</div>
+              <div style="display:flex;gap:4px">
+                <div style="flex:1;text-align:center;background:#fee2e2;border-radius:5px;padding:3px 2px">
+                  <div style="font-size:14px;font-weight:800;color:#dc2626">${att.morning.absent}</div>
+                  <div style="font-size:8px;color:#991b1b;font-weight:600">வராத நாள்</div>
+                </div>
+                <div style="flex:1;text-align:center;background:#fef9c3;border-radius:5px;padding:3px 2px">
+                  <div style="font-size:14px;font-weight:800;color:#ca8a04">${att.morning.late}</div>
+                  <div style="font-size:8px;color:#854d0e;font-weight:600">தாமதம்</div>
+                </div>
+              </div>
+            </div>
+            <div style="border:.5px solid #c4b5fd;border-radius:8px;padding:7px 6px;background:#faf5ff">
+              <div style="font-size:9px;font-weight:700;color:#7c3aed;margin-bottom:5px">🌙 மாலை வகுப்பு</div>
+              <div style="display:flex;gap:4px">
+                <div style="flex:1;text-align:center;background:#fee2e2;border-radius:5px;padding:3px 2px">
+                  <div style="font-size:14px;font-weight:800;color:#dc2626">${att.evening.absent}</div>
+                  <div style="font-size:8px;color:#991b1b;font-weight:600">வராத நாள்</div>
+                </div>
+                <div style="flex:1;text-align:center;background:#fef9c3;border-radius:5px;padding:3px 2px">
+                  <div style="font-size:14px;font-weight:800;color:#ca8a04">${att.evening.late}</div>
+                  <div style="font-size:8px;color:#854d0e;font-weight:600">தாமதம்</div>
+                </div>
+              </div>
+            </div>
+          </div>` : ''}
           <div class="sum-prog" style="margin-top:2px"><div class="sum-prog-fill" style="width:${att.pct}%;background:${attColor}"></div></div>
           <div style="text-align:center;font-size:10px;color:var(--tx3);margin-top:4px">
             Attendance: <b style="color:${attColor}">${att.pct}%</b>
@@ -9395,6 +9442,11 @@ function fillMonthlySummaryTemplate(template, data) {
     .replace(/{att_pct}/g,          String(data.att_pct      || 0))
     .replace(/{att_status}/g,       data.att_status      || '')
     .replace(/{late_status}/g,      data.late_status     || '')
+    .replace(/{morning_absent}/g,   String(data.morning_absent  || 0))
+    .replace(/{morning_late}/g,     String(data.morning_late    || 0))
+    .replace(/{evening_absent}/g,   String(data.evening_absent  || 0))
+    .replace(/{evening_late}/g,     String(data.evening_late    || 0))
+    .replace(/{session_block}/g,    data.session_block   || '')
     .replace(/{stars}/g,            String(data.stars    || 0))
     .replace(/{star_label}/g,       data.star_label      || '—')
     .replace(/{activities}/g,       data.activities      || '—')
@@ -9459,9 +9511,15 @@ function buildSumWAMessage(s, year, month) {
 
   if (savedTmpl) {
     // Use the custom template with variable substitution
+    const mornLine = att.hasBoth
+      ? `\n☀️ காலை வகுப்பு — வராத நாட்கள்: *${att.morning.absent}* · தாமதம்: *${att.morning.late}*`
+      : '';
+    const eveLine = att.hasBoth
+      ? `\n🌙 மாலை வகுப்பு — வராத நாட்கள்: *${att.evening.absent}* · தாமதம்: *${att.evening.late}*`
+      : '';
     const attBlock = att.total === 0
       ? 'இந்த மாதம் வருகை தரவு இல்லை'
-      : `✅ வந்த நாட்கள்: *${att.present}*\n❌ வராத நாட்கள்: *${att.absent}*\n⚠️ தாமத நாட்கள்: *${att.late}*\n📊 வருகை சதவீதம்: *${att.pct}%* — ${attStatus}`;
+      : `✅ வந்த நாட்கள்: *${att.present}*\n❌ வராத நாட்கள்: *${att.absent}*\n⚠️ தாமத நாட்கள்: *${att.late}*\n📊 வருகை சதவீதம்: *${att.pct}%* — ${attStatus}${mornLine}${eveLine}`;
 
     return fillMonthlySummaryTemplate(savedTmpl, {
       parent_name:    s.parent   || 'Parent',
@@ -9475,6 +9533,11 @@ function buildSumWAMessage(s, year, month) {
       att_pct:        att.pct,
       att_status:     attStatus,
       late_status:    att.total === 0 ? 'தரவு இல்லை' : lateStatus,
+      morning_absent:  att.morning.absent,
+      morning_late:    att.morning.late,
+      evening_absent:  att.evening.absent,
+      evening_late:    att.evening.late,
+      session_block:   att.hasBoth ? `${mornLine}\n${eveLine}`.trim() : '',
       stars:          [1,2,3,4,5].map(n=>n<=sumD.stars?'⭐':'☆').join(''),
       star_label:     starLabel,
       activities:     actsText,
@@ -9488,9 +9551,15 @@ function buildSumWAMessage(s, year, month) {
   }
 
   // ── Default built-in Tamil message (no custom template saved) ──
+  const mornLine = att.hasBoth
+    ? `\n☀️ காலை வகுப்பு — வராத நாட்கள்: *${att.morning.absent}* · தாமதம்: *${att.morning.late}*`
+    : '';
+  const eveLine = att.hasBoth
+    ? `\n🌙 மாலை வகுப்பு — வராத நாட்கள்: *${att.evening.absent}* · தாமதம்: *${att.evening.late}*`
+    : '';
   const attBlock = att.total === 0
     ? 'இந்த மாதம் வருகை தரவு இல்லை'
-    : `✅ வந்த நாட்கள்: *${att.present}*\n❌ வராத நாட்கள்: *${att.absent}*\n⚠️ தாமத நாட்கள்: *${att.late}*\n📊 வருகை சதவீதம்: *${att.pct}%* — ${attStatus}`;
+    : `✅ வந்த நாட்கள்: *${att.present}*\n❌ வராத நாட்கள்: *${att.absent}*\n⚠️ தாமத நாட்கள்: *${att.late}*\n📊 வருகை சதவீதம்: *${att.pct}%* — ${attStatus}${mornLine}${eveLine}`;
 
   return `🙏 வணக்கம் *${s.parent}* அவர்களுக்கு,
 

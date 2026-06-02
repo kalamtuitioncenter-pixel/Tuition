@@ -1839,29 +1839,31 @@ function fillTemplate(template, student, extra={}) {
 /* ── WhatsApp opener — hard-close PWA after launch ─────── */
 function openWA(phone, message) {
   const num = (phone || '').replace(/\D/g, '');
-  if (!num) return;
   const ph  = num.startsWith('91') ? num : '91' + num;
-  const url = 'https://wa.me/' + ph + '?text=' + encodeURIComponent(message);
-  // Hidden anchor click is the most reliable method on Android PWA.
-  // window.open gets blocked; location.href navigates the app away.
-  // A real user-gesture anchor click is never blocked by the browser.
-  const a   = document.createElement('a');
-  a.href    = url;
-  a.target  = '_blank';
-  a.rel     = 'noopener noreferrer';
-  a.style.display = 'none';
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(function() { document.body.removeChild(a); }, 1000);
+  const txt = encodeURIComponent(message);
+  const waURI = 'whatsapp://send?phone=' + ph + '&text=' + txt;
+
+  // Navigate to whatsapp:// — OS switches focus to WhatsApp
+  window.location.href = waURI;
+
+  // Hard-close the PWA window after WA has time to open
+  setTimeout(function() {
+    try { window.close(); } catch(e) {}
+    // Fallback: navigate to blank to free memory
+    // (only if still open)
+  }, 800);
 }
 
 function openWAFallback(phone, message) {
-  openWA(phone, message);
+  // Web fallback for desktop (no whatsapp:// support)
+  const num = (phone || '').replace(/\D/g, '');
+  const ph  = num.startsWith('91') ? num : '91' + num;
+  window.open('https://wa.me/' + ph + '?text=' + encodeURIComponent(message), '_blank');
 }
 function waURL(phone, message) {
-  const num = phone.replace(/\D/g, '');
-  const ph  = num.startsWith('91') ? num : '91' + num;
-  return 'https://wa.me/' + ph + '?text=' + encodeURIComponent(message);
+  const num = phone.replace(/\D/g,'');
+  const ph = num.startsWith('91') ? num : '91'+num;
+  return `https://wa.me/${ph}?text=${encodeURIComponent(message)}`;
 }
 
 /* ═══════════════════════════════════════════════════════

@@ -839,34 +839,6 @@ tbody tr:hover td{background:var(--bg)}
     <button class="btn btn-wa" onclick="sendAttWA()" style="padding:9px 14px"><svg viewBox="0 0 16 16" fill="none" width="14" height="14"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3"/><path d="M5 11l-.5 1.5L6 12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span id="btn-att-wa">Alert Absent</span></button>
     <button class="btn btn-wa" onclick="sendLateWA()" style="padding:9px 14px;background:#ca8a04;border-color:#a16207"><svg viewBox="0 0 16 16" fill="none" width="14" height="14"><circle cx="8" cy="8" r="5" stroke="currentColor" stroke-width="1.3"/><path d="M8 5v3l2 1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>Alert Late</button>
     <button class="btn" onclick="showMonthlyAttSummary()" style="padding:9px 14px"><svg viewBox="0 0 16 16" fill="none" width="14" height="14"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.3"/><path d="M5 8h6M5 5h4M5 11h6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>Monthly Report</button>
-    <button class="btn" id="fq-open-btn" onclick="toggleFeesQueue()" style="padding:9px 14px;margin-left:auto;background:#dc2626;color:#fff;border-color:#dc2626;display:flex;align-items:center;gap:6px">
-      <svg viewBox="0 0 16 16" fill="none" width="14" height="14"><rect x="2" y="4" width="12" height="9" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M2 7h12M6 10.5h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
-      💰 Fees Queue <span id="fq-badge" style="background:rgba(255,255,255,.25);border-radius:10px;padding:0 6px;font-size:10px;font-weight:700;min-width:16px;text-align:center"></span>
-    </button>
-  </div>
-
-  <!-- ══ FEES PENDING QUEUE PANEL ══ -->
-  <div id="fees-queue-panel" style="display:none;margin-top:10px">
-    <div style="background:linear-gradient(135deg,#7f1d1d,#dc2626);border-radius:12px;padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:12px">
-      <div style="font-size:24px">💰</div>
-      <div style="flex:1">
-        <div style="font-size:14px;font-weight:700;color:#fff">Fees Pending Queue</div>
-        <div style="font-size:11px;color:rgba(255,255,255,.8);margin-top:2px">நிலுவை கட்டணம் — WA அனுப்பி நினைவூட்டவும்</div>
-      </div>
-      <div style="text-align:right;flex-shrink:0">
-        <div style="font-size:10px;color:rgba(255,255,255,.7)">மொத்த நிலுவை</div>
-        <div style="font-size:20px;font-weight:800;color:#fff" id="fq-total-due">₹0</div>
-      </div>
-    </div>
-    <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center">
-      <div class="seg" id="fq-tabs">
-        <button class="seg-b on" onclick="setFQTab('all',this)">அனைவரும்</button>
-        <button class="seg-b" onclick="setFQTab('unsent',this)">அனுப்பாதவர்</button>
-        <button class="seg-b" onclick="setFQTab('overdue',this)">Overdue</button>
-      </div>
-      <button class="btn btn-wa" onclick="sendAllFQWA()" style="margin-left:auto;font-size:11px;padding:6px 14px">📱 அனைவருக்கும் WA</button>
-    </div>
-    <div id="fq-list" style="display:flex;flex-direction:column;gap:8px;padding-bottom:12px"></div>
   </div>
 </div>
 
@@ -1869,19 +1841,20 @@ function openWA(phone, message) {
   const num = (phone || '').replace(/\D/g, '');
   if (!num) return;
   const ph  = num.startsWith('91') ? num : '91' + num;
-  const url = 'https://api.whatsapp.com/send?phone=' + ph + '&text=' + encodeURIComponent(message);
-  window.open(url, '_blank');
+  // Open wa.me in a new tab — shows the preview page the user wants,
+  // AND keeps the app open so no reload/reopen needed after sending.
+  window.open('https://wa.me/' + ph + '?text=' + encodeURIComponent(message), '_blank');
 }
 
 function openWAFallback(phone, message) {
   const num = (phone || '').replace(/\D/g, '');
   const ph  = num.startsWith('91') ? num : '91' + num;
-  window.open('https://api.whatsapp.com/send?phone=' + ph + '&text=' + encodeURIComponent(message), '_blank');
+  window.open('https://wa.me/' + ph + '?text=' + encodeURIComponent(message), '_blank');
 }
 function waURL(phone, message) {
   const num = phone.replace(/\D/g,'');
   const ph = num.startsWith('91') ? num : '91'+num;
-  return 'https://api.whatsapp.com/send?phone=' + ph + '&text=' + encodeURIComponent(message);
+  return 'https://wa.me/' + ph + '?text=' + encodeURIComponent(message);
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -1929,9 +1902,7 @@ function navTo(id) {
     }
   }
   if (id === 'wa-templates') { initWATemplatesPage(); }
-  if (id === 'summary') { if (typeof renderSummaryCards === 'function') renderSummaryCards(); }
-  if (id === 'attendance') { setTimeout(initFQBadge, 300); }
-}
+  if (id === 'summary') { if (typeof renderSummaryCards === 'function') renderSummaryCards(); }}
 
 function tbAddAction() {
   const active = document.querySelector('.page.active');
@@ -2701,276 +2672,6 @@ function getStudentAtt(sid) {
    Shows every active student's absent days + late days
    with teacher review/remarks per student
 ══════════════════════════════════════════════════════════ */
-
-/* ════════════════════════════════════════════════════════
-   FEES PENDING QUEUE  — Attendance page
-   Shows every student with unpaid fees + WA reminder
-════════════════════════════════════════════════════════ */
-const FQ_SENT_KEY = '_erp_fq_sent'; // { studentId: {ts, count, months} }
-
-function _loadFQSent() {
-  try { return JSON.parse(localStorage.getItem(FQ_SENT_KEY) || '{}'); } catch(e) { return {}; }
-}
-function _saveFQSent(data) {
-  try { localStorage.setItem(FQ_SENT_KEY, JSON.stringify(data)); } catch(e) {}
-}
-
-/* Return object: { studentId → [fee records] } for all unpaid students */
-function getFQPendingRecords() {
-  const groups = {};
-  (fees || []).forEach(f => {
-    if (!f || !f.rcpt) return;
-    if (f._deleted) return;
-    if (f.status === 'paid') return;
-    // key: prefer studentId, fall back to student name
-    const key = f.studentId || f.student || '';
-    if (!key) return;
-    if (!groups[key]) groups[key] = [];
-    groups[key].push(f);
-  });
-  return groups;
-}
-
-/* Find student object from fee group key (could be id or name) */
-function _fqGetStudent(key) {
-  return students.find(s => s.id === key || s.name === key) || null;
-}
-
-function _fqTimeAgo(ts) {
-  if (!ts) return '';
-  const diff = Date.now() - ts;
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1)  return 'இப்போது';
-  if (mins < 60) return mins + ' நிமிடம் முன்பு';
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24)  return hrs + ' மணி முன்பு';
-  return Math.floor(hrs / 24) + ' நாள் முன்பு';
-}
-
-function _buildFQWAMsg(student, recs) {
-  const ctr      = CFG.CENTER || {};
-  const months   = [...new Set(recs.map(f => f.month))].join(', ');
-  const totalDue = recs.reduce((s, f) => s + (f.balance || 0), 0);
-  const hasOverdue = recs.some(f => f.status === 'overdue');
-  const overdueNote = hasOverdue ? '\n⚠️ காலம் கடந்த நிலுவை — உடனடியாக செலுத்தவும்.' : '';
-  const today    = new Date();
-  const dueDate  = new Date(today.getFullYear(), today.getMonth(), 10)
-                   .toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric'});
-
-  // Use saved custom 'fees' WA template if available
-  const savedTmpl = (typeof getWTSaved === 'function') ? (getWTSaved('fees','ta') || '') : '';
-  const tmpl = savedTmpl ||
-    `அன்பான {parent_name},\n\n💰 *கட்டண நினைவூட்டல் — {student_name}*\n\nமாதம்: {month}\nநிலுவை கட்டணம்: ₹{amount}\nகடைசி நாள்: {due_date}{overdue_note}\n\n{center_name}-ல் செலுத்தவும்:\n📞 {center_phone}\n\nநன்றி,\n{center_name}`;
-
-  return tmpl
-    .replace(/{parent_name}/g,   student ? (student.parent || student.name) : 'Parent')
-    .replace(/{student_name}/g,  student ? student.name : (recs[0]?.student || ''))
-    .replace(/{grade}/g,         student ? (student.grade === 'KG' ? 'KG' : student.grade + 'ம் வகுப்பு') : '')
-    .replace(/{month}/g,         months)
-    .replace(/{amount}/g,        totalDue.toLocaleString('en-IN'))
-    .replace(/{due_date}/g,      dueDate)
-    .replace(/{overdue_note}/g,  overdueNote)
-    .replace(/{center_name}/g,   ctr.name  || '')
-    .replace(/{center_phone}/g,  ctr.phone || '');
-}
-
-let _fqActiveTab = 'all';
-
-function setFQTab(tab, btn) {
-  _fqActiveTab = tab;
-  document.querySelectorAll('#fq-tabs .seg-b').forEach(b => b.classList.remove('on'));
-  if (btn) btn.classList.add('on');
-  renderFeesQueue();
-}
-
-function toggleFeesQueue() {
-  const panel = document.getElementById('fees-queue-panel');
-  if (!panel) return;
-  const isOpen = panel.style.display !== 'none';
-  panel.style.display = isOpen ? 'none' : 'block';
-  const btn = document.getElementById('fq-open-btn');
-  if (btn) {
-    btn.style.background   = isOpen ? '#dc2626' : '#991b1b';
-    btn.style.borderColor  = isOpen ? '#dc2626' : '#7f1d1d';
-  }
-  if (!isOpen) renderFeesQueue();
-}
-
-function previewFQWA(key) {
-  const student = _fqGetStudent(key);
-  const groups  = getFQPendingRecords();
-  const recs    = groups[key] || [];
-  if (!recs.length) return showToast('இந்த மாணவருக்கு நிலுவை இல்லை');
-  const msg     = _buildFQWAMsg(student, recs);
-  const sent    = _loadFQSent();
-  const info    = sent[key];
-  const sName   = student ? student.name : (recs[0]?.student || key);
-  const root    = document.getElementById('modal-root');
-  root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()">
-    <div class="modal" style="max-width:460px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-        <div class="modal-title" style="margin:0">💰 WA முன்னோட்டம் — ${sName}</div>
-        ${info ? `<span style="font-size:10px;background:#fef3c7;color:#92400e;padding:3px 8px;border-radius:6px">${info.count}× அனுப்பியது · ${_fqTimeAgo(info.ts)}</span>` : ''}
-      </div>
-      <div style="background:#dcfce7;border-radius:10px;padding:13px;font-size:12px;line-height:1.8;
-           white-space:pre-wrap;font-family:'Noto Sans Tamil',system-ui;color:#166534;
-           max-height:380px;overflow-y:auto;border:.5px solid #bbf7d0">${msg}</div>
-      <div class="modal-foot">
-        <button class="btn btn-wa" onclick="sendFQWA('${key}');closeModal()" style="flex:1;justify-content:center">📱 அனுப்பு</button>
-        <button class="btn" onclick="closeModal()">மூடு</button>
-      </div>
-    </div>
-  </div>`;
-}
-
-function sendFQWA(key) {
-  const student = _fqGetStudent(key);
-  const phone   = (student?.phone || '').replace(/\D/g, '');
-  if (!phone) return showToast('📵 ' + (student?.name || key) + ' — Phone number இல்லை');
-  const groups  = getFQPendingRecords();
-  const recs    = groups[key] || [];
-  if (!recs.length) return showToast('நிலுவை இல்லை');
-
-  const msg = _buildFQWAMsg(student, recs);
-  openWA(phone, msg);
-
-  // Record send
-  const sent = _loadFQSent();
-  sent[key]  = { ts: Date.now(), count: ((sent[key]?.count) || 0) + 1, months: recs.map(r => r.month).join(', ') };
-  _saveFQSent(sent);
-
-  setTimeout(renderFeesQueue, 400);
-  showToast('📱 WA அனுப்பப்பட்டது — ' + (student?.name || key));
-}
-
-function sendAllFQWA() {
-  const groups = getFQPendingRecords();
-  const keys   = Object.keys(groups);
-  if (!keys.length) return showToast('🎉 நிலுவை கட்டணம் இல்லை!');
-  let sent = 0;
-  keys.forEach(k => {
-    const s = _fqGetStudent(k);
-    if (s?.phone) { sendFQWA(k); sent++; }
-  });
-  if (sent === 0) showToast('📵 யாரிடமும் Phone number இல்லை');
-  else showToast('📱 ' + sent + ' பேருக்கு WA அனுப்பப்பட்டது');
-}
-
-function initFQBadge() {
-  const count   = Object.keys(getFQPendingRecords()).length;
-  const badgeEl = document.getElementById('fq-badge');
-  if (badgeEl) badgeEl.textContent = count > 0 ? count : '';
-  const btn = document.getElementById('fq-open-btn');
-  if (btn) btn.style.display = count > 0 ? '' : '';   // always show
-}
-
-function renderFeesQueue() {
-  const groups  = getFQPendingRecords();
-  const sent    = _loadFQSent();
-  const listEl  = document.getElementById('fq-list');
-  const dueEl   = document.getElementById('fq-total-due');
-  const badgeEl = document.getElementById('fq-badge');
-  if (!listEl) return;
-
-  // Total due
-  let totalDue = 0;
-  Object.values(groups).forEach(recs => recs.forEach(f => totalDue += (f.balance || 0)));
-  if (dueEl)   dueEl.textContent   = '₹' + totalDue.toLocaleString('en-IN');
-  if (badgeEl) badgeEl.textContent = Object.keys(groups).length || '';
-
-  // Build display entries
-  let entries = Object.entries(groups);
-
-  if (!entries.length) {
-    listEl.innerHTML = `<div style="text-align:center;padding:32px 16px;color:var(--tx3);font-size:13px">
-      🎉 அனைவரும் கட்டணம் செலுத்திவிட்டனர்!
-    </div>`;
-    return;
-  }
-
-  // Filter by tab
-  if (_fqActiveTab === 'unsent')  entries = entries.filter(([k]) => !sent[k]);
-  if (_fqActiveTab === 'overdue') entries = entries.filter(([k, recs]) => recs.some(f => f.status === 'overdue'));
-
-  if (!entries.length) {
-    listEl.innerHTML = `<div style="text-align:center;padding:32px 16px;color:var(--tx3);font-size:13px">
-      ${_fqActiveTab === 'unsent' ? '✅ அனைவருக்கும் WA அனுப்பப்பட்டது!' : '✅ Overdue இல்லை!'}
-    </div>`;
-    return;
-  }
-
-  // Sort: unsent first, then by total balance desc
-  entries.sort(([ak, ar], [bk, br]) => {
-    const aSent = !!sent[ak], bSent = !!sent[bk];
-    if (aSent !== bSent) return aSent ? 1 : -1;
-    const aDue = ar.reduce((s,f) => s+(f.balance||0), 0);
-    const bDue = br.reduce((s,f) => s+(f.balance||0), 0);
-    return bDue - aDue;
-  });
-
-  listEl.innerHTML = entries.map(([key, recs]) => {
-    const student    = _fqGetStudent(key);
-    const sName      = student ? student.name : (recs[0]?.student || key);
-    const phone      = student?.phone || '';
-    const grade      = student ? (student.grade === 'KG' ? 'KG' : 'Gr.' + student.grade) : '';
-    const color      = student?.color || '#6366f1';
-    const totalBal   = recs.reduce((s, f) => s + (f.balance || 0), 0);
-    const hasOverdue = recs.some(f => f.status === 'overdue');
-    const info       = sent[key];
-
-    // Month pills
-    const pills = recs.map(f => {
-      const isOD = f.status === 'overdue';
-      return `<span style="font-size:9px;padding:2px 8px;border-radius:10px;font-weight:600;white-space:nowrap;
-        background:${isOD ? '#fee2e2' : '#fef3c7'};color:${isOD ? '#991b1b' : '#92400e'};
-        border:.5px solid ${isOD ? '#fca5a5' : '#fde68a'}">
-        ${f.month} · ₹${(f.balance||0).toLocaleString('en-IN')}${isOD ? ' ⚠️' : ''}
-      </span>`;
-    }).join('');
-
-    // Sent badge
-    const sentBadge = info
-      ? `<span style="font-size:10px;background:#fef3c7;color:#854d0e;padding:2px 8px;border-radius:8px;border:.5px solid #fde68a;white-space:nowrap">📨 ${info.count}× · ${_fqTimeAgo(info.ts)}</span>`
-      : `<span style="font-size:10px;background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:8px;border:.5px solid #fca5a5;white-space:nowrap">❗ அனுப்பவில்லை</span>`;
-
-    return `<div style="background:var(--card);border-radius:12px;padding:12px 14px;
-              border:.5px solid ${hasOverdue ? '#fca5a5' : '#fde68a'};
-              border-left:4px solid ${hasOverdue ? '#dc2626' : '#ca8a04'}">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-        <div style="width:34px;height:34px;border-radius:9px;background:${color};color:#fff;
-             display:flex;align-items:center;justify-content:center;font-size:15px;
-             font-weight:700;flex-shrink:0">${sName[0]||'?'}</div>
-        <div style="flex:1;min-width:0">
-          <div style="font-size:13px;font-weight:700;color:var(--tx)">${sName}
-            ${grade ? `<span style="font-size:10px;color:var(--tx3);font-weight:400;margin-left:4px">${grade}</span>` : ''}
-          </div>
-          <div style="font-size:10px;color:var(--tx3);margin-top:1px">${phone || '📵 Phone இல்லை'}</div>
-        </div>
-        <div style="text-align:right;flex-shrink:0">
-          <div style="font-size:17px;font-weight:800;color:#dc2626">₹${totalBal.toLocaleString('en-IN')}</div>
-          <div style="font-size:9px;color:var(--tx3)">${recs.length} மாதம்</div>
-        </div>
-      </div>
-      <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:9px">${pills}</div>
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-        ${sentBadge}
-        <div style="margin-left:auto;display:flex;gap:6px">
-          <button onclick="previewFQWA('${key}')"
-            style="background:var(--bg);border:.5px solid var(--br);color:var(--tx);
-                   border-radius:8px;padding:5px 11px;font-size:11px;font-weight:600;
-                   cursor:pointer;font-family:inherit">👁 Preview</button>
-          ${phone
-            ? `<button onclick="sendFQWA('${key}')"
-                style="background:#16a34a;color:#fff;border:none;border-radius:8px;
-                       padding:5px 13px;font-size:11px;font-weight:600;
-                       cursor:pointer;font-family:inherit">📱 WA அனுப்பு</button>`
-            : `<span style="font-size:10px;color:#991b1b;background:#fee2e2;
-                   padding:4px 8px;border-radius:6px;border:.5px solid #fca5a5">📵 Phone இல்லை</span>`}
-        </div>
-      </div>
-    </div>`;
-  }).join('');
-}
 
 function showMonthlyAttSummary() {
   const now   = new Date();
@@ -9072,7 +8773,6 @@ const NOTIFS_KEY  = '_erp_notifs';
 
 function saveFees() {
   try { localStorage.setItem(FEES_KEY, JSON.stringify(fees)); } catch(e){}
-  setTimeout(initFQBadge, 100);
 }
 function saveStaffData() {
   try { 
@@ -9251,15 +8951,6 @@ function _safeInit() {
   setTimeout(initBackup, 800);
   initSummaryPage();
   // Dark mode already applied from localStorage at top of _safeInit
-
-  // ── Fees Queue badge + Day-1 nudge ──
-  setTimeout(function() {
-    initFQBadge();
-    if (new Date().getDate() === 1) {
-      const n = Object.keys(getFQPendingRecords()).length;
-      if (n > 0) showToast('💰 இன்று மாத 1ம் தேதி! ' + n + ' மாணவர்களுக்கு கட்டணம் நிலுவையில் உள்ளது.', 6000);
-    }
-  }, 1500);
 }
 
 if (document.readyState === 'loading') {

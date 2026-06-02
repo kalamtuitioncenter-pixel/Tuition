@@ -1841,19 +1841,26 @@ function openWA(phone, message) {
   const num = (phone || '').replace(/\D/g, '');
   if (!num) return;
   const ph  = num.startsWith('91') ? num : '91' + num;
-  // Open wa.me in a new tab — shows the preview page the user wants,
-  // AND keeps the app open so no reload/reopen needed after sending.
-  window.open('https://wa.me/' + ph + '?text=' + encodeURIComponent(message), '_blank');
+  const url = 'https://wa.me/' + ph + '?text=' + encodeURIComponent(message);
+  // Hidden anchor click is the most reliable method on Android PWA.
+  // window.open gets blocked; location.href navigates the app away.
+  // A real user-gesture anchor click is never blocked by the browser.
+  const a   = document.createElement('a');
+  a.href    = url;
+  a.target  = '_blank';
+  a.rel     = 'noopener noreferrer';
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(function() { document.body.removeChild(a); }, 1000);
 }
 
 function openWAFallback(phone, message) {
-  const num = (phone || '').replace(/\D/g, '');
-  const ph  = num.startsWith('91') ? num : '91' + num;
-  window.open('https://wa.me/' + ph + '?text=' + encodeURIComponent(message), '_blank');
+  openWA(phone, message);
 }
 function waURL(phone, message) {
-  const num = phone.replace(/\D/g,'');
-  const ph = num.startsWith('91') ? num : '91'+num;
+  const num = phone.replace(/\D/g, '');
+  const ph  = num.startsWith('91') ? num : '91' + num;
   return 'https://wa.me/' + ph + '?text=' + encodeURIComponent(message);
 }
 

@@ -440,12 +440,73 @@ tbody tr:hover td{background:var(--bg)}
 
 <!-- ═══════════════ DASHBOARD ═══════════════ -->
 <div class="page active" id="pg-dashboard">
+
+  <!-- Monthly Reset Banner (Day 1 of month) -->
+  <div id="dash-monthly-reset-banner" style="display:none;margin-bottom:10px;border-radius:10px;padding:10px 14px;background:linear-gradient(135deg,#1e3a8a,#1a56db);color:#fff">
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <div style="font-size:18px">📅</div>
+      <div style="flex:1;min-width:140px">
+        <div style="font-size:12px;font-weight:700" id="dash-reset-title">New Month — Fees Reset</div>
+        <div style="font-size:10px;opacity:.85;margin-top:1px" id="dash-reset-sub">Monthly fee collection has been reset for this month</div>
+      </div>
+      <button onclick="closeMontlyResetBanner()" style="background:rgba(255,255,255,.18);border:none;color:#fff;border-radius:7px;padding:4px 10px;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;flex-shrink:0">✓ Got it</button>
+    </div>
+  </div>
+
+  <!-- ⚠️ PENDING FEES ALERT — compact, above stats, with WA send -->
+  <div id="dash-pending-carryover" style="display:none;margin-bottom:10px">
+    <div style="background:#fffbeb;border:1.5px solid #f59e0b;border-radius:10px;padding:10px 14px">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <div style="width:36px;height:36px;background:#fef3c7;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">⚠️</div>
+        <div style="flex:1;min-width:120px">
+          <div style="font-size:12px;font-weight:700;color:#92400e" id="carryover-summary-text">Pending Fees — 0 students</div>
+          <div style="font-size:10px;color:#92400e;margin-top:1px" id="carryover-summary-amt">₹0 outstanding</div>
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap">
+          <button onclick="openPendingFeesWAModal()" style="background:#25d366;color:#fff;border:none;border-radius:7px;padding:6px 11px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:4px">
+            <svg viewBox="0 0 16 16" fill="none" width="12" height="12"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.4"/><path d="M5 8.5c.5 1.5 2 2.5 3.5 2.5 1 0 2-.4 2.7-1.1M11 7.5c-.5-1.5-2-2.5-3.5-2.5-1 0-2 .4-2.7 1.1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M5 11l-.5 1.5L6 12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Send WA Reminder
+          </button>
+          <button onclick="navTo('fees');setTimeout(()=>{const pb=document.getElementById('ft-pend');if(pb)setFeeTab('pending',pb)},100)" style="background:#ca8a04;color:#fff;border:none;border-radius:7px;padding:6px 11px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">View →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="stat-grid">
     <div class="stat" onclick="navTo('students')" style="cursor:pointer" title="Go to Students"><div class="stat-icon dm-green-box" style="background:#dcfce7"><svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="3" stroke="#16a34a" stroke-width="1.4"/><path d="M2 14c0-3.3 2.7-5 6-5s6 1.7 6 5" stroke="#16a34a" stroke-width="1.4" stroke-linecap="round"/></svg></div><div class="stat-lbl" id="sl-1">Total Students</div><div class="stat-val" id="sv-students">0</div><div class="stat-sub" id="ss-students">Active enrolled</div></div>
-    <div class="stat" onclick="navTo('fees')" style="cursor:pointer" title="Go to Fees"><div class="stat-icon dm-green-box" style="background:#dcfce7"><svg viewBox="0 0 16 16" fill="none"><rect x="2" y="4" width="12" height="9" rx="1.5" stroke="#16a34a" stroke-width="1.4"/><path d="M2 7h12M7 10h2" stroke="#16a34a" stroke-width="1.3" stroke-linecap="round"/></svg></div><div class="stat-lbl" id="sl-2">Monthly Income</div><div class="stat-val" style="color:#16a34a" id="sv-income">₹0</div><div class="stat-sub">Collected this month</div></div>
+    <div class="stat" onclick="navTo('fees')" style="cursor:pointer" title="Go to Fees"><div class="stat-icon dm-green-box" style="background:#dcfce7"><svg viewBox="0 0 16 16" fill="none"><rect x="2" y="4" width="12" height="9" rx="1.5" stroke="#16a34a" stroke-width="1.4"/><path d="M2 7h12M7 10h2" stroke="#16a34a" stroke-width="1.3" stroke-linecap="round"/></svg></div><div class="stat-lbl" id="sl-2">Monthly Income</div><div class="stat-val" style="color:#16a34a" id="sv-income">₹0</div><div class="stat-sub" id="ss-income">This month only</div></div>
     <div class="stat" onclick="navTo('fees')" style="cursor:pointer" title="Go to Pending Fees"><div class="stat-icon dm-red-box" style="background:#fee2e2"><svg viewBox="0 0 16 16" fill="none"><path d="M8 5v4M8 10.5v.5" stroke="#dc2626" stroke-width="1.6" stroke-linecap="round"/><path d="M2 13L8 2l6 11H2z" stroke="#dc2626" stroke-width="1.3" stroke-linejoin="round"/></svg></div><div class="stat-lbl" id="sl-3">Pending Fees</div><div class="stat-val" style="color:#dc2626" id="sv-pending">₹0</div><div class="stat-sub" id="ss-pending">Outstanding</div></div>
     <div class="stat"><div class="stat-icon dm-blue-box" style="background:#dbeafe"><svg viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="1.5" stroke="#2563eb" stroke-width="1.4"/><path d="M5 2v2M11 2v2M2 7h12M5.5 10.5l1.5 1.5 3-3" stroke="#2563eb" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="stat-lbl" id="sl-4">Attendance Today</div><div class="stat-val" style="color:#2563eb" id="sv-att">—%</div><div class="stat-sub" id="ss-att">Present today</div></div>
   </div>
+
+  <!-- Income Summary Card (Income - Expense) -->
+  <div id="dash-income-summary" style="margin-bottom:14px">
+    <div style="background:var(--card);border:.5px solid var(--br);border-radius:12px;padding:14px 16px;box-shadow:var(--shadow)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div style="font-size:13px;font-weight:700;color:var(--tx)" id="income-summary-title">📊 This Month — Income Summary</div>
+        <span style="font-size:10px;color:var(--tx3)" id="income-summary-month"></span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+        <div style="background:#dcfce7;border-radius:10px;padding:11px 13px;border:.5px solid #bbf7d0">
+          <div style="font-size:10px;color:#166534;margin-bottom:4px">💰 Fees Collected</div>
+          <div style="font-size:20px;font-weight:800;color:#16a34a" id="income-sum-collected">₹0</div>
+          <div style="font-size:9px;color:#166534;margin-top:2px" id="income-sum-collected-sub">This month</div>
+        </div>
+        <div style="background:#fee2e2;border-radius:10px;padding:11px 13px;border:.5px solid #fecdd3">
+          <div style="font-size:10px;color:#991b1b;margin-bottom:4px">📤 Staff Salary (Expense)</div>
+          <div style="font-size:20px;font-weight:800;color:#dc2626" id="income-sum-expense">₹0</div>
+          <div style="font-size:9px;color:#991b1b;margin-top:2px" id="income-sum-expense-sub">This month</div>
+        </div>
+        <div id="income-sum-net-box" style="background:#dbeafe;border-radius:10px;padding:11px 13px;border:.5px solid #bfdbfe">
+          <div style="font-size:10px;color:#1d4ed8;margin-bottom:4px">📈 Net Income</div>
+          <div style="font-size:20px;font-weight:800;color:#2563eb" id="income-sum-net">₹0</div>
+          <div style="font-size:9px;color:#1d4ed8;margin-top:2px">Income − Expense</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="row2">
     <div class="card">
       <div class="card-hd"><span class="card-title" id="ct-income">Income Trend (6 months)</span></div>
@@ -844,13 +905,51 @@ tbody tr:hover td{background:var(--bg)}
 
 <!-- ═══════════════ FEES ═══════════════ -->
 <div class="page" id="pg-fees">
-  <div class="fee-sum">
-    <div class="fee-box"><div class="fee-box-l" id="fl-1">Collected</div><div class="fee-box-v" style="color:#16a34a" id="fv-collected">₹0</div></div>
-    <div class="fee-box"><div class="fee-box-l" id="fl-2">Pending</div><div class="fee-box-v" style="color:#ca8a04" id="fv-pending">₹0</div></div>
-    <div class="fee-box"><div class="fee-box-l" id="fl-3">Overdue</div><div class="fee-box-v" style="color:#dc2626" id="fv-overdue">0 records</div></div>
+
+  <!-- ── Monthly Summary Bar ── -->
+  <div style="background:var(--card);border:.5px solid var(--br);border-radius:11px;padding:11px 14px;margin-bottom:10px;box-shadow:var(--shadow)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px;flex-wrap:wrap;gap:6px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:12px;font-weight:700;color:var(--tx)">📅 Month:</span>
+        <select id="fee-month-filter" class="fi" style="padding:4px 8px;font-size:12px;border-radius:7px;min-width:120px" onchange="applyFeeMonthFilter()"></select>
+        <span style="font-size:10px;color:var(--tx3)" id="fee-month-badge"></span>
+      </div>
+      <button onclick="openPendingFeesWAModal()" style="background:#25d366;color:#fff;border:none;border-radius:7px;padding:6px 12px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px">
+        <svg viewBox="0 0 16 16" fill="none" width="12" height="12"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.4"/><path d="M5 8.5c.5 1.5 2 2.5 3.5 2.5 1 0 2-.4 2.7-1.1M11 7.5c-.5-1.5-2-2.5-3.5-2.5-1 0-2 .4-2.7 1.1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M5 11l-.5 1.5L6 12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        📱 Send Pending Reminder
+      </button>
+    </div>
+    <div class="fee-sum" style="margin:0">
+      <div class="fee-box">
+        <div class="fee-box-l" id="fl-1">Collected</div>
+        <div class="fee-box-v" style="color:#16a34a" id="fv-collected">₹0</div>
+        <div style="font-size:9px;color:var(--tx3);margin-top:2px" id="fv-collected-sub">this month</div>
+      </div>
+      <div class="fee-box">
+        <div class="fee-box-l" id="fl-2">Pending</div>
+        <div class="fee-box-v" style="color:#ca8a04" id="fv-pending">₹0</div>
+        <div style="font-size:9px;color:var(--tx3);margin-top:2px" id="fv-pending-sub">this month</div>
+      </div>
+      <div class="fee-box">
+        <div class="fee-box-l" id="fl-3">Overdue</div>
+        <div class="fee-box-v" style="color:#dc2626" id="fv-overdue">0</div>
+        <div style="font-size:9px;color:var(--tx3);margin-top:2px" id="fv-overdue-sub">records</div>
+      </div>
+      <div class="fee-box" style="border-left:2px solid var(--br)">
+        <div class="fee-box-l">All-Time Pending</div>
+        <div class="fee-box-v" style="color:#dc2626" id="fv-alltime-pending">₹0</div>
+        <div style="font-size:9px;color:var(--tx3);margin-top:2px">total outstanding</div>
+      </div>
+    </div>
   </div>
+
   <div class="toolbar">
-    <div class="seg" id="fee-tabs"><button class="seg-b on" onclick="setFeeTab('all',this)">All</button><button class="seg-b" onclick="setFeeTab('paid',this)" id="ft-paid">Paid</button><button class="seg-b" onclick="setFeeTab('pending',this)" id="ft-pend">Pending</button><button class="seg-b" onclick="setFeeTab('overdue',this)" id="ft-over">Overdue</button></div>
+    <div class="seg" id="fee-tabs">
+      <button class="seg-b on" onclick="setFeeTab('all',this)">All</button>
+      <button class="seg-b" onclick="setFeeTab('paid',this)" id="ft-paid">Paid</button>
+      <button class="seg-b" onclick="setFeeTab('pending',this)" id="ft-pend">Pending</button>
+      <button class="seg-b" onclick="setFeeTab('overdue',this)" id="ft-over">Overdue</button>
+    </div>
     <button class="btn" onclick="showModal('feeStructure')" style="gap:5px"><svg viewBox="0 0 14 14" fill="none" width="12" height="12"><rect x="1" y="1" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.3"/><path d="M3 4h8M3 7h5M3 10h6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>Fee Structure</button>
     <button class="btn" onclick="openGenerateFees()" style="gap:5px;background:#7c3aed;color:#fff;border-color:#7c3aed">
       <svg viewBox="0 0 14 14" fill="none" width="12" height="12"><path d="M7 2v10M2 7h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>Generate Monthly Fees
@@ -7394,14 +7493,304 @@ function getFeeForClass(grade) {
   return feeStructure.find(f=>f.class===grade) || {admFee:500, monthlyFee:1500};
 }
 
+/* ═══ MONTHLY RESET HELPERS ════════════════════════════ */
+function _getCurrentMonthKey() {
+  const now = new Date();
+  return now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+}
+function _getLastResetKey() {
+  try { return localStorage.getItem('_erp_last_monthly_reset') || ''; } catch(e) { return ''; }
+}
+function _setLastResetKey(k) {
+  try { localStorage.setItem('_erp_last_monthly_reset', k); } catch(e) {}
+}
+function _isNewMonth() {
+  return _getLastResetKey() !== _getCurrentMonthKey();
+}
+function closeMontlyResetBanner() {
+  const b = document.getElementById('dash-monthly-reset-banner');
+  if (b) b.style.display = 'none';
+  // Record that user acknowledged
+  try { localStorage.setItem('_erp_reset_banner_ack', _getCurrentMonthKey()); } catch(e) {}
+}
+
+/* ═══ MONTHLY FEES RESET (Day 1 of each month) ═════════ */
+function checkAndDoMonthlyReset() {
+  const now = new Date();
+  // Only reset on day 1 of the month
+  if (now.getDate() !== 1) return;
+  const curKey = _getCurrentMonthKey();
+  if (_getLastResetKey() === curKey) return; // already reset this month
+
+  // Mark the reset done
+  _setLastResetKey(curKey);
+
+  // Store a snapshot of pending fees for the carry-over summary
+  const pendingAtReset = fees.filter(f => f && f.rcpt && f.status !== 'paid' && f.balance > 0);
+  if (pendingAtReset.length > 0) {
+    try {
+      localStorage.setItem('_erp_pending_carryover_' + curKey, JSON.stringify(
+        pendingAtReset.map(f => ({ student: f.student, balance: f.balance, month: f.month }))
+      ));
+    } catch(e) {}
+  }
+
+  // Show reset banner
+  const banner = document.getElementById('dash-monthly-reset-banner');
+  if (banner) {
+    banner.style.display = '';
+    const title = document.getElementById('dash-reset-title');
+    const sub   = document.getElementById('dash-reset-sub');
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const mName = months[now.getMonth()] + ' ' + now.getFullYear();
+    if (title) title.textContent = `🆕 New Month Started — ${mName}`;
+    if (sub) sub.textContent = `Monthly fee collection has been reset. ${pendingAtReset.length > 0 ? pendingAtReset.length + ' students have pending balances from last month.' : 'All fees were cleared last month. ✅'}`;
+  }
+
+  showToast('📅 New month started — fee collection reset for ' + _getCurrentMonthKey());
+}
+
+/* ═══ PENDING CARRY-OVER DISPLAY (compact) ═════════════ */
+function renderPendingCarryOver() {
+  const carryDiv = document.getElementById('dash-pending-carryover');
+  const sumText  = document.getElementById('carryover-summary-text');
+  const sumAmt   = document.getElementById('carryover-summary-amt');
+  if (!carryDiv) return;
+
+  const pending = fees.filter(f => f && f.rcpt && f.status !== 'paid' && f.balance > 0);
+  if (pending.length === 0) { carryDiv.style.display = 'none'; return; }
+
+  // Group by student
+  const byStudent = {};
+  pending.forEach(f => {
+    const key = f.studentId || f.student;
+    if (!byStudent[key]) byStudent[key] = { name: f.student, studentId: f.studentId, total: 0, months: [] };
+    byStudent[key].total += (f.balance || 0);
+    if (f.month) byStudent[key].months.push(f.month);
+  });
+
+  const entries = Object.values(byStudent);
+  const totalOwed = entries.reduce((s, e) => s + e.total, 0);
+
+  if (sumText) sumText.textContent = `⚠️ Pending Fees — ${entries.length} student${entries.length !== 1 ? 's' : ''}`;
+  if (sumAmt)  sumAmt.textContent  = `₹${totalOwed.toLocaleString('en-IN')} outstanding — click Send WA to remind parents`;
+
+  carryDiv.style.display = '';
+}
+
+/* ═══ PENDING FEES WA REMINDER MODAL ═══════════════════ */
+function openPendingFeesWAModal() {
+  const pending = fees.filter(f => f && f.rcpt && f.status !== 'paid' && f.balance > 0);
+  if (pending.length === 0) { showToast('No pending fees found'); return; }
+
+  // Group by student
+  const byStudent = {};
+  pending.forEach(f => {
+    const key = f.studentId || f.student;
+    if (!byStudent[key]) byStudent[key] = {
+      name: f.student, studentId: f.studentId, total: 0, months: [], records: []
+    };
+    byStudent[key].total += (f.balance || 0);
+    if (f.month) byStudent[key].months.push(f.month);
+    byStudent[key].records.push(f);
+  });
+  const entries = Object.values(byStudent);
+
+  function buildPendingWAMsg(entry) {
+    const stu = students.find(s => s.id === entry.studentId || s.name === entry.name);
+    const ctr = CFG.CENTER;
+    const parent = stu?.parent || 'Parent';
+    const grade  = stu ? (stu.grade === 'KG' ? 'KG' : 'Class ' + stu.grade) : '';
+    const monthsStr = [...new Set(entry.months)].join(', ') || 'previous month';
+    // Use saved WA template for fees type if available
+    const saved = (typeof getWTSaved === 'function') ? getWTSaved('fees', lang === 'ta' ? 'ta' : 'en') : '';
+    if (saved) {
+      return saved
+        .replace(/{parent_name}/g,  parent)
+        .replace(/{student_name}/g, entry.name)
+        .replace(/{month}/g,        monthsStr)
+        .replace(/{amount}/g,       '₹' + entry.total.toLocaleString('en-IN'))
+        .replace(/{due_date}/g,     '10th of this month')
+        .replace(/{overdue_note}/g, entry.records.some(r => r.status === 'overdue') ? '⚠️ Overdue' : '')
+        .replace(/{center_name}/g,  ctr.name || '')
+        .replace(/{center_phone}/g, ctr.phone || '');
+    }
+    if (lang === 'ta') {
+      return `அன்பான ${parent},\n\n💰 *கட்டண நினைவூட்டல்*\n🏫 ${ctr.name || ''}\n\n📋 மாணவர்: *${entry.name}*${grade ? '\n🎓 வகுப்பு: ' + grade : ''}\n📅 மாதம்: ${monthsStr}\n\n🔴 நிலுவை தொகை: *₹${entry.total.toLocaleString('en-IN')}*\n\nதயவுசெய்து விரைவில் கட்டணம் செலுத்தவும்.\n\n📞 ${ctr.phone || ''}\n${ctr.name || ''}`;
+    }
+    return `Dear ${parent},\n\n💰 *Fee Payment Reminder*\n🏫 ${ctr.name || ''}\n\n📋 Student: *${entry.name}*${grade ? '\n🎓 ' + grade : ''}\n📅 Period: ${monthsStr}\n\n🔴 *Balance Due: ₹${entry.total.toLocaleString('en-IN')}*\n\nKindly clear the pending fees at the earliest.\n\nFor queries: 📞 ${ctr.phone || ''}\n${ctr.name || ''}`;
+  }
+
+  const root = document.getElementById('modal-root');
+  root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()">
+    <div class="modal" style="max-width:560px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div>
+          <div class="modal-title" style="margin:0">📱 Pending Fee Reminder — WhatsApp</div>
+          <div style="font-size:11px;color:var(--tx3);margin-top:3px">${entries.length} students · ₹${entries.reduce((s,e)=>s+e.total,0).toLocaleString('en-IN')} total outstanding</div>
+        </div>
+        <button onclick="closeModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--tx2)">×</button>
+      </div>
+
+      <!-- Language selector -->
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+        <span style="font-size:11px;font-weight:600;color:var(--tx2)">Language:</span>
+        <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer"><input type="radio" name="pf-lang" value="en" ${lang!=='ta'?'checked':''} onchange="refreshPendingFeePreview()"> English</label>
+        <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer"><input type="radio" name="pf-lang" value="ta" ${lang==='ta'?'checked':''} onchange="refreshPendingFeePreview()"> தமிழ்</label>
+        <button onclick="navTo('wa-templates');setTimeout(()=>selectWTType&&selectWTType('fees'),300);closeModal()" style="margin-left:auto;background:none;border:.5px solid var(--br);border-radius:6px;padding:3px 10px;font-size:10px;color:var(--tx2);cursor:pointer;font-family:inherit">✏️ Customise Template</button>
+      </div>
+
+      <!-- Preview of first student message -->
+      <div style="font-size:10px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">Preview (first student):</div>
+      <div id="pf-preview" style="background:#dcfce7;border-radius:8px;padding:11px;font-size:11px;color:#166534;line-height:1.7;white-space:pre-wrap;font-family:'Noto Sans Tamil',system-ui;max-height:160px;overflow-y:auto;border:.5px solid #bbf7d0;margin-bottom:12px">${buildPendingWAMsg(entries[0])}</div>
+
+      <!-- Student list with individual send buttons -->
+      <div style="font-size:10px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Send to (${entries.length} students):</div>
+      <div style="max-height:260px;overflow-y:auto;border:.5px solid var(--br);border-radius:10px">
+        ${entries.map((entry, i) => {
+          const stu = students.find(s => s.id === entry.studentId || s.name === entry.name);
+          const phone = stu?.phone || '';
+          const color = stu?.color || '#ca8a04';
+          const hasPhone = !!phone;
+          return `<div class="wa-queue-item" id="pf-row-${i}">
+            <div class="av" style="background:${color};width:28px;height:28px;font-size:11px;flex-shrink:0">${(entry.name||'?')[0]}</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:12px;font-weight:600;color:var(--tx)">${entry.name}</div>
+              <div style="font-size:10px;color:var(--tx3)">${hasPhone ? '📞 '+phone : '⚠️ No phone'} · ${[...new Set(entry.months)].join(', ')||'—'}</div>
+            </div>
+            <div style="text-align:right;margin-right:8px;flex-shrink:0">
+              <div style="font-size:13px;font-weight:800;color:#dc2626">₹${entry.total.toLocaleString('en-IN')}</div>
+              <div style="font-size:9px;color:var(--tx3)">balance</div>
+            </div>
+            <button ${!hasPhone?'disabled':''} onclick="sendPendingFeeWA(${i})"
+              style="background:${hasPhone?'#25d366':'#e2e8f0'};color:${hasPhone?'#fff':'#94a3b8'};border:none;padding:6px 10px;border-radius:7px;font-size:11px;font-weight:600;cursor:${hasPhone?'pointer':'default'};font-family:inherit;white-space:nowrap;display:flex;align-items:center;gap:4px;flex-shrink:0">
+              <svg viewBox="0 0 16 16" fill="none" width="11" height="11"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.4"/><path d="M5 8.5c.5 1.5 2 2.5 3.5 2.5 1 0 2-.4 2.7-1.1M11 7.5c-.5-1.5-2-2.5-3.5-2.5-1 0-2 .4-2.7 1.1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M5 11l-.5 1.5L6 12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              📱 Send
+            </button>
+          </div>`;
+        }).join('')}
+      </div>
+
+      <div class="modal-foot" style="margin-top:12px">
+        <button class="btn btn-wa" style="flex:1;justify-content:center;font-weight:700;padding:10px"
+          onclick="sendAllPendingFeeWA()">
+          📱 Send to All (${entries.length})
+        </button>
+        <button class="btn" onclick="closeModal()">Close</button>
+      </div>
+    </div>
+  </div>`;
+
+  // Store entries for use by send functions
+  window._pfEntries = entries;
+  window._pfBuildMsg = buildPendingWAMsg;
+}
+
+function refreshPendingFeePreview() {
+  const prevEl = document.getElementById('pf-preview');
+  if (!prevEl || !window._pfEntries || !window._pfBuildMsg) return;
+  prevEl.textContent = window._pfBuildMsg(window._pfEntries[0]);
+}
+
+function sendPendingFeeWA(i) {
+  if (!window._pfEntries) return;
+  const entry = window._pfEntries[i];
+  const stu = students.find(s => s.id === entry.studentId || s.name === entry.name);
+  const phone = stu?.phone || '';
+  if (!phone) { showToast('⚠️ No phone number for ' + entry.name); return; }
+  const msg = window._pfBuildMsg(entry);
+  openWA(phone, msg);
+  // Mark row as sent
+  const row = document.getElementById('pf-row-'+i);
+  if (row) {
+    const btn = row.querySelector('button');
+    if (btn) { btn.textContent = '✅ Sent'; btn.style.background = '#dcfce7'; btn.style.color = '#166534'; btn.disabled = true; }
+  }
+  showToast('📱 Opening WhatsApp for ' + entry.name + ' (₹' + entry.total.toLocaleString('en-IN') + ' pending)');
+}
+
+function sendAllPendingFeeWA() {
+  if (!window._pfEntries || window._pfEntries.length === 0) return;
+  const withPhone = window._pfEntries.filter(e => {
+    const stu = students.find(s => s.id === e.studentId || s.name === e.name);
+    return !!(stu?.phone);
+  });
+  if (withPhone.length === 0) { showToast('No students with phone numbers'); return; }
+  // Open first unsent
+  const first = withPhone[0];
+  const stu = students.find(s => s.id === first.studentId || s.name === first.name);
+  openWA(stu.phone, window._pfBuildMsg(first));
+  showToast(`📱 Opened WA for ${first.name}. Click "Send to All" again for next student. (${withPhone.length} total)`);
+}
+
+/* ═══ INCOME SUMMARY (Income - Staff Expense) ══════════ */
+function renderIncomeSummary() {
+  const now = new Date();
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const curMonthKey = now.toLocaleString('en-IN', { month: 'short', year: 'numeric' }); // "Jun 2026"
+  const curMonthLabel = months[now.getMonth()] + ' ' + now.getFullYear();
+
+  // Fees collected this month
+  const thisMonthFees = fees.filter(f => f && f.rcpt && f.status === 'paid' && f.month === curMonthKey);
+  const collected = thisMonthFees.reduce((s, f) => s + (f.paid || 0), 0);
+
+  // Staff salary expense this month (from salaryPayments)
+  const monthVal = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0'); // "2026-06"
+  let expense = 0;
+  Object.keys(salaryPayments).forEach(key => {
+    if (key.endsWith('|' + monthVal)) {
+      const sp = salaryPayments[key];
+      if (sp && sp.paid) expense += (sp.amount || 0);
+    }
+  });
+
+  const net = collected - expense;
+
+  // Update UI
+  const el1 = document.getElementById('income-sum-collected');
+  const el2 = document.getElementById('income-sum-expense');
+  const el3 = document.getElementById('income-sum-net');
+  const el3box = document.getElementById('income-sum-net-box');
+  const elMonth = document.getElementById('income-summary-month');
+  const elSub1 = document.getElementById('income-sum-collected-sub');
+  const elSub2 = document.getElementById('income-sum-expense-sub');
+
+  if (el1) el1.textContent = '₹' + collected.toLocaleString('en-IN');
+  if (el2) el2.textContent = '₹' + expense.toLocaleString('en-IN');
+  if (el3) {
+    el3.textContent = (net < 0 ? '−₹' : '₹') + Math.abs(net).toLocaleString('en-IN');
+    el3.style.color = net >= 0 ? '#2563eb' : '#dc2626';
+  }
+  if (el3box) {
+    el3box.style.background = net >= 0 ? '#dbeafe' : '#fee2e2';
+    el3box.style.borderColor = net >= 0 ? '#bfdbfe' : '#fecdd3';
+    const lbl = el3box.querySelector('div:first-child');
+    if (lbl) lbl.style.color = net >= 0 ? '#1d4ed8' : '#991b1b';
+  }
+  if (elMonth) elMonth.textContent = curMonthLabel;
+  if (elSub1) {
+    const feeCount = thisMonthFees.length;
+    elSub1.textContent = feeCount + ' payment' + (feeCount !== 1 ? 's' : '') + ' this month';
+  }
+  if (elSub2) {
+    const staffPaidCount = Object.keys(salaryPayments).filter(k => k.endsWith('|'+monthVal) && salaryPayments[k]?.paid).length;
+    elSub2.textContent = staffPaidCount > 0 ? staffPaidCount + ' staff paid' : 'No salaries paid yet';
+  }
+}
+
 function updateDashStats() {
   const active=students.filter(s=>s.status==='active').length;
   const el1=document.getElementById('sv-students'),el2=document.getElementById('sv-income'),el3=document.getElementById('sv-pending');
   if(el1) el1.textContent=students.length;
-  const paid=fees.filter(f=>f.status==='paid').reduce((s,f)=>s+(f.paid||0),0);
+
+  // Monthly income: only this month's collected fees
+  const now = new Date();
+  const curMonthKey = now.toLocaleString('en-IN', { month: 'short', year: 'numeric' });
+  const thisMonthPaid = fees.filter(f=>f.status==='paid' && f.month===curMonthKey).reduce((s,f)=>s+(f.paid||0),0);
   const pend=fees.filter(f=>f.status!=='paid').reduce((s,f)=>s+(f.balance||0),0);
-  if(el2) el2.textContent='₹'+paid.toLocaleString('en-IN');
+  if(el2) el2.textContent='₹'+thisMonthPaid.toLocaleString('en-IN');
   if(el3) el3.textContent='₹'+pend.toLocaleString('en-IN');
+
   const batchId  = document.getElementById('att-batch')?.value || '';
   const session  = document.getElementById('att-session')?.value || 'morning';
   const bStu     = _getBatchStudents(batchId);
@@ -7411,6 +7800,12 @@ function updateDashStats() {
   const marked   = attVals.filter(v => v !== '').length;
   const el4 = document.getElementById('sv-att');
   if(el4) el4.textContent = marked > 0 ? Math.round(pCount / marked * 100) + '%' : '—%';
+
+  // Monthly reset check and carry-over
+  checkAndDoMonthlyReset();
+  renderPendingCarryOver();
+  renderIncomeSummary();
+
   // Refresh dashboard charts with real data
   if(window.Chart && document.getElementById('chart-income')) setTimeout(initCharts,50);
 }

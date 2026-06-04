@@ -2000,12 +2000,13 @@ function navTo(id) {
   if (id === 'dashboard') { updateDashStats(); setTimeout(initCharts, 100); }
   if (id === 'batches') { renderBatchesPage(); }
   if (id === 'fees') {
-    // Default to Pending tab so only unpaid records show first
+    const now = new Date();
+    window._feeSelectedMonth = _feeMonthLabel(now);
+    initFeeMonthFilter();
     const pendBtn = document.getElementById('ft-pend');
     if (pendBtn) {
-      setFeeTab('pending', pendBtn);
-    } else {
-      renderFees(fees);
+      document.querySelectorAll('#fee-tabs .seg-b').forEach(b => b.classList.remove('on'));
+      pendBtn.classList.add('on');
     }
   }
   if (id === 'wa-templates') { initWATemplatesPage(); }
@@ -3306,31 +3307,92 @@ function sendOneAttWA(studentId, status) {
 }
 
 /* ═══════════════════════════════════════════════════════
-   FEES
+   FEES — month-aware
 ═══════════════════════════════════════════════════════ */
-function renderFees(data) {
-  const bm = {paid:'bg', partial:'bp', pending:'ba', overdue:'br2'};
-  const source = (data || fees).filter(f => f && f.rcpt && !f._deleted);
 
-  // Always recalculate summary from the full fees array
-  const allFees = fees.filter(f => f && f.rcpt);
-  const collected = allFees.filter(f=>f.status==='paid').reduce((s,f)=>s+(f.paid||0),0);
-  const pendingAmt = allFees.filter(f=>f.status==='pending'||f.status==='partial').reduce((s,f)=>s+(f.balance||0),0);
-  const overdueCount = allFees.filter(f=>f.status==='overdue').length;
-  const cEl=document.getElementById('fv-collected'); if(cEl) cEl.textContent='₹'+collected.toLocaleString('en-IN');
-  const pEl=document.getElementById('fv-pending');   if(pEl) pEl.textContent='₹'+pendingAmt.toLocaleString('en-IN');
-  const oEl=document.getElementById('fv-overdue');   if(oEl) oEl.textContent=overdueCount+' record'+(overdueCount!==1?'s':'');
+/* Build the month-filter dropdown from all unique months in fees array */
+function initFeeMonthFilter() {
+  const sel = document.getElementById('fee-month-filter');
+  if (!sel) return;
+  const now = new Date();
+  const curKey = _feeMonthLabel(now); // e.g. 'Jun 2026'
+
+  // Collect all unique months present in fees + always include current month
+  const monthSet = new Set([curKey]);
+  fees.forEach(f => { if (f && f.month) monthSet.add(f.month); });
+
+  // Sort months newest-first
+  function parseMonthKey(k) {
+    const d = new Date(k); return isNaN(d) ? new Date('1 ' + k) : d;
+  }
+  const sorted = [...monthSet].sort((a,b) => parseMonthKey(b) - parseMonthKey(a));
+
+  const prev = sel.value;
+  sel.innerHTML = sorted.map(m =>
+    `<option value="${m}" ${m === curKey ? 'selected' : ''}>${m}${m === curKey ? ' ← This Month' : ''}</option>`
+  ).join('');
+  // Restore previous selection if still valid
+  if (prev && sorted.includes(prev)) sel.value = prev;
+
+  applyFeeMonthFilter();
+}
+
+/* Called when month dropdown changes — filters table + updates summary */
+function applyFeeMonthFilter() {
+  const sel = document.getElementById('fee-month-filter');
+  const month = sel ? sel.value : '';
+  window._feeSelectedMonth = month;
+
+  // Update summary stats for selected month
+  const allValid = fees.filter(f => f && f.rcpt && !f._deleted);
+  const monthFees = month ? allValid.filter(f => f.month === month) : allValid;
+
+  const collected   = monthFees.filter(f=>f.status==='paid').reduce((s,f)=>s+(f.paid||0),0);
+  const pendingAmt  = monthFees.filter(f=>f.status==='pending'||f.status==='partial').reduce((s,f)=>s+(f.balance||0),0);
+  const overdueCount= monthFees.filter(f=>f.status==='overdue').length;
+  // All-time outstanding (not filtered by month)
+  const allPending  = allValid.filter(f=>f.status!=='paid').reduce((s,f)=>s+(f.balance||0),0);
+
+  const cEl = document.getElementById('fv-collected');       if(cEl) cEl.textContent = '₹'+collected.toLocaleString('en-IN');
+  const pEl = document.getElementById('fv-pending');         if(pEl) pEl.textContent = '₹'+pendingAmt.toLocaleString('en-IN');
+  const oEl = document.getElementById('fv-overdue');         if(oEl) oEl.textContent = overdueCount;
+  const aEl = document.getElementById('fv-alltime-pending'); if(aEl) aEl.textContent = '₹'+allPending.toLocaleString('en-IN');
+
+  const subLabel = month || 'all months';
+  const cSub = document.getElementById('fv-collected-sub'); if(cSub) cSub.textContent = subLabel;
+  const pSub = document.getElementById('fv-pending-sub');   if(pSub) pSub.textContent = subLabel;
+  const oSub = document.getElementById('fv-overdue-sub');   if(oSub) oSub.textContent = subLabel;
+
+  // Refresh table preserving current tab
+  const activeTab = document.querySelector('#fee-tabs .seg-b.on');
+  const tabVal = activeTab ? activeTab.getAttribute('onclick').match(/'(\w+)'/)?.[1] || 'all' : 'all';
+  _renderFeesFiltered(tabVal, month);
+}
+
+/* Core render — respects both tab filter AND month filter */
+function _renderFeesFiltered(tabVal, month) {
+  const bm = {paid:'bg', partial:'bp', pending:'ba', overdue:'br2'};
+  const allValid = fees.filter(f => f && f.rcpt && !f._deleted);
+
+  // Month filter first
+  let source = month ? allValid.filter(f => f.month === month) : allValid;
+
+  // Tab filter
+  if (tabVal === 'paid')    source = source.filter(f => f.status === 'paid');
+  else if (tabVal === 'pending') source = source.filter(f => f.status === 'pending' || f.status === 'partial');
+  else if (tabVal === 'overdue') source = source.filter(f => f.status === 'overdue');
 
   if (source.length === 0) {
+    const isFiltered = month || tabVal !== 'all';
     document.getElementById('fee-body').innerHTML = `<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--tx3);font-size:13px">
-      ${data && data !== fees ? '🎉 No pending fees! All caught up.' : 'No fee records found.'}
+      ${tabVal==='pending' ? '🎉 No pending fees for ' + (month||'this period') + '! All caught up.' :
+        isFiltered ? 'No records match the selected filter.' : 'No fee records found.'}
     </td></tr>`;
     return;
   }
 
-  // ── Group records by student ──────────────────────────────
-  const groups = {};
-  const order  = [];
+  // Group by student
+  const groups = {}, order = [];
   source.forEach(f => {
     const key = f.studentId || f.student;
     if (!groups[key]) { groups[key] = []; order.push(key); }
@@ -3339,52 +3401,49 @@ function renderFees(data) {
 
   let html = '';
   order.forEach(key => {
-    const recs = groups[key];
-    const sName = recs[0].student;
-    const student = students.find(s => s.id === (recs[0].studentId) || s.name === sName);
-    const av = student ? student.color : '#6366f1';
-    const grade = student ? (student.grade === 'KG' ? 'KG' : 'Gr.' + student.grade) : '';
-    const course = student ? (student.course || '') : '';
+    const recs   = groups[key];
+    const sName  = recs[0].student;
+    const student= students.find(s => s.id === recs[0].studentId || s.name === sName);
+    const av     = student?.color || '#6366f1';
+    const grade  = student ? (student.grade==='KG' ? 'KG' : 'Gr.'+student.grade) : '';
+    const course = student?.course || '';
+    const totalBal = recs.reduce((s,f)=>s+(f.balance||0),0);
+    const phone    = student?.phone || '';
 
-    // Totals for this student across shown records
-    const totalAmt  = recs.reduce((s,f)=>s+(f.total||0),0);
-    const totalPaid = recs.reduce((s,f)=>s+(f.paid||0),0);
-    const totalBal  = recs.reduce((s,f)=>s+(f.balance||0),0);
-    const allPaid   = recs.every(f=>f.status==='paid');
-    const anyPending = recs.some(f=>f.status!=='paid');
-
-    // Student group header row
     html += `<tr style="background:var(--bg);border-top:2px solid var(--br)">
-      <td colspan="6" style="padding:7px 12px">
+      <td colspan="5" style="padding:7px 12px">
         <div style="display:flex;align-items:center;gap:8px">
           <div style="width:28px;height:28px;border-radius:8px;background:${av};color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">${sName[0]}</div>
           <div>
             <span style="font-size:13px;font-weight:700;color:var(--tx)">${sName}</span>
-            ${grade ? `<span style="font-size:10px;color:var(--tx3);margin-left:6px">${grade}</span>` : ''}
+            ${grade  ? `<span style="font-size:10px;color:var(--tx3);margin-left:6px">${grade}</span>` : ''}
             ${course ? `<span style="font-size:10px;background:var(--prl);color:var(--pr);padding:0 6px;border-radius:8px;margin-left:6px">${course}</span>` : ''}
           </div>
-          <div style="margin-left:auto;text-align:right">
+          <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
             ${totalBal > 0
               ? `<span style="font-size:11px;font-weight:700;color:#dc2626">₹${totalBal.toLocaleString('en-IN')} due</span>`
               : `<span style="font-size:11px;font-weight:700;color:#16a34a">✅ Fully Paid</span>`}
+            ${totalBal > 0 && phone
+              ? `<button onclick="sendSinglePendingWA('${(student?.id||'').replace(/'/g,"\\'")}','${sName.replace(/'/g,"\\'")}','${month||''}')"
+                   style="background:#25d366;color:#fff;border:none;padding:3px 8px;border-radius:6px;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit">📱 WA</button>`
+              : ''}
           </div>
         </div>
       </td>
-      <td colspan="3" style="padding:7px 12px;text-align:right">
+      <td colspan="4" style="padding:7px 12px;text-align:right">
         <span style="font-size:10px;color:var(--tx3)">${recs.length} record${recs.length!==1?'s':''}</span>
       </td>
     </tr>`;
 
-    // Individual fee rows (indented)
     recs.forEach(f => {
-      const isPaid   = f.status === 'paid';
-      const rcptEsc  = f.rcpt.replace(/'/g, "\\'");
-      const typeTag  = f.type==='admission'
+      const isPaid  = f.status === 'paid';
+      const rcptEsc = f.rcpt.replace(/'/g, "\\'");
+      const typeTag = f.type==='admission'
         ? `<span style="font-size:9px;background:#dbeafe;color:#1d4ed8;padding:1px 5px;border-radius:6px;font-weight:600;margin-left:4px">Adm</span>`
         : f.type==='subject'
         ? `<span style="font-size:9px;background:#ede9fe;color:#7c3aed;padding:1px 5px;border-radius:6px;font-weight:600;margin-left:4px">Subj</span>`
         : `<span style="font-size:9px;background:#dcfce7;color:#166534;padding:1px 5px;border-radius:6px;font-weight:600;margin-left:4px">Monthly</span>`;
-      const subjTag  = f.subject ? ` · <span style="font-size:10px;color:#7c3aed">${f.subject}</span>` : '';
+      const subjTag = f.subject ? ` · <span style="font-size:10px;color:#7c3aed">${f.subject}</span>` : '';
 
       html += `<tr style="background:${isPaid?'transparent':'#fffbeb'};border-left:3px solid ${isPaid?'#bbf7d0':'#fcd34d'}">
         <td style="padding:6px 12px 6px 24px"><code style="font-size:10px;color:#185FA5">${f.rcpt}</code>${typeTag}</td>
@@ -3399,24 +3458,58 @@ function renderFees(data) {
           : `<button onclick="openCollectModal('${rcptEsc}')"
                style="background:#16a34a;color:#fff;border:none;padding:5px 12px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">
                💰 Collect
-             </button>`
-        }</td>
+             </button>`}
+        </td>
       </tr>`;
     });
   });
 
   document.getElementById('fee-body').innerHTML = html;
 }
+
+/* Wrapper so existing calls to renderFees() still work */
+function renderFees(data) {
+  // If called with specific filtered data (e.g. from old code), render directly
+  // Otherwise re-apply month + tab filter
+  if (data && data !== fees) {
+    // Legacy call with pre-filtered data — detect month from filter
+    const month = window._feeSelectedMonth || '';
+    const tabVal = (() => {
+      const btn = document.querySelector('#fee-tabs .seg-b.on');
+      return btn ? (btn.getAttribute('onclick').match(/'(\w+)'/)?.[1] || 'all') : 'all';
+    })();
+    _renderFeesFiltered(tabVal, month);
+  } else {
+    applyFeeMonthFilter();
+  }
+  initFeeMonthFilter(); // keep dropdown fresh
+}
+
 function setFeeTab(v, btn) {
   document.querySelectorAll('#fee-tabs .seg-b').forEach(b => b.classList.remove('on'));
   btn.classList.add('on');
-  let filtered;
-  if (v === 'all')     filtered = fees;
-  else if (v === 'paid')    filtered = fees.filter(f => f.status === 'paid');
-  else if (v === 'pending') filtered = fees.filter(f => f.status === 'pending' || f.status === 'partial');
-  else if (v === 'overdue') filtered = fees.filter(f => f.status === 'overdue');
-  else filtered = fees;
-  renderFees(filtered);
+  const month = window._feeSelectedMonth || (document.getElementById('fee-month-filter')?.value || '');
+  _renderFeesFiltered(v, month);
+}
+
+/* Send WA reminder for a single student directly from the fee table */
+function sendSinglePendingWA(studentId, studentName, month) {
+  const stu = students.find(s => s.id === studentId || s.name === studentName);
+  if (!stu) { showToast('மாணவர் கிடைக்கவில்லை'); return; }
+  const phone = stu.phone || '';
+  if (!phone) { showToast('⚠️ ' + studentName + ' - தொலைபேசி எண் இல்லை'); return; }
+  const pending = fees.filter(f => (f.studentId===studentId||f.student===studentName) && f.status!=='paid' && f.balance>0);
+  const filterMonth = month || (document.getElementById('fee-month-filter')?.value || '');
+  const relevant = filterMonth ? pending.filter(f=>f.month===filterMonth) : pending;
+  const entry = {
+    name: studentName, studentId,
+    total  : relevant.reduce((s,f)=>s+(f.balance||0), 0),
+    months : [...new Set(relevant.map(f=>f.month).filter(Boolean))],
+    records: relevant
+  };
+  if (entry.total <= 0) { showToast(studentName + ' - நிலுவை கட்டணம் இல்லை'); return; }
+  openWA(phone, _buildPendingWAMsg(entry));
+  showToast('📱 ' + studentName + ' பெற்றோருக்கு WA திறக்கிறது');
 }
 function calcFeeM() {
   const a=parseFloat(document.getElementById('m-famt')?.value)||0;
@@ -3440,7 +3533,7 @@ function saveFeeEntry() {
   const bal     = Math.max(0, total - paid);
   const status  = paid >= total ? 'paid' : paid > 0 ? 'partial' : 'pending';
   const rcpt    = 'RCP-' + Date.now().toString().slice(-6);
-  const month   = new Date().toLocaleString('en-IN', {month:'short', year:'numeric'});
+  const month   = _feeMonthLabel();
 
   fees.unshift({
     rcpt, student: stName, studentId: stId,
@@ -3484,7 +3577,7 @@ function saveFeeEntry() {
 ═══════════════════════════════════════════════════════ */
 function openGenerateFees() {
   const now = new Date();
-  const defaultMonth = now.toLocaleString('en-IN', {month:'short', year:'numeric'});
+  const defaultMonth = _feeMonthLabel(now);
   const activeStudents = students.filter(s => s.status === 'active');
 
   const root = document.getElementById('modal-root');
@@ -6267,6 +6360,8 @@ function doResetData() {
   // Re-render all pages
   renderStudents(students);
   renderAttList();
+  const _initNow = new Date();
+  window._feeSelectedMonth = _feeMonthLabel(_initNow);
   renderFees(fees);
   renderExams();
   renderStaff();
@@ -7494,63 +7589,111 @@ function getFeeForClass(grade) {
 }
 
 /* ═══ MONTHLY RESET HELPERS ════════════════════════════ */
-function _getCurrentMonthKey() {
-  const now = new Date();
-  return now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+/* ═══════════════════════════════════════════════════════
+   MONTHLY FEES SYSTEM — Reset / Summary / WA Reminder
+═══════════════════════════════════════════════════════ */
+
+/* ── Helpers ──────────────────────────────────────────── */
+function _feeMonthLabel(date) {
+  // Returns e.g. "Jun 2026" — ALWAYS English, never locale-dependent
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const d = date || new Date();
+  return MONTHS[d.getMonth()] + ' ' + d.getFullYear();
 }
-function _getLastResetKey() {
+function _feeMonthYM(date) {
+  // Returns e.g. "2026-06"  — used for salary lookup
+  const d = date || new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+}
+function _getLastResetYM() {
   try { return localStorage.getItem('_erp_last_monthly_reset') || ''; } catch(e) { return ''; }
 }
-function _setLastResetKey(k) {
-  try { localStorage.setItem('_erp_last_monthly_reset', k); } catch(e) {}
+function _setLastResetYM(ym) {
+  try { localStorage.setItem('_erp_last_monthly_reset', ym); } catch(e) {}
 }
-function _isNewMonth() {
-  return _getLastResetKey() !== _getCurrentMonthKey();
-}
+
+/* ── Dismiss new-month banner ─────────────────────────── */
 function closeMontlyResetBanner() {
   const b = document.getElementById('dash-monthly-reset-banner');
   if (b) b.style.display = 'none';
-  // Record that user acknowledged
-  try { localStorage.setItem('_erp_reset_banner_ack', _getCurrentMonthKey()); } catch(e) {}
 }
 
-/* ═══ MONTHLY FEES RESET (Day 1 of each month) ═════════ */
+/* ── Day-1 Monthly Reset ──────────────────────────────── */
+/*
+ * What this does:
+ *  1. Runs on Day 1 of each month (once per month, tracked in localStorage)
+ *  2. For every active student who has NO fee record for the NEW month:
+ *     auto-creates a "pending" record using their class fee structure
+ *  3. Old unpaid records are left as-is (they remain in the fees array
+ *     under their original month label — they show as outstanding)
+ *  4. Shows the new-month banner on Dashboard
+ */
 function checkAndDoMonthlyReset() {
-  const now = new Date();
-  // Only reset on day 1 of the month
+  const now    = new Date();
+  const curYM  = _feeMonthYM(now);          // "2026-06"
+  const curLbl = _feeMonthLabel(now);        // "Jun 2026"
+
+  // Always refresh the pending carry-over and income summary
+  renderPendingCarryOver();
+  renderIncomeSummary();
+
+  // Only auto-generate on Day 1 and only once per month
   if (now.getDate() !== 1) return;
-  const curKey = _getCurrentMonthKey();
-  if (_getLastResetKey() === curKey) return; // already reset this month
+  if (_getLastResetYM() === curYM) return;
+  _setLastResetYM(curYM);
 
-  // Mark the reset done
-  _setLastResetKey(curKey);
+  // Auto-generate pending fee records for active students who don't have one yet
+  const activeStudents = students.filter(s => s.status === 'active');
+  let generated = 0;
+  activeStudents.forEach(s => {
+    const already = fees.find(f =>
+      (f.studentId === s.id || f.student === s.name) &&
+      f.month === curLbl && f.type !== 'admission'
+    );
+    if (already) return;
+    const fs  = (typeof getFeeForClass === 'function') ? getFeeForClass(s.grade) : {};
+    const amt = fs.monthlyFee || 0;
+    if (amt <= 0) return;
+    fees.unshift({
+      rcpt      : 'RCP-MF-' + Date.now().toString().slice(-5) + Math.random().toString(36).slice(-3),
+      student   : s.name,
+      studentId : s.id,
+      month     : curLbl,
+      total     : amt,
+      paid      : 0,
+      balance   : amt,
+      mode      : 'Cash',
+      status    : 'pending',
+      type      : 'monthly',
+      paidOn    : '',
+    });
+    generated++;
+  });
 
-  // Store a snapshot of pending fees for the carry-over summary
-  const pendingAtReset = fees.filter(f => f && f.rcpt && f.status !== 'paid' && f.balance > 0);
-  if (pendingAtReset.length > 0) {
-    try {
-      localStorage.setItem('_erp_pending_carryover_' + curKey, JSON.stringify(
-        pendingAtReset.map(f => ({ student: f.student, balance: f.balance, month: f.month }))
-      ));
-    } catch(e) {}
+  if (generated > 0) {
+    saveFees();
+    renderPendingCarryOver();
   }
 
   // Show reset banner
   const banner = document.getElementById('dash-monthly-reset-banner');
   if (banner) {
     banner.style.display = '';
-    const title = document.getElementById('dash-reset-title');
-    const sub   = document.getElementById('dash-reset-sub');
-    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    const mName = months[now.getMonth()] + ' ' + now.getFullYear();
-    if (title) title.textContent = `🆕 New Month Started — ${mName}`;
-    if (sub) sub.textContent = `Monthly fee collection has been reset. ${pendingAtReset.length > 0 ? pendingAtReset.length + ' students have pending balances from last month.' : 'All fees were cleared last month. ✅'}`;
+    const titleEl = document.getElementById('dash-reset-title');
+    const subEl   = document.getElementById('dash-reset-sub');
+    if (titleEl) titleEl.textContent = '\uD83C\uDD95 New Month — ' + curLbl;
+    if (subEl) {
+      const pendingOld = fees.filter(f => f.status !== 'paid' && f.month !== curLbl && f.balance > 0).length;
+      subEl.textContent = generated > 0
+        ? generated + ' fee records auto-generated for ' + curLbl + (pendingOld > 0 ? ' · ' + pendingOld + ' old pending records' : '')
+        : 'All fees were already set.' + (pendingOld > 0 ? ' · ' + pendingOld + ' old pending records carry forward.' : '');
+    }
   }
 
-  showToast('📅 New month started — fee collection reset for ' + _getCurrentMonthKey());
+  showToast('\uD83D\uDCC5 ' + curLbl + ': ' + generated + ' fee records auto-generated');
 }
 
-/* ═══ PENDING CARRY-OVER DISPLAY (compact) ═════════════ */
+/* ── Pending carry-over card on Dashboard ─────────────── */
 function renderPendingCarryOver() {
   const carryDiv = document.getElementById('dash-pending-carryover');
   const sumText  = document.getElementById('carryover-summary-text');
@@ -7560,7 +7703,6 @@ function renderPendingCarryOver() {
   const pending = fees.filter(f => f && f.rcpt && f.status !== 'paid' && f.balance > 0);
   if (pending.length === 0) { carryDiv.style.display = 'none'; return; }
 
-  // Group by student
   const byStudent = {};
   pending.forEach(f => {
     const key = f.studentId || f.student;
@@ -7569,254 +7711,298 @@ function renderPendingCarryOver() {
     if (f.month) byStudent[key].months.push(f.month);
   });
 
-  const entries = Object.values(byStudent);
+  const entries   = Object.values(byStudent);
   const totalOwed = entries.reduce((s, e) => s + e.total, 0);
-
-  if (sumText) sumText.textContent = `⚠️ Pending Fees — ${entries.length} student${entries.length !== 1 ? 's' : ''}`;
-  if (sumAmt)  sumAmt.textContent  = `₹${totalOwed.toLocaleString('en-IN')} outstanding — click Send WA to remind parents`;
-
+  if (sumText) sumText.textContent = '\u26A0\uFE0F Pending Fees \u2014 ' + entries.length + ' student' + (entries.length !== 1 ? 's' : '');
+  if (sumAmt)  sumAmt.textContent  = '\u20B9' + totalOwed.toLocaleString('en-IN') + ' outstanding \u2014 tap \u201CSend WA\u201D to remind parents';
   carryDiv.style.display = '';
 }
 
-/* ═══ PENDING FEES WA REMINDER MODAL ═══════════════════ */
-function openPendingFeesWAModal() {
-  const pending = fees.filter(f => f && f.rcpt && f.status !== 'paid' && f.balance > 0);
-  if (pending.length === 0) { showToast('No pending fees found'); return; }
+/* ── Income Summary card on Dashboard ────────────────────*/
+function renderIncomeSummary() {
+  const now        = new Date();
+  const curLbl     = _feeMonthLabel(now);
+  const curYM      = _feeMonthYM(now);
+  const curDisplay = _feeMonthLabel(now);
 
-  // Group by student
-  const byStudent = {};
-  pending.forEach(f => {
-    const key = f.studentId || f.student;
-    if (!byStudent[key]) byStudent[key] = {
-      name: f.student, studentId: f.studentId, total: 0, months: [], records: []
-    };
-    byStudent[key].total += (f.balance || 0);
-    if (f.month) byStudent[key].months.push(f.month);
-    byStudent[key].records.push(f);
-  });
-  const entries = Object.values(byStudent);
+  const thisMonthFees = fees.filter(f => f && f.rcpt && f.status === 'paid' && f.month === curLbl);
+  const collected     = thisMonthFees.reduce((s,f) => s + (f.paid||0), 0);
 
-  function buildPendingWAMsg(entry) {
-    const stu = students.find(s => s.id === entry.studentId || s.name === entry.name);
-    const ctr = CFG.CENTER;
-    const parent = stu?.parent || 'Parent';
-    const grade  = stu ? (stu.grade === 'KG' ? 'KG' : 'Class ' + stu.grade) : '';
-    const monthsStr = [...new Set(entry.months)].join(', ') || 'previous month';
-    // Use saved WA template for fees type if available
-    const saved = (typeof getWTSaved === 'function') ? getWTSaved('fees', lang === 'ta' ? 'ta' : 'en') : '';
-    if (saved) {
-      return saved
-        .replace(/{parent_name}/g,  parent)
-        .replace(/{student_name}/g, entry.name)
-        .replace(/{month}/g,        monthsStr)
-        .replace(/{amount}/g,       '₹' + entry.total.toLocaleString('en-IN'))
-        .replace(/{due_date}/g,     '10th of this month')
-        .replace(/{overdue_note}/g, entry.records.some(r => r.status === 'overdue') ? '⚠️ Overdue' : '')
-        .replace(/{center_name}/g,  ctr.name || '')
-        .replace(/{center_phone}/g, ctr.phone || '');
-    }
-    if (lang === 'ta') {
-      return `அன்பான ${parent},\n\n💰 *கட்டண நினைவூட்டல்*\n🏫 ${ctr.name || ''}\n\n📋 மாணவர்: *${entry.name}*${grade ? '\n🎓 வகுப்பு: ' + grade : ''}\n📅 மாதம்: ${monthsStr}\n\n🔴 நிலுவை தொகை: *₹${entry.total.toLocaleString('en-IN')}*\n\nதயவுசெய்து விரைவில் கட்டணம் செலுத்தவும்.\n\n📞 ${ctr.phone || ''}\n${ctr.name || ''}`;
-    }
-    return `Dear ${parent},\n\n💰 *Fee Payment Reminder*\n🏫 ${ctr.name || ''}\n\n📋 Student: *${entry.name}*${grade ? '\n🎓 ' + grade : ''}\n📅 Period: ${monthsStr}\n\n🔴 *Balance Due: ₹${entry.total.toLocaleString('en-IN')}*\n\nKindly clear the pending fees at the earliest.\n\nFor queries: 📞 ${ctr.phone || ''}\n${ctr.name || ''}`;
+  // Staff salary paid this month
+  let expense = 0;
+  if (typeof salaryPayments !== 'undefined') {
+    Object.keys(salaryPayments).forEach(k => {
+      if (k.endsWith('|' + curYM) && salaryPayments[k]?.paid) expense += (salaryPayments[k].amount || 0);
+    });
   }
+
+  const net = collected - expense;
+
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  set('income-summary-month',    curDisplay);
+  set('income-sum-collected',    '\u20B9' + collected.toLocaleString('en-IN'));
+  set('income-sum-expense',      '\u20B9' + expense.toLocaleString('en-IN'));
+  set('income-sum-net',          (net < 0 ? '\u2212\u20B9' : '\u20B9') + Math.abs(net).toLocaleString('en-IN'));
+  set('income-sum-collected-sub', thisMonthFees.length + ' payment' + (thisMonthFees.length !== 1 ? 's' : '') + ' · ' + curLbl);
+  set('income-sum-expense-sub',  expense > 0 ? 'Salary paid this month' : 'No salary paid yet');
+
+  const netEl  = document.getElementById('income-sum-net');
+  const netBox = document.getElementById('income-sum-net-box');
+  if (netEl)  netEl.style.color = net >= 0 ? '#2563eb' : '#dc2626';
+  if (netBox) {
+    netBox.style.background  = net >= 0 ? '#dbeafe' : '#fee2e2';
+    netBox.style.borderColor = net >= 0 ? '#bfdbfe' : '#fecdd3';
+  }
+}
+
+/* ── updateDashStats (called on dashboard open + after changes) ── */
+function updateDashStats() {
+  const now       = new Date();
+  const curLbl    = _feeMonthLabel(now);
+
+  const el1 = document.getElementById('sv-students');
+  const el2 = document.getElementById('sv-income');
+  const el3 = document.getElementById('sv-pending');
+  const el4 = document.getElementById('sv-att');
+
+  if (el1) el1.textContent = students.length;
+
+  const thisMonthPaid = fees.filter(f => f.status === 'paid' && f.month === curLbl)
+                             .reduce((s,f) => s + (f.paid||0), 0);
+  const totalPending  = fees.filter(f => f.status !== 'paid' && f.balance > 0)
+                             .reduce((s,f) => s + (f.balance||0), 0);
+
+  if (el2) el2.textContent = '\u20B9' + thisMonthPaid.toLocaleString('en-IN');
+  if (el3) el3.textContent = '\u20B9' + totalPending.toLocaleString('en-IN');
+
+  // Attendance %
+  const batchId = document.getElementById('att-batch')?.value || '';
+  const session = document.getElementById('att-session')?.value || 'morning';
+  const bStu    = (typeof _getBatchStudents === 'function') ? _getBatchStudents(batchId) : [];
+  const suffix  = '|' + (batchId||'all') + '|' + session;
+  const attVals = bStu.map(s => attState[s.id + suffix] || '');
+  const pCount  = attVals.filter(v => v === 'P').length;
+  const marked  = attVals.filter(v => v !== '').length;
+  if (el4) el4.textContent = marked > 0 ? Math.round(pCount / marked * 100) + '%' : '\u2014%';
+
+  // Day-1 reset + carry-over + income summary
+  checkAndDoMonthlyReset();
+
+  // Charts
+  if (window.Chart && document.getElementById('chart-income')) setTimeout(initCharts, 50);
+}
+
+/* ═══════════════════════════════════════════════════════
+   PENDING FEES — WhatsApp Reminder Modal
+═══════════════════════════════════════════════════════ */
+function _buildPendingWAMsg(entry) {
+  const stu      = students.find(s => s.id === entry.studentId || s.name === entry.name);
+  const ctr      = CFG.CENTER;
+  const parent   = stu?.parent || 'பெற்றோர்';
+  const grade    = stu ? (stu.grade === 'KG' ? 'KிG' : stu.grade + ' ஆம் வகுப்பு') : '';
+  const MONTHS   = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const now      = new Date();
+  const curMonth = MONTHS[now.getMonth()] + ' ' + now.getFullYear();
+  const monthsStr = entry.months && entry.months.length
+    ? [...new Set(entry.months)].join(', ')
+    : curMonth;
+  const dueDate  = '10 ' + MONTHS[now.getMonth()] + ' ' + now.getFullYear();
+  const isOverdue = entry.records && entry.records.some(r => r.status === 'overdue');
+
+  // 1. Use saved Tamil custom template if exists (from WA Templates page)
+  const savedTa = (typeof getWTSaved === 'function') ? getWTSaved('fees', 'ta') : '';
+  if (savedTa) {
+    return savedTa
+      .replace(/{parent_name}/g,  parent)
+      .replace(/{student_name}/g, entry.name)
+      .replace(/{month}/g,        monthsStr)
+      .replace(/{amount}/g,       '₹' + entry.total.toLocaleString('en-IN'))
+      .replace(/{due_date}/g,     dueDate)
+      .replace(/{overdue_note}/g, isOverdue ? '⚠️ தாமத கட்டணம் பொருந்தும்' : '')
+      .replace(/{center_name}/g,  ctr.name  || '')
+      .replace(/{center_phone}/g, ctr.phone || '');
+  }
+  // 2. Use default Tamil template from WA_TEMPLATES
+  const defTa = (typeof WA_TEMPLATES !== 'undefined') ? (WA_TEMPLATES.fees?.ta?.[0] || '') : '';
+  if (defTa) {
+    return defTa
+      .replace(/{parent_name}/g,  parent)
+      .replace(/{student_name}/g, entry.name)
+      .replace(/{month}/g,        monthsStr)
+      .replace(/{amount}/g,       entry.total.toLocaleString('en-IN'))
+      .replace(/{due_date}/g,     dueDate)
+      .replace(/{overdue_note}/g, isOverdue ? '⚠️ தாமத கட்டணம் பொருந்தும்' : '')
+      .replace(/{center_name}/g,  ctr.name  || '')
+      .replace(/{center_phone}/g, ctr.phone || '');
+  }
+  // 3. Hardcoded Tamil fallback (never English)
+  return `அன்பான ${parent},
+
+💰 *கட்டண நினைவூட்டல் — ${entry.name}*
+🏫 ${ctr.name || ''}
+
+📋 மாணவர்  : *${entry.name}*
+${grade ? '🎓 வகுப்பு  : ' + grade + '
+' : ''}📅 மாதம்   : ${monthsStr}
+🔴 நிலுவை  : *₹${entry.total.toLocaleString('en-IN')}*
+📆 கடைசி நாள்: ${dueDate}
+${isOverdue ? '
+⚠️ தாமத கட்டணம் பொருந்தும்
+' : ''}
+விரைவில் கட்டணம் செலுத்தவும்.
+
+📞 ${ctr.phone || ''}
+${ctr.name || ''}`;
+}
+
+function _getPendingEntries(filterMonth) {
+  const src = filterMonth
+    ? fees.filter(f => f && f.rcpt && f.status !== 'paid' && f.balance > 0 && f.month === filterMonth)
+    : fees.filter(f => f && f.rcpt && f.status !== 'paid' && f.balance > 0);
+  const map = {};
+  src.forEach(f => {
+    const key = f.studentId || f.student;
+    if (!map[key]) map[key] = { name: f.student, studentId: f.studentId, total: 0, months: [], records: [] };
+    map[key].total += (f.balance || 0);
+    if (f.month) map[key].months.push(f.month);
+    map[key].records.push(f);
+  });
+  return Object.values(map);
+}
+
+function openPendingFeesWAModal(filterMonth) {
+  // filterMonth: optional — if passed, only show pending for that month
+  const selMonth  = filterMonth || (document.getElementById('fee-month-filter')?.value) || '';
+  const entries   = _getPendingEntries(selMonth);
+  if (entries.length === 0) {
+    showToast(selMonth ? 'No pending fees for ' + selMonth : 'No pending fees found');
+    return;
+  }
+
+  const totalOwed = entries.reduce((s,e) => s + e.total, 0);
 
   const root = document.getElementById('modal-root');
   root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()">
-    <div class="modal" style="max-width:560px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-        <div>
-          <div class="modal-title" style="margin:0">📱 Pending Fee Reminder — WhatsApp</div>
-          <div style="font-size:11px;color:var(--tx3);margin-top:3px">${entries.length} students · ₹${entries.reduce((s,e)=>s+e.total,0).toLocaleString('en-IN')} total outstanding</div>
-        </div>
-        <button onclick="closeModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--tx2)">×</button>
+  <div class="modal" style="max-width:560px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div>
+        <div class="modal-title" style="margin:0">📱 Pending Fee Reminder — WhatsApp</div>
+        <div style="font-size:11px;color:var(--tx3);margin-top:2px">${entries.length} students · ₹${totalOwed.toLocaleString('en-IN')} total · ${selMonth || 'All months'}</div>
       </div>
-
-      <!-- Language selector -->
-      <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
-        <span style="font-size:11px;font-weight:600;color:var(--tx2)">Language:</span>
-        <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer"><input type="radio" name="pf-lang" value="en" ${lang!=='ta'?'checked':''} onchange="refreshPendingFeePreview()"> English</label>
-        <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer"><input type="radio" name="pf-lang" value="ta" ${lang==='ta'?'checked':''} onchange="refreshPendingFeePreview()"> தமிழ்</label>
-        <button onclick="navTo('wa-templates');setTimeout(()=>selectWTType&&selectWTType('fees'),300);closeModal()" style="margin-left:auto;background:none;border:.5px solid var(--br);border-radius:6px;padding:3px 10px;font-size:10px;color:var(--tx2);cursor:pointer;font-family:inherit">✏️ Customise Template</button>
-      </div>
-
-      <!-- Preview of first student message -->
-      <div style="font-size:10px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">Preview (first student):</div>
-      <div id="pf-preview" style="background:#dcfce7;border-radius:8px;padding:11px;font-size:11px;color:#166534;line-height:1.7;white-space:pre-wrap;font-family:'Noto Sans Tamil',system-ui;max-height:160px;overflow-y:auto;border:.5px solid #bbf7d0;margin-bottom:12px">${buildPendingWAMsg(entries[0])}</div>
-
-      <!-- Student list with individual send buttons -->
-      <div style="font-size:10px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Send to (${entries.length} students):</div>
-      <div style="max-height:260px;overflow-y:auto;border:.5px solid var(--br);border-radius:10px">
-        ${entries.map((entry, i) => {
-          const stu = students.find(s => s.id === entry.studentId || s.name === entry.name);
-          const phone = stu?.phone || '';
-          const color = stu?.color || '#ca8a04';
-          const hasPhone = !!phone;
-          return `<div class="wa-queue-item" id="pf-row-${i}">
-            <div class="av" style="background:${color};width:28px;height:28px;font-size:11px;flex-shrink:0">${(entry.name||'?')[0]}</div>
-            <div style="flex:1;min-width:0">
-              <div style="font-size:12px;font-weight:600;color:var(--tx)">${entry.name}</div>
-              <div style="font-size:10px;color:var(--tx3)">${hasPhone ? '📞 '+phone : '⚠️ No phone'} · ${[...new Set(entry.months)].join(', ')||'—'}</div>
-            </div>
-            <div style="text-align:right;margin-right:8px;flex-shrink:0">
-              <div style="font-size:13px;font-weight:800;color:#dc2626">₹${entry.total.toLocaleString('en-IN')}</div>
-              <div style="font-size:9px;color:var(--tx3)">balance</div>
-            </div>
-            <button ${!hasPhone?'disabled':''} onclick="sendPendingFeeWA(${i})"
-              style="background:${hasPhone?'#25d366':'#e2e8f0'};color:${hasPhone?'#fff':'#94a3b8'};border:none;padding:6px 10px;border-radius:7px;font-size:11px;font-weight:600;cursor:${hasPhone?'pointer':'default'};font-family:inherit;white-space:nowrap;display:flex;align-items:center;gap:4px;flex-shrink:0">
-              <svg viewBox="0 0 16 16" fill="none" width="11" height="11"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.4"/><path d="M5 8.5c.5 1.5 2 2.5 3.5 2.5 1 0 2-.4 2.7-1.1M11 7.5c-.5-1.5-2-2.5-3.5-2.5-1 0-2 .4-2.7 1.1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M5 11l-.5 1.5L6 12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              📱 Send
-            </button>
-          </div>`;
-        }).join('')}
-      </div>
-
-      <div class="modal-foot" style="margin-top:12px">
-        <button class="btn btn-wa" style="flex:1;justify-content:center;font-weight:700;padding:10px"
-          onclick="sendAllPendingFeeWA()">
-          📱 Send to All (${entries.length})
-        </button>
-        <button class="btn" onclick="closeModal()">Close</button>
-      </div>
+      <button onclick="closeModal()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--tx2);line-height:1">×</button>
     </div>
-  </div>`;
 
-  // Store entries for use by send functions
+    <!-- Month filter inside modal -->
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;background:var(--bg);padding:8px 10px;border-radius:8px;border:.5px solid var(--br)">
+      <span style="font-size:11px;font-weight:600;color:var(--tx2)">📅 Month:</span>
+      <select id="pf-month-sel" style="border:.5px solid var(--br);border-radius:6px;padding:4px 8px;font-size:11px;font-family:inherit;background:var(--bg);color:var(--tx)" onchange="refreshPendingFeeModal()">
+        <option value="">All Months</option>
+        ${[...new Set(fees.filter(f=>f.status!=='paid'&&f.balance>0).map(f=>f.month).filter(Boolean))].map(m =>
+          `<option value="${m}" ${m===selMonth?'selected':''}>${m}</option>`
+        ).join('')}
+      </select>
+      <button onclick="navTo('wa-templates');setTimeout(()=>typeof selectWTType==='function'&&selectWTType('fees'),300);closeModal()" style="margin-left:auto;background:none;border:.5px solid var(--br);border-radius:6px;padding:3px 10px;font-size:10px;color:var(--tx2);cursor:pointer;font-family:inherit">✏️ Edit Template</button>
+    </div>
+
+    <!-- Message preview -->
+    <div style="font-size:10px;font-weight:700;color:var(--tx2);letter-spacing:.04em;margin-bottom:4px">MESSAGE PREVIEW (1st student)</div>
+    <div id="pf-preview" style="background:#dcfce7;border:.5px solid #bbf7d0;border-radius:8px;padding:10px 12px;font-size:11px;color:#166534;line-height:1.75;white-space:pre-wrap;max-height:140px;overflow-y:auto;margin-bottom:10px;font-family:'Noto Sans Tamil',system-ui">${_buildPendingWAMsg(entries[0])}</div>
+
+    <!-- Student list -->
+    <div style="font-size:10px;font-weight:700;color:var(--tx2);letter-spacing:.04em;margin-bottom:5px">STUDENTS (${entries.length})</div>
+    <div id="pf-student-rows" style="max-height:280px;overflow-y:auto;border:.5px solid var(--br);border-radius:10px">
+      ${_buildPFRows(entries)}
+    </div>
+
+    <div class="modal-foot" style="margin-top:10px">
+      <button class="btn btn-wa" style="flex:1;justify-content:center;font-weight:700;padding:10px;font-size:12px" onclick="sendAllPendingFeeWA()">
+        📱 Send to All (${entries.length})
+      </button>
+      <button class="btn" onclick="closeModal()" style="padding:10px 16px">Close</button>
+    </div>
+  </div></div>`;
+
   window._pfEntries = entries;
-  window._pfBuildMsg = buildPendingWAMsg;
+}
+
+function _buildPFRows(entries) {
+  return entries.map((entry, i) => {
+    const stu      = students.find(s => s.id === entry.studentId || s.name === entry.name);
+    const phone    = stu?.phone || '';
+    const color    = stu?.color || '#ca8a04';
+    const hasPhone = !!phone;
+    const monthStr = [...new Set(entry.months)].join(', ') || '—';
+    return `<div class="wa-queue-item" id="pf-row-${i}" style="display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:.5px solid var(--br)">
+      <div class="av" style="background:${color};width:30px;height:30px;font-size:12px;flex-shrink:0">${(entry.name||'?')[0]}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;font-weight:600;color:var(--tx)">${entry.name}</div>
+        <div style="font-size:9px;color:var(--tx3)">${hasPhone ? '📞 '+phone : '⚠️ No phone'} · ${monthStr}</div>
+      </div>
+      <div style="font-size:13px;font-weight:800;color:#dc2626;flex-shrink:0;margin-right:4px">₹${entry.total.toLocaleString('en-IN')}</div>
+      <button id="pf-btn-${i}" ${!hasPhone?'disabled':''} onclick="sendOnePendingFeeWA(${i})"
+        style="background:${hasPhone?'#25d366':'#e2e8f0'};color:${hasPhone?'#fff':'#94a3b8'};border:none;padding:6px 10px;border-radius:7px;font-size:11px;font-weight:600;cursor:${hasPhone?'pointer':'not-allowed'};font-family:inherit;flex-shrink:0;white-space:nowrap">
+        📱 Send
+      </button>
+    </div>`;
+  }).join('') || '<div style="padding:20px;text-align:center;color:var(--tx3);font-size:12px">No pending fees found.</div>';
+}
+
+function refreshPendingFeeModal() {
+  const selMonth = document.getElementById('pf-month-sel')?.value || '';
+  const entries  = _getPendingEntries(selMonth);
+  window._pfEntries = entries;
+  const rowsEl = document.getElementById('pf-student-rows');
+  if (rowsEl) rowsEl.innerHTML = _buildPFRows(entries);
+  refreshPendingFeePreview();
+  // update count in send-all button
+  const btn = document.querySelector('.btn.btn-wa');
+  if (btn) btn.textContent = '\uD83D\uDCF1 Send to All (' + entries.length + ')';
 }
 
 function refreshPendingFeePreview() {
   const prevEl = document.getElementById('pf-preview');
-  if (!prevEl || !window._pfEntries || !window._pfBuildMsg) return;
-  prevEl.textContent = window._pfBuildMsg(window._pfEntries[0]);
+  if (!prevEl || !window._pfEntries || !window._pfEntries.length) return;
+  prevEl.textContent = _buildPendingWAMsg(window._pfEntries[0]);
 }
 
-function sendPendingFeeWA(i) {
+function sendOnePendingFeeWA(i) {
   if (!window._pfEntries) return;
   const entry = window._pfEntries[i];
-  const stu = students.find(s => s.id === entry.studentId || s.name === entry.name);
+  const stu   = students.find(s => s.id === entry.studentId || s.name === entry.name);
   const phone = stu?.phone || '';
-  if (!phone) { showToast('⚠️ No phone number for ' + entry.name); return; }
-  const msg = window._pfBuildMsg(entry);
-  openWA(phone, msg);
-  // Mark row as sent
-  const row = document.getElementById('pf-row-'+i);
-  if (row) {
-    const btn = row.querySelector('button');
-    if (btn) { btn.textContent = '✅ Sent'; btn.style.background = '#dcfce7'; btn.style.color = '#166534'; btn.disabled = true; }
-  }
-  showToast('📱 Opening WhatsApp for ' + entry.name + ' (₹' + entry.total.toLocaleString('en-IN') + ' pending)');
+  if (!phone) { showToast('\u26A0\uFE0F No phone for ' + entry.name); return; }
+  openWA(phone, _buildPendingWAMsg(entry));
+  const btn = document.getElementById('pf-btn-'+i);
+  if (btn) { btn.textContent = '✅ Sent'; btn.style.background = '#dcfce7'; btn.style.color = '#166534'; btn.disabled = true; }
+  showToast('\uD83D\uDCF1 Opening WA for ' + entry.name + ' (\u20B9' + entry.total.toLocaleString('en-IN') + ' pending)');
 }
+
+// Keep old name working
+function sendPendingFeeWA(i) { sendOnePendingFeeWA(i); }
 
 function sendAllPendingFeeWA() {
-  if (!window._pfEntries || window._pfEntries.length === 0) return;
+  if (!window._pfEntries || !window._pfEntries.length) return;
   const withPhone = window._pfEntries.filter(e => {
-    const stu = students.find(s => s.id === e.studentId || s.name === e.name);
-    return !!(stu?.phone);
+    const s = students.find(x => x.id === e.studentId || x.name === e.name);
+    return !!(s?.phone);
   });
-  if (withPhone.length === 0) { showToast('No students with phone numbers'); return; }
-  // Open first unsent
-  const first = withPhone[0];
-  const stu = students.find(s => s.id === first.studentId || s.name === first.name);
-  openWA(stu.phone, window._pfBuildMsg(first));
-  showToast(`📱 Opened WA for ${first.name}. Click "Send to All" again for next student. (${withPhone.length} total)`);
-}
-
-/* ═══ INCOME SUMMARY (Income - Staff Expense) ══════════ */
-function renderIncomeSummary() {
-  const now = new Date();
-  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  const curMonthKey = now.toLocaleString('en-IN', { month: 'short', year: 'numeric' }); // "Jun 2026"
-  const curMonthLabel = months[now.getMonth()] + ' ' + now.getFullYear();
-
-  // Fees collected this month
-  const thisMonthFees = fees.filter(f => f && f.rcpt && f.status === 'paid' && f.month === curMonthKey);
-  const collected = thisMonthFees.reduce((s, f) => s + (f.paid || 0), 0);
-
-  // Staff salary expense this month (from salaryPayments)
-  const monthVal = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0'); // "2026-06"
-  let expense = 0;
-  Object.keys(salaryPayments).forEach(key => {
-    if (key.endsWith('|' + monthVal)) {
-      const sp = salaryPayments[key];
-      if (sp && sp.paid) expense += (sp.amount || 0);
-    }
+  if (!withPhone.length) { showToast('No students with phone numbers'); return; }
+  // Queue all: open WA for each with a delay
+  let delay = 0;
+  withPhone.forEach((entry, idx) => {
+    const stu = students.find(s => s.id === entry.studentId || s.name === entry.name);
+    setTimeout(() => {
+      openWA(stu.phone, _buildPendingWAMsg(entry));
+      const btn = document.getElementById('pf-btn-' + window._pfEntries.indexOf(entry));
+      if (btn) { btn.textContent = '✅ Sent'; btn.style.background = '#dcfce7'; btn.style.color = '#166534'; btn.disabled = true; }
+    }, delay);
+    delay += 1500;
   });
-
-  const net = collected - expense;
-
-  // Update UI
-  const el1 = document.getElementById('income-sum-collected');
-  const el2 = document.getElementById('income-sum-expense');
-  const el3 = document.getElementById('income-sum-net');
-  const el3box = document.getElementById('income-sum-net-box');
-  const elMonth = document.getElementById('income-summary-month');
-  const elSub1 = document.getElementById('income-sum-collected-sub');
-  const elSub2 = document.getElementById('income-sum-expense-sub');
-
-  if (el1) el1.textContent = '₹' + collected.toLocaleString('en-IN');
-  if (el2) el2.textContent = '₹' + expense.toLocaleString('en-IN');
-  if (el3) {
-    el3.textContent = (net < 0 ? '−₹' : '₹') + Math.abs(net).toLocaleString('en-IN');
-    el3.style.color = net >= 0 ? '#2563eb' : '#dc2626';
-  }
-  if (el3box) {
-    el3box.style.background = net >= 0 ? '#dbeafe' : '#fee2e2';
-    el3box.style.borderColor = net >= 0 ? '#bfdbfe' : '#fecdd3';
-    const lbl = el3box.querySelector('div:first-child');
-    if (lbl) lbl.style.color = net >= 0 ? '#1d4ed8' : '#991b1b';
-  }
-  if (elMonth) elMonth.textContent = curMonthLabel;
-  if (elSub1) {
-    const feeCount = thisMonthFees.length;
-    elSub1.textContent = feeCount + ' payment' + (feeCount !== 1 ? 's' : '') + ' this month';
-  }
-  if (elSub2) {
-    const staffPaidCount = Object.keys(salaryPayments).filter(k => k.endsWith('|'+monthVal) && salaryPayments[k]?.paid).length;
-    elSub2.textContent = staffPaidCount > 0 ? staffPaidCount + ' staff paid' : 'No salaries paid yet';
-  }
+  showToast('\uD83D\uDCF1 Sending to ' + withPhone.length + ' parents\u2026 (one per 1.5s)');
 }
 
-function updateDashStats() {
-  const active=students.filter(s=>s.status==='active').length;
-  const el1=document.getElementById('sv-students'),el2=document.getElementById('sv-income'),el3=document.getElementById('sv-pending');
-  if(el1) el1.textContent=students.length;
 
-  // Monthly income: only this month's collected fees
-  const now = new Date();
-  const curMonthKey = now.toLocaleString('en-IN', { month: 'short', year: 'numeric' });
-  const thisMonthPaid = fees.filter(f=>f.status==='paid' && f.month===curMonthKey).reduce((s,f)=>s+(f.paid||0),0);
-  const pend=fees.filter(f=>f.status!=='paid').reduce((s,f)=>s+(f.balance||0),0);
-  if(el2) el2.textContent='₹'+thisMonthPaid.toLocaleString('en-IN');
-  if(el3) el3.textContent='₹'+pend.toLocaleString('en-IN');
 
-  const batchId  = document.getElementById('att-batch')?.value || '';
-  const session  = document.getElementById('att-session')?.value || 'morning';
-  const bStu     = _getBatchStudents(batchId);
-  const suffix   = '|' + (batchId||'all') + '|' + session;
-  const attVals  = bStu.map(s => attState[s.id + suffix] || '');
-  const pCount   = attVals.filter(v => v === 'P').length;
-  const marked   = attVals.filter(v => v !== '').length;
-  const el4 = document.getElementById('sv-att');
-  if(el4) el4.textContent = marked > 0 ? Math.round(pCount / marked * 100) + '%' : '—%';
-
-  // Monthly reset check and carry-over
-  checkAndDoMonthlyReset();
-  renderPendingCarryOver();
-  renderIncomeSummary();
-
-  // Refresh dashboard charts with real data
-  if(window.Chart && document.getElementById('chart-income')) setTimeout(initCharts,50);
-}
-
-/* ═══════════════════════════════════════════════════════
-   CHARTS
-═══════════════════════════════════════════════════════ */
-/* ═══════════════════════════════════════════════════════
-   CHARTS — Driven by real in-app data
-═══════════════════════════════════════════════════════ */
-let c1i, c2i;
 function initCharts() {
   const c1=document.getElementById('chart-income'),c2=document.getElementById('chart-fee');
   if(!c1||!c2||!window.Chart) return;
@@ -7827,10 +8013,11 @@ function initCharts() {
   const months = [];
   const incomeData = [];
   const pendingData = [];
+  const _CM = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   for (let i=5; i>=0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
-    const mLabel = d.toLocaleString('en-IN',{month:'short'});
-    const mKey = d.toLocaleString('en-IN',{month:'short',year:'numeric'});
+    const mLabel = _CM[d.getMonth()];
+    const mKey   = _CM[d.getMonth()] + ' ' + d.getFullYear();
     months.push(mLabel);
     const mFees = fees.filter(f=> {
       if (!f.month) return false;
@@ -8791,7 +8978,22 @@ function renderAdmRecent() {
 
 function updateAdmCounter() {
   const el = document.getElementById('adm-month-count');
-  if (el) el.textContent = admRecentList.length;
+  if (!el) return;
+  // Count students whose admDate falls in this calendar month
+  const now   = new Date();
+  const mm    = String(now.getMonth() + 1).padStart(2,'0'); // "06"
+  const yyyy  = String(now.getFullYear());                  // "2026"
+  const count = students.filter(s => {
+    if (!s.admDate) return false;
+    // admDate is stored as dd/mm/yyyy (en-IN format) e.g. "03/06/2026"
+    const parts = s.admDate.split('/');
+    if (parts.length === 3) return parts[1] === mm && parts[2] === yyyy;
+    // ISO format fallback: "2026-06-03"
+    const d = new Date(s.admDate);
+    if (!isNaN(d)) return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    return false;
+  }).length;
+  el.textContent = count;
 }
 
 /* ═══════════════════════════════════════════════════

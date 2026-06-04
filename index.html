@@ -1463,17 +1463,17 @@ tbody tr:hover td{background:var(--bg)}
     <div id="wt-vars" style="display:none;margin-bottom:10px;padding:8px 10px;background:var(--bg);border-radius:8px;font-size:11px;color:var(--tx2);line-height:2"></div>
 
     <!-- Language tabs -->
-    <div style="display:flex;gap:4px;margin-bottom:10px" id="wt-lang-tabs">
-      <button id="wt-lt-en" onclick="switchWTLang('en')" style="padding:5px 14px;border-radius:8px;border:1.5px solid #185FA5;background:#185FA5;color:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">EN</button>
-      <button id="wt-lt-ta" onclick="switchWTLang('ta')" style="padding:5px 14px;border-radius:8px;border:.5px solid var(--br);background:var(--card);color:var(--tx2);font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">தமிழ்</button>
+    <div style="display:none" id="wt-lang-tabs">
+      <button id="wt-lt-en" onclick="switchWTLang('ta')" style="display:none">EN</button>
+      <button id="wt-lt-ta" onclick="switchWTLang('ta')" style="padding:5px 14px;border-radius:8px;border:1.5px solid #185FA5;background:#185FA5;color:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">🌐 தமிழ் மட்டும்</button>
     </div>
 
     <!-- EN editor -->
-    <div id="wt-pane-en">
+    <div id="wt-pane-en" style="display:none">
       <textarea class="fi" id="wt-tmpl-en" rows="10" style="font-size:12px;font-family:'Noto Sans Tamil',system-ui;line-height:1.7;resize:vertical;width:100%;box-sizing:border-box" oninput="refreshWTPreview();autoSaveWTTemplate()"></textarea>
     </div>
     <!-- TA editor -->
-    <div id="wt-pane-ta" style="display:none">
+    <div id="wt-pane-ta">
       <textarea class="fi" id="wt-tmpl-ta" rows="10" style="font-size:12px;font-family:'Noto Sans Tamil',system-ui;line-height:1.7;resize:vertical;width:100%;box-sizing:border-box" oninput="refreshWTPreview();autoSaveWTTemplate()"></textarea>
     </div>
 
@@ -1836,65 +1836,62 @@ const WA_TYPES = [
 
 const WA_TEMPLATES = {
   absent: {
-    en: [
-      `Dear {parent_name},\n\nYour ward *{student_name}* (Grade {grade}) was *ABSENT* today at {center_name}.\n\nPlease ensure regular attendance as it affects their learning.\n\nThank you,\n{center_name}`,
-      `Hello {parent_name},\n\n{student_name} was absent from today's class. If there is any issue, please inform us.\n\nRegards,\n{center_name}`,
-    ],
-    ta: [
-      `அன்பான {parent_name} அவர்களுக்கு,\n\nஉங்கள் பிள்ளை *{student_name}* (வகுப்பு {grade}) இன்று {center_name}-ல் *வரவில்லை*.\n\nதொடர்ந்து வருகை தர வேண்டும். வருகை குறைந்தால் கற்றல் பாதிக்கும்.\n\nநன்றி,\n{center_name}`,
-      `வணக்கம் {parent_name},\n\n{student_name} இன்றைய வகுப்பில் வரவில்லை. ஏதாவது காரணம் இருந்தால் தெரிவிக்கவும்.\n\nமரியாதையுடன்,\n{center_name}`,
-    ],
+    ta: [`அன்பான {parent_name} அவர்களுக்கு,
+
+உங்கள் பிள்ளை *{student_name}* (வகுப்பு {grade}) இன்று {center_name}-ல் *வரவில்லை*.
+
+தொடர்ந்து வருகை தர வேண்டும். வருகை குறைந்தால் கற்றல் பாதிக்கும்.
+
+நன்றி,
+{center_name}`],
   },
   late: {
-    en: [
-      `Dear {parent_name},\n\n⏰ *Late Arrival Notice*\n\nYour ward *{student_name}* (Grade {grade}) arrived *LATE* to class today at {center_name}.\n\n📅 Date: {date}\n\nPunctuality is important for effective learning. Please ensure they arrive on time.\n\nFor queries: 📞 {center_phone}\n\nThank you,\n{center_name}`,
-      `Hello {parent_name},\n\n{student_name} was late to class today. Consistent late arrivals affect learning progress.\n\nKindly ensure on-time arrival from tomorrow.\n\nRegards,\n{center_name}`,
-    ],
-    ta: [
-      `அன்பான {parent_name},\n\n⏰ *தாமத வருகை அறிவிப்பு*\n\nஉங்கள் பிள்ளை *{student_name}* (வகுப்பு {grade}) இன்று {center_name}-ல் *தாமதமாக* வந்தார்.\n\n📅 தேதி: {date}\n\nசரியான நேரத்தில் வருவது மிக முக்கியம். நாளை சரியான நேரத்தில் அனுப்பவும்.\n\nதொடர்புக்கு: 📞 {center_phone}\n\nநன்றி,\n{center_name}`,
-      `வணக்கம் {parent_name},\n\n{student_name} இன்று வகுப்பிற்கு தாமதமாக வந்தார். தொடர்ந்து தாமதமாக வந்தால் கற்றல் பாதிக்கும்.\n\nநாளை சரியான நேரத்தில் வரட்டும்.\n\n{center_name}`,
-    ],
+    ta: [`அன்பான {parent_name},
+
+⏰ *தாமத வருகை அறிவிப்பு*
+
+உங்கள் பிள்ளை *{student_name}* (வகுப்பு {grade}) இன்று {center_name}-ல் *தாமதமாக* வந்தார்.
+
+📅 தேதி: {date}
+
+சரியான நேரத்தில் வருவது மிக முக்கியம். நாளை சரியான நேரத்தில் அனுப்பவும்.
+
+தொடர்புக்கு: 📞 {center_phone}
+
+நன்றி,
+{center_name}`],
   },
   monthly: {
-    en: [
-      `Dear {parent_name},\n\n📊 *Monthly Attendance Report — {student_name}*\n\nAttendance this month: *{att_pct}%*\nPresent: {present_days} days\nAbsent: {absent_days} days\n\nMinimum required: 75%\nStatus: {att_status}\n\nFor queries contact: {center_phone}\n\n{center_name}`,
-    ],
-    ta: [
-      `அன்பான {parent_name},\n\n📊 *மாதாந்திர வருகை அறிக்கை — {student_name}*\n\nவருகை சதவீதம்: *{att_pct}%*\nவந்த நாட்கள்: {present_days}\nவராத நாட்கள்: {absent_days}\n\nதேவையான குறைந்தபட்சம்: 75%\nநிலை: {att_status}\n\n{center_name}`,
-    ],
+    ta: [`அன்பான {parent_name},
+
+📊 *மாதாந்திர வருகை அறிக்கை — {student_name}*
+
+வருகை சதவீதம்: *{att_pct}%*
+வந்த நாட்கள்: {present_days}
+வராத நாட்கள்: {absent_days}
+
+தேவையான குறைந்தபட்சம்: 75%
+நிலை: {att_status}
+
+{center_name}`],
   },
   marks: {
-    en: [
-      `Dear {parent_name},\n\n📝 *Exam Results — {student_name}*\n\nExam: {exam_name}\nSubject: {subject}\nMarks: *{marks}/{max_marks}*\nPercentage: {percentage}%\nGrade: *{grade_letter}*\n\n{remarks}\n\n{center_name}`,
-    ],
-    ta: [
-      `அன்பான {parent_name},\n\n📝 *தேர்வு முடிவு — {student_name}*\n\nதேர்வு: {exam_name}\nபாடம்: {subject}\nமதிப்பெண்: *{marks}/{max_marks}*\nசதவீதம்: {percentage}%\nதரம்: *{grade_letter}*\n\n{remarks}\n\n{center_name}`,
-    ],
+    ta: [`அன்பான {parent_name},
+
+📝 *தேர்வு முடிவு — {student_name}*
+
+தேர்வு: {exam_name}
+பாடம்: {subject}
+மதிப்பெண்: *{marks}/{max_marks}*
+சதவீதம்: {percentage}%
+தரம்: *{grade_letter}*
+
+{remarks}
+
+{center_name}`],
   },
   exam_notice: {
-    en: [
-      `Dear {parent_name},
-
-📝 *Exam Notice — {center_name}*
-
-🎓 Student: *{student_name}* (Grade {grade})
-📚 Exam: *{exam_name}*
-📖 Subject: {subject}
-📅 Date: *{exam_date}*
-
-📊 *Marks Details:*
-• Full Marks: *{max_marks}*
-• Pass Marks: *{pass_marks}*
-
-📋 Syllabus: {syllabus}
-
-✏️ Please ensure your child is well-prepared.
-
-For queries: 📞 {center_phone}
-{center_name}`,
-    ],
-    ta: [
-      `அன்பான {parent_name},
+    ta: [`அன்பான {parent_name},
 
 📝 *தேர்வு அறிவிப்பு — {center_name}*
 
@@ -1912,83 +1909,51 @@ For queries: 📞 {center_phone}
 ✏️ உங்கள் பிள்ளை நன்கு தயாராக இருக்க வேண்டும்.
 
 தொடர்புக்கு: 📞 {center_phone}
-{center_name}`,
-    ],
+{center_name}`],
   },
   holiday: {
-    en: [
-      `Dear Parents,\n\n🎉 *Holiday Notice*\n\n{center_name} will remain *CLOSED* on:\n📅 {holiday_date}\n\nReason: {holiday_reason}\n\nClasses will resume on {resume_date}.\n\nWish you a happy {holiday_name}! 🙏\n\n{center_name}`,
-    ],
-    ta: [
-      `அன்பான பெற்றோரே,\n\n🎉 *விடுமுறை அறிவிப்பு*\n\n{center_name} இல் வகுப்புகள்:\n📅 {holiday_date} அன்று *மூடப்படும்*\n\nகாரணம்: {holiday_reason}\n\nவகுப்புகள் {resume_date} அன்று தொடர்ந்து நடைபெறும்.\n\n{holiday_name} வாழ்த்துக்கள்! 🙏\n\n{center_name}`,
-    ],
+    ta: [`அன்பான பெற்றோரே,
+
+🎉 *விடுமுறை அறிவிப்பு*
+
+{center_name} இல் வகுப்புகள்:
+📅 {holiday_date} அன்று *மூடப்படும்*
+
+காரணம்: {holiday_reason}
+
+வகுப்புகள் {resume_date} அன்று தொடர்ந்து நடைபெறும்.
+
+{holiday_name} வாழ்த்துக்கள்! 🙏
+
+{center_name}`],
   },
   birthday: {
-    en: [
-      `🎂 *Happy Birthday {student_name}!* 🎉\n\nDear {parent_name},\n\nWishing your little star a very happy birthday! 🌟\n\nMay {student_name} shine bright in studies and life!\n\nWith love and wishes,\n{center_name} family 🙏`,
-    ],
-    ta: [
-      `🎂 *பிறந்தநாள் வாழ்த்துக்கள் {student_name}!* 🎉\n\nஅன்பான {parent_name},\n\nஉங்கள் குழந்தைக்கு இனிய பிறந்தநாள் வாழ்த்துக்கள்! 🌟\n\n{student_name} படிப்பிலும் வாழ்விலும் சிறந்து விளங்கட்டும்!\n\nவாழ்த்துக்களுடன்,\n{center_name} குடும்பம் 🙏`,
-    ],
+    ta: [`🎂 *பிறந்தநாள் வாழ்த்துக்கள் {student_name}!* 🎉
+
+அன்பான {parent_name},
+
+உங்கள் குழந்தைக்கு இனிய பிறந்தநாள் வாழ்த்துக்கள்! 🌟
+
+{student_name} படிப்பிலும் வாழ்விலும் சிறந்து விளங்கட்டும்!
+
+வாழ்த்துக்களுடன்,
+{center_name} குடும்பம் 🙏`],
   },
   fees: {
-    en: [
-      `Dear {parent_name},\n\n💰 *Fee Reminder — {student_name}*\n\nMonth: {month}\nFee Due: ₹{amount}\nDue Date: {due_date}\n{overdue_note}\n\nPlease pay at {center_name} or contact:\n📞 {center_phone}\n\nThank you,\n{center_name}`,
-    ],
-    ta: [
-      `அன்பான {parent_name},\n\n💰 *கட்டண நினைவூட்டல் — {student_name}*\n\nமாதம்: {month}\nநிலுவை கட்டணம்: ₹{amount}\nகடைசி நாள்: {due_date}\n{overdue_note}\n\n{center_name}-ல் செலுத்தவும்:\n📞 {center_phone}\n\nநன்றி,\n{center_name}`,
-    ],
-  },
-  monthly_summary: {
-    ta: [
-`🙏 வணக்கம் *{parent_name}* அவர்களுக்கு,
+    ta: [`அன்பான {parent_name},
 
-━━━━━━━━━━━━━━━━━━━
-📋 *மாதாந்திர மாணவர் அட்டவணை*
-━━━━━━━━━━━━━━━━━━━
-🏫 *{center_name}*
-📅 மாதம்: *{month_name} {year}*
+💰 *கட்டண நினைவூட்டல் — {student_name}*
 
-👤 மாணவர்: *{student_name}*
-🎓 வகுப்பு: {grade} ஆம் வகுப்பு
-🏅 வகுப்பு தரவரிசை: *{rank}*
+மாதம்: {month}
+நிலுவை கட்டணம்: ₹{amount}
+கடைசி நாள்: {due_date}
+{overdue_note}
 
-━━━━━━━━━━━━━━━━━━━
-📅 *வருகை நிலை*
-━━━━━━━━━━━━━━━━━━━
-✅ வந்த நாட்கள்: *{present_days}*
-❌ வராத நாட்கள்: *{absent_days}*
-⚠️ தாமத நாட்கள்: *{late_days}*
-📊 வருகை சதவீதம்: *{att_pct}%* — {att_status}
-
-━━━━━━━━━━━━━━━━━━━
-⏰ *தாமத பகுப்பாய்வு*
-━━━━━━━━━━━━━━━━━━━
-{late_status}
-
-━━━━━━━━━━━━━━━━━━━
-📝 *தேர்வு மதிப்பெண்கள்*
-━━━━━━━━━━━━━━━━━━━
-{marks_section}
-
-━━━━━━━━━━━━━━━━━━━
-🌟 *வகுப்பு கவனம்*
-━━━━━━━━━━━━━━━━━━━
-{stars} நட்சத்திரம் — {star_label}
-
-━━━━━━━━━━━━━━━━━━━
-🏅 *வகுப்பு செயல்பாடுகள்*
-━━━━━━━━━━━━━━━━━━━
-{activities}
-
-{teacher_note}
-
-━━━━━━━━━━━━━━━━━━━
-உங்கள் பிள்ளையின் படிப்பில் அக்கறை காட்டியதற்கு நன்றி! 🙏
-
+{center_name}-ல் செலுத்தவும்:
 📞 {center_phone}
-🏫 {center_name}`
-    ],
+
+நன்றி,
+{center_name}`],
   },
 };
 
@@ -2035,33 +2000,25 @@ function fillTemplate(template, student, extra={}) {
 // Build WA message URL
 
 /* ── WhatsApp opener — hard-close PWA after launch ─────── */
-function openWA(phone, message) {
+function cleanPhone(phone) {
   const num = (phone || '').replace(/\D/g, '');
-  const ph  = num.startsWith('91') ? num : '91' + num;
-  const txt = encodeURIComponent(message);
-  const waURI = 'whatsapp://send?phone=' + ph + '&text=' + txt;
-
-  // Navigate to whatsapp:// — OS switches focus to WhatsApp
-  window.location.href = waURI;
-
-  // Hard-close the PWA window after WA has time to open
-  setTimeout(function() {
-    try { window.close(); } catch(e) {}
-    // Fallback: navigate to blank to free memory
-    // (only if still open)
-  }, 800);
+  return num.startsWith('91') ? num : '91' + num;
 }
 
-function openWAFallback(phone, message) {
-  // Web fallback for desktop (no whatsapp:// support)
-  const num = (phone || '').replace(/\D/g, '');
-  const ph  = num.startsWith('91') ? num : '91' + num;
-  window.open('https://wa.me/' + ph + '?text=' + encodeURIComponent(message), '_blank');
+function openWA(phone, msg) {
+  const clean   = cleanPhone(phone);
+  const encoded = encodeURIComponent(msg);
+  window.location.href = 'whatsapp://send?phone=' + clean + '&text=' + encoded;
 }
-function waURL(phone, message) {
-  const num = phone.replace(/\D/g,'');
-  const ph = num.startsWith('91') ? num : '91'+num;
-  return `https://wa.me/${ph}?text=${encodeURIComponent(message)}`;
+
+function openWAFallback(phone, msg) {
+  // Web/desktop fallback
+  const clean = cleanPhone(phone);
+  window.open('https://wa.me/' + clean + '?text=' + encodeURIComponent(msg), '_blank');
+}
+
+function waURL(phone, msg) {
+  return 'https://wa.me/' + cleanPhone(phone) + '?text=' + encodeURIComponent(msg);
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -3200,7 +3157,7 @@ function sendLateWA() {
 
   /* Build customisable message using the saved late template */
   function getLateMsg(s, lang) {
-    const tmplArr  = WA_TEMPLATES.late?.[lang] || WA_TEMPLATES.late?.en || [''];
+    const tmplArr  = WA_TEMPLATES.late?.[lang] || WA_TEMPLATES.late?.ta || [''];
     const saved    = getWTSaved ? getWTSaved('late', lang) : '';
     const template = saved || tmplArr[0] || '';
     return template
@@ -3310,7 +3267,7 @@ function refreshLatePreview() {
   const today = new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
 
   function buildWithIdx(lg, idx) {
-    const arr   = WA_TEMPLATES.late?.[lg] || WA_TEMPLATES.late?.en || [''];
+    const arr   = WA_TEMPLATES.late?.[lg] || WA_TEMPLATES.late?.ta || [''];
     const sv    = getWTSaved ? getWTSaved('late', lg) : '';
     const tmpl  = sv || arr[Math.min(idx, arr.length-1)] || '';
     return tmpl
@@ -3342,7 +3299,7 @@ function sendOneLateWA(studentId) {
   if (!phone) return showToast('⚠️ ' + s.name + ' has no phone number');
 
   function build(lg) {
-    const arr  = WA_TEMPLATES.late?.[lg] || WA_TEMPLATES.late?.en || [''];
+    const arr  = WA_TEMPLATES.late?.[lg] || WA_TEMPLATES.late?.ta || [''];
     const sv   = getWTSaved ? getWTSaved('late', lg) : '';
     const tmpl = sv || arr[Math.min(idx, arr.length-1)] || '';
     return tmpl
@@ -3388,8 +3345,8 @@ function sendOneAttWA(studentId, status) {
   const today = new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
 
   function buildMsg(type, lang) {
-    const arr  = WA_TEMPLATES[type]?.[lang] || WA_TEMPLATES[type]?.en || [''];
-    const sv   = getWTSaved ? getWTSaved(type, lang) : '';
+    const arr  = WA_TEMPLATES[type]?.[lang] || WA_TEMPLATES[type]?.ta || [''];
+    const sv   = getWTSaved ? getWTSaved(type, 'ta') : '';
     const tmpl = sv || arr[0] || '';
     return tmpl
       .replace(/{parent_name}/g,  s.parent  || 'Parent')
@@ -4437,7 +4394,7 @@ function showExamNoticeWAModal(examIdx) {
   // Build preview for first student
   function buildMsg(lang, student) {
     const s = student || active[0] || { name:'Student', parent:'Parent', grade:'10', phone:'' };
-    const tmplArr = WA_TEMPLATES.exam_notice?.[lang] || WA_TEMPLATES.exam_notice?.en || [''];
+    const tmplArr = WA_TEMPLATES.exam_notice?.[lang] || WA_TEMPLATES.exam_notice?.ta || [''];
     const saved   = (typeof getWTSaved==='function') ? getWTSaved('exam_notice', lang) : '';
     const tmpl    = saved || tmplArr[0] || '';
     return tmpl
@@ -4518,7 +4475,7 @@ function sendExamNoticeToAll(exam, lang) {
       <div style="max-height:360px;overflow-y:auto;border:.5px solid var(--br);border-radius:10px">
         ${active.map(s => {
           function buildOneMsg(lg, st) {
-            const tmplArr = WA_TEMPLATES.exam_notice?.[lg] || WA_TEMPLATES.exam_notice?.en || [''];
+            const tmplArr = WA_TEMPLATES.exam_notice?.[lg] || WA_TEMPLATES.exam_notice?.ta || [''];
             const saved   = (typeof getWTSaved==='function') ? getWTSaved('exam_notice', lg) : '';
             const tmpl    = saved || tmplArr[0] || '';
             return tmpl
@@ -5394,8 +5351,8 @@ function updateWATemplates() {
   const wt = WA_TYPES.find(w=>w.id===waType);
   if (!wt) return;
   const langKey = document.getElementById('wa-lang-sel')?.value === 'ta' ? 'ta' : 'en';
-  const hasSaved = !!getWTSaved(waType, langKey);
-  const templates = WA_TEMPLATES[waType]?.[langKey] || WA_TEMPLATES[waType]?.en || ['Default message'];
+  const hasSaved = !!getWTSaved(waType, 'ta');
+  const templates = WA_TEMPLATES[waType]?.[langKey] || WA_TEMPLATES[waType]?.ta || ['Default message'];
   sel.innerHTML = templates.map((t,i)=>`<option value="${i}">${hasSaved && i===0 ? '✏️ Custom Template' : 'Template '+(i+1)}</option>`).join('');
   // Also add a "✏️ Customise" link hint
   const customBtn = document.getElementById('wa-custom-edit-hint');
@@ -5430,11 +5387,11 @@ function updateWAPreview() {
     const langKey = langSel==='ta'?'ta':(langSel==='both'?'both':'en');
     if (langKey === 'both') {
       // Prefer saved custom templates
-      const en = getWTSaved(waType,'en') || WA_TEMPLATES[waType]?.en?.[templateIdx] || '';
+      const en = getWTSaved(waType,'ta') || WA_TEMPLATES[waType]?.ta?.[templateIdx] || '';
       const ta = getWTSaved(waType,'ta') || WA_TEMPLATES[waType]?.ta?.[0] || '';
       template = en + '\n\n─────────────\n\n' + ta;
     } else {
-      template = getWTSaved(waType, langKey) || WA_TEMPLATES[waType]?.[langKey]?.[templateIdx] || WA_TEMPLATES[waType]?.en?.[0] || '';
+      template = getWTSaved(waType, 'ta') || WA_TEMPLATES[waType]?.[langKey]?.[templateIdx] || WA_TEMPLATES[waType]?.ta?.[0] || '';
     }
   }
 
@@ -5521,11 +5478,11 @@ function buildWAQueue() {
     } else {
       const langKey = langSel==='ta'?'ta':(langSel==='both'?'both':'en');
       if (langKey === 'both') {
-        const en = getWTSaved(waType,'en') || WA_TEMPLATES[waType]?.en?.[templateIdx] || '';
+        const en = getWTSaved(waType,'ta') || WA_TEMPLATES[waType]?.ta?.[templateIdx] || '';
         const ta = getWTSaved(waType,'ta') || WA_TEMPLATES[waType]?.ta?.[0] || '';
         template = en+'\n\n─────────────\n\n'+ta;
       } else {
-        template = getWTSaved(waType, langKey) || WA_TEMPLATES[waType]?.[langKey]?.[templateIdx] || WA_TEMPLATES[waType]?.en?.[0] || '';
+        template = getWTSaved(waType, 'ta') || WA_TEMPLATES[waType]?.[langKey]?.[templateIdx] || WA_TEMPLATES[waType]?.ta?.[0] || '';
       }
     }
     const extra = getWAExtra(student);
@@ -8095,6 +8052,7 @@ function sendAllPendingFeeWA() {
 
 
 
+let c1i=null, c2i=null;
 function initCharts() {
   const c1=document.getElementById('chart-income'),c2=document.getElementById('chart-fee');
   if(!c1||!c2||!window.Chart) return;
@@ -8283,7 +8241,7 @@ function initWATemplatesPage() {
   const tabs = document.getElementById('wt-type-tabs');
   if (!tabs) return;
   tabs.innerHTML = WT_ALL_TYPES.map(t => {
-    const hasSaved = !!getWTSaved(t.id, 'en') || !!getWTSaved(t.id, 'ta');
+    const hasSaved = !!getWTSaved(t.id, 'ta');
     const tamilOnly = t.id === 'monthly_summary';
     return `<button onclick="selectWTType('${t.id}')" id="wttab-${t.id}"
       style="display:flex;align-items:center;gap:6px;padding:7px 12px;border-radius:9px;border:1.5px solid var(--br);background:var(--card);color:var(--tx);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:.12s;white-space:nowrap">
@@ -8317,15 +8275,10 @@ function selectWTType(typeId) {
     varsEl.innerHTML = '<b style="color:var(--tx)">Variables:</b> ' +
       (WT_VARS[typeId]||'').split(' · ').map(v=>`<code style="background:var(--card);padding:1px 5px;border-radius:3px;border:.5px solid var(--br)">{${v.slice(1,-1)}}</code>`).join(' ');
   }
-  // For monthly_summary: Tamil only — hide EN tab, force Tamil
+  // Tamil only — always hide EN lang tab
   const langTabs = document.getElementById('wt-lang-tabs');
-  if (typeId === 'monthly_summary') {
-    if (langTabs) langTabs.style.display = 'none';
-    wtActiveLang = 'ta';
-  } else {
-    if (langTabs) langTabs.style.display = '';
-    // Restore default lang if needed
-  }
+  if (langTabs) langTabs.style.display = 'none';
+  wtActiveLang = 'ta';
   // Load saved or default templates into textareas
   loadWTEditors(typeId);
   switchWTLang(wtActiveLang);
@@ -8333,42 +8286,42 @@ function selectWTType(typeId) {
 }
 
 function getWTDefault(typeId, lang) {
-  if (typeId === 'admission') return ADM_TEMPLATES[lang] || ADM_TEMPLATES.en;
-  if (typeId === 'fee_receipt') return FEE_RECEIPT_TEMPLATES[lang] || FEE_RECEIPT_TEMPLATES.en;
-  const tmplArr = WA_TEMPLATES[typeId]?.[lang] || WA_TEMPLATES[typeId]?.en || WA_TEMPLATES[typeId]?.ta || [''];
+  // Tamil only — ignore lang param
+  if (typeId === 'admission') return ADM_TEMPLATES['ta'] || ADM_TEMPLATES['en'] || '';
+  if (typeId === 'fee_receipt') return FEE_RECEIPT_TEMPLATES['ta'] || FEE_RECEIPT_TEMPLATES['en'] || '';
+  const tmplArr = WA_TEMPLATES[typeId]?.ta || [''];
   return tmplArr[0] || '';
 }
 
 function getWTSaved(typeId, lang) {
-  try { return localStorage.getItem(`_erp_wt_${typeId}_${lang}`) || ''; } catch(e) { return ''; }
+  // Tamil only — always load ta regardless of lang param
+  try { return localStorage.getItem(`_erp_wt_${typeId}_ta`) || ''; } catch(e) { return ''; }
 }
 
 function setWTSaved(typeId, lang, val) {
-  try { localStorage.setItem(`_erp_wt_${typeId}_${lang}`, val); } catch(e) {}
+  // Tamil only — always store as ta
+  try { localStorage.setItem(`_erp_wt_${typeId}_ta`, val); } catch(e) {}
 }
 
 function loadWTEditors(typeId) {
-  const enEl = document.getElementById('wt-tmpl-en');
+  // Tamil only — only load ta pane
   const taEl = document.getElementById('wt-tmpl-ta');
-  if (enEl) enEl.value = getWTSaved(typeId,'en') || getWTDefault(typeId,'en');
   if (taEl) taEl.value = getWTSaved(typeId,'ta') || getWTDefault(typeId,'ta');
 }
 
 function switchWTLang(lang) {
-  wtActiveLang = lang;
-  document.getElementById('wt-pane-en').style.display = lang==='en' ? 'block' : 'none';
-  document.getElementById('wt-pane-ta').style.display = lang==='ta' ? 'block' : 'none';
-  const enBtn = document.getElementById('wt-lt-en');
-  const taBtn = document.getElementById('wt-lt-ta');
-  if (enBtn) { enBtn.style.background=lang==='en'?'#185FA5':'var(--card)'; enBtn.style.color=lang==='en'?'#fff':'var(--tx2)'; enBtn.style.borderColor=lang==='en'?'#185FA5':'var(--br)'; }
-  if (taBtn) { taBtn.style.background=lang==='ta'?'#185FA5':'var(--card)'; taBtn.style.color=lang==='ta'?'#fff':'var(--tx2)'; taBtn.style.borderColor=lang==='ta'?'#185FA5':'var(--br)'; }
+  wtActiveLang = 'ta'; // Tamil only
+  const enPane = document.getElementById('wt-pane-en');
+  const taPane = document.getElementById('wt-pane-ta');
+  if (enPane) enPane.style.display = 'none';
+  if (taPane) taPane.style.display = 'block';
   refreshWTPreview();
 }
 
 function refreshWTPreview() {
   if (!wtActiveType) return;
   const lang   = wtActiveLang;
-  const tmplEl = document.getElementById(lang==='en'?'wt-tmpl-en':'wt-tmpl-ta');
+  const tmplEl = document.getElementById('wt-tmpl-ta'); // Tamil only
   const prevEl = document.getElementById('wt-preview');
   if (!tmplEl || !prevEl) return;
   const template = tmplEl.value;
@@ -8401,9 +8354,7 @@ function autoSaveWTTemplate() {
   clearTimeout(_wtAutoSaveTimer);
   _wtAutoSaveTimer = setTimeout(() => {
     if (!wtActiveType) return;
-    const enVal = document.getElementById('wt-tmpl-en')?.value || '';
     const taVal = document.getElementById('wt-tmpl-ta')?.value || '';
-    if (enVal) { setWTSaved(wtActiveType, 'en', enVal); applyCustomWATemplate(wtActiveType, 'en', enVal); }
     if (taVal) { setWTSaved(wtActiveType, 'ta', taVal); applyCustomWATemplate(wtActiveType, 'ta', taVal); }
     // Visual flash to confirm auto-save
     const saveBtn = document.getElementById('wt-save-btn');
@@ -8413,17 +8364,11 @@ function autoSaveWTTemplate() {
 
 function saveWATypeTemplate() {
   if (!wtActiveType) return;
-  const enVal = document.getElementById('wt-tmpl-en')?.value || '';
   const taVal = document.getElementById('wt-tmpl-ta')?.value || '';
-  setWTSaved(wtActiveType, 'en', enVal);
   setWTSaved(wtActiveType, 'ta', taVal);
-
-  // Also push into live WA_TEMPLATES so changes take effect immediately
-  applyCustomWATemplate(wtActiveType, 'en', enVal);
   applyCustomWATemplate(wtActiveType, 'ta', taVal);
-
-  showToast(`✅ ${WT_ALL_TYPES.find(t=>t.id===wtActiveType)?.label} template saved!`);
-  initWATemplatesPage(); // refresh tabs to show saved dot
+  showToast(`✅ ${WT_ALL_TYPES.find(t=>t.id===wtActiveType)?.label} template சேமிக்கப்பட்டது!`);
+  initWATemplatesPage();
   selectWTType(wtActiveType);
 }
 
@@ -8431,7 +8376,6 @@ function resetWATypeTemplate() {
   if (!wtActiveType) return;
   if (!confirm('Reset this template to default?')) return;
   try {
-    localStorage.removeItem(`_erp_wt_${wtActiveType}_en`);
     localStorage.removeItem(`_erp_wt_${wtActiveType}_ta`);
   } catch(e) {}
   loadWTEditors(wtActiveType);
@@ -8449,10 +8393,7 @@ function resetWATypeTemplate() {
 function resetAllWATemplates() {
   if (!confirm('Reset ALL WhatsApp templates to defaults?')) return;
   WT_ALL_TYPES.forEach(t => {
-    try {
-      localStorage.removeItem(`_erp_wt_${t.id}_en`);
-      localStorage.removeItem(`_erp_wt_${t.id}_ta`);
-    } catch(e) {}
+    try { localStorage.removeItem(`_erp_wt_${t.id}_ta`); } catch(e) {}
   });
   loadAllCustomWATemplates();
   showToast('All templates reset to defaults');
@@ -8667,7 +8608,7 @@ function initAdmissions() {
     if (langSel) langSel.value = savedLang;
     const tmplEl = document.getElementById('adm-wa-template');
     if (tmplEl) {
-      tmplEl.value = saved || (savedLang === 'ta' ? ADM_TEMPLATES.ta : ADM_TEMPLATES.en);
+      tmplEl.value = saved || (savedLang === 'ta' ? ADM_TEMPLATES.ta : ADM_TEMPLATES['ta']);
     }
   } catch(e){}
   refreshAdmPreview();
@@ -8895,12 +8836,12 @@ function refreshAdmPreview() {
   // Only switch to language default if the textarea currently contains a default template
   // (i.e. the user hasn't made custom edits). Never overwrite custom content.
   const currentVal = tmplEl.value;
-  const isShowingDefault = currentVal === ADM_TEMPLATES.en || currentVal === ADM_TEMPLATES.ta ||
-    currentVal === ADM_TEMPLATES.en + '\n\n─────────────\n\n' + ADM_TEMPLATES.ta || currentVal === '';
+  const isShowingDefault = currentVal === ADM_TEMPLATES['ta'] || currentVal === ADM_TEMPLATES.ta ||
+    currentVal === ADM_TEMPLATES['ta'] + '\n\n─────────────\n\n' + ADM_TEMPLATES.ta || currentVal === '';
   if (isShowingDefault) {
-    if (lang_ === 'en') tmplEl.value = ADM_TEMPLATES.en;
+    if (lang_ === 'en') tmplEl.value = ADM_TEMPLATES['ta'];
     else if (lang_ === 'ta') tmplEl.value = ADM_TEMPLATES.ta;
-    else tmplEl.value = ADM_TEMPLATES.en + '\n\n─────────────\n\n' + ADM_TEMPLATES.ta;
+    else tmplEl.value = ADM_TEMPLATES['ta'] + '\n\n─────────────\n\n' + ADM_TEMPLATES.ta;
   }
 
   // Auto-save any edit immediately so it persists across navigations
@@ -8923,7 +8864,7 @@ function refreshAdmPreview() {
 function resetAdmTemplate() {
   const lang_ = document.getElementById('adm-wa-lang')?.value || 'en';
   const tmplEl = document.getElementById('adm-wa-template');
-  if (tmplEl) tmplEl.value = lang_ === 'ta' ? ADM_TEMPLATES.ta : ADM_TEMPLATES.en;
+  if (tmplEl) tmplEl.value = lang_ === 'ta' ? ADM_TEMPLATES.ta : ADM_TEMPLATES['ta'];
   try { localStorage.removeItem('_erp_adm_template'); } catch(e) {}
   refreshAdmPreview();
   showToast('Template reset to default');

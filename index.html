@@ -370,8 +370,8 @@ tbody tr:hover td{background:var(--bg)}
 .prog{height:6px;background:var(--bg);border-radius:3px;overflow:hidden;margin-top:4px}
 .prog-fill{height:100%;border-radius:3px;transition:width .4s}
 /* Fee summary */
-.fee-sum{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
-.fee-box{background:var(--card);border:.5px solid var(--br);border-radius:12px;padding:13px}
+.fee-sum{display:flex;gap:10px;margin-bottom:14px;overflow-x:auto;padding-bottom:4px}
+.fee-box{background:var(--card);border:.5px solid var(--br);border-radius:12px;padding:13px;min-width:120px;flex:1}
 .fee-box-l{font-size:10px;color:var(--tx3);margin-bottom:3px}
 .fee-box-v{font-size:20px;font-weight:700}
 /* Shop */
@@ -445,7 +445,7 @@ tbody tr:hover td{background:var(--bg)}
   .qa-card span{font-size:10px}
   .plan-grid{grid-template-columns:1fr}
   .frow{grid-template-columns:1fr}
-  .fee-sum{grid-template-columns:1fr 1fr}
+  .fee-sum{gap:8px}
   .att-row{padding:7px 10px}
   .att-btn{width:28px;height:26px;font-size:10px}
   /* Marks grid */
@@ -469,7 +469,7 @@ tbody tr:hover td{background:var(--bg)}
 }
 @media(max-width:480px){
   .stat-grid{grid-template-columns:1fr 1fr}
-  .fee-sum{grid-template-columns:1fr}
+  .fee-sum{gap:6px}
   .shop-grid{grid-template-columns:1fr 1fr}
   .qa-grid{grid-template-columns:repeat(3,1fr)}
   .card{padding:12px}
@@ -611,12 +611,12 @@ tbody tr:hover td{background:var(--bg)}
     <div class="card">
       <div class="card-hd"><span class="card-title" id="ct-income">Income Trend (6 months)</span></div>
       <div style="display:flex;gap:10px;margin-bottom:9px;font-size:11px;color:var(--tx2)"><span style="display:flex;align-items:center;gap:4px"><span style="width:9px;height:9px;border-radius:2px;background:#185FA5;display:inline-block"></span>Income</span><span style="display:flex;align-items:center;gap:4px"><span style="width:9px;height:9px;border-radius:2px;background:#dc2626;display:inline-block"></span>Pending</span></div>
-      <div style="position:relative;height:175px"><canvas id="chart-income"></canvas></div>
+      <div style="position:relative;height:175px;min-height:175px"><canvas id="chart-income"></canvas></div>
     </div>
     <div class="card">
       <div class="card-hd"><span class="card-title" id="ct-fee">Fee Status</span></div>
       <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:9px;font-size:11px;color:var(--tx2)"><span style="display:flex;align-items:center;gap:4px"><span style="width:9px;height:9px;border-radius:2px;background:#16a34a;display:inline-block"></span>Paid</span><span style="display:flex;align-items:center;gap:4px"><span style="width:9px;height:9px;border-radius:2px;background:#ca8a04;display:inline-block"></span>Pending</span><span style="display:flex;align-items:center;gap:4px"><span style="width:9px;height:9px;border-radius:2px;background:#dc2626;display:inline-block"></span>Overdue</span></div>
-      <div style="position:relative;height:175px"><canvas id="chart-fee"></canvas></div>
+      <div style="position:relative;height:175px;min-height:175px"><canvas id="chart-fee"></canvas></div>
     </div>
   </div>
   <div class="card">
@@ -1552,7 +1552,7 @@ tbody tr:hover td{background:var(--bg)}
   </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js" onload="if(document.getElementById('pg-dashboard').classList.contains('active'))initCharts()"></script>
 
 <!-- ── PWA Install Banner ─────────────────────────── -->
 <div id="pwa-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;background:var(--sd);padding:14px 16px;z-index:500;display:none;align-items:center;gap:12px;border-top:1px solid rgba(255,255,255,.1)">
@@ -2054,7 +2054,20 @@ function navTo(id) {
   if (id === 'whatsapp') { renderWATypes(); }
   if (id === 'admissions') { initAdmissions(); }
   if (id === 'settings') { updateLatesDisplay(); initFeeReceiptTemplate(); }
-  if (id === 'dashboard') { updateDashStats(); setTimeout(initCharts, 100); }
+  if (id === 'dashboard') {
+    updateDashStats();
+    setTimeout(function() {
+      if (window.Chart) {
+        initCharts();
+      } else {
+        // Chart.js not yet loaded — inject it
+        var s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js';
+        s.onload = function() { initCharts(); };
+        document.head.appendChild(s);
+      }
+    }, 150);
+  }
   if (id === 'batches') { renderBatchesPage(); }
   if (id === 'fees') {
     const now = new Date();
@@ -2424,7 +2437,7 @@ const MODALS = {
     <div style="font-size:12px;color:var(--tx2);margin-bottom:12px;padding:8px 12px;background:var(--bg);border-radius:8px">
       Set Admission Fee and Monthly Fee per class. For <span style="color:#7c3aed;font-weight:700">11th & 12th</span>, fees are per subject. For <span style="color:#0891b2;font-weight:700">10th</span>, extra coaching subjects have individual fees.
     </div>
-    <div style="max-height:480px;overflow-y:auto;border:.5px solid var(--br);border-radius:10px;overflow:hidden">
+    <div style="max-height:60vh;overflow-y:auto;overflow-x:hidden;border:.5px solid var(--br);border-radius:10px">
       <table style="width:100%;border-collapse:collapse">
         <thead style="background:var(--bg);position:sticky;top:0">
           <tr>
@@ -3510,12 +3523,19 @@ function _renderFeesFiltered(tabVal, month) {
         <td style="font-size:12px;font-weight:600;color:${f.balance>0?'#dc2626':'var(--tx3)'};padding:6px 8px">₹${(f.balance||0).toLocaleString('en-IN')}</td>
         <td style="font-size:11px;color:var(--tx3);padding:6px 8px">${f.mode||'Cash'}</td>
         <td style="padding:6px 8px"><span class="badge ${bm[f.status]||'ba'}">${f.status}</span></td>
-        <td style="padding:6px 8px">${isPaid
-          ? `<span style="font-size:11px;color:#16a34a;font-weight:600">✅ Done</span>`
-          : `<button onclick="openCollectModal('${rcptEsc}')"
-               style="background:#16a34a;color:#fff;border:none;padding:5px 12px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">
-               💰 Collect
-             </button>`}
+        <td style="padding:6px 8px">
+          <div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center">
+            ${isPaid
+              ? `<span style="font-size:11px;color:#16a34a;font-weight:600">✅ Done</span>`
+              : `<button onclick="openCollectModal('${rcptEsc}')"
+                   style="background:#16a34a;color:#fff;border:none;padding:5px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">
+                   💰 Collect
+                 </button>`}
+            <button onclick="openEditFeeModal('${rcptEsc}')"
+              style="background:var(--bg);color:var(--tx2);border:.5px solid var(--br);padding:5px 8px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">
+              ✏️ Edit
+            </button>
+          </div>
         </td>
       </tr>`;
     });
@@ -3818,6 +3838,161 @@ function submitGenerateFees() {
   showToast(`✅ ${created} created, ${updated} updated, ${skipped} skipped for ${month}`);
   runBackup('change');
 }
+/* ═══════════════════════════════════════════════════════
+   EDIT FEE RECORD — Admin can adjust total / waive / delete
+═══════════════════════════════════════════════════════ */
+function openEditFeeModal(rcpt) {
+  const f = fees.find(fe => fe.rcpt === rcpt);
+  if (!f) return;
+  const root = document.getElementById('modal-root');
+  root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-title">✏️ Edit Fee Record</div>
+
+    <!-- Info bar -->
+    <div style="background:var(--bg);border-radius:10px;padding:11px 14px;margin-bottom:14px;border:.5px solid var(--br)">
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+        <span style="font-size:11px;color:var(--tx3)">Student</span>
+        <span style="font-size:12px;font-weight:700;color:var(--tx)">${f.student}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+        <span style="font-size:11px;color:var(--tx3)">Receipt</span>
+        <code style="font-size:11px;color:#185FA5">${f.rcpt}</code>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+        <span style="font-size:11px;color:var(--tx3)">Month / Period</span>
+        <span style="font-size:12px;color:var(--tx)">${f.month}${f.subject ? ' · '+f.subject : ''}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between">
+        <span style="font-size:11px;color:var(--tx3)">Already Paid</span>
+        <span style="font-size:12px;font-weight:700;color:#16a34a">₹${(f.paid||0).toLocaleString('en-IN')}</span>
+      </div>
+    </div>
+
+    <!-- Editable fields -->
+    <div class="frow">
+      <div class="fg">
+        <label class="fl">Total Fee Amount ₹ <span style="font-size:10px;color:var(--tx3)">(can reduce — cannot go below paid)</span></label>
+        <input class="fi" id="ef-total" type="number" min="${f.paid||0}" value="${f.total||0}"
+          style="font-size:16px;font-weight:700;text-align:center"
+          oninput="updateEditFeePreview('${rcpt.replace(/'/g,"\\'")}')">
+      </div>
+      <div class="fg">
+        <label class="fl">Status</label>
+        <select class="fi" id="ef-status">
+          <option value="pending"  ${f.status==='pending' ?'selected':''}>Pending</option>
+          <option value="partial"  ${f.status==='partial' ?'selected':''}>Partial</option>
+          <option value="paid"     ${f.status==='paid'    ?'selected':''}>Paid</option>
+          <option value="overdue"  ${f.status==='overdue' ?'selected':''}>Overdue</option>
+        </select>
+      </div>
+    </div>
+    <div class="fg" style="margin-bottom:12px">
+      <label class="fl">Admin Note (optional)</label>
+      <input class="fi" id="ef-note" type="text" placeholder="e.g. Fee waived — scholarship, sibling discount…" value="${f.adminNote||''}">
+    </div>
+
+    <!-- Preview -->
+    <div id="ef-preview" style="background:#fef9c3;border:.5px solid #fde68a;border-radius:8px;padding:10px 13px;font-size:12px;color:#854d0e;margin-bottom:14px">
+      New balance: ₹${Math.max(0,(f.total||0)-(f.paid||0)).toLocaleString('en-IN')}
+    </div>
+
+    <!-- Danger zone -->
+    <details style="margin-bottom:14px">
+      <summary style="font-size:11px;color:#dc2626;cursor:pointer;font-weight:600;padding:4px 0">⚠️ Danger Zone</summary>
+      <div style="margin-top:8px;padding:10px;background:#fee2e2;border-radius:8px;border:.5px solid #fecdd3">
+        <div style="font-size:11px;color:#991b1b;margin-bottom:8px">Permanently delete this fee record. This cannot be undone.</div>
+        <button onclick="deleteFeeRecord('${rcpt.replace(/'/g,"\\'")}','${f.student.replace(/'/g,"\\'")}',this)"
+          style="background:#dc2626;color:#fff;border:none;padding:6px 14px;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">
+          🗑️ Delete Fee Record
+        </button>
+      </div>
+    </details>
+
+    <div class="modal-foot">
+      <button class="btn btn-p" style="flex:1;justify-content:center;padding:10px;font-size:13px"
+        onclick="submitEditFee('${rcpt.replace(/'/g,"\\'")}')">✅ Save Changes</button>
+      <button class="btn" onclick="closeModal()">Cancel</button>
+    </div>
+  </div></div>`;
+}
+
+function updateEditFeePreview(rcpt) {
+  const f = fees.find(fe => fe.rcpt === rcpt);
+  if (!f) return;
+  const newTotal = parseFloat(document.getElementById('ef-total')?.value) || 0;
+  const newBal   = Math.max(0, newTotal - (f.paid || 0));
+  const el = document.getElementById('ef-preview');
+  if (!el) return;
+  const diff = newTotal - (f.total || 0);
+  if (newTotal < (f.paid || 0)) {
+    el.style.background='#fee2e2'; el.style.color='#991b1b'; el.style.borderColor='#fecdd3';
+    el.innerHTML = `❌ Cannot set total below already paid amount (₹${(f.paid||0).toLocaleString('en-IN')})`;
+  } else if (diff < 0) {
+    el.style.background='#dcfce7'; el.style.color='#166534'; el.style.borderColor='#bbf7d0';
+    el.innerHTML = `✅ Fee reduced by ₹${Math.abs(diff).toLocaleString('en-IN')} — New balance: <b>₹${newBal.toLocaleString('en-IN')}</b>`;
+  } else if (diff > 0) {
+    el.style.background='#fef9c3'; el.style.color='#854d0e'; el.style.borderColor='#fde68a';
+    el.innerHTML = `⚠️ Fee increased by ₹${diff.toLocaleString('en-IN')} — New balance: <b>₹${newBal.toLocaleString('en-IN')}</b>`;
+  } else {
+    el.style.background='#fef9c3'; el.style.color='#854d0e'; el.style.borderColor='#fde68a';
+    el.innerHTML = `New balance: <b>₹${newBal.toLocaleString('en-IN')}</b>`;
+  }
+}
+
+function submitEditFee(rcpt) {
+  const f = fees.find(fe => fe.rcpt === rcpt);
+  if (!f) return;
+  const newTotal  = parseFloat(document.getElementById('ef-total')?.value) || 0;
+  const newStatus = document.getElementById('ef-status')?.value || f.status;
+  const note      = document.getElementById('ef-note')?.value || '';
+  if (newTotal < (f.paid || 0)) {
+    showToast('❌ Total cannot be less than amount already paid (₹' + (f.paid||0).toLocaleString('en-IN') + ')');
+    return;
+  }
+  const oldTotal = f.total;
+  f.total     = newTotal;
+  f.balance   = Math.max(0, newTotal - (f.paid || 0));
+  f.status    = newStatus;
+  if (note) f.adminNote = note;
+  f.editedOn  = new Date().toLocaleDateString('en-IN');
+  f.editedBy  = 'Admin';
+  saveFees();
+  updateDashStats();
+  closeModal();
+  applyFeeMonthFilter();
+  const diff = newTotal - oldTotal;
+  showToast(diff < 0
+    ? `✅ Fee reduced by ₹${Math.abs(diff).toLocaleString('en-IN')} for ${f.student}`
+    : `✅ Fee record updated for ${f.student}`);
+}
+
+function deleteFeeRecord(rcpt, studentName, btn) {
+  // Confirm before deleting
+  btn.textContent = 'Tap again to CONFIRM delete';
+  btn.style.background = '#7f1d1d';
+  if (btn.dataset.confirmed === '1') {
+    const idx = fees.findIndex(fe => fe.rcpt === rcpt);
+    if (idx > -1) {
+      fees.splice(idx, 1);
+      saveFees();
+      updateDashStats();
+      closeModal();
+      applyFeeMonthFilter();
+      showToast(`🗑️ Fee record deleted for ${studentName}`);
+    }
+  } else {
+    btn.dataset.confirmed = '1';
+    setTimeout(() => {
+      if (btn.dataset.confirmed === '1') {
+        btn.textContent = '🗑️ Delete Fee Record';
+        btn.style.background = '#dc2626';
+        btn.dataset.confirmed = '0';
+      }
+    }, 3000);
+  }
+}
+
 function openCollectModal(rcpt) {
   const f = fees.find(fe => fe.rcpt === rcpt);
   if (!f) return;
@@ -8056,7 +8231,15 @@ let c1i=null, c2i=null;
 function initCharts() {
   const c1=document.getElementById('chart-income'),c2=document.getElementById('chart-fee');
   if(!c1||!c2||!window.Chart) return;
-  if(c1i) c1i.destroy(); if(c2i) c2i.destroy();
+  // Don't render if dashboard not visible (zero dimensions)
+  if(c1.offsetParent===null) return;
+  if(c1i) { try{c1i.destroy();}catch(e){} c1i=null; }
+  if(c2i) { try{c2i.destroy();}catch(e){} c2i=null; }
+
+  // Apply dark mode text color to Chart defaults
+  const txColor = getComputedStyle(document.documentElement).getPropertyValue('--tx2').trim() || '#666';
+  Chart.defaults.color = txColor;
+  Chart.defaults.borderColor = 'rgba(128,128,128,.1)';
 
   // ── Income Trend — last 6 months from real fees data ──────
   const now = new Date();

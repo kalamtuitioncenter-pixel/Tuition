@@ -717,17 +717,51 @@ tbody tr:hover td{background:var(--bg)}
         <input type="hidden" id="adm-grade" value="">
       </div>
 
-      <!-- Subject box for 11/12 — with per-subject fees -->
+      <!-- Subject box for 11/12 — slab pricing -->
       <div class="fg" id="adm-subj-row" style="display:none">
-        <label class="fl" style="color:#7c3aed;font-weight:700">📚 11th / 12th Subjects &amp; Fees</label>
-        <div style="font-size:11px;color:var(--tx3);margin-bottom:8px">Select subjects — fee per subject is auto-filled from Fee Structure. Click to toggle.</div>
+        <label class="fl" style="color:#7c3aed;font-weight:700">📚 11th / 12th — Select Subjects</label>
+        <!-- Editable Slab pricing cards -->
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px">
+          <div id="slab-1" style="border:1.5px solid #c4b5fd;border-radius:8px;padding:8px;text-align:center;background:var(--card);transition:.15s">
+            <div style="font-size:10px;color:#7c3aed;font-weight:700;margin-bottom:4px">1 Subject</div>
+            <div style="display:flex;align-items:center;justify-content:center;gap:2px">
+              <span style="font-size:12px;color:#7c3aed;font-weight:700">₹</span>
+              <input type="number" id="slab-inp-1" value="1000" min="0"
+                style="width:68px;font-size:15px;font-weight:800;color:#4c1d95;border:none;background:transparent;text-align:center;font-family:inherit;padding:0"
+                oninput="saveSlabToStructure()" onclick="this.select()">
+            </div>
+            <div style="font-size:9px;color:var(--tx3);margin-top:2px">per month</div>
+          </div>
+          <div id="slab-2" style="border:1.5px solid #c4b5fd;border-radius:8px;padding:8px;text-align:center;background:var(--card);transition:.15s">
+            <div style="font-size:10px;color:#7c3aed;font-weight:700;margin-bottom:4px">2 Subjects</div>
+            <div style="display:flex;align-items:center;justify-content:center;gap:2px">
+              <span style="font-size:12px;color:#7c3aed;font-weight:700">₹</span>
+              <input type="number" id="slab-inp-2" value="2300" min="0"
+                style="width:68px;font-size:15px;font-weight:800;color:#4c1d95;border:none;background:transparent;text-align:center;font-family:inherit;padding:0"
+                oninput="saveSlabToStructure()" onclick="this.select()">
+            </div>
+            <div style="font-size:9px;color:var(--tx3);margin-top:2px">per month</div>
+          </div>
+          <div id="slab-3" style="border:1.5px solid #c4b5fd;border-radius:8px;padding:8px;text-align:center;background:var(--card);transition:.15s">
+            <div style="font-size:10px;color:#7c3aed;font-weight:700;margin-bottom:4px">3+ Subjects</div>
+            <div style="display:flex;align-items:center;justify-content:center;gap:2px">
+              <span style="font-size:12px;color:#7c3aed;font-weight:700">₹</span>
+              <input type="number" id="slab-inp-3" value="3300" min="0"
+                style="width:68px;font-size:15px;font-weight:800;color:#4c1d95;border:none;background:transparent;text-align:center;font-family:inherit;padding:0"
+                oninput="saveSlabToStructure()" onclick="this.select()">
+            </div>
+            <div style="font-size:9px;color:var(--tx3);margin-top:2px">per month</div>
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--tx3);margin-bottom:8px">Click subjects to select. Fee is fixed by number of subjects selected.</div>
         <div style="border:.5px solid #c4b5fd;border-radius:10px;overflow:hidden" id="adm-subj-fee-grid">
           <!-- rendered by JS -->
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding:9px 12px;background:#ede9fe;border-radius:8px;border:.5px solid #c4b5fd">
-          <span style="font-size:12px;font-weight:600;color:#4c1d95">Total Subject Fee</span>
+          <span style="font-size:12px;font-weight:600;color:#4c1d95">Monthly Fee (<span id="adm-subj-count">0</span> subject<span id="adm-subj-count-s">s</span>)</span>
           <span style="font-size:18px;font-weight:800;color:#7c3aed" id="adm-subj-total">₹0</span>
         </div>
+        <div style="font-size:10px;color:#7c3aed;margin-top:4px;padding:0 2px" id="adm-subj-note">+ ₹200 admission fee (1st month only)</div>
       </div>
 
       <!-- Extra coaching subjects for 10th -->
@@ -973,12 +1007,25 @@ tbody tr:hover td{background:var(--bg)}
       <option value="evening">🌙 Evening</option>
     </select>
     <input type="date" class="fi" style="width:auto" id="att-date" onchange="renderAttList()">
+    <!-- Day Order selector — links absent marks to subjects -->
+    <select class="fi" style="width:auto;min-width:110px;border-color:#7c3aed;color:#7c3aed;font-weight:600" id="att-day-order" onchange="onDayOrderChange()" title="Select today's Day Order to track missed subjects">
+      <option value="">📅 Day Order</option>
+      <option value="1">Day Order 1</option>
+      <option value="2">Day Order 2</option>
+      <option value="3">Day Order 3</option>
+      <option value="4">Day Order 4</option>
+      <option value="5">Day Order 5</option>
+      <option value="6">Day Order 6</option>
+    </select>
     <div class="seg"><button class="seg-b on" id="btn-all-p" onclick="markAllAtt('P',this)">All Present</button><button class="seg-b" id="btn-all-a" onclick="markAllAtt('A',this)">All Absent</button></div>
     <button class="btn btn-sm" onclick="showModal('manageBatches')" style="background:#534AB7;color:#fff;border-color:#534AB7">
       <svg viewBox="0 0 14 14" fill="none" width="12" height="12"><rect x="1" y="2" width="12" height="10" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M4 5h6M4 7h4M4 9h5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
       Batches
     </button>
-    <button class="btn btn-sm" onclick="openQRScan()" style="background:#7c3aed;color:#fff;border-color:#7c3aed" title="QR Code Attendance">
+    <button class="btn btn-sm" onclick="openDayOrderSetup()" style="background:#7c3aed;color:#fff;border-color:#7c3aed" title="Configure Day Order subjects">
+      📅 Setup
+    </button>
+    <button class="btn btn-sm" onclick="openQRScan()" style="background:#0891b2;color:#fff;border-color:#0891b2" title="QR Code Attendance">
       <svg viewBox="0 0 16 16" fill="none" width="13" height="13"><rect x="2" y="2" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1.3"/><rect x="9" y="2" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1.3"/><rect x="2" y="9" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1.3"/><path d="M9 9h2v2H9zM13 9h1v1h-1zM9 12h1v1H9zM11 11h1v2h1v-3h-2zM13 13h1v1h-1z" fill="currentColor"/></svg>
       QR Scan
     </button>
@@ -988,6 +1035,12 @@ tbody tr:hover td{background:var(--bg)}
       <span style="color:#ca8a04" id="att-lc-lbl">0 Late</span>
       <span id="att-pct-lbl">—%</span>
     </div>
+  </div>
+  <!-- Day Order active banner -->
+  <div id="att-dayorder-banner" style="display:none;margin-bottom:8px;padding:8px 14px;border-radius:8px;font-size:12px;font-weight:600;display:none;align-items:center;gap:8px;background:#ede9fe;color:#7c3aed;border:.5px solid #c4b5fd">
+    📅 <span id="att-dayorder-label">Day Order 1</span>
+    <span style="font-size:10px;font-weight:500;opacity:.8;margin-left:4px" id="att-dayorder-subjects"></span>
+    <span style="margin-left:auto;font-size:10px;color:#7c3aed;opacity:.7">Absent students will have these subjects marked as missed</span>
   </div>
   <div id="att-session-banner" style="margin-bottom:8px;padding:8px 14px;border-radius:8px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:8px;background:#dbeafe;color:#1d4ed8;border:.5px solid #bfdbfe">
     <svg viewBox="0 0 16 16" fill="none" width="14" height="14"><circle cx="8" cy="8" r="5" stroke="currentColor" stroke-width="1.3"/><path d="M8 5v3l2 1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
@@ -1673,6 +1726,95 @@ window.__VALIDATE_LICENSE__=validateLicense;window.__PLANS__=PLANS;
 let lang = CFG.APP.defaultLanguage || 'en';
 let dark = CFG.APP.defaultTheme === 'dark';
 let attState = {};
+
+/* ═══════════════════════════════════════════════════════
+   DAY ORDER / TIMETABLE STORE
+   Format: dayOrderMap[dayOrderNumber] = ['Subject1','Subject2',...]
+   dayOrderMap stored in localStorage as _erp_day_order
+   Admin sets this once; attendance system reads it on mark
+═══════════════════════════════════════════════════════ */
+let dayOrderMap = {};            // { "1": ["Physics","Maths"], "2": ["Chemistry","Biology"], ... }
+let currentDayOrder = '';        // which day order is active today (set by admin in attendance toolbar)
+
+function saveDayOrder() {
+  try { localStorage.setItem('_erp_day_order', JSON.stringify(dayOrderMap)); } catch(e) {}
+}
+function loadDayOrder() {
+  try {
+    const v = localStorage.getItem('_erp_day_order');
+    if (v) { const p = JSON.parse(v); if (p && typeof p === 'object') Object.assign(dayOrderMap, p); }
+  } catch(e) {}
+}
+
+/* Get subjects for a given day order number */
+function getSubjectsForDayOrder(dayNum) {
+  if (!dayNum) return [];
+  return dayOrderMap[String(dayNum)] || [];
+}
+
+/* Called when marking attendance — record missed subjects for absent students */
+function recordMissedSubjects(studentId, status, date, dayOrderNum) {
+  if (status !== 'A') return; // only track absences
+  const subjects = getSubjectsForDayOrder(dayOrderNum);
+  if (!subjects.length) return;
+  const key = '_erp_missed_' + studentId;
+  let data = {};
+  try { data = JSON.parse(localStorage.getItem(key) || '{}'); } catch(e) {}
+  subjects.forEach(subj => {
+    if (!data[subj]) data[subj] = { count: 0, dates: [] };
+    data[subj].count++;
+    if (!data[subj].dates.includes(date)) data[subj].dates.push(date);
+  });
+  try { localStorage.setItem(key, JSON.stringify(data)); } catch(e) {}
+}
+
+/* Get missed subject summary for a student */
+function getMissedSubjects(studentId) {
+  try {
+    const v = localStorage.getItem('_erp_missed_' + studentId);
+    return v ? JSON.parse(v) : {};
+  } catch(e) { return {}; }
+}
+
+/* Get subject-wise avg test marks for a student { "Physics": 72, "Maths": 45, ... } */
+function getSubjectAvgMarks(studentId) {
+  const marks = getStudentMarks(studentId);
+  const map   = {};
+  marks.forEach(m => {
+    if (!m.subject || m.absent || m.marks === null || m.maxMarks <= 0) return;
+    if (!map[m.subject]) map[m.subject] = { total:0, count:0 };
+    map[m.subject].total += (m.marks / m.maxMarks) * 100;
+    map[m.subject].count++;
+  });
+  const avg = {};
+  Object.keys(map).forEach(s => { avg[s] = Math.round(map[s].total / map[s].count); });
+  return avg;
+}
+
+/* Combined weak subject score: missedClasses + low marks = risk score */
+function getSubjectRiskScore(missedCount, avgMarksPct) {
+  // Risk = (missed classes × 10) + (100 - marks%)  → higher = more at risk
+  const marksRisk = avgMarksPct !== undefined ? Math.max(0, 100 - avgMarksPct) : 50;
+  return (missedCount * 10) + marksRisk;
+}
+
+/* Get all students' weak subjects (sorted by miss count) */
+function getAllWeakSubjectData() {
+  const result = {};
+  students.forEach(s => {
+    const missed = getMissedSubjects(s.id);
+    if (Object.keys(missed).length > 0) {
+      result[s.id] = {
+        name    : s.name,
+        grade   : s.grade,
+        missed  : Object.entries(missed)
+                    .sort((a,b) => b[1].count - a[1].count)
+                    .map(([subj, d]) => ({ subject: subj, count: d.count, dates: d.dates }))
+      };
+    }
+  });
+  return result;
+}
 let activeAI = null;
 let selExam = null;
 let bkTimer = null;
@@ -1710,14 +1852,15 @@ let feeStructure = [
    }
   },
   // 11th & 12th: per-subject fees (monthly, student pays per subject enrolled)
-  {class:'11', admFee:1000, monthlyFee:0,
+  {class:'11', admFee:200, monthlyFee:0, slab1:1000, slab2:2300, slab3:3300,
    subjectFees:{
      Physics:800, Chemistry:800, Maths:900, Biology:800,
      CS:700, Commerce:600, Economics:600, Accountancy:600,
      History:500, Geography:500, English:500, Tamil:400
    }
   },
-  {class:'12', admFee:1000, monthlyFee:0,
+  {class:'12', admFee:200, monthlyFee:0,
+   slab1:1000, slab2:2300, slab3:3300,
    subjectFees:{
      Physics:900, Chemistry:900, Maths:1000, Biology:900,
      CS:800, Commerce:700, Economics:700, Accountancy:700,
@@ -2825,15 +2968,110 @@ function openQRScan() {
   showToast('📷 QR Scanner: Point camera at student QR card to mark Present automatically');
 }
 
+/* ═══════════════════════════════════════════════════════
+   DAY ORDER — UI FUNCTIONS
+═══════════════════════════════════════════════════════ */
+function onDayOrderChange() {
+  const sel   = document.getElementById('att-day-order');
+  const num   = sel?.value || '';
+  currentDayOrder = num;
+  const banner  = document.getElementById('att-dayorder-banner');
+  const lblEl   = document.getElementById('att-dayorder-label');
+  const subjEl  = document.getElementById('att-dayorder-subjects');
+  if (!banner) return;
+  if (!num) {
+    banner.style.display = 'none';
+    return;
+  }
+  const subjs = getSubjectsForDayOrder(num);
+  banner.style.display = 'flex';
+  if (lblEl) lblEl.textContent = 'Day Order ' + num;
+  if (subjEl) subjEl.textContent = subjs.length
+    ? '📚 ' + subjs.join(' · ')
+    : '⚠️ No subjects set — tap "📅 Setup" to add subjects';
+}
+
+/* Setup modal — admin enters subjects for each day order */
+function openDayOrderSetup() {
+  const root = document.getElementById('modal-root');
+  const rows = [1,2,3,4,5,6].map(n => {
+    const saved = (dayOrderMap[String(n)] || []).join(', ');
+    return `
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:.5px solid var(--br)">
+      <div style="min-width:80px;font-size:12px;font-weight:700;color:#7c3aed">Day Order ${n}</div>
+      <input class="fi" id="do-inp-${n}" placeholder="e.g. Physics, Chemistry, Maths"
+        value="${saved}"
+        style="flex:1;font-size:12px"
+        oninput="updateDayOrderPreview(${n})">
+      <div style="font-size:10px;color:var(--tx3);min-width:60px;text-align:right" id="do-cnt-${n}">${saved ? saved.split(',').filter(s=>s.trim()).length + ' subj' : '—'}</div>
+    </div>`;
+  }).join('');
+
+  root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-title">📅 Day Order — Subject Setup</div>
+    <div style="font-size:11px;color:var(--tx3);margin-bottom:14px;padding:8px 12px;background:var(--bg);border-radius:8px;border:.5px solid var(--br)">
+      Enter subjects for each Day Order (comma-separated). When admin selects a Day Order before saving attendance,
+      absent students automatically get those subjects recorded as <b>missed</b> — used by the AI Weak Subject Analyser.
+    </div>
+    <div style="max-height:50vh;overflow-y:auto">
+      ${rows}
+    </div>
+    <div class="modal-foot" style="margin-top:12px">
+      <button class="btn btn-p" style="flex:1;justify-content:center;padding:10px" onclick="saveDayOrderSetup()">
+        💾 Save Day Order
+      </button>
+      <button class="btn" onclick="closeModal()">Cancel</button>
+    </div>
+  </div></div>`;
+}
+
+function updateDayOrderPreview(n) {
+  const val = document.getElementById('do-inp-'+n)?.value || '';
+  const cnt = val.split(',').filter(s => s.trim()).length;
+  const el  = document.getElementById('do-cnt-'+n);
+  if (el) el.textContent = cnt > 0 ? cnt + ' subj' : '—';
+}
+
+function saveDayOrderSetup() {
+  [1,2,3,4,5,6].forEach(n => {
+    const val  = document.getElementById('do-inp-'+n)?.value || '';
+    const subjs = val.split(',').map(s => s.trim()).filter(Boolean);
+    if (subjs.length > 0) dayOrderMap[String(n)] = subjs;
+    else delete dayOrderMap[String(n)];
+  });
+  saveDayOrder();
+  closeModal();
+  onDayOrderChange(); // refresh banner
+  showToast('✅ Day Order subjects saved — absent tracking active');
+}
+
 function saveAttendance() {
   const date    = document.getElementById('att-date')?.value || new Date().toISOString().split('T')[0];
   const batchId = document.getElementById('att-batch')?.value || '';
   const session = document.getElementById('att-session')?.value || 'morning';
   const batch   = batches.find(b => b.id === batchId);
   _saveAttSession(date, batchId, session);
-  const bName = batch ? batch.name : 'batch';
-  showToast(`✅ ${session === 'morning' ? '☀️ Morning' : '🌙 Evening'} attendance saved — ${bName}`);
-  // Refresh to show the other-session saved status badge
+
+  // ── Record missed subjects for absent students (Day Order integration) ──
+  const dayNum = document.getElementById('att-day-order')?.value || '';
+  if (dayNum && getSubjectsForDayOrder(dayNum).length > 0) {
+    const bStu = _getBatchStudents(batchId);
+    let missCount = 0;
+    bStu.forEach(s => {
+      const status = attState[_attKey(s.id, batchId, session)] || '';
+      if (status === 'A') {
+        recordMissedSubjects(s.id, 'A', date, dayNum);
+        missCount++;
+      }
+    });
+    if (missCount > 0) showToast(`✅ Attendance saved — ${missCount} absent student(s) · Day Order ${dayNum} subjects recorded for AI analysis`);
+    else showToast(`✅ ${session === 'morning' ? '☀️ Morning' : '🌙 Evening'} attendance saved — ${batch ? batch.name : 'batch'}`);
+  } else {
+    showToast(`✅ ${session === 'morning' ? '☀️ Morning' : '🌙 Evening'} attendance saved — ${batch ? batch.name : 'batch'}`);
+    if (!dayNum) showToast('💡 Tip: Select a Day Order to track missed subjects for AI analysis');
+  }
+
   renderAttList();
   runBackup('change');
 }
@@ -2893,8 +3131,10 @@ function showMonthlyAttSummary() {
           <thead style="position:sticky;top:0;z-index:1">
             <tr style="background:var(--bg)">
               <th style="padding:8px 10px;text-align:left;font-weight:700;color:var(--tx2);border-bottom:.5px solid var(--br)">Student</th>
+              <th style="padding:8px 6px;text-align:center;font-weight:700;color:var(--tx2);border-bottom:.5px solid var(--br)">Class</th>
               <th style="padding:8px 8px;text-align:center;font-weight:700;color:#dc2626;border-bottom:.5px solid var(--br)">Absent</th>
               <th style="padding:8px 8px;text-align:center;font-weight:700;color:#ca8a04;border-bottom:.5px solid var(--br)">Late</th>
+              <th style="padding:8px 8px;text-align:left;font-weight:700;color:#7c3aed;border-bottom:.5px solid var(--br)">Missed Subjects</th>
               <th style="padding:8px 8px;text-align:center;font-weight:700;color:var(--tx2);border-bottom:.5px solid var(--br)">Status</th>
               <th style="padding:8px 10px;text-align:left;font-weight:700;color:var(--tx2);border-bottom:.5px solid var(--br)">Review / Remarks</th>
               <th style="padding:8px 8px;text-align:center;font-weight:700;color:var(--tx2);border-bottom:.5px solid var(--br)">WA</th>
@@ -2964,7 +3204,7 @@ function renderMAS() {
     { l:'✅ Perfect Attendance',v: perfectAtt,  bg:'#f0fdf4', c:'#16a34a' },
   ].map(s=>`<div style="padding:6px 12px;border-radius:8px;background:${s.bg};font-size:11px;font-weight:700;color:${s.c}">${s.l}: ${s.v}</div>`).join('');
 
-  // Render rows — only students who have absent or late (rest show as ✅)
+  // Render rows
   const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   tbody.innerHTML = activeStudents.map(s => {
     const rk       = `_mas_review_${s.id}_${yr}_${String(mo).padStart(2,'0')}`;
@@ -2979,15 +3219,43 @@ function renderMAS() {
       : '<span style="color:#ca8a04;font-weight:700">⚠️ Fair</span>';
     const rowBg = s.absent===0&&s.late===0 ? '' : s.absent>=5||s.late>=5 ? 'background:#fff5f5' : 'background:#fffbeb';
 
+    // ── Missed subjects with marks ─────────────────────────────
+    const missed    = getMissedSubjects(s.id);    // { "Physics": {count:3, dates:[...]}, ... }
+    const subjMarks = getSubjectAvgMarks(s.id);   // { "Physics": 72, "Maths": 45, ... }
+    const gradeLabel = s.grade === 'KG' ? 'KG' : 'Class ' + s.grade;
+
+    let missedHtml = '<span style="font-size:10px;color:var(--tx3)">—</span>';
+    if (Object.keys(missed).length > 0) {
+      const subjList = Object.entries(missed)
+        .sort((a,b) => b[1].count - a[1].count)
+        .map(([subj, d]) => {
+          const avg = subjMarks[subj];
+          const marksBadge = avg !== undefined
+            ? `<span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:8px;margin-left:3px;background:${avg<40?'#fee2e2':avg<60?'#fef9c3':'#dcfce7'};color:${avg<40?'#dc2626':avg<60?'#854d0e':'#166534'}">${avg}%</span>`
+            : '';
+          return `<div style="display:flex;align-items:center;gap:2px;margin-bottom:2px">
+            <span style="font-size:10px;color:#7c3aed;font-weight:600">${subj}</span>
+            <span style="font-size:9px;color:var(--tx3)">×${d.count}</span>
+            ${marksBadge}
+          </div>`;
+        }).join('');
+      missedHtml = `<div style="min-width:140px">${subjList}</div>`;
+    } else if (s.absent > 0) {
+      missedHtml = '<span style="font-size:10px;color:var(--tx3)">No Day Order set</span>';
+    }
+
     return `<tr style="${rowBg}">
       <td style="padding:8px 10px;border-bottom:.5px solid var(--br)">
         <div style="display:flex;align-items:center;gap:7px">
           <div class="av" style="background:${s.color};width:24px;height:24px;font-size:10px;flex-shrink:0">${(s.name||'?')[0]}</div>
           <div>
             <div style="font-weight:600;font-size:12px;color:var(--tx)">${s.name}</div>
-            <div style="font-size:9px;color:var(--tx3)">Gr.${s.grade} · ${s.course||'—'}</div>
+            <div style="font-size:9px;color:var(--tx3)">${s.course||'—'}</div>
           </div>
         </div>
+      </td>
+      <td style="padding:8px 6px;text-align:center;border-bottom:.5px solid var(--br)">
+        <span style="font-size:11px;font-weight:700;color:var(--tx)">${gradeLabel}</span>
       </td>
       <td style="padding:8px;text-align:center;border-bottom:.5px solid var(--br)">
         <span style="font-size:16px;font-weight:800;color:${abColor}">${s.absent}</span>
@@ -2997,6 +3265,7 @@ function renderMAS() {
         <span style="font-size:16px;font-weight:800;color:${ltColor}">${s.late}</span>
         <div style="font-size:9px;color:${ltColor}">days</div>
       </td>
+      <td style="padding:6px 8px;border-bottom:.5px solid var(--br)">${missedHtml}</td>
       <td style="padding:8px;text-align:center;border-bottom:.5px solid var(--br);font-size:11px">${statusIcon}</td>
       <td style="padding:6px 8px;border-bottom:.5px solid var(--br)">
         <input class="fi" style="font-size:11px;padding:4px 8px;width:100%;min-width:140px"
@@ -3032,10 +3301,9 @@ function saveMASReview(sid, yr, mo, val) {
 /* Build WA message for one student */
 function buildMASWA(s, yr, mo) {
   const monthStr  = yr + '-' + String(mo+1).padStart(2,'0');
-  const MONTHS    = ['January','February','March','April','May','June','July','August','September','October','November','December'];
   const MONTHS_TA = ['ஜனவரி','பிப்ரவரி','மார்ச்','ஏப்ரல்','மே','ஜூன்','ஜூலை','ஆகஸ்ட்','செப்டம்பர்','அக்டோபர்','நவம்பர்','டிசம்பர்'];
 
-  // Scan localStorage for this month
+  // Scan localStorage for this month's attendance
   let absent = 0, late = 0;
   const absentDates = [], lateDates = [];
   for (let i = 0; i < localStorage.length; i++) {
@@ -3048,33 +3316,99 @@ function buildMASWA(s, yr, mo) {
       Object.keys(rec).forEach(rk => {
         if (!rk.startsWith(s.id+'|')) return;
         if (rec[rk]==='A') { absent++; absentDates.push(datePart.slice(8)); }
-        if (rec[rk]==='L') { late++;   lateDates.push(datePart.slice(8));   }
+        if (rec[rk]==='L') { late++;   lateDates.push(datePart.slice(8)); }
       });
     } catch(e) {}
   }
 
+  // ── Missed subjects for this student ────────────────────────
+  const missed    = getMissedSubjects(s.id);   // {Physics:{count,dates}, ...}
+  const subjMarks = getSubjectAvgMarks(s.id);  // {Physics:72, Maths:45, ...}
+
+  // Filter missed to only subjects with data, sort by miss count
+  const missedList = Object.entries(missed)
+    .filter(([,d]) => d.count > 0)
+    .sort((a,b) => b[1].count - a[1].count)
+    .slice(0, 6);  // max 6 subjects in WA (readability)
+
+  // ── Build missed subject lines (Tamil) ──────────────────────
+  let missedSection = '';
+  if (missedList.length > 0) {
+    missedSection = '\n📚 *தவறிய வகுப்புகள்:*\n';
+    missedList.forEach(([subj, d]) => {
+      const avg = subjMarks[subj];
+      const marksStr = avg !== undefined
+        ? ` | தேர்வு: *${avg}%* ${avg < 40 ? '🔴 கவலை' : avg < 60 ? '🟡 சாதாரண' : '🟢 நல்லது'}`
+        : '';
+      missedSection += `  • ${subj}: *${d.count} வகுப்பு* தவறியது${marksStr}\n`;
+    });
+  }
+
+  // ── Weak subjects (low marks even if not missed) ─────────────
+  const weakMarks = Object.entries(subjMarks)
+    .filter(([subj, avg]) => avg < 60 && !missed[subj])  // low marks, not already in missed
+    .sort((a,b) => a[1]-b[1])
+    .slice(0, 3);
+
+  let weakMarksSection = '';
+  if (weakMarks.length > 0) {
+    weakMarksSection = '\n⚠️ *கவலைப்படத்தக்க பாடங்கள் (மதிப்பெண்):*\n';
+    weakMarks.forEach(([subj, avg]) => {
+      weakMarksSection += `  • ${subj}: *${avg}%* ${avg < 40 ? '🔴 மிகவும் குறைவு' : '🟡 மேம்படுத்தவேண்டும்'}\n`;
+    });
+  }
+
+  const ctr      = CFG.CENTER;
+  const monName  = MONTHS_TA[mo];
+  const gradeLabel = s.grade === 'KG' ? 'KG' : s.grade + ' ஆம் வகுப்பு';
+  const status   = absent===0&&late===0
+    ? 'மிகவும் நல்லது ✅'
+    : absent>=5||late>=5 ? 'கவலைப்படத்தக்கது 🔴'
+    : absent>=3 ? 'கவனிக்க வேண்டும் 🟡'
+    : 'சரி 👍';
+
+  const abLine   = absent > 0
+    ? `❌ வரவில்லை: *${absent} நாட்கள்*${absentDates.length ? ` (${absentDates.join(', ')} ${monName.slice(0,3)})` : ''}\n`
+    : '';
+  const ltLine   = late > 0
+    ? `⏰ தாமதம்: *${late} நாட்கள்*${lateDates.length ? ` (${lateDates.join(', ')} ${monName.slice(0,3)})` : ''}\n`
+    : '';
+  const noIssue  = absent===0&&late===0
+    ? `✅ ${monName} மாதம் முழுவதும் சரியாக வந்தார்! அருமை!\n`
+    : '';
+
   const rk      = `_mas_review_${s.id}_${yr}_${String(mo).padStart(2,'0')}`;
   const review  = (() => { try { return localStorage.getItem(rk)||''; } catch(e){ return ''; } })();
-  const ctr     = CFG.CENTER;
-  const isTa    = lang === 'ta';
-  const monName = isTa ? MONTHS_TA[mo] : MONTHS[mo];
-  const status  = absent===0&&late===0 ? (isTa?'மிகவும் நல்லது ✅':'Excellent ✅')
-    : absent>=5||late>=5 ? (isTa?'கவலைப்படத்தக்கது ⚠️':'Needs attention ⚠️')
-    : (isTa?'சரி 👍':'Fair 👍');
+  const rvLine  = review ? `\n📝 ஆசிரியர் கருத்து: ${review}` : '';
 
-  if (isTa) {
-    const abLine  = absent>0 ? `❌ வரவில்லை: *${absent} நாட்கள்*${absentDates.length?` (${absentDates.join(', ')} ${monName.slice(0,3)})`:''}\n` : '';
-    const ltLine  = late>0   ? `⏰ தாமதம்: *${late} நாட்கள்*${lateDates.length?` (${lateDates.join(', ')} ${monName.slice(0,3)})`:''}\n` : '';
-    const rvLine  = review   ? `\n📝 ஆசிரியர் கருத்து: ${review}` : '';
-    const noIssue = absent===0&&late===0 ? `✅ ${monName} மாதம் முழுவதும் சரியாக வந்தார். அருமை!\n` : '';
-    return `🙏 வணக்கம் *${s.parent}* அவர்களுக்கு,\n\n📋 *மாதாந்திர வருகை அறிக்கை*\n🏫 ${ctr.name}\n📅 மாதம்: *${monName} ${yr}*\n\n👤 *${s.name}* (வகுப்பு ${s.grade})\n\n${noIssue}${abLine}${ltLine}📊 நிலை: ${status}${rvLine}\n\nகவலைகளுக்கு தொடர்புகொள்ளவும்.\n📞 ${ctr.phone}`;
-  } else {
-    const abLine  = absent>0 ? `❌ Absent: *${absent} day(s)*${absentDates.length?` (${absentDates.join(', ')} ${MONTHS[mo].slice(0,3)})`:''}\n` : '';
-    const ltLine  = late>0   ? `⏰ Late: *${late} day(s)*${lateDates.length?` (${lateDates.join(', ')} ${MONTHS[mo].slice(0,3)})`:''}\n` : '';
-    const rvLine  = review   ? `\n📝 Teacher's Remark: ${review}` : '';
-    const noIssue = absent===0&&late===0 ? `✅ ${s.name} had perfect attendance this month. Well done!\n` : '';
-    return `Dear *${s.parent}*,\n\n📋 *Monthly Attendance Report*\n🏫 ${ctr.name}\n📅 Month: *${MONTHS[mo]} ${yr}*\n\n👤 *${s.name}* (Grade ${s.grade})\n\n${noIssue}${abLine}${ltLine}📊 Status: ${status}${rvLine}\n\nFor any queries contact us.\n📞 ${ctr.phone}`;
+  // Use saved Tamil template if customised
+  const savedTmpl = (typeof getWTSaved === 'function') ? getWTSaved('monthly', 'ta') : '';
+  if (savedTmpl) {
+    const attPct = absent === 0 && late === 0 ? 100 : Math.max(0, Math.round(100 - (absent / 25 * 100)));
+    return savedTmpl
+      .replace(/{parent_name}/g,  s.parent || 'பெற்றோர்')
+      .replace(/{student_name}/g, s.name)
+      .replace(/{month}/g,        monName + ' ' + yr)
+      .replace(/{att_pct}/g,      attPct)
+      .replace(/{present_days}/g, Math.max(0, 25 - absent))
+      .replace(/{absent_days}/g,  absent)
+      .replace(/{att_status}/g,   status)
+      .replace(/{center_name}/g,  ctr.name  || '')
+      .replace(/{center_phone}/g, ctr.phone || '');
   }
+
+  return `🙏 வணக்கம் *${s.parent || 'பெற்றோர்'}* அவர்களுக்கு,
+
+📋 *மாதாந்திர அறிக்கை — ${monName} ${yr}*
+🏫 ${ctr.name || ''}
+
+👤 *${s.name}* | ${gradeLabel}
+
+📊 *வருகை நிலை:* ${status}
+${noIssue}${abLine}${ltLine}${missedSection}${weakMarksSection}${rvLine}
+கவலைகளுக்கு தொடர்புகொள்ளவும்.
+📞 ${ctr.phone || ''}
+${ctr.name || ''}`;
 }
 
 /* Send WA for one student from the table */
@@ -3130,13 +3464,27 @@ function downloadMASReport() {
     } catch(e){}
   }
 
-  const rows = [['Name','Grade','Course','Parent','Phone','Absent Days','Late Days','Status','Review']];
+  const rows = [['Name','Grade','Course','Parent','Phone','Absent Days','Late Days','Status','Missed Subjects (count)','Subject Avg Marks %','Review']];
   students.filter(s=>s&&s.name&&s.status==='active').forEach(s => {
-    const d = monthData[s.id]||{absent:0,late:0};
+    const d  = monthData[s.id]||{absent:0,late:0};
     const rk = `_mas_review_${s.id}_${yr}_${String(mo).padStart(2,'0')}`;
     const rv = (() => { try { return localStorage.getItem(rk)||''; } catch(e){ return ''; } })();
     const st = d.absent===0&&d.late===0?'Perfect':d.absent>=5||d.late>=5?'Critical':d.absent>=3||d.late>=3?'Poor':'Fair';
-    rows.push([s.name,s.grade,s.course||'',s.parent||'',s.phone||'',d.absent,d.late,st,rv]);
+
+    // Missed subjects summary
+    const missed    = getMissedSubjects(s.id);
+    const subjMarks = getSubjectAvgMarks(s.id);
+    const missedStr = Object.entries(missed)
+      .sort((a,b)=>b[1].count-a[1].count)
+      .map(([subj,d2])=>`${subj}:${d2.count}`)
+      .join(' | ');
+    const marksStr = Object.entries(subjMarks)
+      .sort((a,b)=>a[1]-b[1])
+      .map(([subj,avg])=>`${subj}:${avg}%`)
+      .join(' | ');
+
+    rows.push([s.name, s.grade, s.course||'', s.parent||'', s.phone||'',
+               d.absent, d.late, st, missedStr||'—', marksStr||'—', rv]);
   });
 
   const csv = rows.map(r=>r.map(v=>'"'+(String(v).replace(/"/g,'""'))+'"').join(',')).join('\n');
@@ -4557,64 +4905,63 @@ function deleteExam(i) {
   showToast('🗑️ Exam deleted');
 }
 
-/* ── Show Exam Notice WA Modal (customise per exam) ── */
+/* ── Show Exam Notice WA Modal (Tamil only) ── */
 function showExamNoticeWAModal(examIdx) {
   const e = exams[examIdx];
   if (!e) return;
-  const pass     = e.passMarks || Math.round((e.maxMarks||100)*0.35);
-  const dateStr  = e.date ? new Date(e.date+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) : e.date;
-  const ctr      = CFG.CENTER;
-  const active   = students.filter(s => s && s.name && s.status === 'active');
+  const pass    = e.passMarks || Math.round((e.maxMarks||100)*0.35);
+  const dateStr = e.date
+    ? new Date(e.date+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})
+    : '—';
+  const ctr    = CFG.CENTER;
+  const active = students.filter(s => s && s.name && s.status==='active');
 
-  // Build preview for first student
-  function buildMsg(lang, student) {
-    const s = student || active[0] || { name:'Student', parent:'Parent', grade:'10', phone:'' };
-    const tmplArr = WA_TEMPLATES.exam_notice?.[lang] || WA_TEMPLATES.exam_notice?.ta || [''];
-    const saved   = (typeof getWTSaved==='function') ? getWTSaved('exam_notice', lang) : '';
-    const tmpl    = saved || tmplArr[0] || '';
+  function buildMsg(student) {
+    const s     = student || active[0] || { name:'மாணவர்', parent:'பெற்றோர்', grade:'10' };
+    const saved = (typeof getWTSaved==='function') ? getWTSaved('exam_notice','ta') : '';
+    const tmpl  = saved || (WA_TEMPLATES.exam_notice?.ta?.[0]) || '';
+    if (!tmpl) {
+      const gl = s.grade==='KG'?'KG':s.grade+' ஆம் வகுப்பு';
+      return `அன்பான ${s.parent||'பெற்றோர்'},\n\n📝 *தேர்வு அறிவிப்பு*\n🏫 ${ctr.name||''}\n\n👤 மாணவர்: *${s.name}* (${gl})\n📚 பாடம்: *${e.subject||'—'}*\n📋 தேர்வு: *${e.name||'—'}*\n📅 தேதி: *${dateStr}*\n✏️ மொத்த மதிப்பெண்: *${e.maxMarks||100}*\n✅ தேர்ச்சி: *${pass}*\n📖 பாடத்திட்டம்: ${e.syllabus||'முழு பாடத்திட்டம்'}\n\n💪 நன்கு படிக்கட்டும்!\n\n📞 ${ctr.phone||''}\n${ctr.name||''}`;
+    }
     return tmpl
-      .replace(/{parent_name}/g, s.parent||'Parent')
-      .replace(/{student_name}/g, s.name||'Student')
-      .replace(/{grade}/g, s.grade||'—')
-      .replace(/{exam_name}/g, e.name)
-      .replace(/{subject}/g, e.subject)
-      .replace(/{exam_date}/g, dateStr)
-      .replace(/{max_marks}/g, e.maxMarks)
-      .replace(/{pass_marks}/g, pass)
-      .replace(/{syllabus}/g, e.syllabus || (lang==='ta'?'முழு பாடத்திட்டம்':'Full syllabus'))
-      .replace(/{center_name}/g, ctr.name||'')
-      .replace(/{center_phone}/g, ctr.phone||'');
+      .replace(/{parent_name}/g,  s.parent    ||'பெற்றோர்')
+      .replace(/{student_name}/g, s.name      ||'')
+      .replace(/{grade}/g,        s.grade     ||'')
+      .replace(/{exam_name}/g,    e.name      ||'')
+      .replace(/{subject}/g,      e.subject   ||'')
+      .replace(/{exam_date}/g,    dateStr)
+      .replace(/{max_marks}/g,    e.maxMarks  ||100)
+      .replace(/{pass_marks}/g,   pass)
+      .replace(/{syllabus}/g,     e.syllabus  ||'முழு பாடத்திட்டம்')
+      .replace(/{center_name}/g,  ctr.name    ||'')
+      .replace(/{center_phone}/g, ctr.phone   ||'');
   }
 
   const root = document.getElementById('modal-root');
   root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()">
-    <div class="modal" style="max-width:500px">
-      <div class="modal-title">📱 Exam Notice — WhatsApp</div>
-      <div style="background:${e.color}18;border-radius:8px;padding:10px 12px;margin-bottom:12px;border-left:3px solid ${e.color}">
-        <div style="font-weight:700;font-size:13px;color:var(--tx)">${e.name}</div>
-        <div style="font-size:11px;color:var(--tx3);margin-top:2px">${e.subject} · 📅 ${dateStr} · Full: ${e.maxMarks} · Pass: ${pass}</div>
-        ${e.syllabus?`<div style="font-size:10px;color:var(--tx3);margin-top:2px">📋 ${e.syllabus}</div>`:''}
-      </div>
-      <div style="display:flex;gap:8px;margin-bottom:10px">
-        <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer"><input type="radio" name="en-lang" value="en" checked onchange="updateENPreview(${examIdx})"> English</label>
-        <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer"><input type="radio" name="en-lang" value="ta" onchange="updateENPreview(${examIdx})"> தமிழ்</label>
-        <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer"><input type="radio" name="en-lang" value="both" onchange="updateENPreview(${examIdx})"> Both</label>
-      </div>
-      <div id="en-preview" style="background:#dcfce7;border-radius:10px;padding:12px;font-size:11px;line-height:1.75;
-        white-space:pre-wrap;font-family:'Noto Sans Tamil',system-ui;color:#166534;max-height:280px;overflow-y:auto;
-        border:.5px solid #bbf7d0;margin-bottom:12px">${buildMsg('en')}</div>
-      <div style="font-size:11px;color:var(--tx2);margin-bottom:8px">
-        📤 Send to: <b>${active.length} active students</b>' parents
-      </div>
-      <div class="modal-foot">
-        <button class="btn btn-wa" onclick="sendExamNoticeToAll(exams[${examIdx}], document.querySelector('input[name=\'en-lang\'\]:checked')?.value||'en');closeModal()"
-          style="flex:1;justify-content:center">📱 Send to All Parents</button>
-        <button class="btn" onclick="closeModal()">Cancel</button>
-      </div>
+  <div class="modal" style="max-width:500px">
+    <div class="modal-title">📱 தேர்வு அறிவிப்பு — WhatsApp</div>
+    <div style="background:${e.color}18;border-radius:8px;padding:10px 12px;margin-bottom:12px;border-left:3px solid ${e.color}">
+      <div style="font-weight:700;font-size:13px;color:var(--tx)">${e.name}</div>
+      <div style="font-size:11px;color:var(--tx3);margin-top:2px">${e.subject} · 📅 ${dateStr} · மொத்தம்: ${e.maxMarks} · தேர்ச்சி: ${pass}</div>
+      ${e.syllabus?`<div style="font-size:10px;color:var(--tx3);margin-top:2px">📋 ${e.syllabus}</div>`:''}
     </div>
-  </div>`;
+    <div style="font-size:10px;font-weight:700;color:var(--tx2);letter-spacing:.04em;margin-bottom:5px">PREVIEW (முதல் மாணவர்):</div>
+    <div id="en-preview" style="background:#dcfce7;border-radius:10px;padding:12px;font-size:11px;line-height:1.8;white-space:pre-wrap;font-family:'Noto Sans Tamil',system-ui;color:#166534;max-height:220px;overflow-y:auto;border:.5px solid #bbf7d0;margin-bottom:12px">${buildMsg(active[0])}</div>
+    <div style="font-size:11px;color:var(--tx2);margin-bottom:10px">
+      📤 அனுப்பவேண்டியவர்கள்: <b>${active.filter(s=>s.phone||s.pphone).length} பெற்றோர்</b>
+      <button onclick="navTo('wa-templates');setTimeout(()=>typeof selectWTType==='function'&&selectWTType('exam_notice'),300);closeModal()" style="margin-left:8px;background:none;border:.5px solid var(--br);border-radius:6px;padding:2px 8px;font-size:10px;color:var(--tx2);cursor:pointer;font-family:inherit">✏️ Template மாற்ற</button>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-wa" style="flex:1;justify-content:center;padding:10px;font-size:12px;font-weight:700"
+        onclick="sendExamNoticeToAll(exams[${examIdx}]);closeModal()">
+        📱 அனைவருக்கும் அனுப்பு (${active.filter(s=>s.phone||s.pphone).length})
+      </button>
+      <button class="btn" onclick="closeModal()">Cancel</button>
+    </div>
+  </div></div>`;
 
-  // Store buildMsg globally for preview refresh
   window._enBuildMsg = buildMsg;
   window._enExamIdx  = examIdx;
 }
@@ -4635,91 +4982,127 @@ function updateENPreview(examIdx) {
 /* ── Send exam notice to all parents ── */
 function sendExamNoticeToAll(exam, lang) {
   if (!exam) return;
-  const pass     = exam.passMarks || Math.round((exam.maxMarks||100)*0.35);
-  const dateStr  = exam.date ? new Date(exam.date+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) : exam.date;
-  const ctr      = CFG.CENTER;
-  const active   = students.filter(s => s && s.name && s.status === 'active' && (s.phone||s.pphone));
+  const pass    = exam.passMarks || Math.round((exam.maxMarks||100)*0.35);
+  const dateStr = exam.date
+    ? new Date(exam.date+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})
+    : '—';
+  const ctr    = CFG.CENTER;
+  const active = students.filter(s => s && s.name && s.status==='active' && (s.phone||s.pphone));
+  if (active.length === 0) { showToast('⚠️ Phone number உள்ள மாணவர்கள் இல்லை'); return; }
 
-  if (active.length === 0) { showToast('⚠️ No students with phone numbers'); return; }
+  // Store exam on window so modal button can reach it
+  window._examWAData = exam;
+
+  function buildMsg(s) {
+    const saved = (typeof getWTSaved==='function') ? getWTSaved('exam_notice','ta') : '';
+    const tmpl  = saved || (WA_TEMPLATES.exam_notice?.ta?.[0]) || '';
+    if (!tmpl) {
+      // Hardcoded Tamil fallback
+      const gradeLabel = s.grade==='KG'?'KG':s.grade+' ஆம் வகுப்பு';
+      return `அன்பான ${s.parent||'பெற்றோர்'},\n\n📝 *தேர்வு அறிவிப்பு*\n🏫 ${ctr.name||''}\n\n👤 மாணவர்: *${s.name}* (${gradeLabel})\n📚 பாடம்: *${exam.subject||'—'}*\n📋 தேர்வு: *${exam.name||'—'}*\n📅 தேதி: *${dateStr}*\n✏️ மொத்த மதிப்பெண்: *${exam.maxMarks||100}*\n✅ தேர்ச்சி: *${pass}*\n📖 பாடத்திட்டம்: ${exam.syllabus||'முழு பாடத்திட்டம்'}\n\nஉங்கள் பிள்ளை நன்கு தயாராக இருக்கட்டும்! 💪\n\n📞 ${ctr.phone||''}\n${ctr.name||''}`;
+    }
+    return tmpl
+      .replace(/{parent_name}/g,  s.parent    || 'பெற்றோர்')
+      .replace(/{student_name}/g, s.name      || '')
+      .replace(/{grade}/g,        s.grade     || '')
+      .replace(/{exam_name}/g,    exam.name   || '')
+      .replace(/{subject}/g,      exam.subject|| '')
+      .replace(/{exam_date}/g,    dateStr)
+      .replace(/{max_marks}/g,    exam.maxMarks||100)
+      .replace(/{pass_marks}/g,   pass)
+      .replace(/{syllabus}/g,     exam.syllabus||'முழு பாடத்திட்டம்')
+      .replace(/{center_name}/g,  ctr.name    || '')
+      .replace(/{center_phone}/g, ctr.phone   || '');
+  }
 
   const root = document.getElementById('modal-root');
   root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()">
-    <div class="modal" style="max-width:480px">
-      <div class="modal-title">📱 Sending Exam Notice — ${exam.name}</div>
-      <div style="font-size:12px;color:var(--tx2);margin-bottom:10px">${active.length} parents · Click each to open WhatsApp</div>
-      <div style="max-height:360px;overflow-y:auto;border:.5px solid var(--br);border-radius:10px">
-        ${active.map(s => {
-          function buildOneMsg(lg, st) {
-            const tmplArr = WA_TEMPLATES.exam_notice?.[lg] || WA_TEMPLATES.exam_notice?.ta || [''];
-            const saved   = (typeof getWTSaved==='function') ? getWTSaved('exam_notice', lg) : '';
-            const tmpl    = saved || tmplArr[0] || '';
-            return tmpl
-              .replace(/{parent_name}/g, st.parent||'Parent')
-              .replace(/{student_name}/g, st.name)
-              .replace(/{grade}/g, st.grade||'—')
-              .replace(/{exam_name}/g, exam.name)
-              .replace(/{subject}/g, exam.subject)
-              .replace(/{exam_date}/g, dateStr)
-              .replace(/{max_marks}/g, exam.maxMarks)
-              .replace(/{pass_marks}/g, pass)
-              .replace(/{syllabus}/g, exam.syllabus || (lg==='ta'?'முழு பாடத்திட்டம்':'Full syllabus'))
-              .replace(/{center_name}/g, ctr.name||'')
-              .replace(/{center_phone}/g, ctr.phone||'');
-          }
-          const msg = lang==='both'
-            ? buildOneMsg('en',s)+'\n\n─────────────\n\n'+buildOneMsg('ta',s)
-            : buildOneMsg(lang,s);
-          const phone = s.phone||s.pphone||'';
-          return `<div class="wa-queue-item">
-            <div class="av" style="background:${s.color};width:28px;height:28px;font-size:11px;flex-shrink:0">${(s.name||'?')[0]}</div>
-            <div style="flex:1">
-              <div style="font-weight:600;font-size:12px">${s.name}</div>
-              <div style="font-size:10px;color:var(--tx3)">${s.parent} · ${phone||'No phone'}</div>
-            </div>
-            <button class="btn btn-wa btn-sm" style="font-size:10px" ${!phone?'disabled':''}
-              data-phone="${phone}" data-sid="${s.id}"
-              onclick="sendExamNoticeOne(this,exams[${examIdx}],lang)">📱</button>
-          </div>`;
-        }).join('')}
-      </div>
-      <div class="modal-foot"><button class="btn" onclick="closeModal()">Close</button></div>
+  <div class="modal" style="max-width:480px">
+    <div class="modal-title">📱 தேர்வு அறிவிப்பு — ${exam.name}</div>
+    <div style="font-size:11px;color:var(--tx2);margin-bottom:10px">${active.length} பெற்றோர் | ஒவ்வொருவரையும் தட்டி WA அனுப்பவும்</div>
+
+    <!-- Preview -->
+    <div style="background:#dcfce7;border:.5px solid #bbf7d0;border-radius:8px;padding:10px 12px;font-size:11px;color:#166534;white-space:pre-wrap;max-height:120px;overflow-y:auto;margin-bottom:10px;font-family:'Noto Sans Tamil',system-ui;line-height:1.7">${buildMsg(active[0])}</div>
+
+    <div style="max-height:300px;overflow-y:auto;border:.5px solid var(--br);border-radius:10px">
+      ${active.map((s,i) => {
+        const phone = s.phone||s.pphone||'';
+        const msg   = buildMsg(s);
+        const enc   = encodeURIComponent(msg);
+        const clean = phone.replace(/\D/g,'');
+        const ph91  = clean.startsWith('91') ? clean : '91'+clean;
+        return `<div class="wa-queue-item" style="display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:.5px solid var(--br)">
+          <div class="av" style="background:${s.color};width:28px;height:28px;font-size:11px;flex-shrink:0">${(s.name||'?')[0]}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:600;font-size:12px;color:var(--tx)">${s.name}</div>
+            <div style="font-size:10px;color:var(--tx3)">${s.parent||'—'} · ${phone||'📵 No phone'}</div>
+          </div>
+          <button id="exam-wa-btn-${i}" ${!phone?'disabled':''}
+            style="background:${phone?'#25d366':'#e2e8f0'};color:${phone?'#fff':'#94a3b8'};border:none;padding:6px 12px;border-radius:7px;font-size:11px;font-weight:700;cursor:${phone?'pointer':'not-allowed'};font-family:inherit;white-space:nowrap;flex-shrink:0"
+            onclick="(function(btn,ph,msg){window.location.href='whatsapp://send?phone='+ph+'&text='+encodeURIComponent(msg);btn.textContent='✅ Sent';btn.style.background='#dcfce7';btn.style.color='#166534';btn.disabled=true;})(this,'${ph91}',decodeURIComponent('${enc}'))">
+            📱 Send
+          </button>
+        </div>`;
+      }).join('')}
     </div>
-  </div>`;
+    <div class="modal-foot" style="margin-top:10px">
+      <button class="btn btn-wa" style="flex:1;justify-content:center;padding:10px;font-size:12px;font-weight:700"
+        onclick="sendAllExamNoticeWA()">📱 Send to All (${active.length})</button>
+      <button class="btn" onclick="closeModal()">Close</button>
+    </div>
+  </div></div>`;
+
+  // Store msgs for Send All
+  window._examWAMsgs = active.map(s => ({ phone: s.phone||s.pphone||'', name: s.name, msg: buildMsg(s) }));
 }
 
+function sendAllExamNoticeWA() {
+  const list = (window._examWAMsgs || []).filter(x => x.phone);
+  if (!list.length) { showToast('Phone number இல்லை'); return; }
+  let delay = 0;
+  list.forEach((x, i) => {
+    setTimeout(() => {
+      const clean = x.phone.replace(/\D/g,'');
+      const ph    = clean.startsWith('91') ? clean : '91'+clean;
+      window.location.href = 'whatsapp://send?phone=' + ph + '&text=' + encodeURIComponent(x.msg);
+      const btn = document.getElementById('exam-wa-btn-'+i);
+      if (btn) { btn.textContent='✅ Sent'; btn.style.background='#dcfce7'; btn.style.color='#166534'; btn.disabled=true; }
+    }, delay);
+    delay += 1500;
+  });
+  showToast(`📱 ${list.length} பெற்றோருக்கு அனுப்புகிறது…`);
+}
 
-/* Helper called from exam notice WA queue buttons */
+/* Helper called from exam notice WA queue buttons — kept for backward compat */
 function sendExamNoticeOne(btn, exam, waLang) {
-  const phone = btn.getAttribute('data-phone');
-  const sid   = btn.getAttribute('data-sid');
+  const phone = btn?.getAttribute('data-phone') || '';
+  const sid   = btn?.getAttribute('data-sid')   || '';
   if (!phone || !exam) return;
   const s = students.find(x => x.id === sid);
   if (!s) return;
   const pass    = exam.passMarks || Math.round((exam.maxMarks||100)*0.35);
-  const dateStr = exam.date ? new Date(exam.date+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) : exam.date;
-  const ctr     = CFG.CENTER;
-  const lg      = waLang || 'en';
-  function buildMsg(l) {
-    const arr  = WA_TEMPLATES.exam_notice ? (WA_TEMPLATES.exam_notice[l] || WA_TEMPLATES.exam_notice.en || ['']) : [''];
-    const sv   = typeof getWTSaved === 'function' ? getWTSaved('exam_notice', l) : '';
-    return (sv || arr[0] || '')
-      .replace(/{parent_name}/g,  s.parent  || 'Parent')
-      .replace(/{student_name}/g, s.name    || 'Student')
-      .replace(/{grade}/g,        s.grade   || '')
-      .replace(/{exam_name}/g,    exam.name || '')
-      .replace(/{subject}/g,      exam.subject || '')
-      .replace(/{exam_date}/g,    dateStr   || '')
-      .replace(/{max_marks}/g,    exam.maxMarks)
-      .replace(/{pass_marks}/g,   pass)
-      .replace(/{syllabus}/g,     exam.syllabus || (l === 'ta' ? 'Full syllabus' : 'Full syllabus'))
-      .replace(/{center_name}/g,  ctr.name  || '')
-      .replace(/{center_phone}/g, ctr.phone || '');
-  }
-  var msg = lg === 'both' ? buildMsg('en') + '\n\n' + buildMsg('ta') : buildMsg(lg);
+  const dateStr = exam.date
+    ? new Date(exam.date+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})
+    : '—';
+  const ctr  = CFG.CENTER;
+  const saved = (typeof getWTSaved==='function') ? getWTSaved('exam_notice','ta') : '';
+  const tmpl  = saved || (WA_TEMPLATES.exam_notice?.ta?.[0]) || '';
+  const msg   = tmpl
+    ? tmpl
+        .replace(/{parent_name}/g,  s.parent    ||'பெற்றோர்')
+        .replace(/{student_name}/g, s.name      ||'')
+        .replace(/{grade}/g,        s.grade     ||'')
+        .replace(/{exam_name}/g,    exam.name   ||'')
+        .replace(/{subject}/g,      exam.subject||'')
+        .replace(/{exam_date}/g,    dateStr)
+        .replace(/{max_marks}/g,    exam.maxMarks||100)
+        .replace(/{pass_marks}/g,   pass)
+        .replace(/{syllabus}/g,     exam.syllabus||'முழு பாடத்திட்டம்')
+        .replace(/{center_name}/g,  ctr.name    ||'')
+        .replace(/{center_phone}/g, ctr.phone   ||'')
+    : `அன்பான ${s.parent||'பெற்றோர்'},\n\n📝 *தேர்வு அறிவிப்பு*\n🏫 ${ctr.name||''}\n\n👤 மாணவர்: *${s.name}*\n📅 தேதி: *${dateStr}*\n📚 பாடம்: *${exam.subject||''}*\n✏️ மொத்த: *${exam.maxMarks||100}* | தேர்ச்சி: *${pass}*\n\n💪 நன்கு படிக்கட்டும்!\n📞 ${ctr.phone||''}`;
   openWA(phone, msg);
-  btn.textContent = 'Sent';
-  btn.disabled = true;
-  btn.style.background = '#16a34a';
+  if (btn) { btn.textContent='✅ Sent'; btn.disabled=true; btn.style.background='#16a34a'; }
 }
 /* ── Load all marks for a student ── */
 function getStudentMarks(studentId) {
@@ -6261,19 +6644,96 @@ function builtInAI(id) {
 
   // New module IDs mapped from old ones
   if (id==='weak' || id==='weak_subject') {
-    const atRisk = students.filter(s=>getStudentAtt(s.id)==='A'||getStudentAtt(s.id)==='L');
+    const atRisk   = students.filter(s=>getStudentAtt(s.id)==='A'||getStudentAtt(s.id)==='L');
     const inactive = students.filter(s=>s.status==='inactive');
-    const header = ta
-      ? `📊 ${ctr} — பலவீன மாணவர் பகுப்பாய்வு\n${'='.repeat(40)}\n\nமொத்த மாணவர்கள்: ${students.length}\nவருகை: ${attPct}%  ${attPct>=75?'✅':'⚠️'}\nசெயலற்றவர்கள்: ${inactive.length}\n\n`
-      : `📊 ${ctr} — Weak Student Analysis\n${'='.repeat(42)}\n\nTotal Students    : ${students.length}\nToday's Attendance: ${attPct}% ${attPct>=75?'✅ Good':'⚠️ Below target'}\nInactive Students : ${inactive.length}\n\n`;
-    const list = atRisk.length>0
-      ? (ta?`⚠️ இன்று வரவில்லை / தாமதம்:\n\n`:`⚠️ Absent / Late Today:\n\n`) +
-        atRisk.map((s,i)=>`${i+1}. ${s.name} (${s.id}) | ${ta?'வகுப்பு':'Grade'} ${s.grade} | ${s.parent} 📞 ${s.phone}`).join('\n')+'\n\n'
-      : (ta?`✅ இன்று அனைத்து மாணவர்களும் வந்தனர்!\n\n`:`✅ All students present today!\n\n`);
-    const recs = ta
-      ? `📋 பரிந்துரைகள்:\n1. வராத மாணவர் பெற்றோரை இன்றே அழைக்கவும்\n2. WhatsApp வருகை எச்சரிக்கை அனுப்பவும்\n3. வாராந்திர கூடுதல் வகுப்பு ஏற்பாடு செய்யவும்\n4. 75% கீழ் மாணவர்களுக்கு தனி கவனிப்பு\n5. மாதாந்திர பெற்றோர்-ஆசிரியர் கூட்டம் நடத்தவும்`
-      : `📋 Recommended Actions:\n1. Call parents of absent students today\n2. Send WhatsApp absent alert (use WA module)\n3. Schedule weekly extra coaching sessions\n4. Personal follow-up for students below 75% attendance\n5. Monthly parent-teacher meeting for at-risk students`;
-    return header + list + recs;
+
+    // ── Build combined risk profile per student ────────────────
+    const riskProfiles = students.filter(s=>s.status==='active').map(s => {
+      const missed    = getMissedSubjects(s.id);       // {Physics:{count,dates}, ...}
+      const subjMarks = getSubjectAvgMarks(s.id);      // {Physics:72, Maths:45, ...}
+
+      // Combine: all subjects from missed OR marks
+      const allSubjects = new Set([...Object.keys(missed), ...Object.keys(subjMarks)]);
+      const subjectRisks = [];
+
+      allSubjects.forEach(subj => {
+        const missCount = missed[subj]?.count || 0;
+        const avgMark   = subjMarks[subj];             // undefined if no test yet
+        const risk      = getSubjectRiskScore(missCount, avgMark);
+        subjectRisks.push({ subj, missCount, avgMark, risk });
+      });
+
+      subjectRisks.sort((a,b) => b.risk - a.risk);
+      return { s, subjectRisks, topRisk: subjectRisks[0]?.risk || 0 };
+    }).filter(p => p.subjectRisks.length > 0)
+      .sort((a,b) => b.topRisk - a.topRisk);
+
+    // ── Build class-level subject frequency ────────────────────
+    const classSubjRisk = {}; // {grade: {subj: {miss, marks[], students:[]}}}
+    riskProfiles.forEach(({s, subjectRisks}) => {
+      const g = s.grade || 'Other';
+      if (!classSubjRisk[g]) classSubjRisk[g] = {};
+      subjectRisks.forEach(({subj, missCount, avgMark}) => {
+        if (!classSubjRisk[g][subj]) classSubjRisk[g][subj] = {miss:0, marks:[], students:[]};
+        classSubjRisk[g][subj].miss += missCount;
+        if (avgMark !== undefined) classSubjRisk[g][subj].marks.push(avgMark);
+        classSubjRisk[g][subj].students.push(s.name);
+      });
+    });
+
+    // ── Header ─────────────────────────────────────────────────
+    const header = `📊 ${ctr} — பலவீன பாட & மாணவர் பகுப்பாய்வு\n${'='.repeat(45)}\n\nமொத்த மாணவர்கள்: ${students.length} | வருகை: ${attPct}%\n\n`;
+
+    // ── Today's absent/late ────────────────────────────────────
+    const todaySection = atRisk.length > 0
+      ? `⚠️ இன்று வரவில்லை / தாமதம் (${atRisk.length} பேர்):\n` +
+        atRisk.map((s,i) => `  ${i+1}. ${s.name} | வகுப்பு ${s.grade} | 📞 ${s.phone}`).join('\n') + '\n\n'
+      : `✅ இன்று அனைத்து மாணவர்களும் வந்தனர்!\n\n`;
+
+    // ── Per-class subject risk summary ─────────────────────────
+    let classSection = `📚 வகுப்பு வாரியாக பாட ஆபத்து நிலை:\n${'─'.repeat(45)}\n`;
+    const sortedGrades = Object.keys(classSubjRisk).sort((a,b) => {
+      const order = ['KG','1','2','3','4','5','6','7','8','9','10','11','12'];
+      return order.indexOf(a) - order.indexOf(b);
+    });
+    sortedGrades.forEach(grade => {
+      const subjMap = classSubjRisk[grade];
+      const topSubjs = Object.entries(subjMap)
+        .map(([subj, d]) => {
+          const avgM = d.marks.length > 0 ? Math.round(d.marks.reduce((a,b)=>a+b,0)/d.marks.length) : null;
+          return { subj, miss: d.miss, avgM, students: d.students.length };
+        })
+        .filter(x => x.miss > 0 || x.avgM !== null)
+        .sort((a,b) => (b.miss*10 + (100-(b.avgM||60))) - (a.miss*10 + (100-(a.avgM||60))))
+        .slice(0, 5);
+      if (topSubjs.length === 0) return;
+      classSection += `\n🏫 வகுப்பு ${grade}:\n`;
+      topSubjs.forEach((x, i) => {
+        const marksStr = x.avgM !== null ? ` | சராசரி: ${x.avgM}%${x.avgM < 40 ? ' 🔴' : x.avgM < 60 ? ' 🟡' : ' 🟢'}` : '';
+        const missStr  = x.miss > 0 ? ` | ${x.miss} வகுப்பு தவறியது` : '';
+        classSection += `  ${i+1}. ${x.subj}${missStr}${marksStr} (${x.students} மாணவர்)\n`;
+      });
+    });
+    classSection += '\n';
+
+    // ── Top at-risk students ───────────────────────────────────
+    let studentSection = `🔴 கவலைப்படத்தக்க மாணவர்கள் (Risk Score முதலில்):\n${'─'.repeat(45)}\n`;
+    riskProfiles.slice(0, 10).forEach(({s, subjectRisks}, i) => {
+      const top3 = subjectRisks.slice(0, 3).map(x => {
+        const marksTag = x.avgMark !== undefined
+          ? ` [${x.avgMark}%${x.avgMark<40?' 🔴':x.avgMark<60?' 🟡':' 🟢'}]`
+          : '';
+        const missTag  = x.missCount > 0 ? ` (${x.missCount} classes missed)` : '';
+        return `${x.subj}${missTag}${marksTag}`;
+      }).join(', ');
+      studentSection += `${i+1}. ${s.name} | வகுப்பு ${s.grade}\n   ⚠️ ${top3}\n`;
+    });
+    studentSection += '\n';
+
+    // ── Recommendations ────────────────────────────────────────
+    const recs = `📋 பரிந்துரைகள்:\n1. அதிக தவறிய மாணவர்களுக்கு extra class நடத்தவும்\n2. 40% கீழ் மதிப்பெண் பெற்ற மாணவர்களுக்கு தனிப் பயிற்சி\n3. வராத மாணவர் பெற்றோரை இன்றே அழைக்கவும்\n4. தவறிய பாடங்களில் revision test நடத்தவும்\n5. மாதாந்திர WA report பெற்றோருக்கு அனுப்பவும்`;
+
+    return header + todaySection + classSection + studentSection + recs;
   }
 
   if (id==='predict') {
@@ -8818,9 +9278,12 @@ function selectAdmClass(grade) {
   if (grade === '11' || grade === '12') {
     if (subjRow) { subjRow.style.display = 'block'; renderSubjectFeeGrid(grade, fs); }
     if (row10) row10.style.display = 'none';
-    // For 11/12, fee is per-subject (starts at 0, calculated dynamically)
+    // Reset fee inputs — slab fee set after subject selection
     const feeEl = document.getElementById('adm-fee');
     if (feeEl) feeEl.value = 0;
+    // 11/12 admission fee is always ₹200
+    const admFeeEl = document.getElementById('adm-admfee');
+    if (admFeeEl) admFeeEl.value = 200;
   } else if (grade === '10') {
     if (subjRow) subjRow.style.display = 'none';
     if (row10) { row10.style.display = 'block'; render10thExtraSubjectGrid(fs); }
@@ -8833,70 +9296,158 @@ function selectAdmClass(grade) {
     if (feeEl) feeEl.value = fs.monthlyFee || 0;
   }
 
-  // Auto-fill admission fee
-  const admFeeEl = document.getElementById('adm-admfee');
-  if (admFeeEl) admFeeEl.value = fs.admFee || 500;
+  // Auto-fill admission fee — 11/12 always ₹200, others from fee structure
+  const admFeeEl2 = document.getElementById('adm-admfee');
+  if (admFeeEl2 && grade !== '11' && grade !== '12') {
+    admFeeEl2.value = fs.admFee || 500;
+  }
 
   recalcAdmFees();
   refreshAdmPreview();
 }
 
-/* ── Render per-subject fee grid for 11th / 12th ──────────── */
+/* ── Slab fee for 11/12 — reads from feeStructure if saved ── */
+function getSlabFee(count, grade) {
+  if (count <= 0) return 0;
+  const fs = getFeeForClass(grade || document.getElementById('adm-grade')?.value || '12');
+  const s1 = fs.slab1 || 1000;
+  const s2 = fs.slab2 || 2300;
+  const s3 = fs.slab3 || 3300;
+  if (count === 1) return s1;
+  if (count === 2) return s2;
+  return s3;
+}
+
+/* ── Save edited slab values back into feeStructure ──────── */
+function saveSlabToStructure() {
+  const grade = document.getElementById('adm-grade')?.value || '';
+  if (grade !== '11' && grade !== '12') return;
+  const fs = getFeeForClass(grade);
+  const s1 = parseFloat(document.getElementById('slab-inp-1')?.value) || 1000;
+  const s2 = parseFloat(document.getElementById('slab-inp-2')?.value) || 2300;
+  const s3 = parseFloat(document.getElementById('slab-inp-3')?.value) || 3300;
+  fs.slab1 = s1; fs.slab2 = s2; fs.slab3 = s3;
+  saveFeeStructure();
+  // Recalc current selection with new slab values
+  recalcSubjectFees();
+}
+
+/* ── Render subject grid for 11th / 12th (checkbox only, no per-subject price) */
 function renderSubjectFeeGrid(grade, fs) {
   const grid = document.getElementById('adm-subj-fee-grid');
-  if (!grid || !fs || !fs.subjectFees) return;
-  const subjects = Object.keys(fs.subjectFees);
+  if (!grid) return;
+
+  // Load saved slab values into the editable cards
+  const s1 = document.getElementById('slab-inp-1');
+  const s2 = document.getElementById('slab-inp-2');
+  const s3 = document.getElementById('slab-inp-3');
+  if (s1) s1.value = fs?.slab1 || 1000;
+  if (s2) s2.value = fs?.slab2 || 2300;
+  if (s3) s3.value = fs?.slab3 || 3300;
+
+  // Get subjects from feeStructure, or use defaults for 11/12
+  const subjects = (fs && fs.subjectFees)
+    ? Object.keys(fs.subjectFees)
+    : ['Physics','Chemistry','Maths','Biology','Computer Science','Economics','Commerce','Accountancy','History','Geography'];
+
   grid.innerHTML = subjects.map((subj, i) => {
-    const defaultFee = fs.subjectFees[subj] || 0;
     const bg = i % 2 === 0 ? 'var(--card)' : 'var(--bg)';
+    const key = subj.replace(/\s/g,'');
     return `
-    <div id="srow-${subj.replace(/\s/g,'')}" style="display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:.5px solid var(--br);background:${bg};cursor:pointer;transition:.12s" onclick="toggleSubjFeeRow('${subj}')">
-      <div style="width:20px;height:20px;border-radius:5px;border:1.5px solid #c4b5fd;background:var(--card);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.12s" id="scheck-${subj.replace(/\s/g,'')}">
-        <svg viewBox="0 0 10 10" fill="none" width="10" style="display:none" id="stick-${subj.replace(/\s/g,'')}"><path d="M1.5 5l2.5 2.5 4.5-5" stroke="#7c3aed" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <div id="srow-${key}" style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:.5px solid var(--br);background:${bg};cursor:pointer;user-select:none;transition:.12s" onclick="toggleSubjFeeRow('${subj}')">
+      <div style="width:22px;height:22px;border-radius:6px;border:2px solid #c4b5fd;background:var(--card);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.12s" id="scheck-${key}">
+        <svg viewBox="0 0 10 10" fill="none" width="11" style="display:none" id="stick-${key}"><path d="M1.5 5l2.5 2.5 4.5-5" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </div>
-      <span style="flex:1;font-size:12px;font-weight:500;color:var(--tx)">${subj}</span>
-      <div style="display:flex;align-items:center;gap:6px">
-        <span style="font-size:11px;color:var(--tx3)">₹</span>
-        <input type="number" id="sfee-${subj.replace(/\s/g,'')}" value="${defaultFee}"
-          style="width:75px;border:.5px solid var(--br);border-radius:6px;padding:4px 7px;font-size:12px;font-family:inherit;background:var(--bg);color:var(--tx);text-align:center"
-          onclick="event.stopPropagation()" oninput="recalcSubjectFees()">
-      </div>
+      <span style="flex:1;font-size:13px;font-weight:500;color:var(--tx)">${subj}</span>
+      <span style="font-size:10px;color:#7c3aed;background:#ede9fe;padding:2px 8px;border-radius:10px;font-weight:600">
+        ${grade === '12' ? 'Class 12' : 'Class 11'}
+      </span>
     </div>`;
-  }).join('') + `<div style="padding:8px 14px;font-size:11px;color:var(--tx3);background:var(--bg)">Click a subject to toggle selection. Adjust fee amounts as needed.</div>`;
+  }).join('') + `
+  <div style="padding:9px 14px;font-size:11px;color:var(--tx3);background:var(--bg);border-top:.5px solid var(--br)">
+    📌 Price: 1 subject → ₹1,000 &nbsp;|&nbsp; 2 subjects → ₹2,300 &nbsp;|&nbsp; 3+ subjects → ₹3,300 &nbsp;+&nbsp; ₹200 admission (1st month)
+  </div>`;
 }
 
 function toggleSubjFeeRow(subj) {
-  const key = subj.replace(/\s/g,'');
-  const box = document.getElementById('scheck-'+key);
+  const key  = subj.replace(/\s/g,'');
+  const box  = document.getElementById('scheck-'+key);
   const tick = document.getElementById('stick-'+key);
-  const row = document.getElementById('srow-'+key);
+  const row  = document.getElementById('srow-'+key);
   if (!box || !tick) return;
   const on = tick.style.display !== 'none';
-  tick.style.display = on ? 'none' : 'block';
-  box.style.background = on ? 'var(--card)' : '#ede9fe';
-  box.style.borderColor = on ? '#c4b5fd' : '#7c3aed';
+  tick.style.display  = on ? 'none'      : 'block';
+  box.style.background  = on ? 'var(--card)' : '#ede9fe';
+  box.style.borderColor = on ? '#c4b5fd'     : '#7c3aed';
   if (row) row.style.background = on ? '' : '#f5f3ff';
   recalcSubjectFees();
 }
 
 function recalcSubjectFees() {
-  const grade = document.getElementById('adm-grade')?.value;
-  const fs = getFeeForClass(grade);
-  if (!fs || !fs.subjectFees) { recalcAdmFees(); return; }
-  let total = 0;
-  Object.keys(fs.subjectFees).forEach(subj => {
-    const key = subj.replace(/\s/g,'');
-    const tick = document.getElementById('stick-'+key);
-    if (tick && tick.style.display !== 'none') {
-      const feeInp = document.getElementById('sfee-'+key);
-      total += parseFloat(feeInp?.value || 0);
-    }
+  const grade = document.getElementById('adm-grade')?.value || '';
+  const fs    = getFeeForClass(grade);
+
+  // Count selected subjects
+  const subjects = (fs && fs.subjectFees)
+    ? Object.keys(fs.subjectFees)
+    : ['Physics','Chemistry','Maths','Biology','Computer Science','Economics','Commerce','Accountancy','History','Geography'];
+
+  let count = 0;
+  subjects.forEach(subj => {
+    const tick = document.getElementById('stick-'+subj.replace(/\s/g,''));
+    if (tick && tick.style.display !== 'none') count++;
   });
+
+  // Slab fee — read live from input cards (editable)
+  const liveS1 = parseFloat(document.getElementById('slab-inp-1')?.value) || getSlabFee(1, grade);
+  const liveS2 = parseFloat(document.getElementById('slab-inp-2')?.value) || getSlabFee(2, grade);
+  const liveS3 = parseFloat(document.getElementById('slab-inp-3')?.value) || getSlabFee(3, grade);
+  const monthlyFee = count === 0 ? 0 : count === 1 ? liveS1 : count === 2 ? liveS2 : liveS3;
+  const admFee     = 200; // fixed admission fee for 11/12
+
+  // Update slab highlight cards
+  const slabs = [
+    {id:'slab-1', active: count === 1},
+    {id:'slab-2', active: count === 2},
+    {id:'slab-3', active: count >= 3},
+  ];
+  slabs.forEach(s => {
+    const el = document.getElementById(s.id);
+    if (!el) return;
+    el.style.background   = s.active ? '#ede9fe' : 'var(--card)';
+    el.style.borderColor  = s.active ? '#7c3aed' : '#c4b5fd';
+    el.style.borderWidth  = s.active ? '2px'     : '1.5px';
+    el.style.boxShadow    = s.active ? '0 0 0 3px rgba(124,58,237,.15)' : '';
+  });
+
+  // Update counter label
+  const countEl = document.getElementById('adm-subj-count');
+  const countS  = document.getElementById('adm-subj-count-s');
+  if (countEl) countEl.textContent = count;
+  if (countS)  countS.textContent  = count === 1 ? '' : 's';
+
+  // Update total display
   const totalEl = document.getElementById('adm-subj-total');
-  if (totalEl) totalEl.textContent = '₹'+total.toLocaleString('en-IN');
-  // Push to monthly fee input
-  const feeEl = document.getElementById('adm-fee');
-  if (feeEl) feeEl.value = total;
+  if (totalEl) totalEl.textContent = count > 0 ? '₹'+monthlyFee.toLocaleString('en-IN') : '₹0';
+
+  // Push to fee inputs
+  const feeEl    = document.getElementById('adm-fee');
+  const admFeeEl = document.getElementById('adm-admfee');
+  if (feeEl)    feeEl.value    = count > 0 ? monthlyFee : 0;
+  if (admFeeEl) admFeeEl.value = count > 0 ? admFee : 0;
+
+  // Update note
+  const noteEl = document.getElementById('adm-subj-note');
+  if (noteEl) {
+    if (count === 0) {
+      noteEl.textContent = 'Please select at least one subject';
+      noteEl.style.color = '#dc2626';
+    } else {
+      noteEl.textContent = `+ ₹200 admission fee (1st month only) → Total at admission: ₹${(monthlyFee + admFee).toLocaleString('en-IN')}`;
+      noteEl.style.color = '#7c3aed';
+    }
+  }
+
   recalcAdmFees();
 }
 
@@ -8971,13 +9522,17 @@ function recalcAdmFees() {
 /* ── Get selected subjects from admission form ──────────── */
 function getSelectedAdmSubjects() {
   const grade = document.getElementById('adm-grade')?.value || '';
-  const fs = getFeeForClass(grade);
+  const fs    = getFeeForClass(grade);
   const selected = [];
-  if ((grade === '11' || grade === '12') && fs && fs.subjectFees) {
-    Object.keys(fs.subjectFees).forEach(subj => {
+  if (grade === '11' || grade === '12') {
+    const subjects = (fs && fs.subjectFees)
+      ? Object.keys(fs.subjectFees)
+      : ['Physics','Chemistry','Maths','Biology','Computer Science','Economics','Commerce','Accountancy','History','Geography'];
+    subjects.forEach(subj => {
       const tick = document.getElementById('stick-'+subj.replace(/\s/g,''));
       if (tick && tick.style.display !== 'none') selected.push(subj);
     });
+    return selected;
   } else if (grade === '10' && fs && fs.extraSubjects) {
     const base = ['All Core Subjects'];
     Object.keys(fs.extraSubjects).forEach(subj => {
@@ -9675,6 +10230,7 @@ function loadAllData() {
   loadBatches();
   // Fee structure
   loadFeeStructure();
+  loadDayOrder();
   // NOTE: Attendance is loaded on-demand by renderAttList() per batch+session+date.
   // Do NOT pre-load here — it causes session bleed across batches.
 

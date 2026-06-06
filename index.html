@@ -3567,6 +3567,200 @@ function sendAttWA() {
 }
 
 /* ── Send Late WA Alert — opens inline modal on attendance page ── */
+/* ═══════════════════════════════════════════════════════
+   SEND EXAM RESULTS — Per-student WA buttons
+   Mirrors the sendLateWA() pattern exactly
+═══════════════════════════════════════════════════════ */
+function openSendResultsModal(examIdx) {
+  const exam = exams[examIdx];
+  if (!exam) { showToast('தேர்வு கிடைக்கவில்லை'); return; }
+
+  const pass = exam.passMarks || Math.round((exam.maxMarks || 100) * 0.35);
+
+  // Load saved marks from localStorage
+  const savedKey = '_erp_marks_' + exam.id;
+  let savedMarks = {};
+  try {
+    const raw = localStorage.getItem(savedKey);
+    if (raw) savedMarks = JSON.parse(raw).marks || {};
+  } catch(e) {}
+
+  const activeStudents = students.filter(s => s && s.name && s.status === 'active');
+  if (activeStudents.length === 0) { showToast('மாணவர்கள் இல்லை'); return; }
+
+  // Build per-student data
+  window._resultStudents = activeStudents.map(s => {
+    const saved   = savedMarks[s.id];
+    const absent  = saved ? saved.absent === true : false;
+    const marks   = (!absent && saved && saved.marks !== undefined) ? saved.marks : null;
+    const pct     = (marks !== null && exam.maxMarks > 0) ? Math.round(marks / exam.maxMarks * 100) : 0;
+    const grade   = absent ? 'AB'
+      : marks === null ? '—'
+      : marks < pass ? 'F'
+      : pct>=91?'A+':pct>=81?'A':pct>=71?'B+':pct>=61?'B':pct>=51?'C':pct>=35?'D':'D';
+    return { s, absent, marks, pct, grade };
+  });
+  window._resultExam = exam;
+  window._resultPass = pass;
+
+  const withMarks  = window._resultStudents.filter(x => x.marks !== null || x.absent).length;
+  const withPhone  = window._resultStudents.filter(x => (x.s.phone||'').replace(/\D/g,'').length >= 10).length;
+  const dateStr    = exam.date ? new Date(exam.date+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+
+  const root = document.getElementById('modal-root');
+  root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()">
+    <div class="modal" style="max-width:520px">
+
+      <!-- Title -->
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+        <div style="width:38px;height:38px;background:#ede9fe;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">📝</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:14px;font-weight:700;color:var(--tx)">${exam.name}</div>
+          <div style="font-size:11px;color:var(--tx3)">${exam.subject} · ${dateStr} · Full: ${exam.maxMarks} · Pass: ${pass}</div>
+        </div>
+        <button onclick="closeModal()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--tx2);line-height:1">×</button>
+      </div>
+
+      <!-- Stats strip -->
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <div style="flex:1;background:#ede9fe;border:.5px solid #c4b5fd;border-radius:8px;padding:8px;text-align:center">
+          <div style="font-size:18px;font-weight:800;color:#7c3aed">${activeStudents.length}</div>
+          <div style="font-size:10px;color:#5b21b6">👥 Students</div>
+        </div>
+        <div style="flex:1;background:#dcfce7;border:.5px solid #bbf7d0;border-radius:8px;padding:8px;text-align:center">
+          <div style="font-size:18px;font-weight:800;color:#16a34a">${withMarks}</div>
+          <div style="font-size:10px;color:#166534">✅ With Marks</div>
+        </div>
+        <div style="flex:1;background:#dbeafe;border:.5px solid #bfdbfe;border-radius:8px;padding:8px;text-align:center">
+          <div style="font-size:18px;font-weight:800;color:#1d4ed8">${withPhone}</div>
+          <div style="font-size:10px;color:#1e40af">📱 With Phone</div>
+        </div>
+      </div>
+
+      ${withMarks === 0 ? `<div style="background:#fef9c3;border:.5px solid #fde047;border-radius:8px;padding:10px 12px;font-size:12px;color:#854d0e;font-weight:600;margin-bottom:10px">
+        ⚠️ No marks saved yet for this exam. Enter marks in the Marks panel and click "Save Marks" first.
+      </div>` : ''}
+
+      <!-- Message preview (first student) -->
+      <div style="font-size:10px;font-weight:600;color:var(--tx3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em">
+        Message Preview (${window._resultStudents[0]?.s.name || ''})
+      </div>
+      <div id="res-preview" style="background:#dcfce7;border:.5px solid #bbf7d0;border-radius:8px;padding:10px 12px;
+        font-size:11px;color:#166534;line-height:1.7;white-space:pre-wrap;max-height:130px;overflow-y:auto;
+        margin-bottom:10px;font-family:'Noto Sans Tamil',system-ui">
+        ${_buildOneResultMsg(window._resultStudents[0], exam, pass)}
+      </div>
+
+      <!-- Per-student list -->
+      <div style="font-size:11px;font-weight:600;color:var(--tx2);margin-bottom:6px">
+        Send to ${activeStudents.length} student${activeStudents.length!==1?'s':''}:
+      </div>
+      <div style="max-height:260px;overflow-y:auto;border:.5px solid var(--br);border-radius:10px">
+        ${window._resultStudents.map(item => {
+          const phone = (item.s.phone||'').replace(/\D/g,'');
+          const hasPhone = phone.length >= 10;
+          const grColor = item.absent ? '#6b7280'
+            : item.marks === null ? '#94a3b8'
+            : item.marks >= pass ? '#16a34a' : '#dc2626';
+          const gradeBg = item.absent ? '#f3f4f6'
+            : item.marks === null ? '#f1f5f9'
+            : item.marks >= pass ? '#dcfce7' : '#fee2e2';
+          return `<div class="wa-queue-item" id="rwq-${item.s.id}" style="display:flex;align-items:center;gap:9px;padding:9px 12px;border-bottom:.5px solid var(--br);background:var(--card)">
+            <div class="av" style="background:${item.s.color};width:28px;height:28px;font-size:11px;flex-shrink:0">${(item.s.name||'?')[0]}</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:12px;font-weight:600;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${item.s.name}</div>
+              <div style="font-size:10px;color:var(--tx3)">${item.s.parent} · ${hasPhone ? item.s.phone : '⚠️ No phone'}</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:5px;flex-shrink:0">
+              <span style="font-size:11px;font-weight:800;color:${grColor};background:${gradeBg};
+                padding:2px 8px;border-radius:8px;min-width:36px;text-align:center">
+                ${item.absent ? 'AB' : item.marks !== null ? item.marks+'/'+exam.maxMarks : '—'}
+              </span>
+              <span style="font-size:10px;font-weight:700;color:${grColor};min-width:22px;text-align:center">${item.grade}</span>
+              ${hasPhone
+                ? `<button class="btn btn-wa btn-sm" id="rbtn-${item.s.id}"
+                    onclick="sendOneResultWA('${item.s.id}')"
+                    style="font-size:10px;padding:4px 10px">📱 Send</button>`
+                : `<span style="font-size:10px;color:#dc2626;min-width:56px;text-align:center">No phone</span>`}
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+
+      <!-- Footer -->
+      <div class="modal-foot" style="margin-top:10px">
+        <button class="btn btn-wa" onclick="sendAllResultsWA()"
+          style="flex:1;justify-content:center;font-weight:700;padding:10px;font-size:12px">
+          📱 Send to All (${withPhone})
+        </button>
+        <button class="btn" onclick="closeModal()" style="padding:10px 16px">Close</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* Build the WA message for one student result */
+function _buildOneResultMsg(item, exam, pass) {
+  if (!item) return '';
+  const s       = item.s;
+  const ctr     = CFG.CENTER;
+  const tmpl    = (typeof getWTSaved === 'function' ? getWTSaved('marks','ta') : '')
+                  || WA_TEMPLATES.marks?.ta?.[0] || '';
+  if (!tmpl) return '';
+  const marks   = item.absent ? 'வரவில்லை' : (item.marks !== null ? item.marks : '—');
+  const pct     = item.absent ? '—' : (item.marks !== null ? item.pct : '—');
+  const remarks = item.absent
+    ? 'இன்று தேர்வில் வரவில்லை — தொடர்பு கொள்ளவும்'
+    : item.marks === null
+      ? 'மதிப்பெண்கள் பதிவு செய்யப்படவில்லை'
+      : item.marks >= pass
+        ? (item.pct >= 80 ? 'சிறப்பான செயல்திறன்! தொடர்ந்து உழைக்கவும்! 🌟' : 'நல்ல முயற்சி! தொடர்ந்து படிக்கவும்! 👍')
+        : 'பலவீன பகுதிகளில் கவனம் செலுத்துங்கள். நாங்கள் உதவுவோம்! 💪';
+  return tmpl
+    .replace(/{parent_name}/g,  s.parent   || 'பெற்றோர்')
+    .replace(/{student_name}/g, s.name     || '')
+    .replace(/{grade}/g,        s.grade    || '—')
+    .replace(/{exam_name}/g,    exam.name  || '')
+    .replace(/{subject}/g,      exam.subject || '')
+    .replace(/{marks}/g,        String(marks))
+    .replace(/{max_marks}/g,    String(exam.maxMarks))
+    .replace(/{percentage}/g,   String(pct))
+    .replace(/{grade_letter}/g, item.grade || '—')
+    .replace(/{remarks}/g,      remarks)
+    .replace(/{center_name}/g,  ctr.name   || '')
+    .replace(/{center_phone}/g, ctr.phone  || '');
+}
+
+/* Send WA to one student and mark as sent */
+function sendOneResultWA(studentId) {
+  if (!window._resultStudents || !window._resultExam) return;
+  const item = window._resultStudents.find(x => x.s.id === studentId);
+  if (!item) return;
+  const phone = (item.s.phone || '').replace(/\D/g,'');
+  if (phone.length < 10) return showToast('⚠️ ' + item.s.name + ' — தொலைபேசி எண் இல்லை');
+  const msg = _buildOneResultMsg(item, window._resultExam, window._resultPass);
+  openWA(item.s.phone, msg);
+  showToast('📱 ' + item.s.name + ' பெற்றோருக்கு WA திறக்கிறது…');
+  // Mark as sent
+  const btn = document.getElementById('rbtn-' + studentId);
+  if (btn) { btn.textContent = '✅ Sent'; btn.disabled = true; btn.style.background = '#16a34a'; btn.style.borderColor = '#16a34a'; }
+  const row = document.getElementById('rwq-' + studentId);
+  if (row) row.style.opacity = '.65';
+}
+
+/* Send to all students with phone numbers */
+function sendAllResultsWA() {
+  if (!window._resultStudents || !window._resultExam) return;
+  const withPhone = window._resultStudents.filter(x => (x.s.phone||'').replace(/\D/g,'').length >= 10);
+  if (withPhone.length === 0) return showToast('⚠️ தொலைபேசி எண் உள்ள மாணவர்கள் இல்லை');
+  let delay = 0;
+  withPhone.forEach(item => {
+    setTimeout(() => sendOneResultWA(item.s.id), delay);
+    delay += 800;
+  });
+  showToast('📱 ' + withPhone.length + ' பெற்றோருக்கு அனுப்புகிறது…');
+}
+
 function sendLateWA() {
   const lateStudents = students.filter(s => s && s.name && s.status === 'active' && getStudentAtt(s.id) === 'L');
   if (lateStudents.length === 0) {
@@ -4755,7 +4949,7 @@ function selectExam(i) {
         <svg viewBox="0 0 14 14" fill="none" width="12" height="12"><path d="M2 7l4 4 6-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
         Save Marks
       </button>
-      <button class="btn btn-wa" onclick="showModal('marksWA')" style="flex:1;justify-content:center">📱 Send Results</button>
+      <button class="btn btn-wa" onclick="openSendResultsModal(${i})" style="flex:1;justify-content:center">📱 Send Results</button>
       <button class="btn btn-sm" onclick="showExamNoticeWAModal(${i})" style="font-size:11px">📢 Exam Notice WA</button>
     </div>`;
 

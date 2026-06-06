@@ -13,7 +13,7 @@
 
 <!-- Android Chrome PWA -->
 <meta name="mobile-web-app-capable" content="yes">
-<link rel="manifest" href="manifest.json">
+<link rel="manifest" href="data:application/json;base64,eyJuYW1lIjogIkthbGFtIFR1aXRpb24gRVJQIiwgInNob3J0X25hbWUiOiAiS2FsYW0gRVJQIiwgInN0YXJ0X3VybCI6ICIuIiwgImRpc3BsYXkiOiAic3RhbmRhbG9uZSIsICJiYWNrZ3JvdW5kX2NvbG9yIjogIiNmMWY1ZjkiLCAidGhlbWVfY29sb3IiOiAiIzFhNTZkYiIsICJvcmllbnRhdGlvbiI6ICJwb3J0cmFpdCIsICJpY29ucyI6IFt7InNyYyI6ICJkYXRhOmltYWdlL3N2Zyt4bWwsJTNDc3ZnIHhtbG5zPSdodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2Zycgdmlld0JveD0nMCAwIDE5MiAxOTInJTNFJTNDcmVjdCB3aWR0aD0nMTkyJyBoZWlnaHQ9JzE5Micgcng9JzQwJyBmaWxsPSclMjMxYTU2ZGInLyUzRSUzQ3RleHQgeD0nOTYnIHk9JzEzMCcgZm9udC1zaXplPScxMDAnIGZvbnQtZmFtaWx5PSdBcmlhbCcgZm9udC13ZWlnaHQ9J2JvbGQnIGZpbGw9J3doaXRlJyB0ZXh0LWFuY2hvcj0nbWlkZGxlJyUzRUtUJTNDL3RleHQlM0UlM0Mvc3ZnJTNFIiwgInNpemVzIjogIjE5MngxOTIiLCAidHlwZSI6ICJpbWFnZS9zdmcreG1sIiwgInB1cnBvc2UiOiAiYW55IG1hc2thYmxlIn1dfQ==">
 
 <!-- iOS Safari PWA -->
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -33,8 +33,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Tamil:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-:root{--bg:#f1f5f9;--card:#fff;--tx:#0f172a;--tx2:#475569;--tx3:#94a3b8;--br:#e2e8f0;--br2:#cbd5e1;--pr:#1a56db;--pr2:#1239a5;--prl:#eff6ff;--sd:#0f172a;--sd2:#1e293b;--radius:10px;--shadow:0 1px 3px rgba(0,0,0,.07)}
-.dark{--bg:#0f172a;--card:#1e293b;--tx:#f1f5f9;--tx2:#94a3b8;--tx3:#475569;--br:#334155;--br2:#475569;--prl:#1e3a8a}
+:root{--bg:#f1f5f9;--bg2:#f8fafc;--card:#fff;--tx:#0f172a;--tx2:#475569;--tx3:#94a3b8;--br:#e2e8f0;--br2:#cbd5e1;--pr:#1a56db;--pr2:#1239a5;--prl:#eff6ff;--sd:#0f172a;--sd2:#1e293b;--radius:10px;--shadow:0 1px 3px rgba(0,0,0,.07)}
+.dark{--bg:#0f172a;--bg2:#1e293b;--card:#273549;--tx:#f1f5f9;--tx2:#94a3b8;--tx3:#475569;--br:#334155;--br2:#475569;--prl:#1e3a8a}
 body{font-family:'Inter','Noto Sans Tamil',system-ui,sans-serif;background:var(--bg);color:var(--tx);font-size:13px;min-height:100vh}
 ::-webkit-scrollbar{width:4px;height:4px}
 ::-webkit-scrollbar-thumb{background:var(--br2);border-radius:2px}
@@ -517,6 +517,7 @@ tbody tr:hover td{background:var(--bg)}
     <button class="nav-item" data-page="backup"><svg viewBox="0 0 16 16" fill="none"><path d="M8 2v7M5 6l3 3 3-3M2 11v2a1 1 0 001 1h10a1 1 0 001-1v-2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg><span id="nl-backup">Backup & Sync</span></button>
     <button class="nav-item" data-page="wa-templates"><svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" fill="#25d366"/><path d="M11.5 9.8c-.2-.1-1.2-.6-1.4-.7-.2-.1-.3-.1-.5.1-.1.2-.5.7-.6.8-.1.1-.2.1-.4 0-.2-.1-.9-.3-1.7-1-.6-.6-1-1.3-1.1-1.5-.1-.2 0-.3.1-.4l.3-.4c.1-.1.1-.2.2-.4 0-.1 0-.3 0-.4-.1-.1-.5-1.1-.6-1.5-.2-.4-.3-.3-.5-.3h-.4c-.1 0-.4.1-.6.3-.2.2-.8.8-.8 1.9s.8 2.2.9 2.4c.1.1 1.6 2.4 3.8 3.4.5.2.9.4 1.2.5.5.2 1 .1 1.3-.1.4-.2.8-.8.9-1.5.1-.4 0-.6-.1-.7z" fill="#fff"/></svg><span>WA Templates</span></button>
     <button class="nav-item" data-page="summary"><svg viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="#f59e0b" stroke-width="1.3"/><path d="M5 8l2 2 4-4" stroke="#f59e0b" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 5h2M5 11h6" stroke="#f59e0b" stroke-width="1.1" stroke-linecap="round"/></svg><span>Student Summary</span></button>
+    <button class="nav-item" data-page="timetable"><svg viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="1.5" stroke="#0ea5e9" stroke-width="1.3"/><path d="M5 2v2M11 2v2M2 7h12" stroke="#0ea5e9" stroke-width="1.3" stroke-linecap="round"/><path d="M5 10h2M9 10h2M5 12.5h2M9 12.5h2" stroke="#0ea5e9" stroke-width="1.2" stroke-linecap="round"/></svg><span>Time Table</span></button>
     <button class="nav-item" data-page="settings"><svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.3"/><path d="M8 2v1.5M8 12.5V14M14 8h-1.5M3.5 8H2M12.2 3.8l-1.06 1.06M4.86 11.14L3.8 12.2M12.2 12.2l-1.06-1.06M4.86 4.86L3.8 3.8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg><span id="nl-settings">Settings</span></button>
   </nav>
 <div id="_save_status_bar" style="text-align:center;font-size:10px;padding:3px 10px;color:var(--tx3,#94a3b8);background:var(--bg2,#f8fafc);transition:all .3s;border-bottom:.5px solid var(--br,#e2e8f0)">Ready</div>
@@ -1592,6 +1593,60 @@ tbody tr:hover td{background:var(--bg)}
 </div>
 <!-- END STUDENT SUMMARY -->
 
+
+<!-- ═══════════════ TIME TABLE (நேர அட்டவணை) ═══════════════ -->
+<div class="page" id="pg-timetable">
+
+  <!-- Header Banner -->
+  <div style="background:linear-gradient(135deg,#0369a1,#0ea5e9);border-radius:12px;padding:16px 20px;margin-bottom:16px;display:flex;align-items:center;gap:14px">
+    <div style="width:44px;height:44px;background:rgba(255,255,255,.15);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">📅</div>
+    <div style="flex:1">
+      <div style="font-size:16px;font-weight:700;color:#fff">நேர அட்டவணை — Time Table</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.8);margin-top:2px">Day Order Pattern · 4 Periods · பாட வரிசை — Absent &amp; Subject Tracking க்கு பயன்படும்</div>
+    </div>
+    <div style="text-align:right;flex-shrink:0">
+      <div style="font-size:10px;color:rgba(255,255,255,.7);margin-bottom:4px">Today's Day Order</div>
+      <div id="tt-today-day" style="font-size:28px;font-weight:800;color:#fff">D-1</div>
+    </div>
+  </div>
+
+  <!-- Controls Row -->
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+    <select class="fi" id="tt-batch-sel" style="width:auto" onchange="renderTimetable()">
+      <option value="all">அனைத்து பிரிவுகள்</option>
+    </select>
+    <div style="margin-left:auto;display:flex;gap:8px">
+      <button class="btn btn-sm" onclick="ttAddDay()" style="background:#0ea5e9;color:#fff;border-color:#0284c7">+ Day Order சேர்</button>
+      <button class="btn btn-sm" onclick="ttSave()" style="background:#16a34a;color:#fff;border-color:#15803d">💾 சேமி</button>
+    </div>
+  </div>
+
+  <!-- Period Times Config -->
+  <div style="background:var(--bg2);border:.5px solid var(--br);border-radius:10px;padding:12px 14px;margin-bottom:14px">
+    <div style="font-size:11px;font-weight:700;color:var(--tx2);letter-spacing:.04em;margin-bottom:10px">⏰ PERIOD நேரங்கள் (4 Periods)</div>
+    <div id="tt-period-times" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px"></div>
+  </div>
+
+  <!-- Day Order Table -->
+  <div style="background:var(--bg2);border:.5px solid var(--br);border-radius:10px;overflow:hidden">
+    <div id="tt-table-wrap" style="overflow-x:auto">
+      <table id="tt-table" style="width:100%;border-collapse:collapse;min-width:520px">
+        <thead id="tt-thead"></thead>
+        <tbody id="tt-tbody"></tbody>
+      </table>
+    </div>
+    <div id="tt-empty" style="text-align:center;padding:40px;color:var(--tx3);font-size:13px">
+      "+ Day Order சேர்" பொத்தானை அழுத்தி நேர அட்டவணை உருவாக்கவும்
+    </div>
+  </div>
+
+  <!-- Legend -->
+  <div style="margin-top:12px;font-size:10px;color:var(--tx3);text-align:center">
+    💡 இந்த நேர அட்டவணை வருகை பதிவில் எந்த பாடம் தவறியது என்று கண்டுபிடிக்க பயன்படும் — Future Feature
+  </div>
+</div>
+<!-- END TIME TABLE -->
+
   </div><!-- /content -->
 </div><!-- /main -->
 </div><!-- /app -->
@@ -2223,7 +2278,8 @@ function navTo(id) {
     }
   }
   if (id === 'wa-templates') { initWATemplatesPage(); }
-  if (id === 'summary') { if (typeof renderSummaryCards === 'function') renderSummaryCards(); }}
+  if (id === 'summary') { if (typeof renderSummaryCards === 'function') renderSummaryCards(); }
+  if (id === 'timetable') { if (typeof initTimetablePage === 'function') initTimetablePage(); }}
 
 function tbAddAction() {
   const active = document.querySelector('.page.active');
@@ -2599,11 +2655,12 @@ const MODALS = {
     </div>`;
   },
 
-  marksWA: () => `<div class="modal-title">Send Exam Results via WhatsApp</div>
-    <div class="fg"><label class="fl">Select Exam</label><select class="fi" id="m-wa-exam">${exams.map(e=>`<option value="${e.id}">${e.name} — ${e.subject}</option>`).join('')}</select></div>
-    <div style="font-size:12px;color:var(--tx2);background:var(--bg);border-radius:8px;padding:10px;margin-bottom:10px">Enter marks for each student, then build the WhatsApp queue to send results to all parents.</div>
-    <div id="m-marks-entry" style="max-height:300px;overflow-y:auto;border:.5px solid var(--br);border-radius:8px"></div>
-    <div class="modal-foot"><button class="btn btn-wa" onclick="buildMarksQueue()">Build Marks Queue</button><button class="btn" onclick="closeModal()">${t('cancel')}</button></div>`,
+  marksWA: () => `<div class="modal-title">📱 Send Exam Results via WhatsApp</div>
+    <div class="fg"><label class="fl">Select Exam</label>
+      <select class="fi" id="m-wa-exam" onchange="renderMarksWAEntry()">${exams.map(e=>`<option value="${e.id}">${e.name} — ${e.subject}</option>`).join('')}</select>
+    </div>
+    <div id="m-marks-entry" style="max-height:300px;overflow-y:auto;border:.5px solid var(--br);border-radius:8px;margin-bottom:4px"></div>
+    <div class="modal-foot"><button class="btn btn-wa" style="flex:2;justify-content:center" onclick="buildMarksQueue()">📋 Build Queue & Send</button><button class="btn" onclick="closeModal()">${t('cancel')}</button></div>`,
 };
 
 function showModal(type) {
@@ -3498,11 +3555,15 @@ function downloadMASReport() {
 
 
 function sendAttWA() {
-  waType = 'absent';
-  document.getElementById('wa-recipients-sel').value = 'absent';
-  buildWAQueue();
   navTo('whatsapp');
-  showToast('Opening WhatsApp alerts for absent students');
+  setTimeout(function() {
+    waType = 'absent';
+    var rSel = document.getElementById('wa-recipients-sel');
+    if (rSel) rSel.value = 'absent';
+    renderWATypes();
+    buildWAQueue();
+    showToast('Opening WhatsApp alerts for absent students');
+  }, 150);
 }
 
 /* ── Send Late WA Alert — opens inline modal on attendance page ── */
@@ -3719,7 +3780,7 @@ function sendOneAttWA(studentId, status) {
   }
 
   const type = status === 'L' ? 'late' : 'absent';
-  const msg  = buildMsg(type, lang || 'en');
+  const msg  = buildMsg(type, 'ta');
   openWA(phone, msg);
   showToast('📱 WA opening for ' + s.name + ' (' + (status==='L'?'Late':'Absent') + ')');
 }
@@ -3960,13 +4021,24 @@ function saveFeeEntry() {
   const rcpt    = 'RCP-' + Date.now().toString().slice(-6);
   const month   = _feeMonthLabel();
 
-  fees.unshift({
+  // Duplicate guard: check if a monthly fee already exists for this student + month
+  const dupIdx = fees.findIndex(f =>
+    (f.studentId === stId || f.student === stName) &&
+    f.month === month && f.type === 'monthly' && !f._deleted
+  );
+  const feeObj = {
     rcpt, student: stName, studentId: stId,
     month, total, paid, balance: bal,
     mode: document.getElementById('m-fmode')?.value || 'Cash',
     status, type: 'monthly',
     paidOn: paid > 0 ? new Date().toLocaleDateString('en-IN') : '',
-  });
+  };
+  if (dupIdx !== -1) {
+    // Update existing record instead of creating a duplicate
+    fees[dupIdx] = { ...fees[dupIdx], ...feeObj, rcpt: fees[dupIdx].rcpt };
+  } else {
+    fees.unshift(feeObj);
+  }
   saveFees();
   // Refresh to pending tab
   const pendBtn = document.getElementById('ft-pend');
@@ -4630,7 +4702,7 @@ function selectExam(i) {
         <div id="pf-${s.id}" style="font-size:10px;font-weight:600;text-align:center">
           ${isAbsent?'<span style="color:#6b7280">AB</span>':marksVal!==''?`<span style="color:${parseFloat(marksVal)>=pass?'#16a34a':'#dc2626'}">${parseFloat(marksVal)>=pass?'PASS':'FAIL'}</span>`:''}
         </div>
-        <div class="prog" style="margin-top:3px"><div class="prog-fill" id="pb-${s.id}" style="width:${marksVal!==''&&!isAbsent?Math.min(100,(marksVal/e.maxMarks)*100):0}%;background:${marksVal!==''&&parseFloat(marksVal)>=pass?'#16a34a':marksVal!==''?'#dc2626':'#16a34a'}"></div></div>
+        <div class="prog" style="margin-top:3px"><div class="prog-fill" id="pb-${s.id}" style="width:${marksVal!==''&&!isAbsent?Math.min(100,(marksVal/e.maxMarks)*100):0}%;background:${marksVal!==''&&!isAbsent?(parseFloat(marksVal)>=pass?'#16a34a':'#dc2626'):'#e2e8f0'}"></div></div>
       </td>
     </tr>`;
   }).join('');
@@ -4692,9 +4764,11 @@ function selectExam(i) {
 
 /* Helper: return grade letter respecting custom passMarks */
 function _gradeLabel(marks, max, pass) {
-  const pct = (parseFloat(marks)/max)*100;
-  if (parseFloat(marks) < pass) return `<span style="color:#dc2626">F</span>`;
-  return `<span style="color:${pct>=60?'#16a34a':'#ca8a04'}">${pct>=91?'A+':pct>=81?'A':pct>=71?'B+':pct>=61?'B':pct>=51?'C':'D'}</span>`;
+  var v=parseFloat(marks),pct=(v/max)*100;
+  if(v<pass)return'<span style="color:#dc2626;font-weight:700">F</span>';
+  var l=pct>=91?'A+':pct>=81?'A':pct>=71?'B+':pct>=61?'B':pct>=51?'C':pct>=35?'D':'D';
+  var c=pct>=81?'#16a34a':pct>=71?'#16a34a':pct>=61?'#0284c7':pct>=51?'#ca8a04':'#f97316';
+  return'<span style="color:'+c+';font-weight:700">'+l+'</span>';
 }
 
 /* Toggle absent checkbox in marks panel */
@@ -4757,7 +4831,7 @@ function calcGrade(inp, max, j) {
   // Legacy fallback — new marks panel uses calcGradeEx per student ID
   const pct = (parseFloat(inp.value)||0)/max*100;
   const pass = selExam>=0&&exams[selExam]?.passMarks ? exams[selExam].passMarks : Math.round(max*0.35);
-  const g = parseFloat(inp.value)<pass?'F':pct>=91?'A+':pct>=81?'A':pct>=71?'B+':pct>=61?'B':pct>=51?'C':'D';
+  const g = parseFloat(inp.value)<pass?'F':pct>=91?'A+':pct>=81?'A':pct>=71?'B+':pct>=61?'B':pct>=51?'C':pct>=35?'D':'D';
   const gEl=document.getElementById('grd-'+j), pb=document.getElementById('pb-'+j);
   if(gEl){gEl.textContent=inp.value?g:'';gEl.style.color=parseFloat(inp.value)>=pass?'#16a34a':'#dc2626';}
   if(pb){pb.style.width=Math.min(100,pct)+'%';pb.style.background=parseFloat(inp.value)>=pass?'#16a34a':pct>=(pass/max*100*0.8)?'#ca8a04':'#dc2626';}
@@ -4955,7 +5029,7 @@ function showExamNoticeWAModal(examIdx) {
     </div>
     <div class="modal-foot">
       <button class="btn btn-wa" style="flex:1;justify-content:center;padding:10px;font-size:12px;font-weight:700"
-        onclick="sendExamNoticeToAll(exams[${examIdx}]);closeModal()">
+        onclick="sendExamNoticeToAll(exams[${examIdx}])">
         📱 அனைவருக்கும் அனுப்பு (${active.filter(s=>s.phone||s.pphone).length})
       </button>
       <button class="btn" onclick="closeModal()">Cancel</button>
@@ -5028,9 +5102,6 @@ function sendExamNoticeToAll(exam, lang) {
       ${active.map((s,i) => {
         const phone = s.phone||s.pphone||'';
         const msg   = buildMsg(s);
-        const enc   = encodeURIComponent(msg);
-        const clean = phone.replace(/\D/g,'');
-        const ph91  = clean.startsWith('91') ? clean : '91'+clean;
         return `<div class="wa-queue-item" style="display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:.5px solid var(--br)">
           <div class="av" style="background:${s.color};width:28px;height:28px;font-size:11px;flex-shrink:0">${(s.name||'?')[0]}</div>
           <div style="flex:1;min-width:0">
@@ -5039,7 +5110,7 @@ function sendExamNoticeToAll(exam, lang) {
           </div>
           <button id="exam-wa-btn-${i}" ${!phone?'disabled':''}
             style="background:${phone?'#25d366':'#e2e8f0'};color:${phone?'#fff':'#94a3b8'};border:none;padding:6px 12px;border-radius:7px;font-size:11px;font-weight:700;cursor:${phone?'pointer':'not-allowed'};font-family:inherit;white-space:nowrap;flex-shrink:0"
-            onclick="(function(btn,ph,msg){window.location.href='whatsapp://send?phone='+ph+'&text='+encodeURIComponent(msg);btn.textContent='✅ Sent';btn.style.background='#dcfce7';btn.style.color='#166534';btn.disabled=true;})(this,'${ph91}',decodeURIComponent('${enc}'))">
+            onclick="sendExamNoticeOneByIdx(${i})">
             📱 Send
           </button>
         </div>`;
@@ -5071,6 +5142,19 @@ function sendAllExamNoticeWA() {
     delay += 1500;
   });
   showToast(`📱 ${list.length} பெற்றோருக்கு அனுப்புகிறது…`);
+}
+
+/* Safe individual exam notice send using stored _examWAMsgs */
+function sendExamNoticeOneByIdx(i) {
+  var list = window._examWAMsgs || [];
+  var item = list[i];
+  if (!item || !item.phone) { showToast('⚠️ No phone'); return; }
+  var clean = item.phone.replace(/[^0-9]/g,'');
+  var ph = clean.startsWith('91') ? clean : '91'+clean;
+  openWA(ph, item.msg);
+  var btn = document.getElementById('exam-wa-btn-'+i);
+  if (btn) { btn.textContent='✅ Sent'; btn.style.background='#dcfce7'; btn.style.color='#166534'; btn.disabled=true; }
+  showToast('📱 WA opening for ' + item.name);
 }
 
 /* Helper called from exam notice WA queue buttons — kept for backward compat */
@@ -6165,35 +6249,115 @@ function buildHolidayQueue() {
 function buildMarksQueue() {
   const examId = document.getElementById('m-wa-exam')?.value;
   const exam = exams.find(e=>e.id===examId) || exams[0];
-  const langSel = document.getElementById('wa-lang-sel')?.value || 'en';
-  const langKey = langSel==='ta'?'ta':'en';
-  const template = WA_TEMPLATES.marks?.[langKey]?.[0] || '';
+  if (!exam) { showToast('No exam found. Please create an exam first.'); return; }
 
-  waQueue = students.slice(0,6).map((student,i) => {
-    const marksEl = document.getElementById('mwa-marks-'+i);
-    const marksVal = parseFloat(marksEl?.value||'0');
-    const pct = exam.maxMarks>0 ? Math.round(marksVal/exam.maxMarks*100) : 0;
-    const g = pct>=91?'A+':pct>=81?'A':pct>=71?'B+':pct>=61?'B':pct>=51?'C':pct>=35?'D':'F';
-    const extra = { examName:exam.name, subject:exam.subject, marks:marksVal||'—', maxMarks:exam.maxMarks, pct:pct||'—', gradeLetter:marksVal?g:'—', remarks: marksVal>=60?'Great work! Keep it up! 🌟':'Focus on weak areas. We are here to help! 💪' };
-    return { student, phone: student.phone, status:'ready', message: fillTemplate(template, student, extra) };
+  // Language: prefer Tamil if lang is set, else fallback to 'ta'
+  const langKey = (typeof lang !== 'undefined' && lang === 'ta') ? 'ta' : 'ta';
+  const template = WA_TEMPLATES.marks?.[langKey]?.[0] || WA_TEMPLATES.marks?.en?.[0] || '';
+  if (!template) { showToast('No marks message template found.'); return; }
+
+  // Load saved marks from localStorage (set by saveMarksToStorage)
+  const savedKey = '_erp_marks_' + exam.id;
+  let savedMarks = {};
+  try {
+    const raw = localStorage.getItem(savedKey);
+    if (raw) savedMarks = JSON.parse(raw).marks || {};
+  } catch(err) {}
+
+  const pass = exam.passMarks || Math.round((exam.maxMarks||100) * 0.35);
+  const _mwaActive = students.filter(s=>s&&s.name&&s.status==='active');
+
+  // Also read from modal inputs if open (in case user typed directly in modal)
+  waQueue = _mwaActive.map((student, i) => {
+    const modalInput = document.getElementById('mwa-marks-'+i);
+    const saved = savedMarks[student.id];
+
+    let marksVal, isAbsent;
+    if (modalInput && modalInput.value !== '') {
+      // Modal input takes priority if user typed something
+      marksVal = parseFloat(modalInput.value);
+      isAbsent = false;
+    } else if (saved) {
+      isAbsent  = saved.absent === true;
+      marksVal  = isAbsent ? null : (saved.marks !== undefined ? saved.marks : null);
+    } else {
+      marksVal = null;
+      isAbsent = false;
+    }
+
+    const hasMarks = !isAbsent && marksVal !== null && !isNaN(marksVal);
+    const pct = hasMarks && exam.maxMarks > 0 ? Math.round(marksVal / exam.maxMarks * 100) : 0;
+    const g   = hasMarks
+      ? (marksVal < pass ? 'F' : pct>=91?'A+':pct>=81?'A':pct>=71?'B+':pct>=61?'B':pct>=51?'C':pct>=35?'D':'D')
+      : '—';
+    const remarks = isAbsent
+      ? 'இன்று வரவில்லை — தொடர்பு கொள்ளவும்'
+      : hasMarks
+        ? (marksVal >= pass
+            ? (pct >= 80 ? 'சிறப்பான செயல்திறன்! தொடர்ந்து உழைக்கவும்! 🌟' : 'நல்ல முயற்சி! தொடர்ந்து படிக்கவும்! 👍')
+            : 'பலவீன பகுதிகளில் கவனம் செலுத்துங்கள். நாங்கள் உதவுவோம்! 💪')
+        : 'மதிப்பெண்கள் இன்னும் உள்ளிடப்படவில்லை';
+
+    const extra = {
+      examName    : exam.name,
+      subject     : exam.subject,
+      marks       : isAbsent ? 'வரவில்லை' : (hasMarks ? marksVal : '—'),
+      maxMarks    : exam.maxMarks,
+      pct         : hasMarks ? pct : '—',
+      gradeLetter : isAbsent ? 'AB' : g,
+      remarks,
+    };
+    return { student, phone: student.phone, status: 'ready', message: fillTemplate(template, student, extra) };
   });
+
+  const withMarks  = waQueue.filter(w => w.message && w.message.trim()).length;
+  const noPhone    = waQueue.filter(w => !w.phone || w.phone.replace(/\D/g,'').length < 10).length;
   renderWAQueueList(waQueue);
   closeModal();
-  showToast(`✅ Marks queue built for ${waQueue.length} students`);
+  showToast('✅ ' + withMarks + ' result messages ready' + (noPhone > 0 ? ' · ⚠️ ' + noPhone + ' without phone number' : ''));
 }
 
 function renderMarksWAEntry() {
   const examId = document.getElementById('m-wa-exam')?.value;
   const exam = exams.find(e=>e.id===examId)||exams[0];
   const el = document.getElementById('m-marks-entry');
-  if (!el || !exam) return;
-  el.innerHTML = students.filter(s=>s&&s.name&&s.status==='active').slice(0,6).map((s,i)=>`
-    <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:.5px solid var(--br)">
+  if (!el || !exam) {
+    if (el) el.innerHTML = '<div style="padding:16px;text-align:center;color:var(--tx3);font-size:12px">No exam found. Please create an exam first.</div>';
+    return;
+  }
+  // Pre-fill saved marks from localStorage
+  const savedKey = '_erp_marks_' + exam.id;
+  let savedMarks = {};
+  try { const raw = localStorage.getItem(savedKey); if (raw) savedMarks = JSON.parse(raw).marks || {}; } catch(e) {}
+  const pass = exam.passMarks || Math.round((exam.maxMarks||100) * 0.35);
+
+  const active = students.filter(s=>s&&s.name&&s.status==='active');
+  const saved_count = active.filter(s => savedMarks[s.id] && !savedMarks[s.id].absent && savedMarks[s.id].marks !== null).length;
+
+  el.innerHTML = (saved_count > 0
+    ? `<div style="background:#dcfce7;border-bottom:.5px solid var(--br);padding:8px 12px;font-size:11px;color:#166534;font-weight:600">
+        ✅ ${saved_count} saved mark${saved_count!==1?'s':''} pre-loaded from "${exam.name}". Edit if needed, then click Build Queue.
+       </div>`
+    : `<div style="background:#fef9c3;border-bottom:.5px solid var(--br);padding:8px 12px;font-size:11px;color:#854d0e;font-weight:600">
+        ⚠️ No saved marks for "${exam.name}". Enter marks in the Marks & Exams page first, then Save Marks — or type them below.
+       </div>`)
+  + active.map((s,i)=>{
+    const saved = savedMarks[s.id];
+    const isAbsent = saved?.absent === true;
+    const savedVal = (!isAbsent && saved?.marks !== undefined) ? saved.marks : '';
+    const pct = savedVal !== '' ? Math.round(savedVal/exam.maxMarks*100) : null;
+    const g = pct !== null ? (savedVal < pass ? 'F' : pct>=91?'A+':pct>=81?'A':pct>=71?'B+':pct>=61?'B':pct>=51?'C':'D') : '';
+    const grColor = pct !== null ? (savedVal >= pass ? '#16a34a' : '#dc2626') : 'var(--tx3)';
+    return `<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:.5px solid var(--br);${isAbsent?'opacity:.55':''}">
       <div class="av" style="background:${s.color};width:24px;height:24px;font-size:10px">${(s.name||'?')[0]}</div>
       <div style="flex:1;font-size:12px;font-weight:500;color:var(--tx)">${s.name}</div>
-      <input class="fi" type="number" id="mwa-marks-${i}" min="0" max="${exam.maxMarks}" placeholder="0" style="width:65px;padding:5px 8px;text-align:center;font-size:12px">
+      ${isAbsent ? '<span style="font-size:11px;font-weight:700;color:#6b7280;min-width:65px;text-align:center">AB</span>' :
+        `<input class="fi" type="number" id="mwa-marks-${i}" min="0" max="${exam.maxMarks}" value="${savedVal}" placeholder="—"
+          style="width:65px;padding:5px 8px;text-align:center;font-size:12px;font-weight:600">`}
       <span style="font-size:11px;color:var(--tx3)">/ ${exam.maxMarks}</span>
-    </div>`).join('');
+      <span style="font-size:11px;font-weight:700;color:${grColor};min-width:22px;text-align:center">${isAbsent?'AB':g}</span>
+    </div>`;
+  }).join('');
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -8463,7 +8627,7 @@ function updateDashStats() {
   const el3 = document.getElementById('sv-pending');
   const el4 = document.getElementById('sv-att');
 
-  if (el1) el1.textContent = students.length;
+  if (el1) el1.textContent = students.filter(s => s && s.status === 'active').length;
 
   const thisMonthPaid = fees.filter(f => f.status === 'paid' && f.month === curLbl)
                              .reduce((s,f) => s + (f.paid||0), 0);
@@ -8497,7 +8661,7 @@ function _buildPendingWAMsg(entry) {
   const stu      = students.find(s => s.id === entry.studentId || s.name === entry.name);
   const ctr      = CFG.CENTER;
   const parent   = stu?.parent || 'பெற்றோர்';
-  const grade    = stu ? (stu.grade === 'KG' ? 'KிG' : stu.grade + ' ஆம் வகுப்பு') : '';
+  const grade    = stu ? (stu.grade === 'KG' ? 'KG' : stu.grade + ' ஆம் வகுப்பு') : '';
   const MONTHS   = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const now      = new Date();
   const curMonth = MONTHS[now.getMonth()] + ' ' + now.getFullYear();
@@ -10324,9 +10488,29 @@ function _safeInit() {
   updateDashStats();
   renderBatchSelect();
   loadAllCustomWATemplates();
-  setTimeout(initCharts, 300);
+  setTimeout(function(){ if(window.Chart) initCharts(); }, 300);
   setTimeout(initBackup, 800);
   initSummaryPage();
+  // Auto-backup reminder — show once every 7 days if data exists
+  setTimeout(function() {
+    try {
+      var hasData = (students && students.length > 0) || (fees && fees.length > 0);
+      if (!hasData) return;
+      var lastRemind = parseInt(localStorage.getItem('_erp_backup_remind') || '0');
+      var now = Date.now();
+      var sevenDays = 7 * 24 * 60 * 60 * 1000;
+      if (now - lastRemind > sevenDays) {
+        localStorage.setItem('_erp_backup_remind', String(now));
+        var toast = document.getElementById('toast');
+        if (toast) {
+          toast.textContent = '💾 Reminder: Download a backup from Backup & Sync page';
+          toast.style.background = '#854f0b';
+          toast.classList.add('show');
+          setTimeout(function() { toast.classList.remove('show'); toast.style.background = ''; }, 6000);
+        }
+      }
+    } catch(e) {}
+  }, 3000);
   // Dark mode already applied from localStorage at top of _safeInit
 }
 
@@ -11013,6 +11197,207 @@ function initSummaryPage() {
   }
   renderSummaryCards();
 }
+
+
+/* ═══════════════════════════════════════════════════════
+   TIMETABLE — Day Order Pattern, 4 Periods
+═══════════════════════════════════════════════════════ */
+
+// Default period times
+var TT_DEFAULT_PERIODS = [
+  { label: 'Period 1', start: '09:00', end: '09:45' },
+  { label: 'Period 2', start: '09:45', end: '10:30' },
+  { label: 'Period 3', start: '10:45', end: '11:30' },
+  { label: 'Period 4', start: '11:30', end: '12:15' },
+];
+
+function ttKey(batch) { return '_erp_tt_' + (batch || 'all'); }
+
+function ttLoadBatch(batch) {
+  try { return JSON.parse(localStorage.getItem(ttKey(batch)) || 'null') || { periods: TT_DEFAULT_PERIODS, days: [] }; }
+  catch(e) { return { periods: TT_DEFAULT_PERIODS, days: [] }; }
+}
+
+function ttSaveBatch(batch, data) {
+  localStorage.setItem(ttKey(batch), JSON.stringify(data));
+}
+
+// Legacy compat
+function ttLoad() {
+  var bSel = document.getElementById('tt-batch-sel');
+  return ttLoadBatch(bSel ? bSel.value : 'all');
+}
+
+function ttSave() {
+  var bSel = document.getElementById('tt-batch-sel');
+  var batch = bSel ? bSel.value : 'all';
+  var data = ttLoadBatch(batch);
+  // Read period times from inputs
+  for (var p = 0; p < 4; p++) {
+    var s = document.getElementById('tt-p-start-' + p);
+    var e = document.getElementById('tt-p-end-' + p);
+    if (s) data.periods[p].start = s.value;
+    if (e) data.periods[p].end = e.value;
+  }
+  // Read subjects from table inputs
+  data.days.forEach(function(day, di) {
+    for (var p = 0; p < 4; p++) {
+      var inp = document.getElementById('tt-cell-' + di + '-' + p);
+      if (inp) day.subjects[p] = inp.value.trim();
+    }
+    var nameInp = document.getElementById('tt-dayname-' + di);
+    if (nameInp) day.name = nameInp.value.trim() || day.name;
+  });
+  ttSaveBatch(batch, data);
+  showToast('✅ நேர அட்டவணை சேமிக்கப்பட்டது — ' + (batch === 'all' ? 'அனைத்து' : batch));
+}
+
+function ttAddDay() {
+  var bSel = document.getElementById('tt-batch-sel');
+  var batch = bSel ? bSel.value : 'all';
+  var data = ttLoadBatch(batch);
+  // Save current state first
+  data.days.forEach(function(day, di) {
+    for (var p = 0; p < 4; p++) {
+      var inp = document.getElementById('tt-cell-' + di + '-' + p);
+      if (inp) day.subjects[p] = inp.value.trim();
+    }
+    var nameInp = document.getElementById('tt-dayname-' + di);
+    if (nameInp) day.name = nameInp.value.trim() || day.name;
+  });
+  var n = data.days.length + 1;
+  data.days.push({ name: 'Day ' + n, subjects: ['', '', '', ''] });
+  ttSaveBatch(batch, data);
+  initTimetablePage();
+  showToast('Day ' + n + ' சேர்க்கப்பட்டது — ' + (batch === 'all' ? 'அனைத்து பிரிவுகளுக்கு' : batch));
+}
+
+function ttDeleteDay(di) {
+  var bSel = document.getElementById('tt-batch-sel');
+  var batch = bSel ? bSel.value : 'all';
+  var data = ttLoadBatch(batch);
+  data.days.splice(di, 1);
+  ttSaveBatch(batch, data);
+  initTimetablePage();
+}
+
+function initTimetablePage() {
+  // Populate batch selector
+  var bSel = document.getElementById('tt-batch-sel');
+  var prevBatch = bSel ? bSel.value : 'all';
+  if (bSel) {
+    bSel.innerHTML = '<option value="all">அனைத்து பிரிவுகள்</option>';
+    (batches||[]).forEach(function(b) {
+      var o = document.createElement('option');
+      o.value = b.name; o.textContent = b.name;
+      bSel.appendChild(o);
+    });
+    bSel.value = prevBatch;
+  }
+  var batch = bSel ? bSel.value : 'all';
+  var data = ttLoadBatch(batch);
+  // Render period time inputs
+  var ptDiv = document.getElementById('tt-period-times');
+  if (ptDiv) {
+    ptDiv.innerHTML = data.periods.map(function(p, i) {
+      return '<div style="background:var(--bg);border:.5px solid var(--br);border-radius:8px;padding:8px 10px">'
+        + '<div style="font-size:10px;font-weight:700;color:var(--tx2);margin-bottom:5px">' + p.label + '</div>'
+        + '<div style="display:flex;align-items:center;gap:6px">'
+        + '<input class="fi" type="time" id="tt-p-start-' + i + '" value="' + p.start + '" style="flex:1;font-size:11px;padding:4px 6px">'
+        + '<span style="font-size:10px;color:var(--tx3)">→</span>'
+        + '<input class="fi" type="time" id="tt-p-end-' + i + '" value="' + p.end + '" style="flex:1;font-size:11px;padding:4px 6px">'
+        + '</div></div>';
+    }).join('');
+  }
+  renderTimetable();
+}
+
+function renderTimetable() {
+  var bSel = document.getElementById('tt-batch-sel');
+  var batch = bSel ? bSel.value : 'all';
+  var data = ttLoadBatch(batch);
+  var empty = document.getElementById('tt-empty');
+  var thead = document.getElementById('tt-thead');
+  var tbody = document.getElementById('tt-tbody');
+  if (!thead || !tbody) return;
+
+  if (!data.days || data.days.length === 0) {
+    if (empty) empty.style.display = 'block';
+    thead.innerHTML = ''; tbody.innerHTML = '';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+
+  // Header: Day Order | Period 1 | Period 2 | Period 3 | Period 4 | Del
+  var pColors = ['#0ea5e9','#8b5cf6','#f59e0b','#16a34a'];
+  thead.innerHTML = '<tr style="background:var(--bg);border-bottom:.5px solid var(--br)">'
+    + '<th style="padding:10px 12px;text-align:left;font-size:11px;color:var(--tx2);font-weight:600;white-space:nowrap">Day Order</th>'
+    + data.periods.map(function(p, i) {
+        return '<th style="padding:10px 8px;text-align:center;font-size:10px;color:' + pColors[i] + ';font-weight:700;white-space:nowrap;min-width:100px">'
+          + p.label + '<br><span style="font-size:9px;color:var(--tx3);font-weight:400">' + p.start + ' - ' + p.end + '</span></th>';
+      }).join('')
+    + '<th style="padding:10px 8px;text-align:center;width:36px"></th>'
+    + '</tr>';
+
+  tbody.innerHTML = data.days.map(function(day, di) {
+    return '<tr style="border-bottom:.5px solid var(--br);' + (di % 2 === 0 ? '' : 'background:var(--bg2)') + '">'
+      + '<td style="padding:8px 12px;white-space:nowrap">'
+      +   '<input class="fi" id="tt-dayname-' + di + '" value="' + (day.name||'Day '+(di+1)) + '" '
+      +   'style="width:70px;font-size:12px;font-weight:700;padding:4px 6px;background:var(--bg2);color:var(--tx)" '
+      +   'onchange="ttAutoSaveName(' + di + ',this.value)">'
+      + '</td>'
+      + day.subjects.map(function(subj, pi) {
+          return '<td style="padding:6px 6px;text-align:center">'
+            + '<input class="fi" id="tt-cell-' + di + '-' + pi + '" value="' + (subj||'') + '" '
+            + 'placeholder="\u0baa\u0bbe\u0b9f\u0bae\u0bcd..." '
+            + 'style="width:100%;text-align:center;font-size:11px;padding:5px 6px;border-color:' + pColors[pi] + '40" '
+            + 'onchange="ttAutoSaveCell(' + di + ',' + pi + ',this.value)">'
+            + '</td>';
+        }).join('')
+      + '<td style="padding:6px 8px;text-align:center">'
+      +   '<button onclick="ttDeleteDay(' + di + ')" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:14px;padding:2px 4px" title="Delete">✕</button>'
+      + '</td>'
+      + '</tr>';
+  }).join('');
+
+  // Update today day order display
+  updateTTTodayDisplay(data, batch);
+}
+
+function ttAutoSaveName(di, val) {
+  var bSel = document.getElementById('tt-batch-sel');
+  var batch = bSel ? bSel.value : 'all';
+  var data = ttLoadBatch(batch);
+  if (data.days[di]) data.days[di].name = val;
+  ttSaveBatch(batch, data);
+}
+
+function ttAutoSaveCell(di, pi, val) {
+  var bSel = document.getElementById('tt-batch-sel');
+  var batch = bSel ? bSel.value : 'all';
+  var data = ttLoadBatch(batch);
+  if (data.days[di]) data.days[di].subjects[pi] = val;
+  ttSaveBatch(batch, data);
+}
+
+function updateTTTodayDisplay(data, batch) {
+  var el = document.getElementById('tt-today-day');
+  if (!el || !data.days || data.days.length === 0) return;
+  // Simple cycling: use day-of-week or saved today index
+  var todayIdx = parseInt(localStorage.getItem('_erp_tt_today') || '0') % data.days.length;
+  var day = data.days[todayIdx];
+  if (day) el.textContent = day.name || ('D-' + (todayIdx+1));
+}
+
+/* Get today's subjects for a given time — used by Attendance (future) */
+function getTodaySubjects() {
+  var data = ttLoad();
+  if (!data.days || data.days.length === 0) return [];
+  var todayIdx = parseInt(localStorage.getItem('_erp_tt_today') || '0') % data.days.length;
+  var day = data.days[todayIdx];
+  return day ? data.periods.map(function(p, i) { return { period: p.label, start: p.start, end: p.end, subject: day.subjects[i] || '' }; }) : [];
+}
+
 
 </script>
 

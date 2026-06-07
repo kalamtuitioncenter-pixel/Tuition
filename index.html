@@ -841,9 +841,7 @@ tbody tr:hover td{background:var(--bg)}
         <div class="fg">
           <label class="fl">Language</label>
           <select class="fi" id="adm-wa-lang" onchange="refreshAdmPreview()">
-            <option value="en">English</option>
-            <option value="ta">Tamil</option>
-            <option value="both">Both (Tamil + English)</option>
+            <option value="ta" selected>Tamil</option>
           </select>
         </div>
         <div class="fg">
@@ -875,9 +873,7 @@ tbody tr:hover td{background:var(--bg)}
         <div class="fg">
           <label class="fl">Language</label>
           <select class="fi" id="fee-rcpt-lang" onchange="refreshFeeReceiptPreview()">
-            <option value="en">English</option>
-            <option value="ta">Tamil</option>
-            <option value="both">Both (Tamil + English)</option>
+            <option value="ta" selected>Tamil</option>
           </select>
         </div>
         <div class="fg">
@@ -1250,9 +1246,7 @@ tbody tr:hover td{background:var(--bg)}
       <div class="card-title" style="margin-bottom:10px" id="wa-compose-title">Compose Message</div>
       <div class="fg"><label class="fl" id="lbl-wa-lang">Message Language</label>
         <select class="fi" id="wa-lang-sel" onchange="updateWAPreview()">
-          <option value="en">English</option>
-          <option value="ta">Tamil</option>
-          <option value="both">Both (Tamil + English)</option>
+          <option value="ta" selected>Tamil</option>
         </select>
       </div>
       <div class="fg"><label class="fl" id="lbl-wa-template">Template</label>
@@ -1837,18 +1831,29 @@ function getSubjectsForDayOrder(dayNum) {
   return dayOrderMap[String(dayNum)] || [];
 }
 
-/* Called when marking attendance — record missed subjects for absent students */
+/* Called when marking attendance — record missed subjects for absent/late students */
 function recordMissedSubjects(studentId, status, date, dayOrderNum) {
-  if (status !== 'A') return; // only track absences
-  const subjects = getSubjectsForDayOrder(dayOrderNum);
-  if (!subjects.length) return;
+  if (status !== 'A' && status !== 'L') return; // track absences AND late arrivals
+  const allSubjects = getSubjectsForDayOrder(dayOrderNum);
+  if (!allSubjects.length) return;
+
+  // Absent → missed ALL subjects; Late → missed only the FIRST period subject
+  const subjects = status === 'L' ? allSubjects.slice(0, 1) : allSubjects;
+
   const key = '_erp_missed_' + studentId;
   let data = {};
   try { data = JSON.parse(localStorage.getItem(key) || '{}'); } catch(e) {}
   subjects.forEach(subj => {
-    if (!data[subj]) data[subj] = { count: 0, dates: [] };
-    data[subj].count++;
-    if (!data[subj].dates.includes(date)) data[subj].dates.push(date);
+    if (!data[subj]) data[subj] = { count: 0, dates: [], lateCount: 0, lateDates: [] };
+    if (status === 'L') {
+      // Track late separately so AI can distinguish
+      data[subj].lateCount = (data[subj].lateCount || 0) + 1;
+      if (!data[subj].lateDates) data[subj].lateDates = [];
+      if (!data[subj].lateDates.includes(date)) data[subj].lateDates.push(date);
+    } else {
+      data[subj].count++;
+      if (!data[subj].dates.includes(date)) data[subj].dates.push(date);
+    }
   });
   try { localStorage.setItem(key, JSON.stringify(data)); } catch(e) {}
 }
@@ -3334,15 +3339,21 @@ function saveAttendance() {
 
   if (dayNum && getSubjectsForDayOrder(dayNum).length > 0) {
     const bStu = _getBatchStudents(batchId);
-    let missCount = 0;
+    let missCount = 0, lateCount = 0;
     bStu.forEach(s => {
       const status = attState[_attKey(s.id, batchId, session)] || '';
       if (status === 'A') {
         recordMissedSubjects(s.id, 'A', date, dayNum);
         missCount++;
+      } else if (status === 'L') {
+        recordMissedSubjects(s.id, 'L', date, dayNum);
+        lateCount++;
       }
     });
-    if (missCount > 0) showToast(`✅ Attendance saved — ${missCount} absent · Day Order ${dayNum} subjects tracked`);
+    const parts = [];
+    if (missCount > 0) parts.push(`${missCount} absent`);
+    if (lateCount > 0) parts.push(`${lateCount} late (1st period tracked)`);
+    if (parts.length > 0) showToast(`✅ Attendance saved — ${parts.join(' · ')} · Day Order ${dayNum}`);
     else showToast(`✅ ${session === 'morning' ? '☀️ Morning' : '🌙 Evening'} attendance saved — ${batch ? batch.name : 'batch'}`);
   } else {
     showToast(`✅ ${session === 'morning' ? '☀️ Morning' : '🌙 Evening'} attendance saved — ${batch ? batch.name : 'batch'}`);
@@ -7411,10 +7422,20 @@ function builtInAI(id) {
   if (id === 'attend_late') {
     const lateStudents = students.filter(s=>getStudentAtt(s.id)==='L');
     const absentStudents = students.filter(s=>getStudentAtt(s.id)==='A');
-    const lowAtt = students.filter(s=>!getStudentAtt(s.id)||getStudentAtt(s.id)==='A');
+
+    // Build late students' missed first-period subject info
+    const lateMissedInfo = lateStudents.map(s => {
+      const missed = getMissedSubjects(s.id);
+      const lateMissed = Object.entries(missed)
+        .filter(([,d]) => (d.lateCount||0) > 0)
+        .sort((a,b) => (b[1].lateCount||0) - (a[1].lateCount||0))
+        .map(([subj, d]) => `${subj}(${d.lateCount}x late)`);
+      return { s, lateMissed };
+    });
+
     return ta
-      ? `📊 ${ctr} — வருகை & தாமத பகுப்பாய்வு\n${'='.repeat(42)}\n\nவருகை: ${attPct}% | மொத்த மாணவர்கள்: ${students.length}\n\n⚠️ இன்று வரவில்லை (${absentStudents.length}):${absentStudents.map(s=>`\n• ${s.name} — ${s.parent} 📞 ${s.phone}`).join('')||' — இல்லை'}\n\n🕐 தாமதமாக வந்தவர்கள் (${lateStudents.length}):${lateStudents.map(s=>`\n• ${s.name}`).join('')||' — இல்லை'}\n\n📋 பரிந்துரைகள்:\n1. 3 நாட்கள் தொடர்ச்சியாக வராதவர்களை உடனே அழைக்கவும்\n2. அடிக்கடி தாமதமாக வருபவர்களுக்கு எச்சரிக்கை அனுப்பவும்\n3. 75% கீழ் வருகை உள்ளவர்களுக்கு தனிக் கவனிப்பு தேவை`
-      : `📊 ${ctr} — Attendance & Late Arrival Analysis\n${'='.repeat(44)}\n\nToday's Attendance: ${attPct}% | Total Students: ${students.length}\n\n⚠️ Absent Today (${absentStudents.length}):${absentStudents.map(s=>`\n• ${s.name} — Parent: ${s.parent} 📞 ${s.phone}`).join('')||' — None'}\n\n🕐 Late Arrivals (${lateStudents.length}):${lateStudents.map(s=>`\n• ${s.name}`).join('')||' — None'}\n\n📋 Action Steps:\n1. Call parents of students absent 3+ consecutive days\n2. Send WhatsApp late arrival warning (use WA module)\n3. Students below 75% attendance need personal intervention\n4. Check if late arrivals are from same area (transport issue)`;
+      ? `📊 ${ctr} — வருகை & தாமத பகுப்பாய்வு\n${'='.repeat(42)}\n\nவருகை: ${attPct}% | மொத்த மாணவர்கள்: ${students.length}\n\n⚠️ இன்று வரவில்லை (${absentStudents.length}):${absentStudents.map(s=>`\n• ${s.name} — ${s.parent} 📞 ${s.phone}`).join('')||' — இல்லை'}\n\n🕐 தாமதமாக வந்தவர்கள் (${lateStudents.length}):${lateMissedInfo.map(({s,lateMissed})=>`\n• ${s.name}${lateMissed.length ? ' — 1st period miss: '+lateMissed.join(', ') : ''}`).join('')||' — இல்லை'}\n\n📋 பரிந்துரைகள்:\n1. 3 நாட்கள் தொடர்ச்சியாக வராதவர்களை உடனே அழைக்கவும்\n2. அடிக்கடி தாமதமாக வருபவர்களுக்கு எச்சரிக்கை அனுப்பவும்\n3. தாமதத்தால் 1st period பாடம் தொடர்ந்து miss ஆனால் கூடுதல் கவனிப்பு தேவை\n4. 75% கீழ் வருகை உள்ளவர்களுக்கு தனிக் கவனிப்பு தேவை`
+      : `📊 ${ctr} — Attendance & Late Arrival Analysis\n${'='.repeat(44)}\n\nToday's Attendance: ${attPct}% | Total Students: ${students.length}\n\n⚠️ Absent Today (${absentStudents.length}):${absentStudents.map(s=>`\n• ${s.name} — Parent: ${s.parent} 📞 ${s.phone}`).join('')||' — None'}\n\n🕐 Late Arrivals (${lateStudents.length}) — 1st Period Subject Missed:${lateMissedInfo.map(({s,lateMissed})=>`\n• ${s.name}${lateMissed.length ? ' — missed: '+lateMissed.join(', ') : ' — (no subject data yet)'}`).join('')||' — None'}\n\n📋 Action Steps:\n1. Call parents of students absent 3+ consecutive days\n2. Send WhatsApp late arrival warning (use WA module)\n3. Late students missing same 1st-period subject repeatedly → schedule makeup session\n4. Students below 75% attendance need personal intervention\n5. Check if late arrivals are from same area (transport issue)`;
   }
 
   if (id === 'frequent_absent') {
@@ -10917,6 +10938,40 @@ function loadAllData() {
   // Fee structure
   loadFeeStructure();
   loadDayOrder();
+  // ── Sync existing timetable data into dayOrderMap on startup ──
+  // This ensures timetable-saved subjects are available for attendance tracking
+  // without needing teacher to re-save the timetable.
+  (function syncTTtoDayOrder() {
+    try {
+      // Try active batch first, then 'all'
+      var keys = [];
+      try {
+        var bs = JSON.parse(localStorage.getItem('_erp_batches') || '[]');
+        bs.forEach(function(b){ if(b.name) keys.push(b.name); });
+      } catch(e){}
+      keys.push('all');
+      keys.forEach(function(k) {
+        try {
+          var raw = localStorage.getItem('_erp_tt_' + k);
+          if (!raw) return;
+          var ttData = JSON.parse(raw);
+          if (!ttData || !Array.isArray(ttData.days)) return;
+          ttData.days.forEach(function(day, di) {
+            var dayNum = String(di + 1);
+            var subjs = (day.subjects || []).filter(function(s){ return s && s.trim(); }).map(function(s){ return s.trim(); });
+            var unique = [];
+            subjs.forEach(function(s){ if (unique.indexOf(s) === -1) unique.push(s); });
+            // Only set if dayOrderMap doesn't already have richer data for this slot
+            if (unique.length > 0 && (!dayOrderMap[dayNum] || dayOrderMap[dayNum].length === 0)) {
+              dayOrderMap[dayNum] = unique;
+            }
+          });
+        } catch(e){}
+      });
+      // Persist merged result
+      if (Object.keys(dayOrderMap).length > 0) saveDayOrder();
+    } catch(e){}
+  })();
   // NOTE: Attendance is loaded on-demand by renderAttList() per batch+session+date.
   // Do NOT pre-load here — it causes session bleed across batches.
 
@@ -11398,6 +11453,51 @@ function renderSummaryCards() {
   grid.innerHTML = ranked.map(item => buildSumCard(item, year, month)).join('');
 }
 
+function buildSubjectMissedHtml(att) {
+  if (!att.subjectMissed || att.subjectMissed.length === 0) {
+    var msg = att.absent === 0
+      ? '✅ இந்த மாதம் எந்த வகுப்பும் தவறவில்லை!'
+      : 'Timetable இல் பாட அட்டவணை சேர்த்தால் இங்கே காட்டும்';
+    return '<div style="font-size:11px;color:var(--tx3);text-align:center;padding:8px 0">' + msg + '</div>';
+  }
+  var rows = att.subjectMissed.map(function(sr) {
+    var riskColor = sr.risk==='high' ? '#dc2626' : sr.risk==='medium' ? '#ca8a04' : '#16a34a';
+    var riskBg    = sr.risk==='high' ? '#fee2e2' : sr.risk==='medium' ? '#fef9c3' : '#dcfce7';
+    var riskIcon  = sr.risk==='high' ? '🔴' : sr.risk==='medium' ? '🟡' : '🟢';
+    var riskLabel = sr.risk==='high'
+      ? 'அதிக ஆபத்து — ஆசிரியர் கவனம் தேவை!'
+      : sr.risk==='medium' ? 'கொஞ்சம் தவறினார் — கவனிக்கவும்' : 'நன்றாக உள்ளது';
+    var predIcon = sr.risk==='high' ? '📉' : sr.risk==='medium' ? '⚠️' : '✅';
+    var sessionBadges =
+      (sr.mrnMissed>0 ? '<span style="font-size:10px;background:#fff7ed;color:#c2410c;padding:1px 7px;border-radius:6px;border:.5px solid #fed7aa">☀️ '+sr.mrnMissed+' Mrng</span>' : '') +
+      (sr.evnMissed>0 ? '<span style="font-size:10px;background:#f5f3ff;color:#7c3aed;padding:1px 7px;border-radius:6px;border:.5px solid #c4b5fd">🌙 '+sr.evnMissed+' Evng</span>' : '');
+    return '<div style="border:.5px solid '+riskColor+'33;border-radius:8px;padding:8px 10px;margin-bottom:6px;background:'+riskBg+'33">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'
+      + '<span style="font-size:12px;font-weight:700;color:var(--tx)">'+riskIcon+' '+sr.subject+'</span>'
+      + '<span style="font-size:10px;font-weight:700;color:'+riskColor+';background:'+riskBg+';padding:2px 7px;border-radius:8px">'
+      + sr.missed+' class'+(sr.missed!==1?'es':'')+' missed ('+sr.missPct+'%)</span>'
+      + '</div>'
+      + (sessionBadges ? '<div style="display:flex;gap:6px;margin-bottom:5px">'+sessionBadges+'</div>' : '')
+      + '<div style="background:var(--bg);border-radius:6px;overflow:hidden;height:5px;margin-bottom:4px">'
+      + '<div style="height:100%;width:'+Math.min(100,sr.missPct)+'%;background:'+riskColor+';border-radius:6px;transition:width .3s"></div>'
+      + '</div>'
+      + '<div style="font-size:10px;color:'+riskColor+';font-weight:600">'+predIcon+' '+riskLabel+'</div>'
+      + '</div>';
+  }).join('');
+  var highRisk = att.subjectMissed.filter(function(sr){return sr.risk==='high';});
+  var medRisk  = att.subjectMissed.filter(function(sr){return sr.risk==='medium';});
+  var predMsg  = highRisk.length > 0
+    ? '⚠️ ' + highRisk.map(function(sr){return sr.subject;}).join(', ') + ' — தேர்வில் குறைந்த மதிப்பெண் வாய்ப்பு அதிகம்'
+    : medRisk.length > 0
+      ? '👀 ' + medRisk.map(function(sr){return sr.subject;}).join(', ') + ' — கொஞ்சம் கவனம் தேவை'
+      : '✅ அனைத்து பாடங்களிலும் நல்ல வருகை — சிறந்த செயல்திறன் எதிர்பார்க்கலாம்!';
+  return '<div style="margin-bottom:6px">' + rows + '</div>'
+    + '<div style="background:#ede9fe;border-radius:8px;padding:8px 10px;font-size:11px;color:#5b21b6;font-weight:600;text-align:center">'
+    + '🧠 செயல்திறன் கணிப்பு (Performance Prediction)<br>'
+    + '<span style="font-weight:400;font-size:10px;color:#7c3aed">' + predMsg + '</span>'
+    + '</div>';
+}
+
 function buildSumCard(item, year, month) {
   const { student: s, rank, att, sumD, marks, avgPct } = item;
   const rankColors = [
@@ -11527,52 +11627,7 @@ function buildSumCard(item, year, month) {
     <!-- ── Subject-wise Missed + Performance Prediction (AUTO) ── -->
     <div class="sum-section">
       <div class="sum-section-title">📚 பாடம்-வாரி தவறிய வகுப்புகள் ${AUTO_BADGE}</div>
-      ${att.subjectMissed && att.subjectMissed.length > 0
-        ? `<div style="margin-bottom:6px">
-            ${att.subjectMissed.map(sr => {
-              const riskColor = sr.risk==='high' ? '#dc2626' : sr.risk==='medium' ? '#ca8a04' : '#16a34a';
-              const riskBg    = sr.risk==='high' ? '#fee2e2' : sr.risk==='medium' ? '#fef9c3' : '#dcfce7';
-              const riskIcon  = sr.risk==='high' ? '🔴' : sr.risk==='medium' ? '🟡' : '🟢';
-              const riskLabel = sr.risk==='high'
-                ? 'அதிக ஆபத்து — ஆசிரியர் கவனம் தேவை!'
-                : sr.risk==='medium'
-                ? 'கொஞ்சம் தவறினார் — கவனிக்கவும்'
-                : 'நன்றாக உள்ளது';
-              const predIcon = sr.risk==='high' ? '📉' : sr.risk==='medium' ? '⚠️' : '✅';
-              return \`<div style="border:.5px solid \${riskColor}33;border-radius:8px;padding:8px 10px;margin-bottom:6px;background:\${riskBg}33">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-                  <span style="font-size:12px;font-weight:700;color:var(--tx)">\${riskIcon} \${sr.subject}</span>
-                  <span style="font-size:10px;font-weight:700;color:\${riskColor};background:\${riskBg};padding:2px 7px;border-radius:8px">
-                    \${sr.missed} class\${sr.missed!==1?'es':''} missed (\${sr.missPct}%)
-                  </span>
-                </div>
-                <div style="display:flex;gap:6px;margin-bottom:5px">
-                  \${sr.mrnMissed>0 ? \`<span style="font-size:10px;background:#fff7ed;color:#c2410c;padding:1px 7px;border-radius:6px;border:.5px solid #fed7aa">☀️ \${sr.mrnMissed} Mrng</span>\` : ''}
-                  \${sr.evnMissed>0 ? \`<span style="font-size:10px;background:#f5f3ff;color:#7c3aed;padding:1px 7px;border-radius:6px;border:.5px solid #c4b5fd">🌙 \${sr.evnMissed} Evng</span>\` : ''}
-                </div>
-                <div style="background:var(--bg);border-radius:6px;overflow:hidden;height:5px;margin-bottom:4px">
-                  <div style="height:100%;width:\${Math.min(100,sr.missPct)}%;background:\${riskColor};border-radius:6px;transition:width .3s"></div>
-                </div>
-                <div style="font-size:10px;color:\${riskColor};font-weight:600">\${predIcon} \${riskLabel}</div>
-              </div>\`;
-            }).join('')}
-          </div>
-          <div style="background:#ede9fe;border-radius:8px;padding:8px 10px;font-size:11px;color:#5b21b6;font-weight:600;text-align:center">
-            🧠 செயல்திறன் கணிப்பு (Performance Prediction)<br>
-            <span style="font-weight:400;font-size:10px;color:#7c3aed">
-              ${att.subjectMissed.filter(sr=>sr.risk==='high').length > 0
-                ? '⚠️ ' + att.subjectMissed.filter(sr=>sr.risk==='high').map(sr=>sr.subject).join(', ') + ' — தேர்வில் குறைந்த மதிப்பெண் வாய்ப்பு அதிகம்'
-                : att.subjectMissed.filter(sr=>sr.risk==='medium').length > 0
-                  ? '👀 ' + att.subjectMissed.filter(sr=>sr.risk==='medium').map(sr=>sr.subject).join(', ') + ' — கொஞ்சம் கவனம் தேவை'
-                  : '✅ அனைத்து பாடங்களிலும் நல்ல வருகை — சிறந்த செயல்திறன் எதிர்பார்க்கலாம்!'}
-            </span>
-          </div>`
-        : `<div style="font-size:11px;color:var(--tx3);text-align:center;padding:8px 0">
-            ${att.absent === 0
-              ? '✅ இந்த மாதம் எந்த வகுப்பும் தவறவில்லை!'
-              : 'Timetable இல் பாட அட்டவணை சேர்த்தால் இங்கே காட்டும்'}
-          </div>`
-      }
+      ${buildSubjectMissedHtml(att)}
     </div>
 
     <!-- ── Late Analysis (AUTO) ── -->
@@ -11986,7 +12041,21 @@ function ttSave() {
     if (nameInp) day.name = nameInp.value.trim() || day.name;
   });
   ttSaveBatch(batch, data);
-  showToast('✅ நேர அட்டவணை சேமிக்கப்பட்டது — ' + (batch === 'all' ? 'அனைத்து' : batch));
+  // ── Auto-sync to Day Order Map ──
+  // Merge all periods' subjects for each day into dayOrderMap
+  // so Attendance page automatically knows which subjects to track
+  data.days.forEach(function(day, di) {
+    var dayNum = String(di + 1);
+    var allSubjs = (day.subjects || []).filter(function(s){ return s && s.trim(); }).map(function(s){ return s.trim(); });
+    // Deduplicate
+    var unique = [];
+    allSubjs.forEach(function(s){ if (unique.indexOf(s) === -1) unique.push(s); });
+    if (unique.length > 0) {
+      dayOrderMap[dayNum] = unique;
+    }
+  });
+  saveDayOrder();
+  showToast('✅ நேர அட்டவணை சேமிக்கப்பட்டது — ' + (batch === 'all' ? 'அனைத்து' : batch) + ' · Day Order sync ஆனது');
 }
 
 function ttAddDay() {
@@ -12019,6 +12088,8 @@ function ttDeleteDay(di) {
 }
 
 function initTimetablePage() {
+  // Ensure latest batch data is available
+  loadBatches();
   // Populate batch selector
   var bSel = document.getElementById('tt-batch-sel');
   var prevBatch = bSel ? bSel.value : 'all';
@@ -12029,7 +12100,11 @@ function initTimetablePage() {
       o.value = b.name; o.textContent = b.name;
       bSel.appendChild(o);
     });
-    bSel.value = prevBatch;
+    if (prevBatch && Array.from(bSel.options).some(function(o){return o.value===prevBatch;})) {
+      bSel.value = prevBatch;
+    } else {
+      bSel.value = 'all';
+    }
   }
   var batch = bSel ? bSel.value : 'all';
   var data = ttLoadBatch(batch);

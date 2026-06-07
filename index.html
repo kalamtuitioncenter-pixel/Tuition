@@ -1636,7 +1636,7 @@ tbody tr:hover td{background:var(--bg)}
 
   <!-- Controls Row -->
   <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
-    <select class="fi" id="tt-batch-sel" style="width:auto" onchange="renderTimetable()">
+    <select class="fi" id="tt-batch-sel" style="width:auto" onchange="ttSwitchBatch()">
       <option value="all">அனைத்து பிரிவுகள்</option>
     </select>
     <div style="margin-left:auto;display:flex;gap:8px">
@@ -12062,7 +12062,14 @@ function ttAddDay() {
   var bSel = document.getElementById('tt-batch-sel');
   var batch = bSel ? bSel.value : 'all';
   var data = ttLoadBatch(batch);
-  // Save current state first
+  // Save current period times from inputs FIRST (prevent reset on re-render)
+  data.periods.forEach(function(p, i) {
+    var s = document.getElementById('tt-p-start-' + i);
+    var e = document.getElementById('tt-p-end-' + i);
+    if (s && s.value) p.start = s.value;
+    if (e && e.value) p.end   = e.value;
+  });
+  // Save current cell/day-name state
   data.days.forEach(function(day, di) {
     for (var p = 0; p < 4; p++) {
       var inp = document.getElementById('tt-cell-' + di + '-' + p);
@@ -12122,6 +12129,35 @@ function initTimetablePage() {
     }).join('');
   }
   renderTimetable();
+  window._ttLastBatch = bSel ? bSel.value : 'all';
+}
+function ttSwitchBatch() {
+  // Save period times of the PREVIOUSLY loaded batch before switching
+  // We need the batch that was loaded before this change — read from the already-rendered inputs
+  // The rendered data still belongs to the old batch key; save it now
+  var bSel = document.getElementById('tt-batch-sel');
+  // Find old batch by checking which batch data matches current rendered inputs
+  // Simplest: iterate all batch keys and save if inputs exist
+  var allBatchKeys = ['all'].concat((batches||[]).map(function(b){return b.name;}));
+  allBatchKeys.forEach(function(bKey) {
+    if (bKey === (bSel ? bSel.value : 'all')) return; // skip new batch
+    // We don't know which was old; safer: save periods into the currently-rendered data
+  });
+  // Actually: just save the period time inputs into whichever batch was last rendered
+  // _ttLastBatch tracks this
+  var oldBatch = window._ttLastBatch !== undefined ? window._ttLastBatch : 'all';
+  if (oldBatch !== null) {
+    var oldData = ttLoadBatch(oldBatch);
+    oldData.periods.forEach(function(p, i) {
+      var s = document.getElementById('tt-p-start-' + i);
+      var e = document.getElementById('tt-p-end-' + i);
+      if (s && s.value) p.start = s.value;
+      if (e && e.value) p.end   = e.value;
+    });
+    ttSaveBatch(oldBatch, oldData);
+  }
+  window._ttLastBatch = bSel ? bSel.value : 'all';
+  initTimetablePage();
 }
 
 function renderTimetable() {

@@ -608,6 +608,15 @@ tbody tr:hover td{background:var(--bg)}
     </div>
   </div>
 
+  <!-- ── Class-wise Strength Card ── -->
+  <div class="card" style="margin-bottom:14px" id="dash-class-strength">
+    <div class="card-hd" style="margin-bottom:10px">
+      <span class="card-title">🏫 Class-wise Strength</span>
+      <span id="dash-class-total" style="font-size:11px;color:var(--tx3);font-weight:600"></span>
+    </div>
+    <div id="dash-class-bars" style="display:flex;flex-direction:column;gap:7px"></div>
+  </div>
+
   <div class="row2">
     <div class="card">
       <div class="card-hd"><span class="card-title" id="ct-income">Income Trend (6 months)</span></div>
@@ -8985,7 +8994,20 @@ function renderIncomeSummary() {
   const curYM      = _feeMonthYM(now);
   const curDisplay = _feeMonthLabel(now);
 
-  const thisMonthFees = fees.filter(f => f && f.rcpt && f.status === 'paid' && f.month === curLbl);
+  // Match by f.month label (regular fees) OR paidOn date falling in this month (adm fees)
+  const _CM2 = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  function _paidInCurMonth(f) {
+    if (f.month === curLbl) return true; // regular monthly fee
+    if (f.type === 'admission' && f.paidOn) {
+      try {
+        const parts = f.paidOn.includes('/') ? f.paidOn.split('/') : null;
+        const d = parts ? new Date(+parts[2], +parts[1]-1, +parts[0]) : new Date(f.paidOn);
+        if (!isNaN(d)) return _CM2[d.getMonth()] + ' ' + d.getFullYear() === curLbl;
+      } catch(e) {}
+    }
+    return false;
+  }
+  const thisMonthFees = fees.filter(f => f && f.rcpt && f.status === 'paid' && _paidInCurMonth(f));
   const collected     = thisMonthFees.reduce((s,f) => s + (f.paid||0), 0);
 
   // Staff salary paid this month
@@ -9021,6 +9043,79 @@ function renderIncomeSummary() {
   }
 }
 
+/* ── Class-wise Strength — dashboard card ── */
+function renderClassStrength() {
+  const barsEl = document.getElementById('dash-class-bars');
+  const totEl  = document.getElementById('dash-class-total');
+  if (!barsEl) return;
+
+  const active = students.filter(s => s && s.status === 'active');
+  if (active.length === 0) {
+    barsEl.innerHTML = '<div style="font-size:12px;color:var(--tx3);text-align:center;padding:10px">மாணவர்கள் இல்லை</div>';
+    if (totEl) totEl.textContent = '';
+    return;
+  }
+
+  // Group by grade
+  const gradeMap = {};
+  active.forEach(s => {
+    const g = (s.grade || 'Unknown').toString().trim();
+    if (!gradeMap[g]) gradeMap[g] = { total: 0, morning: 0, evening: 0, boys: 0, girls: 0 };
+    gradeMap[g].total++;
+    const sess = (s.session || s.batch || '').toLowerCase();
+    if (sess.includes('morning') || sess.includes('mrng')) gradeMap[g].morning++;
+    else if (sess.includes('evening') || sess.includes('evng')) gradeMap[g].evening++;
+    // Gender from s.gender if available
+    if (s.gender === 'Male' || s.gender === 'Boy') gradeMap[g].boys++;
+    else if (s.gender === 'Female' || s.gender === 'Girl') gradeMap[g].girls++;
+  });
+
+  // Sort grades: KG first, then 1–12 numerically, then others
+  const gradeOrder = g => {
+    if (g === 'KG') return -1;
+    const n = parseInt(g); return isNaN(n) ? 999 : n;
+  };
+  const sorted = Object.entries(gradeMap).sort((a, b) => gradeOrder(a[0]) - gradeOrder(b[0]));
+  const max = Math.max(...sorted.map(([,v]) => v.total), 1);
+
+  // Batch-wise session totals across all grades
+  let totalMrn = 0, totalEvn = 0, totalNoSession = 0;
+  sorted.forEach(([, v]) => {
+    totalMrn += v.morning;
+    totalEvn += v.evening;
+    totalNoSession += (v.total - v.morning - v.evening);
+  });
+
+  const COLORS = ['#185FA5','#7c3aed','#16a34a','#ca8a04','#dc2626','#0891b2','#be185d','#d97706','#4f46e5','#059669','#dc2626','#c026d3','#ea580c'];
+
+  barsEl.innerHTML = sorted.map(([grade, v], idx) => {
+    const pct   = Math.round(v.total / max * 100);
+    const col   = COLORS[idx % COLORS.length];
+    const mrnStr = v.morning > 0 ? `<span style="font-size:9px;background:#fff7ed;color:#c2410c;padding:1px 6px;border-radius:8px;border:.5px solid #fed7aa">☀️${v.morning}</span>` : '';
+    const evnStr = v.evening > 0 ? `<span style="font-size:9px;background:#f5f3ff;color:#7c3aed;padding:1px 6px;border-radius:8px;border:.5px solid #c4b5fd">🌙${v.evening}</span>` : '';
+    const noSess = v.total - v.morning - v.evening;
+    const noStr  = noSess > 0 ? `<span style="font-size:9px;background:var(--bg);color:var(--tx3);padding:1px 6px;border-radius:8px;border:.5px solid var(--br)">${noSess}</span>` : '';
+    return `<div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
+        <div style="font-size:11px;font-weight:700;color:var(--tx);min-width:52px">
+          ${grade === 'KG' ? '🎒 KG' : '📚 Class ' + grade}
+        </div>
+        <div style="flex:1;height:12px;background:var(--bg);border-radius:6px;overflow:hidden">
+          <div style="height:100%;width:${pct}%;background:${col};border-radius:6px;transition:width .4s ease"></div>
+        </div>
+        <div style="font-size:12px;font-weight:800;color:${col};min-width:22px;text-align:right">${v.total}</div>
+        <div style="display:flex;gap:3px">${mrnStr}${evnStr}${noStr}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Summary line
+  const sessStr = (totalMrn > 0 || totalEvn > 0)
+    ? ` · ☀️${totalMrn} Mrng · 🌙${totalEvn} Evng`
+    : '';
+  if (totEl) totEl.textContent = 'Total ' + active.length + ' active students' + sessStr;
+}
+
 /* ── updateDashStats (called on dashboard open + after changes) ── */
 function updateDashStats() {
   const now       = new Date();
@@ -9033,8 +9128,19 @@ function updateDashStats() {
 
   if (el1) el1.textContent = students.filter(s => s && s.status === 'active').length;
 
-  const thisMonthPaid = fees.filter(f => f.status === 'paid' && f.month === curLbl)
-                             .reduce((s,f) => s + (f.paid||0), 0);
+  const _CM3 = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const thisMonthPaid = fees.filter(f => {
+    if (!f || f.status !== 'paid') return false;
+    if (f.month === curLbl) return true;
+    if (f.type === 'admission' && f.paidOn) {
+      try {
+        const parts = f.paidOn.includes('/') ? f.paidOn.split('/') : null;
+        const d = parts ? new Date(+parts[2], +parts[1]-1, +parts[0]) : new Date(f.paidOn);
+        if (!isNaN(d)) return _CM3[d.getMonth()] + ' ' + d.getFullYear() === curLbl;
+      } catch(e) {}
+    }
+    return false;
+  }).reduce((s,f) => s + (f.paid||0), 0);
   const totalPending  = fees.filter(f => f.status !== 'paid' && f.balance > 0)
                              .reduce((s,f) => s + (f.balance||0), 0);
 
@@ -9290,12 +9396,24 @@ function initCharts() {
     incomeData.push(inc);
     pendingData.push(pend);
   }
-  // Also include admission fees in the month they were created
-  // (they use 'Admission Fee' as month — fall back to current month column)
-  const admFees = fees.filter(f=>f.type==='admission');
-  if (admFees.length > 0 && incomeData.length > 0) {
-    incomeData[5] += admFees.reduce((s,f)=>s+(f.paid||0),0);
-  }
+  // Admission fees: slot into the correct month bar using paidOn date
+  fees.filter(f => f.type === 'admission' && f.status === 'paid').forEach(f => {
+    let mKey = null;
+    if (f.paidOn) {
+      // paidOn is "dd/mm/yyyy" (en-IN locale) or "YYYY-MM-DD"
+      try {
+        const parts = f.paidOn.includes('/') ? f.paidOn.split('/') : null;
+        const d = parts
+          ? new Date(+parts[2], +parts[1]-1, +parts[0])
+          : new Date(f.paidOn);
+        if (!isNaN(d)) mKey = _CM[d.getMonth()] + ' ' + d.getFullYear();
+      } catch(e) {}
+    }
+    if (!mKey && f.month && f.month !== 'Admission Fee') mKey = f.month;
+    if (!mKey) mKey = _CM[now.getMonth()] + ' ' + now.getFullYear();
+    const idx = months.indexOf(_CM[new Date(mKey + ' 1').getMonth()]);
+    if (idx !== -1) incomeData[idx] += (f.paid || 0);
+  });
 
   c1i=new Chart(c1,{
     type:'bar',

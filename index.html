@@ -1008,15 +1008,11 @@ tbody tr:hover td{background:var(--bg)}
       <option value="evening">🌙 Evening</option>
     </select>
     <input type="date" class="fi" style="width:auto" id="att-date" onchange="renderAttList()">
-    <!-- Day Order selector — links absent marks to subjects -->
-    <select class="fi" style="width:auto;min-width:110px;border-color:#7c3aed;color:#7c3aed;font-weight:600" id="att-day-order" onchange="onDayOrderChange()" title="Select today's Day Order to track missed subjects">
-      <option value="">📅 Day Order</option>
-      <option value="1">Day Order 1</option>
-      <option value="2">Day Order 2</option>
-      <option value="3">Day Order 3</option>
-      <option value="4">Day Order 4</option>
-      <option value="5">Day Order 5</option>
-      <option value="6">Day Order 6</option>
+    <!-- Day Order selector — COMPULSORY -->
+    <select class="fi" id="att-day-order" onchange="onDayOrderChange()"
+      style="width:auto;min-width:120px;border-width:2px;border-color:#dc2626;color:#dc2626;font-weight:700;background:#fff1f2"
+      title="⚠️ Required — select today's Day Order before saving">
+      <option value="">⚠️ Day Order *</option>
     </select>
     <div class="seg"><button class="seg-b on" id="btn-all-p" onclick="markAllAtt('P',this)">All Present</button><button class="seg-b" id="btn-all-a" onclick="markAllAtt('A',this)">All Absent</button></div>
     <button class="btn btn-sm" onclick="showModal('manageBatches')" style="background:#534AB7;color:#fff;border-color:#534AB7">
@@ -1037,11 +1033,36 @@ tbody tr:hover td{background:var(--bg)}
       <span id="att-pct-lbl">—%</span>
     </div>
   </div>
-  <!-- Day Order active banner -->
-  <div id="att-dayorder-banner" style="display:none;margin-bottom:8px;padding:8px 14px;border-radius:8px;font-size:12px;font-weight:600;display:none;align-items:center;gap:8px;background:#ede9fe;color:#7c3aed;border:.5px solid #c4b5fd">
-    📅 <span id="att-dayorder-label">Day Order 1</span>
-    <span style="font-size:10px;font-weight:500;opacity:.8;margin-left:4px" id="att-dayorder-subjects"></span>
-    <span style="margin-left:auto;font-size:10px;color:#7c3aed;opacity:.7">Absent students will have these subjects marked as missed</span>
+  <!-- Day Order panel — always visible, inline editable -->
+  <div id="att-dayorder-banner" style="margin-bottom:8px;border-radius:10px;background:#ede9fe;border:1.5px solid #c4b5fd;overflow:hidden">
+    <!-- Row 1: label + subject chips -->
+    <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;flex-wrap:wrap">
+      <span style="font-size:12px;font-weight:700;color:#7c3aed;white-space:nowrap">📅 Day Order</span>
+      <div id="att-do-chips" style="display:flex;flex-wrap:wrap;gap:4px;flex:1"></div>
+      <button onclick="toggleDOEdit()" id="att-do-edit-btn"
+        style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:6px;border:1.5px solid #7c3aed;background:transparent;color:#7c3aed;cursor:pointer;white-space:nowrap">
+        ✏️ Edit
+      </button>
+    </div>
+    <!-- Row 2: inline edit area (hidden by default) -->
+    <div id="att-do-edit-area" style="display:none;border-top:1px solid #c4b5fd;padding:10px 12px;background:#f5f3ff">
+      <div style="font-size:10px;color:#7c3aed;font-weight:600;margin-bottom:6px">
+        Edit subjects for <span id="att-do-edit-label">Day Order 1</span> (comma-separated):
+      </div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <input id="att-do-subj-inp" class="fi"
+          style="flex:1;font-size:12px;padding:6px 10px;border-color:#a78bfa"
+          placeholder="e.g. Maths, Physics, Chemistry"
+          oninput="onDOSubjInput()">
+        <button onclick="saveDOInline()"
+          style="font-size:11px;font-weight:700;padding:6px 14px;border-radius:8px;border:none;background:#7c3aed;color:#fff;cursor:pointer;white-space:nowrap">
+          💾 Save
+        </button>
+      </div>
+      <div style="font-size:10px;color:#7c3aed;margin-top:5px;opacity:.75">
+        💡 Subjects saved here will auto-track missed classes when students are absent
+      </div>
+    </div>
   </div>
   <div id="att-session-banner" style="margin-bottom:8px;padding:8px 14px;border-radius:8px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:8px;background:#dbeafe;color:#1d4ed8;border:.5px solid #bfdbfe">
     <svg viewBox="0 0 16 16" fill="none" width="14" height="14"><circle cx="8" cy="8" r="5" stroke="currentColor" stroke-width="1.3"/><path d="M8 5v3l2 1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
@@ -2860,6 +2881,73 @@ function syncSessionToBatch() {
   }
 }
 
+/* Populate Day Order dropdown from timetable days for the selected batch.
+   Auto-restores last used day order for this date. */
+function _populateDayOrderDropdown(date, batch) {
+  const sel = document.getElementById('att-day-order');
+  if (!sel) return;
+
+  const prevVal = sel.value;
+
+  // Collect day names from timetable for this batch (and 'all')
+  const batchKeys = [];
+  if (batch) batchKeys.push(batch.name);
+  batchKeys.push('all');
+
+  let days = [];
+  batchKeys.forEach(key => {
+    try {
+      const raw = localStorage.getItem('_erp_tt_' + key);
+      if (raw) {
+        const data = JSON.parse(raw);
+        if (data && data.days && data.days.length > 0) {
+          data.days.forEach((d, i) => {
+            const label = d.name || ('Day ' + (i + 1));
+            if (!days.find(x => x.num === String(i + 1))) {
+              days.push({ num: String(i + 1), label });
+            }
+          });
+        }
+      }
+    } catch(e) {}
+  });
+
+  // Fallback: use dayOrderMap keys if timetable empty
+  if (days.length === 0) {
+    const nums = Object.keys(dayOrderMap).sort((a, b) => parseInt(a) - parseInt(b));
+    if (nums.length > 0) {
+      nums.forEach(n => days.push({ num: n, label: 'Day Order ' + n }));
+    } else {
+      // Ultimate fallback: Day Order 1–6
+      for (let i = 1; i <= 6; i++) days.push({ num: String(i), label: 'Day Order ' + i });
+    }
+  }
+
+  // Rebuild options
+  sel.innerHTML = '<option value="">⚠️ Day Order தேர்வு செய்யவும் *</option>';
+  days.forEach(d => {
+    const subjs  = getSubjectsForDayOrder(d.num);
+    const subjStr = subjs.length > 0 ? ' — ' + subjs.slice(0, 3).join(', ') + (subjs.length > 3 ? '…' : '') : '';
+    const opt = document.createElement('option');
+    opt.value = d.num;
+    opt.textContent = '📅 ' + d.label + subjStr;
+    sel.appendChild(opt);
+  });
+
+  // Auto-restore: check saved day order for this date, else keep previous
+  let restored = '';
+  try { restored = localStorage.getItem('_erp_last_dayorder_' + date) || ''; } catch(e) {}
+
+  if (restored && days.find(d => d.num === restored)) {
+    sel.value = restored;
+  } else if (prevVal && days.find(d => d.num === prevVal)) {
+    sel.value = prevVal;
+  }
+
+  // Trigger UI update
+  onDayOrderChange();
+}
+
 function renderAttList() {
   const today  = new Date().toISOString().split('T')[0];
   const dateEl = document.getElementById('att-date');
@@ -2868,6 +2956,9 @@ function renderAttList() {
   const batchId = document.getElementById('att-batch')?.value || '';
   const session = document.getElementById('att-session')?.value || 'morning';
   const batch   = batches.find(b => b.id === batchId);
+
+  // ── Populate Day Order dropdown from timetable ──
+  _populateDayOrderDropdown(date, batch);
 
   // Load saved data for exactly this date + batch + session (fresh load, no bleed)
   _loadAttSession(date, batchId, session);
@@ -3029,23 +3120,117 @@ function openQRScan() {
    DAY ORDER — UI FUNCTIONS
 ═══════════════════════════════════════════════════════ */
 function onDayOrderChange() {
+  const sel = document.getElementById('att-day-order');
+  const num = sel?.value || '';
+  currentDayOrder = num;
+
+  // Style the dropdown: red if not selected, green if selected
+  if (sel) {
+    if (!num) {
+      sel.style.borderColor  = '#dc2626';
+      sel.style.color        = '#dc2626';
+      sel.style.background   = '#fff1f2';
+      sel.style.borderWidth  = '2px';
+      sel.style.fontWeight   = '700';
+    } else {
+      sel.style.borderColor  = '#7c3aed';
+      sel.style.color        = '#7c3aed';
+      sel.style.background   = '#f5f3ff';
+      sel.style.borderWidth  = '2px';
+      sel.style.fontWeight   = '700';
+    }
+  }
+
+  // Remember last used day order for today
+  if (num) {
+    const today = document.getElementById('att-date')?.value || new Date().toISOString().split('T')[0];
+    try { localStorage.setItem('_erp_last_dayorder_' + today, num); } catch(e) {}
+  }
+
+  refreshDOPanel();
+}
+
+/* Rebuild the Day Order panel chips + edit field */
+function refreshDOPanel() {
   const sel   = document.getElementById('att-day-order');
   const num   = sel?.value || '';
-  currentDayOrder = num;
-  const banner  = document.getElementById('att-dayorder-banner');
-  const lblEl   = document.getElementById('att-dayorder-label');
-  const subjEl  = document.getElementById('att-dayorder-subjects');
-  if (!banner) return;
+  const chips = document.getElementById('att-do-chips');
+  const editLbl = document.getElementById('att-do-edit-label');
+  const editInp = document.getElementById('att-do-subj-inp');
+  if (!chips) return;
+
   if (!num) {
-    banner.style.display = 'none';
+    chips.innerHTML = '<span style="font-size:11px;color:#dc2626;font-weight:700">⚠️ Day Order தேர்வு செய்யவும் — கட்டாயம்!</span>';
+    if (editInp) editInp.value = '';
+    if (editLbl) editLbl.textContent = '';
     return;
   }
+
   const subjs = getSubjectsForDayOrder(num);
-  banner.style.display = 'flex';
-  if (lblEl) lblEl.textContent = 'Day Order ' + num;
-  if (subjEl) subjEl.textContent = subjs.length
-    ? '📚 ' + subjs.join(' · ')
-    : '⚠️ No subjects set — tap "📅 Setup" to add subjects';
+  if (editLbl) editLbl.textContent = 'Day Order ' + num;
+
+  if (subjs.length > 0) {
+    chips.innerHTML = subjs.map(s =>
+      '<span style="font-size:11px;font-weight:600;padding:2px 9px;border-radius:12px;background:#7c3aed22;color:#5b21b6;border:.5px solid #a78bfa">' + s + '</span>'
+    ).join('');
+    if (editInp) editInp.value = subjs.join(', ');
+  } else {
+    chips.innerHTML = '<span style="font-size:11px;color:#a16207;font-weight:600;background:#fef9c3;padding:2px 9px;border-radius:8px;border:.5px solid #fde047">⚠️ பாடங்கள் இல்லை — Edit அழுத்தி சேர்க்கவும்</span>';
+    if (editInp) editInp.value = '';
+    // Auto-open edit if no subjects
+    const editArea = document.getElementById('att-do-edit-area');
+    const editBtn  = document.getElementById('att-do-edit-btn');
+    if (editArea) editArea.style.display = 'block';
+    if (editBtn)  editBtn.textContent = '✖ Close';
+  }
+}
+
+/* Toggle inline edit area open/close */
+function toggleDOEdit() {
+  const area = document.getElementById('att-do-edit-area');
+  const btn  = document.getElementById('att-do-edit-btn');
+  if (!area) return;
+  const open = area.style.display === 'block';
+  area.style.display = open ? 'none' : 'block';
+  if (btn) btn.textContent = open ? '✏️ Edit' : '✖ Close';
+  if (!open) {
+    // Pre-fill input with current subjects
+    const num  = document.getElementById('att-day-order')?.value || '';
+    const inp  = document.getElementById('att-do-subj-inp');
+    if (inp && num) inp.value = getSubjectsForDayOrder(num).join(', ');
+    setTimeout(() => document.getElementById('att-do-subj-inp')?.focus(), 80);
+  }
+}
+
+/* Live preview chips as user types in edit field */
+function onDOSubjInput() {
+  const val   = document.getElementById('att-do-subj-inp')?.value || '';
+  const subjs = val.split(',').map(s => s.trim()).filter(Boolean);
+  const chips = document.getElementById('att-do-chips');
+  if (!chips) return;
+  if (subjs.length > 0) {
+    chips.innerHTML = subjs.map(s =>
+      '<span style="font-size:11px;font-weight:600;padding:2px 9px;border-radius:12px;background:#7c3aed22;color:#5b21b6;border:.5px solid #a78bfa;opacity:.7">' + s + '</span>'
+    ).join('') + '<span style="font-size:10px;color:#a78bfa;font-style:italic;align-self:center"> preview…</span>';
+  }
+}
+
+/* Save subjects inline without closing modal */
+function saveDOInline() {
+  const num  = document.getElementById('att-day-order')?.value || '';
+  if (!num) { showToast('⚠️ Day Order தேர்வு செய்யவும்'); return; }
+  const val   = document.getElementById('att-do-subj-inp')?.value || '';
+  const subjs = val.split(',').map(s => s.trim()).filter(Boolean);
+  if (subjs.length > 0) dayOrderMap[String(num)] = subjs;
+  else delete dayOrderMap[String(num)];
+  saveDayOrder();
+  refreshDOPanel();
+  // Close edit area
+  const area = document.getElementById('att-do-edit-area');
+  const btn  = document.getElementById('att-do-edit-btn');
+  if (area) area.style.display = 'none';
+  if (btn)  btn.textContent = '✏️ Edit';
+  showToast('✅ Day Order ' + num + ' — ' + subjs.length + ' பாடங்கள் சேமிக்கப்பட்டது');
 }
 
 /* Setup modal — admin enters subjects for each day order */
@@ -3108,10 +3293,36 @@ function saveAttendance() {
   const batchId = document.getElementById('att-batch')?.value || '';
   const session = document.getElementById('att-session')?.value || 'morning';
   const batch   = batches.find(b => b.id === batchId);
+
+  // ── COMPULSORY: Day Order must be selected ──
+  const dayOrderEl = document.getElementById('att-day-order');
+  if (!dayOrderEl || !dayOrderEl.value) {
+    // Flash the dropdown red to draw attention
+    if (dayOrderEl) {
+      dayOrderEl.style.animation = 'none';
+      dayOrderEl.style.borderColor = '#dc2626';
+      dayOrderEl.style.background  = '#fee2e2';
+      dayOrderEl.focus();
+      setTimeout(() => {
+        dayOrderEl.style.transition = 'box-shadow .15s';
+        dayOrderEl.style.boxShadow  = '0 0 0 3px #fca5a5';
+        setTimeout(() => { dayOrderEl.style.boxShadow = ''; }, 1200);
+      }, 50);
+    }
+    showToast('⚠️ Day Order தேர்வு செய்யவும் — சேமிக்கும் முன் கட்டாயம்!');
+    return; // BLOCK save
+  }
+
   _saveAttSession(date, batchId, session);
 
   // ── Record missed subjects for absent students (Day Order integration) ──
   const dayNum = document.getElementById('att-day-order')?.value || '';
+
+  // Always store the day order for this date+batch so Summary can cross-ref timetable
+  if (dayNum) {
+    try { localStorage.setItem('_erp_att_dayorder_' + date + '_' + batchId, String(dayNum)); } catch(e) {}
+  }
+
   if (dayNum && getSubjectsForDayOrder(dayNum).length > 0) {
     const bStu = _getBatchStudents(batchId);
     let missCount = 0;
@@ -3122,11 +3333,10 @@ function saveAttendance() {
         missCount++;
       }
     });
-    if (missCount > 0) showToast(`✅ Attendance saved — ${missCount} absent student(s) · Day Order ${dayNum} subjects recorded for AI analysis`);
+    if (missCount > 0) showToast(`✅ Attendance saved — ${missCount} absent · Day Order ${dayNum} subjects tracked`);
     else showToast(`✅ ${session === 'morning' ? '☀️ Morning' : '🌙 Evening'} attendance saved — ${batch ? batch.name : 'batch'}`);
   } else {
     showToast(`✅ ${session === 'morning' ? '☀️ Morning' : '🌙 Evening'} attendance saved — ${batch ? batch.name : 'batch'}`);
-    if (!dayNum) showToast('💡 Tip: Select a Day Order to track missed subjects for AI analysis');
   }
 
   renderAttList();
@@ -10822,33 +11032,167 @@ function saveSumData(studentId, year, month, data) {
 ════════════════════════════════════════════════════════ */
 function getStudentAttStats(student, year, month) {
   let present = 0, absent = 0, late = 0;
+  let mrnAbsent = 0, evnAbsent = 0, mrnPresent = 0, evnPresent = 0;
+
   const prefix   = '_erp_att_';
-  const monthStr = year + '-' + String(month + 1).padStart(2, '0'); // e.g. "2025-05"
+  const monthStr = year + '-' + String(month + 1).padStart(2, '0');
+
+  // ── Step 1: Scan raw attendance keys for P/A/L counts + session split ──
+  // Also collect absent dates per session so we can cross-ref timetable
+  const absentEntries = []; // { date, session, batchId }
+
   try {
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i);
       if (!k || !k.startsWith(prefix)) continue;
-      // Key: _erp_att_{YYYY-MM-DD}_{batchId}_{session}
-      // The date is always at position [prefix.length .. prefix.length+10]
-      const datePart = k.slice(prefix.length, prefix.length + 10); // "2025-05-20"
+      const datePart = k.slice(prefix.length, prefix.length + 10); // "YYYY-MM-DD"
       if (!datePart.startsWith(monthStr)) continue;
+
+      // Key format: _erp_att_YYYY-MM-DD_batchId_session
+      const rest    = k.slice(prefix.length + 11);
+      const lastU   = rest.lastIndexOf('_');
+      const batchId = rest.slice(0, lastU);
+      const session = rest.slice(lastU + 1); // "morning" or "evening"
+
       try {
         const rec = JSON.parse(localStorage.getItem(k));
         if (!rec || typeof rec !== 'object') continue;
-        // Keys inside rec: "ST-001|batch1|morning"
         Object.keys(rec).forEach(rk => {
           if (!rk.startsWith(student.id + '|')) return;
-          const v = rec[rk];
-          if      (v === 'P') present++;
-          else if (v === 'A') absent++;
+          const v      = rec[rk];
+          const isMrn  = session === 'morning';
+          if      (v === 'P') { present++; if (isMrn) mrnPresent++; else evnPresent++; }
+          else if (v === 'A') {
+            absent++;
+            if (isMrn) mrnAbsent++; else evnAbsent++;
+            absentEntries.push({ date: datePart, session, batchId });
+          }
           else if (v === 'L') late++;
         });
       } catch(e2) {}
     }
   } catch(e) {}
+
   const total = present + absent + late;
   const pct   = total > 0 ? Math.round(present / total * 100) : 0;
-  return { present, absent, late, total, pct };
+
+  // ── Step 2: Subject-wise missed classes ──
+  // Priority A: use _erp_missed_ (recorded by recordMissedSubjects when Day Order selected)
+  // Priority B: cross-ref timetable by matching absent date's stored day-order index
+  //             using _erp_att_dayorder_{YYYY-MM-DD}_{batchId} key saved by saveAttendance
+
+  const subjectMissedMap = {}; // { subject: { morning: N, evening: N, total: N } }
+  const subjectTaughtMap = {}; // { subject: total classes taught this month }
+
+  // Priority A — _erp_missed_ already has correct subject data per Day Order
+  try {
+    const missedRaw = localStorage.getItem('_erp_missed_' + student.id);
+    if (missedRaw) {
+      const missedAll = JSON.parse(missedRaw); // { "Maths": { count, dates: ["2025-05-03",...] } }
+      Object.entries(missedAll).forEach(([subj, data]) => {
+        // Filter to this month only
+        const monthDates = (data.dates || []).filter(d => d.startsWith(monthStr));
+        if (monthDates.length === 0) return;
+        if (!subjectMissedMap[subj]) subjectMissedMap[subj] = { morning: 0, evening: 0, total: 0 };
+        // Cross-ref with absentEntries to get session split
+        monthDates.forEach(d => {
+          const entry = absentEntries.find(e => e.date === d);
+          const isMrn = entry ? entry.session === 'morning' : true;
+          if (isMrn) subjectMissedMap[subj].morning++;
+          else       subjectMissedMap[subj].evening++;
+          subjectMissedMap[subj].total++;
+        });
+      });
+    }
+  } catch(e) {}
+
+  // Priority B — if _erp_missed_ empty (teacher didn't use Day Order),
+  // fall back to timetable: for each absent date look up day order stored at save time
+  if (Object.keys(subjectMissedMap).length === 0 && absentEntries.length > 0) {
+    absentEntries.forEach(({ date, session, batchId }) => {
+      // Check if day order was stored for this date+batch
+      const doKey = '_erp_att_dayorder_' + date + '_' + batchId;
+      const dayNum = localStorage.getItem(doKey);
+      const subjs  = dayNum ? (getSubjectsForDayOrder(dayNum) || []) : [];
+
+      // Also try timetable directly by batch name
+      if (subjs.length === 0) {
+        const batch = batches.find(b => b.id === batchId);
+        if (batch) {
+          // Try all timetable keys for this batch name
+          try {
+            const ttRaw = localStorage.getItem('_erp_tt_' + batch.name);
+            const ttData = ttRaw ? JSON.parse(ttRaw) : null;
+            if (ttData && ttData.days && ttData.days.length > 0) {
+              // We don't know which day order was used without the stored index,
+              // so collect all subjects that appear in the timetable for this batch
+              ttData.days.forEach(day => {
+                (day.subjects || []).filter(Boolean).forEach(s => { subjs.push(s); });
+              });
+            }
+          } catch(e2) {}
+        }
+      }
+
+      subjs.forEach(subj => {
+        if (!subjectMissedMap[subj]) subjectMissedMap[subj] = { morning: 0, evening: 0, total: 0 };
+        if (session === 'morning') subjectMissedMap[subj].morning++;
+        else                       subjectMissedMap[subj].evening++;
+        subjectMissedMap[subj].total++;
+      });
+    });
+  }
+
+  // ── Step 3: Count total classes taught per subject this month (for % calc) ──
+  // Scan all att keys for present days, look up subjects via same day-order mechanism
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (!k || !k.startsWith(prefix)) continue;
+      const datePart = k.slice(prefix.length, prefix.length + 10);
+      if (!datePart.startsWith(monthStr)) continue;
+      const rest    = k.slice(prefix.length + 11);
+      const lastU   = rest.lastIndexOf('_');
+      const batchId = rest.slice(0, lastU);
+      try {
+        const rec = JSON.parse(localStorage.getItem(k));
+        if (!rec || typeof rec !== 'object') continue;
+        const hasStudent = Object.keys(rec).some(rk => rk.startsWith(student.id + '|'));
+        if (!hasStudent) continue;
+        const doKey  = '_erp_att_dayorder_' + datePart + '_' + batchId;
+        const dayNum = localStorage.getItem(doKey);
+        const subjs  = dayNum ? (getSubjectsForDayOrder(dayNum) || []) : [];
+        subjs.forEach(subj => {
+          subjectTaughtMap[subj] = (subjectTaughtMap[subj] || 0) + 1;
+        });
+      } catch(e2) {}
+    }
+  } catch(e) {}
+
+  // ── Step 4: Build sorted risk array ──
+  const subjectRisk = Object.entries(subjectMissedMap).map(([subj, miss]) => {
+    const taught  = Math.max(subjectTaughtMap[subj] || 0, miss.total);
+    const missPct = taught > 0 ? Math.round(miss.total / taught * 100) : 100;
+    return {
+      subject  : subj,
+      missed   : miss.total,
+      mrnMissed: miss.morning,
+      evnMissed: miss.evening,
+      taught,
+      missPct,
+      risk: missPct >= 30 || miss.total >= 3 ? 'high'
+          : missPct >= 15 || miss.total >= 2 ? 'medium' : 'low'
+    };
+  }).sort((a, b) => b.missPct - a.missPct);
+
+  return {
+    present, absent, late, total, pct,
+    morning : { absent: mrnAbsent, present: mrnPresent },
+    evening : { absent: evnAbsent, present: evnPresent },
+    subjectMissed: subjectRisk,
+    absentDates: { morning: absentEntries.filter(e=>e.session==='morning').map(e=>e.date),
+                   evening: absentEntries.filter(e=>e.session==='evening').map(e=>e.date) }
+  };
 }
 
 /* ════════════════════════════════════════════════════════
@@ -11028,6 +11372,87 @@ function buildSumCard(item, year, month) {
           <div class="sum-prog" style="margin-top:2px"><div class="sum-prog-fill" style="width:${att.pct}%;background:${attColor}"></div></div>
           <div style="text-align:center;font-size:10px;color:var(--tx3);margin-top:4px">
             Attendance: <b style="color:${attColor}">${att.pct}%</b>
+          </div>`
+      }
+    </div>
+
+    <!-- ── Session Breakdown (AUTO) ── -->
+    <div class="sum-section">
+      <div class="sum-section-title">☀️🌙 Session வருகை ${AUTO_BADGE}</div>
+      ${(att.morning.absent + att.morning.present + att.evening.absent + att.evening.present) === 0
+        ? `<div style="font-size:11px;color:var(--tx3);text-align:center;padding:4px 0">Session தரவு இல்லை</div>`
+        : `<div style="display:flex;gap:8px;margin-bottom:6px">
+            <div style="flex:1;border:.5px solid #fed7aa;border-radius:8px;padding:8px;text-align:center;background:#fff7ed">
+              <div style="font-size:11px;font-weight:700;color:#c2410c;margin-bottom:4px">☀️ Morning</div>
+              <div style="display:flex;justify-content:center;gap:10px">
+                <div><div style="font-size:16px;font-weight:800;color:#16a34a">${att.morning.present}</div><div style="font-size:9px;color:#166534">Present</div></div>
+                <div><div style="font-size:16px;font-weight:800;color:#dc2626">${att.morning.absent}</div><div style="font-size:9px;color:#991b1b">Absent</div></div>
+              </div>
+              ${att.morning.present + att.morning.absent > 0
+                ? `<div style="font-size:9px;color:#c2410c;margin-top:3px;font-weight:600">
+                    ${Math.round(att.morning.present/(att.morning.present+att.morning.absent)*100)}% வருகை</div>` : ''}
+            </div>
+            <div style="flex:1;border:.5px solid #c4b5fd;border-radius:8px;padding:8px;text-align:center;background:#f5f3ff">
+              <div style="font-size:11px;font-weight:700;color:#7c3aed;margin-bottom:4px">🌙 Evening</div>
+              <div style="display:flex;justify-content:center;gap:10px">
+                <div><div style="font-size:16px;font-weight:800;color:#16a34a">${att.evening.present}</div><div style="font-size:9px;color:#166534">Present</div></div>
+                <div><div style="font-size:16px;font-weight:800;color:#dc2626">${att.evening.absent}</div><div style="font-size:9px;color:#991b1b">Absent</div></div>
+              </div>
+              ${att.evening.present + att.evening.absent > 0
+                ? `<div style="font-size:9px;color:#7c3aed;margin-top:3px;font-weight:600">
+                    ${Math.round(att.evening.present/(att.evening.present+att.evening.absent)*100)}% வருகை</div>` : ''}
+            </div>
+          </div>`
+      }
+    </div>
+
+    <!-- ── Subject-wise Missed + Performance Prediction (AUTO) ── -->
+    <div class="sum-section">
+      <div class="sum-section-title">📚 பாடம்-வாரி தவறிய வகுப்புகள் ${AUTO_BADGE}</div>
+      ${att.subjectMissed && att.subjectMissed.length > 0
+        ? `<div style="margin-bottom:6px">
+            ${att.subjectMissed.map(sr => {
+              const riskColor = sr.risk==='high' ? '#dc2626' : sr.risk==='medium' ? '#ca8a04' : '#16a34a';
+              const riskBg    = sr.risk==='high' ? '#fee2e2' : sr.risk==='medium' ? '#fef9c3' : '#dcfce7';
+              const riskIcon  = sr.risk==='high' ? '🔴' : sr.risk==='medium' ? '🟡' : '🟢';
+              const riskLabel = sr.risk==='high'
+                ? 'அதிக ஆபத்து — ஆசிரியர் கவனம் தேவை!'
+                : sr.risk==='medium'
+                ? 'கொஞ்சம் தவறினார் — கவனிக்கவும்'
+                : 'நன்றாக உள்ளது';
+              const predIcon = sr.risk==='high' ? '📉' : sr.risk==='medium' ? '⚠️' : '✅';
+              return \`<div style="border:.5px solid \${riskColor}33;border-radius:8px;padding:8px 10px;margin-bottom:6px;background:\${riskBg}33">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+                  <span style="font-size:12px;font-weight:700;color:var(--tx)">\${riskIcon} \${sr.subject}</span>
+                  <span style="font-size:10px;font-weight:700;color:\${riskColor};background:\${riskBg};padding:2px 7px;border-radius:8px">
+                    \${sr.missed} class\${sr.missed!==1?'es':''} missed (\${sr.missPct}%)
+                  </span>
+                </div>
+                <div style="display:flex;gap:6px;margin-bottom:5px">
+                  \${sr.mrnMissed>0 ? \`<span style="font-size:10px;background:#fff7ed;color:#c2410c;padding:1px 7px;border-radius:6px;border:.5px solid #fed7aa">☀️ \${sr.mrnMissed} Mrng</span>\` : ''}
+                  \${sr.evnMissed>0 ? \`<span style="font-size:10px;background:#f5f3ff;color:#7c3aed;padding:1px 7px;border-radius:6px;border:.5px solid #c4b5fd">🌙 \${sr.evnMissed} Evng</span>\` : ''}
+                </div>
+                <div style="background:var(--bg);border-radius:6px;overflow:hidden;height:5px;margin-bottom:4px">
+                  <div style="height:100%;width:\${Math.min(100,sr.missPct)}%;background:\${riskColor};border-radius:6px;transition:width .3s"></div>
+                </div>
+                <div style="font-size:10px;color:\${riskColor};font-weight:600">\${predIcon} \${riskLabel}</div>
+              </div>\`;
+            }).join('')}
+          </div>
+          <div style="background:#ede9fe;border-radius:8px;padding:8px 10px;font-size:11px;color:#5b21b6;font-weight:600;text-align:center">
+            🧠 செயல்திறன் கணிப்பு (Performance Prediction)<br>
+            <span style="font-weight:400;font-size:10px;color:#7c3aed">
+              ${att.subjectMissed.filter(sr=>sr.risk==='high').length > 0
+                ? '⚠️ ' + att.subjectMissed.filter(sr=>sr.risk==='high').map(sr=>sr.subject).join(', ') + ' — தேர்வில் குறைந்த மதிப்பெண் வாய்ப்பு அதிகம்'
+                : att.subjectMissed.filter(sr=>sr.risk==='medium').length > 0
+                  ? '👀 ' + att.subjectMissed.filter(sr=>sr.risk==='medium').map(sr=>sr.subject).join(', ') + ' — கொஞ்சம் கவனம் தேவை'
+                  : '✅ அனைத்து பாடங்களிலும் நல்ல வருகை — சிறந்த செயல்திறன் எதிர்பார்க்கலாம்!'}
+            </span>
+          </div>`
+        : `<div style="font-size:11px;color:var(--tx3);text-align:center;padding:8px 0">
+            ${att.absent === 0
+              ? '✅ இந்த மாதம் எந்த வகுப்பும் தவறவில்லை!'
+              : 'Timetable இல் பாட அட்டவணை சேர்த்தால் இங்கே காட்டும்'}
           </div>`
       }
     </div>

@@ -1136,7 +1136,7 @@ tbody tr:hover td{background:var(--bg)}
     </button>
     <button class="btn btn-p" style="margin-left:auto" onclick="showModal('addFee')"><svg viewBox="0 0 14 14" fill="none"><path d="M7 2v10M2 7h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><span id="btn-add-fee">New Fee Entry</span></button>
   </div>
-  <div class="tbl-wrap"><table><thead><tr><th style="width:18%">Receipt / Period</th><th style="width:12%">Month</th><th style="width:10%">Total</th><th style="width:10%">Paid</th><th style="width:10%">Balance</th><th style="width:9%">Mode</th><th style="width:10%">Status</th><th style="width:11%">Action</th></tr></thead><tbody id="fee-body"></tbody></table></div>
+  <div class="tbl-wrap"><table><thead><tr><th style="width:22%">Type / Period</th><th style="width:12%">Total</th><th style="width:12%">Balance</th><th style="width:10%">Mode</th><th style="width:10%">Status</th><th style="width:34%">Action</th></tr></thead><tbody id="fee-body"></tbody></table></div>
 </div>
 
 <!-- ═══════════════ MARKS ═══════════════ -->
@@ -3099,9 +3099,23 @@ function _getBatchStudents(batchId) {
   let active = students.filter(s => s && s.name && s.status === 'active');
   const batch = batches.find(b => b.id === batchId);
   if (batch && batch.name) {
-    const bFirst = batch.name.toLowerCase().split(' ')[0];
-    const filtered = active.filter(s => s.course && s.course.toLowerCase().includes(bFirst));
-    if (filtered.length > 0) active = filtered;
+    const bNameFull = batch.name.toLowerCase();
+    // Try exact full-name match first (most reliable)
+    const exactMatch = active.filter(s => s.course && s.course.toLowerCase().includes(bNameFull));
+    if (exactMatch.length > 0) { active = exactMatch; return active; }
+    // Fallback: match by batch name + grade guard to prevent cross-grade leakage
+    // Extract grade hint from batch name e.g. "10th" → "10", "8th" → "8"
+    const gradeHint = (bNameFull.match(/\b(\d+)(?:st|nd|rd|th)?\b/) || [])[1];
+    const bFirst = bNameFull.split(' ')[0];
+    const looseMatch = active.filter(s => {
+      if (!s.course) return false;
+      const sc = s.course.toLowerCase();
+      if (!sc.includes(bFirst)) return false;
+      // If we found a grade hint in the batch name, enforce grade match
+      if (gradeHint && s.grade && String(s.grade) !== gradeHint) return false;
+      return true;
+    });
+    if (looseMatch.length > 0) active = looseMatch;
   }
   return active;
 }
@@ -4308,7 +4322,7 @@ function _renderFeesFiltered(tabVal, month) {
 
   if (source.length === 0) {
     const isFiltered = month || tabVal !== 'all';
-    document.getElementById('fee-body').innerHTML = `<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--tx3);font-size:13px">
+    document.getElementById('fee-body').innerHTML = `<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--tx3);font-size:13px">
       ${tabVal==='pending' ? '🎉 No pending fees for ' + (month||'this period') + '! All caught up.' :
         isFiltered ? 'No records match the selected filter.' : 'No fee records found.'}
     </td></tr>`;
@@ -4335,7 +4349,7 @@ function _renderFeesFiltered(tabVal, month) {
     const phone    = student?.phone || '';
 
     html += `<tr style="background:var(--bg);border-top:2px solid var(--br)">
-      <td colspan="5" style="padding:7px 12px">
+      <td colspan="4" style="padding:7px 12px">
         <div style="display:flex;align-items:center;gap:8px">
           <div style="width:28px;height:28px;border-radius:8px;background:${av};color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">${sName[0]}</div>
           <div>
@@ -4354,7 +4368,7 @@ function _renderFeesFiltered(tabVal, month) {
           </div>
         </div>
       </td>
-      <td colspan="4" style="padding:7px 12px;text-align:right">
+      <td colspan="2" style="padding:7px 12px;text-align:right">
         <span style="font-size:10px;color:var(--tx3)">${recs.length} record${recs.length!==1?'s':''}</span>
       </td>
     </tr>`;
@@ -4369,26 +4383,24 @@ function _renderFeesFiltered(tabVal, month) {
         : `<span style="font-size:9px;background:#dcfce7;color:#166534;padding:1px 5px;border-radius:6px;font-weight:600;margin-left:4px">Monthly</span>`;
       const subjTag = f.subject ? ` · <span style="font-size:10px;color:#7c3aed">${f.subject}</span>` : '';
 
-      html += `<tr style="background:${isPaid?'transparent':'#fffbeb'};border-left:3px solid ${isPaid?'#bbf7d0':'#fcd34d'}">
-        <td style="padding:6px 12px 6px 24px"><code style="font-size:10px;color:#185FA5">${f.rcpt}</code>${typeTag}</td>
-        <td style="font-size:11px;color:var(--tx2);padding:6px 8px">${f.month}${subjTag}</td>
+      html += `<tr style="background:${isPaid?'transparent':'#fffbeb22'};border-left:3px solid ${isPaid?'#bbf7d0':'#fcd34d'}">
+        <td style="padding:6px 12px 6px 24px">
+          ${typeTag}<span style="font-size:11px;color:var(--tx2);margin-left:4px">${f.month}${subjTag}</span>
+        </td>
         <td style="font-size:12px;padding:6px 8px">₹${(f.total||0).toLocaleString('en-IN')}</td>
-        <td style="font-size:12px;color:#16a34a;font-weight:600;padding:6px 8px">₹${(f.paid||0).toLocaleString('en-IN')}</td>
-        <td style="font-size:12px;font-weight:600;color:${f.balance>0?'#dc2626':'var(--tx3)'};padding:6px 8px">₹${(f.balance||0).toLocaleString('en-IN')}</td>
+        <td style="font-size:12px;font-weight:600;color:${f.balance>0?'#dc2626':'#16a34a'};padding:6px 8px">${f.balance>0?'₹'+f.balance.toLocaleString('en-IN'):'✅'}</td>
         <td style="font-size:11px;color:var(--tx3);padding:6px 8px">${f.mode||'Cash'}</td>
         <td style="padding:6px 8px"><span class="badge ${bm[f.status]||'ba'}">${f.status}</span></td>
-        <td style="padding:6px 8px">
-          <div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center">
+        <td style="padding:6px 8px" colspan="3">
+          <div style="display:flex;gap:4px;align-items:center">
             ${isPaid
               ? `<span style="font-size:11px;color:#16a34a;font-weight:600">✅ Done</span>`
               : `<button onclick="openCollectModal('${rcptEsc}')"
-                   style="background:#16a34a;color:#fff;border:none;padding:5px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">
+                   style="background:#16a34a;color:#fff;border:none;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">
                    💰 Collect
                  </button>`}
             <button onclick="openEditFeeModal('${rcptEsc}')"
-              style="background:var(--bg);color:var(--tx2);border:.5px solid var(--br);padding:5px 8px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">
-              ✏️ Edit
-            </button>
+              style="background:var(--bg);color:var(--tx2);border:.5px solid var(--br);padding:4px 7px;border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit">✏️</button>
           </div>
         </td>
       </tr>`;
@@ -10399,7 +10411,49 @@ function submitAdmission() {
   admRecentList.unshift({ admNo, name, grade, parent, phone, date: new Date().toLocaleDateString('en-IN'), message });
   if (admRecentList.length > 20) admRecentList.pop();
 
-  // NO auto fee records — fees are added manually via the Fees page
+  // Auto-create fee records for the new student
+  (function() {
+    const fs        = getFeeForClass(grade);
+    const curMonth  = _feeMonthLabel(new Date());
+    const now       = new Date().toLocaleDateString('en-IN');
+    const monthlyAmt = parseFloat(fee) || fs.monthlyFee || 0;
+    const admAmt     = parseFloat(admFee) || fs.admFee || 0;
+
+    // Monthly fee record (pending)
+    if (monthlyAmt > 0) {
+      fees.unshift({
+        rcpt      : 'RCP-MF-' + Date.now().toString().slice(-5) + Math.random().toString(36).slice(-3),
+        student   : name,
+        studentId : newStudent.id,
+        month     : curMonth,
+        total     : monthlyAmt,
+        paid      : 0,
+        balance   : monthlyAmt,
+        mode      : 'Cash',
+        status    : 'pending',
+        type      : 'monthly',
+        paidOn    : '',
+      });
+    }
+    // Admission fee record (pending)
+    if (admAmt > 0) {
+      fees.unshift({
+        rcpt      : 'RCP-AF-' + Date.now().toString().slice(-5) + Math.random().toString(36).slice(-3),
+        student   : name,
+        studentId : newStudent.id,
+        month     : 'Admission',
+        total     : admAmt,
+        paid      : 0,
+        balance   : admAmt,
+        mode      : 'Cash',
+        status    : 'pending',
+        type      : 'admission',
+        paidOn    : '',
+      });
+    }
+    if (monthlyAmt > 0 || admAmt > 0) saveFees();
+  })();
+
   showToast('✅ ' + name + ' admitted successfully!');
 
   runBackup('change');
@@ -10482,17 +10536,21 @@ function updateAdmCounter() {
   const el = document.getElementById('adm-month-count');
   if (!el) return;
   // Count students whose admDate falls in this calendar month
-  const now   = new Date();
-  const mm    = String(now.getMonth() + 1).padStart(2,'0'); // "06"
-  const yyyy  = String(now.getFullYear());                  // "2026"
-  const count = students.filter(s => {
+  const now    = new Date();
+  const curMon = now.getMonth();     // 0-based
+  const curYr  = now.getFullYear();
+  const count  = students.filter(s => {
     if (!s.admDate) return false;
-    // admDate is stored as dd/mm/yyyy (en-IN format) e.g. "03/06/2026"
-    const parts = s.admDate.split('/');
-    if (parts.length === 3) return parts[1] === mm && parts[2] === yyyy;
-    // ISO format fallback: "2026-06-03"
+    // Try dd/mm/yyyy or d/m/yyyy (en-IN locale, with or without zero-padding)
+    const slashParts = s.admDate.split('/');
+    if (slashParts.length === 3) {
+      const mon  = parseInt(slashParts[1], 10) - 1; // convert to 0-based
+      const year = parseInt(slashParts[2], 10);
+      if (!isNaN(mon) && !isNaN(year)) return mon === curMon && year === curYr;
+    }
+    // Try ISO format: "2026-06-03"
     const d = new Date(s.admDate);
-    if (!isNaN(d)) return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    if (!isNaN(d)) return d.getMonth() === curMon && d.getFullYear() === curYr;
     return false;
   }).length;
   el.textContent = count;

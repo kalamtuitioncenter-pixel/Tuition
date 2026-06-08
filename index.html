@@ -1431,7 +1431,7 @@ tbody tr:hover td{background:var(--bg)}
         <div>3️⃣ Replace <code>YOUR_SPREADSHEET_ID_HERE</code> with your Sheet's ID (from its URL)</div>
         <div>4️⃣ Click <b>Deploy → New Deployment → Web App → Anyone → Deploy</b></div>
         <div>5️⃣ Copy the <b>Web App URL</b> → paste below → click <b>🔗 Test</b></div>
-        <div style="margin-top:6px;padding:5px 8px;background:#dcfce7;border-radius:6px">✅ Saves to 13 sheets: Students · Fees · Staff · Exams · Attendance · Marks · Staff Att · Salary · Day Order · WA Templates · Fee Structure · Missed Subjects · DayOrder Log — full AI data preserved</div>
+        <div style="margin-top:6px;padding:5px 8px;background:#dcfce7;border-radius:6px">✅ Syncs: Students · Fees · Staff · Exams · Attendance to separate sheets</div>
       </div>
       <div class="fg"><label class="fl">Apps Script Web App URL</label><input class="fi" id="sheets-url" placeholder="https://script.google.com/macros/s/…/exec" oninput="valSheetUrl(this.value)" style="font-family:monospace;font-size:12px"></div>
       <div id="sheet-url-status" style="font-size:11px;margin-bottom:8px"></div>
@@ -2904,8 +2904,23 @@ function _populateDayOrderDropdown(date, batch) {
   const prevVal = sel.value;
 
   // Collect day names from timetable for this batch (and 'all')
+  // Also try base name match: "10th (Both)" → "10th", "10th - Morning" → "10th"
   const batchKeys = [];
-  if (batch) batchKeys.push(batch.name);
+  if (batch) {
+    batchKeys.push(batch.name);
+    const baseName = batch.name.replace(/\s*[\(\-].*$/, '').trim();
+    if (baseName && baseName !== batch.name) batchKeys.push(baseName);
+    try {
+      Object.keys(localStorage).forEach(k => {
+        if (k.startsWith('_erp_tt_')) {
+          const ttKey = k.replace('_erp_tt_', '');
+          if (ttKey !== 'all' && !batchKeys.includes(ttKey)) {
+            if (batch.name.startsWith(ttKey) || ttKey.startsWith(baseName)) batchKeys.push(ttKey);
+          }
+        }
+      });
+    } catch(e) {}
+  }
   batchKeys.push('all');
 
   let days = [];
@@ -2917,8 +2932,14 @@ function _populateDayOrderDropdown(date, batch) {
         if (data && data.days && data.days.length > 0) {
           data.days.forEach((d, i) => {
             const label = d.name || ('Day ' + (i + 1));
-            if (!days.find(x => x.num === String(i + 1))) {
-              days.push({ num: String(i + 1), label });
+            const num   = String(i + 1);
+            if (!days.find(x => x.num === num)) {
+              // Collect subjects from all periods of this day
+              const subjs = (d.subjects || []).filter(s => s && s.trim()).map(s => s.trim());
+              const unique = [...new Set(subjs)];
+              days.push({ num, label, subjs: unique });
+              // Sync into dayOrderMap so getSubjectsForDayOrder works correctly for this batch
+              if (unique.length > 0) dayOrderMap[num] = unique;
             }
           });
         }
@@ -2940,7 +2961,7 @@ function _populateDayOrderDropdown(date, batch) {
   // Rebuild options
   sel.innerHTML = '<option value="">⚠️ Day Order தேர்வு செய்யவும் *</option>';
   days.forEach(d => {
-    const subjs  = getSubjectsForDayOrder(d.num);
+    const subjs  = (d.subjs && d.subjs.length > 0) ? d.subjs : getSubjectsForDayOrder(d.num);
     const subjStr = subjs.length > 0 ? ' — ' + subjs.slice(0, 3).join(', ') + (subjs.length > 3 ? '…' : '') : '';
     const opt = document.createElement('option');
     opt.value = d.num;
@@ -8233,390 +8254,65 @@ function initAI(){renderAICards();renderPredictCards();renderStudyPlannerCards()
 /* ═══════════════════════════════════════════════════════
    BACKUP
 ═══════════════════════════════════════════════════════ */
-const BK_GS_CODE = `// ═══ Kalam Tuition ERP — Google Apps Script (v3 — Full Persistent Backend) ════
-// ── SETUP INSTRUCTIONS ──────────────────────────────────────────────────────
-// 1. Create a NEW Google Sheet (or open existing one)
-// 2. Open Extensions → Apps Script
-// 3. Delete all existing code, paste THIS entire script
-// 4. Replace YOUR_SPREADSHEET_ID_HERE below with your Sheet ID
-//    (Sheet ID is in the URL: docs.google.com/spreadsheets/d/THIS_PART/edit)
-// 5. Click Deploy → New Deployment → Web App
-//    Execute as: Me | Who has access: Anyone → Deploy
-// 6. Copy the Web App URL → paste in ERP → Backup & Sync → Apps Script URL
-// ────────────────────────────────────────────────────────────────────────────
+const BK_GS_CODE = `// ═══ Kalam Tuition ERP — Google Apps Script ════════════
+// 1. Open Google Sheet → Extensions → Apps Script
+// 2. Paste this code, replace SPREADSHEET_ID
+// 3. Deploy → New Deployment → Web App → Anyone → Deploy
+// 4. Copy Web App URL → paste in ERP Backup & Sync page
 
 const SPREADSHEET_ID = 'YOUR_SPREADSHEET_ID_HERE';
 
-// ── Sheet names ──────────────────────────────────────────────────────────────
-const SHT = {
-  STUDENTS  : 'Students',
-  FEES      : 'Fees',
-  STAFF     : 'Staff',
-  EXAMS     : 'Exams',
-  ATTENDANCE: 'Attendance',
-  MARKS     : 'Marks',
-  STAFF_ATT : 'Staff_Attendance',
-  SALARY    : 'Salary_Payments',
-  DAY_ORDER : 'Day_Order',
-  WA_TMPLS  : 'WA_Templates',
-  FEE_SLAB  : 'Fee_Structure',
-  MISSED    : 'Missed_Subjects',
-  DAY_ORD_LOG: 'DayOrder_Log',
-  LOG       : 'Sync_Log',
-};
-
-// ── Column headers ───────────────────────────────────────────────────────────
-const HEADERS = {
-  STUDENTS  : ['Student ID','Adm No','Name','Grade','Parent','Phone','DOB','School','Course','Subjects','Adm Fee (Rs)','Adm Date','Status','Last Synced'],
-  FEES      : ['Receipt','Student ID','Student Name','Month','Total (Rs)','Paid (Rs)','Balance (Rs)','Mode','Status','Type','Paid On','Last Synced'],
-  STAFF     : ['Staff ID','Name','Role','Phone','Base Salary (Rs)','Consolidated Pay (Rs)','Status','Subjects','Last Synced'],
-  EXAMS     : ['Exam ID','Exam Name','Subject','Type','Date','Full Marks','Pass Marks','Batch','Last Synced'],
-  ATTENDANCE: ['Date','Batch','Session','Student ID','Student Name','Status','Day Order','Last Synced'],
-  MARKS     : ['Exam ID','Exam Name','Subject','Student ID','Student Name','Marks','Max Marks','Percentage','Pass/Fail','Last Synced'],
-  STAFF_ATT : ['Staff ID','Staff Name','Date','Status','Last Synced'],
-  SALARY    : ['Key','Staff ID','Staff Name','Month','Amount (Rs)','Mode','Note','Paid On','Last Synced'],
-  DAY_ORDER : ['Day Order No','Subjects','Last Synced'],
-  WA_TMPLS  : ['Template Type','Language','Content','Last Synced'],
-  FEE_SLAB  : ['Class','Adm Fee (Rs)','Monthly Fee (Rs)','Slab1','Slab2','Slab3','Extra/Subject Fees (JSON)','Last Synced'],
-  MISSED    : ['Student ID','Student Name','Subject','Total Missed','Late Count','Missed Dates','Late Dates','Last Synced'],
-  DAY_ORD_LOG: ['Date','Batch','Day Order No','Last Synced'],
-  LOG       : ['Sync Time','Center','Source','Students','Fees','Staff','Exams','Attendance','Marks','Staff Att','Salary','Payload KB'],
-};
-
-// ─────────────────────────────────────────────────────────────────────────────
 function doPost(e) {
   try {
-    const raw  = e.postData.contents;
-    const data = JSON.parse(raw);
-    const ss   = SpreadsheetApp.openById(SPREADSHEET_ID);
-    const ts   = new Date().toLocaleString('en-IN', {timeZone:'Asia/Kolkata'});
-    const kb   = (raw.length / 1024).toFixed(1);
-    const counts = { students:0, fees:0, staff:0, exams:0, att:0, marks:0, staffAtt:0, salary:0 };
+    const data = JSON.parse(e.postData.contents);
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const ts = new Date().toLocaleString('en-IN');
 
-    // 1. STUDENTS — upsert by Student ID
-    if (Array.isArray(data.students) && data.students.length) {
-      const rows = data.students.map(s => [
-        s.id||'', s.admNo||'', s.name||'', 'Gr.'+(s.grade||''),
-        s.parent||'', s.phone||'', s.dob||'', s.school||'',
-        s.course||'', s.subjects||'',
-        Number(s.fee)||0, s.admDate||'', s.status||'active', ts
-      ]);
-      upsertRows(ss, SHT.STUDENTS, HEADERS.STUDENTS, rows, 1);
-      counts.students = rows.length;
+    // Students
+    writeSht(ss,'Students',['Time','ID','Name','Grade','Parent','Phone','Course','Status'],
+      (data.students||[]).map(s=>[ts,s.id||'',s.name||'','Gr.'+(s.grade||''),s.parent||'',s.phone||'',s.course||'',s.status||'']));
+
+    // Fees
+    writeSht(ss,'Fees',['Time','Receipt','Student','Month','Total','Paid','Balance','Status'],
+      (data.fees||[]).map(f=>[ts,f.rcpt||'',f.student||'',f.month||'',f.total||0,f.paid||0,f.balance||0,f.status||'']));
+
+    // Staff
+    writeSht(ss,'Staff',['Time','ID','Name','Role','Phone','Salary'],
+      (data.staff||[]).map(s=>[ts,s.id||'',s.name||'',s.role||'',s.phone||'',s.consolidatedPay||s.baseSalary||0]));
+
+    // Exams
+    writeSht(ss,'Exams',['Time','ID','Exam Name','Subject','Type','Date','Full Marks','Pass Marks','Batch'],
+      (data.exams||[]).map(ex=>[ts,ex.id||'',ex.name||'',ex.subject||'',ex.type||'',ex.date||'',ex.maxMarks||100,ex.passMarks||35,ex.batch||'All']));
+
+    // Attendance summary (only today's marked entries)
+    const attRows = Object.entries(data.attendance||{}).slice(0,500).map(([k,v])=>[ts,k,v]);
+    if (attRows.length > 0) {
+      writeSht(ss,'Attendance',['Time','Key (date_batch_session_studentId)','Status'],attRows);
     }
 
-    // 2. FEES — upsert by Receipt No
-    if (Array.isArray(data.fees) && data.fees.length) {
-      const rows = data.fees
-        .filter(f => f && f.rcpt && !f._deleted)
-        .map(f => [
-          f.rcpt||'', f.studentId||'', f.student||'',
-          f.month||'', Number(f.total)||0, Number(f.paid)||0, Number(f.balance)||0,
-          f.mode||'Cash', f.status||'pending', f.type||'monthly', f.paidOn||'', ts
-        ]);
-      upsertRows(ss, SHT.FEES, HEADERS.FEES, rows, 1);
-      counts.fees = rows.length;
-    }
-
-    // 3. STAFF — upsert by Staff ID
-    if (Array.isArray(data.staff) && data.staff.length) {
-      const rows = data.staff.map(s => [
-        s.id||'', s.name||'', s.role||'', s.phone||'',
-        Number(s.baseSalary)||0, Number(s.consolidatedPay||s.baseSalary)||0,
-        s.status||'active', (Array.isArray(s.subjects)?s.subjects.join(', '):s.subjects||''), ts
-      ]);
-      upsertRows(ss, SHT.STAFF, HEADERS.STAFF, rows, 1);
-      counts.staff = rows.length;
-    }
-
-    // 4. EXAMS — upsert by Exam ID
-    if (Array.isArray(data.exams) && data.exams.length) {
-      const rows = data.exams.map(ex => [
-        ex.id||'', ex.name||'', ex.subject||'', ex.type||'',
-        ex.date||'', Number(ex.maxMarks)||100, Number(ex.passMarks)||35,
-        ex.batch||'All', ts
-      ]);
-      upsertRows(ss, SHT.EXAMS, HEADERS.EXAMS, rows, 1);
-      counts.exams = rows.length;
-    }
-
-    // 5. ATTENDANCE — decode keys → readable rows, append+dedup
-    if (data.attendance && typeof data.attendance === 'object') {
-      const studentMap = {};
-      (data.students||[]).forEach(s => { if (s.id) studentMap[s.id] = s.name||''; });
-      const rows = [];
-      Object.entries(data.attendance).forEach(function(entry) {
-        const key = entry[0]; const status = entry[1];
-        if (!status) return;
-        // Key format: YYYY-MM-DD_batchName_session_studentId
-        const parts = key.split('_');
-        if (parts.length < 4) return;
-        const date   = parts[0];
-        const stId   = parts[parts.length - 1];
-        const sess   = parts[parts.length - 2];
-        const batch  = parts.slice(1, parts.length - 2).join('_');
-        const doVal  = '';
-        rows.push([date, batch, sess, stId, studentMap[stId]||'', status, doVal, ts]);
-      });
-      if (rows.length) {
-        appendDedup(ss, SHT.ATTENDANCE, HEADERS.ATTENDANCE, rows, [0,1,2,3]);
-        counts.att = rows.length;
-      }
-    }
-
-    // 6. MARKS — from marks array, append+dedup by examId+studentId
-    if (Array.isArray(data.marks) && data.marks.length) {
-      const studentMap = {};
-      (data.students||[]).forEach(s => { if (s.id) studentMap[s.id] = s.name||''; });
-      const rows = [];
-      data.marks.forEach(function(m) {
-        if (!m || !m.marks) return;
-        Object.entries(m.marks).forEach(function(entry) {
-          const stId = entry[0]; const score = entry[1];
-          const maxM = Number(m.maxMarks)||100;
-          const sc   = Number(score)||0;
-          const pct  = maxM > 0 ? ((sc/maxM)*100).toFixed(1)+'%' : '0%';
-          const pass = sc >= (Number(m.passMarks)||35) ? 'Pass' : 'Fail';
-          rows.push([
-            m.examId||m.id||'', m.examName||m.name||'', m.subject||'',
-            stId, studentMap[stId]||'', sc, maxM, pct, pass, ts
-          ]);
-        });
-      });
-      if (rows.length) {
-        appendDedup(ss, SHT.MARKS, HEADERS.MARKS, rows, [0,3]);
-        counts.marks = rows.length;
-      }
-    }
-
-    // 7. STAFF ATTENDANCE — staffAtt: {"staffId|YYYY-MM-DD": status}
-    if (data.staffAtt && typeof data.staffAtt === 'object') {
-      const staffMap = {};
-      (data.staff||[]).forEach(s => { if (s.id) staffMap[s.id] = s.name||''; });
-      const rows = [];
-      Object.entries(data.staffAtt).forEach(function(entry) {
-        const key = entry[0]; const status = entry[1];
-        if (!status) return;
-        const parts   = key.split('|');
-        const staffId = parts[0];
-        const date    = parts[1]||'';
-        if (!staffId || !date) return;
-        rows.push([staffId, staffMap[staffId]||'', date, status, ts]);
-      });
-      if (rows.length) {
-        appendDedup(ss, SHT.STAFF_ATT, HEADERS.STAFF_ATT, rows, [0,2]);
-        counts.staffAtt = rows.length;
-      }
-    }
-
-    // 8. SALARY PAYMENTS — upsert by key "staffId|YYYY-MM"
-    if (data.salaryPayments && typeof data.salaryPayments === 'object') {
-      const staffMap = {};
-      (data.staff||[]).forEach(s => { if (s.id) staffMap[s.id] = s.name||''; });
-      const rows = [];
-      Object.entries(data.salaryPayments).forEach(function(entry) {
-        const key = entry[0]; const rec = entry[1];
-        if (!rec || !rec.paid) return;
-        const parts   = key.split('|');
-        const staffId = parts[0];
-        rows.push([
-          key, staffId, staffMap[staffId]||'',
-          rec.monthVal||parts[1]||'', Number(rec.amount)||0,
-          rec.mode||'Cash', rec.note||'', rec.date||'', ts
-        ]);
-      });
-      if (rows.length) {
-        upsertRows(ss, SHT.SALARY, HEADERS.SALARY, rows, 1);
-        counts.salary = rows.length;
-      }
-    }
-
-    // 9. DAY ORDER TIMETABLE — upsert by Day Order number
-    if (data.dayOrder && typeof data.dayOrder === 'object' && Object.keys(data.dayOrder).length) {
-      const rows = Object.entries(data.dayOrder).map(function(entry) {
-        const num = entry[0]; const subjs = entry[1];
-        const subjStr = Array.isArray(subjs) ? subjs.join(', ') : String(subjs||'');
-        return [Number(num)||num, subjStr, ts];
-      }).sort(function(a,b){ return Number(a[0]) - Number(b[0]); });
-      upsertRows(ss, SHT.DAY_ORDER, HEADERS.DAY_ORDER, rows, 1);
-    }
-
-    // 10. WHATSAPP TEMPLATES — upsert by type+language
-    if (data.waTemplates && typeof data.waTemplates === 'object' && Object.keys(data.waTemplates).length) {
-      const rows = [];
-      Object.entries(data.waTemplates).forEach(function(entry) {
-        const key = entry[0]; const val = entry[1];
-        if (!val) return;
-        // key format: "absent_ta", "monthly_en", etc.
-        const parts = key.split('_');
-        const lang  = parts[parts.length - 1];
-        const type  = parts.slice(0, parts.length - 1).join('_');
-        rows.push([type, lang, val, ts]);
-      });
-      if (rows.length) upsertRows(ss, SHT.WA_TMPLS, HEADERS.WA_TMPLS, rows, 1);
-    }
-
-    // 11. FEE STRUCTURE SLABS — upsert by class
-    if (Array.isArray(data.feeStructure) && data.feeStructure.length) {
-      const rows = data.feeStructure.map(function(fs) {
-        const extra = fs.extraSubjects || fs.subjectFees || {};
-        return [
-          fs.class||'', Number(fs.admFee)||0, Number(fs.monthlyFee)||0,
-          Number(fs.slab1)||0, Number(fs.slab2)||0, Number(fs.slab3)||0,
-          Object.keys(extra).length ? JSON.stringify(extra) : '',
-          ts
-        ];
-      });
-      upsertRows(ss, SHT.FEE_SLAB, HEADERS.FEE_SLAB, rows, 1);
-    }
-
-    // 12. MISSED SUBJECTS per student — upsert by studentId+subject
-    if (data.missedSubjects && typeof data.missedSubjects === 'object') {
-      const studentMap = {};
-      (data.students||[]).forEach(s => { if (s.id) studentMap[s.id] = s.name||''; });
-      const rows = [];
-      Object.entries(data.missedSubjects).forEach(function(entry) {
-        const studentId = entry[0]; const subjects = entry[1];
-        if (!subjects || typeof subjects !== 'object') return;
-        Object.entries(subjects).forEach(function(se) {
-          const subj = se[0]; const d = se[1];
-          rows.push([
-            studentId,
-            studentMap[studentId] || '',
-            subj,
-            Number(d.count) || 0,
-            Number(d.lateCount) || 0,
-            (d.dates || []).join(', '),
-            (d.lateDates || []).join(', '),
-            ts
-          ]);
-        });
-      });
-      if (rows.length) {
-        // Upsert by studentId+subject combo (cols 1+3 = indices 0+2)
-        const sht = getOrCreate(ss, SHT.MISSED, HEADERS.MISSED);
-        const lastRow = sht.getLastRow();
-        const existingKeys = {};
-        if (lastRow > 1) {
-          const col1 = sht.getRange(2, 1, lastRow-1, 1).getValues();
-          const col3 = sht.getRange(2, 3, lastRow-1, 1).getValues();
-          for (let i = 0; i < col1.length; i++) {
-            const k = String(col1[i][0]) + '|' + String(col3[i][0]);
-            existingKeys[k] = i + 2;
-          }
-        }
-        const toAppend = [];
-        rows.forEach(function(row) {
-          const k = String(row[0]) + '|' + String(row[2]);
-          if (existingKeys[k]) {
-            sht.getRange(existingKeys[k], 1, 1, row.length).setValues([row]);
-          } else {
-            toAppend.push(row);
-          }
-        });
-        if (toAppend.length) {
-          sht.getRange(sht.getLastRow()+1, 1, toAppend.length, toAppend[0].length).setValues(toAppend);
-        }
-      }
-    }
-
-    // 13. DAY ORDER LOG (date → batch → dayOrderNo) — append+dedup
-    if (data.dayOrderLog && typeof data.dayOrderLog === 'object') {
-      const rows = [];
-      Object.entries(data.dayOrderLog).forEach(function(entry) {
-        const key = entry[0]; const dayNum = entry[1];
-        // key format: "YYYY-MM-DD_batchId"
-        const uIdx = key.lastIndexOf('_');
-        const date  = key.slice(0, uIdx);
-        const batch = key.slice(uIdx + 1);
-        rows.push([date, batch, String(dayNum), ts]);
-      });
-      if (rows.length) appendDedup(ss, SHT.DAY_ORD_LOG, HEADERS.DAY_ORD_LOG, rows, [0,1]);
-    }
-
-    // 14. SYNC LOG — always append
-
-    const logSht = getOrCreate(ss, SHT.LOG, HEADERS.LOG);
-    logSht.appendRow([
-      ts, data.center||'KTC', data.source||'manual',
-      counts.students, counts.fees, counts.staff, counts.exams,
-      counts.att, counts.marks, counts.staffAtt, counts.salary, kb
-    ]);
-
-    return ContentService
-      .createTextOutput(JSON.stringify({status:'ok', ts, counts}))
-      .setMimeType(ContentService.MimeType.JSON);
-
+    logEntry(ss,ts,data);
+    return ContentService.createTextOutput(JSON.stringify({status:'ok',ts,counts:{
+      students:(data.students||[]).length,
+      fees:(data.fees||[]).length,
+      staff:(data.staff||[]).length,
+      exams:(data.exams||[]).length,
+    }})).setMimeType(ContentService.MimeType.JSON);
   } catch(err) {
-    return ContentService
-      .createTextOutput(JSON.stringify({status:'error', msg:err.toString()}))
-      .setMimeType(ContentService.MimeType.JSON);
+    return ContentService.createTextOutput(JSON.stringify({status:'error',msg:err.toString()})).setMimeType(ContentService.MimeType.JSON);
   }
 }
 
-function doGet(e) {
-  return ContentService
-    .createTextOutput(JSON.stringify({status:'ok', app:'Kalam Tuition ERP', version:'3.0'}))
-    .setMimeType(ContentService.MimeType.JSON);
+function writeSht(ss,name,headers,rows){
+  let s=ss.getSheetByName(name)||ss.insertSheet(name);
+  if(s.getLastRow()===0){s.appendRow(headers);s.getRange(1,1,1,headers.length).setFontWeight('bold').setBackground('#1a56db').setFontColor('#fff');}
+  const last=s.getLastRow(); if(last>1)s.deleteRows(2,last-1);
+  if(rows.length)s.getRange(2,1,rows.length,headers.length).setValues(rows);
 }
 
-// Upsert rows: update existing row if PK matches, else append
-function upsertRows(ss, sheetName, headers, rows, pkCol) {
-  if (!rows || !rows.length) return;
-  const sht = getOrCreate(ss, sheetName, headers);
-  const lastRow = sht.getLastRow();
-  const existingKeys = {};
-  if (lastRow > 1 && pkCol) {
-    sht.getRange(2, pkCol, lastRow - 1, 1).getValues()
-      .forEach(function(r, i) { if (r[0]) existingKeys[String(r[0])] = i + 2; });
-  }
-  const toAppend = [];
-  rows.forEach(function(row) {
-    const key = pkCol ? String(row[pkCol - 1]) : null;
-    if (key && existingKeys[key]) {
-      sht.getRange(existingKeys[key], 1, 1, row.length).setValues([row]);
-    } else {
-      toAppend.push(row);
-    }
-  });
-  if (toAppend.length) {
-    sht.getRange(sht.getLastRow() + 1, 1, toAppend.length, toAppend[0].length).setValues(toAppend);
-  }
-}
-
-// Append only rows whose dedup-column combo is not already present
-function appendDedup(ss, sheetName, headers, rows, dedupCols) {
-  if (!rows || !rows.length) return;
-  const sht = getOrCreate(ss, sheetName, headers);
-  const lastRow = sht.getLastRow();
-  const seen = new Set();
-  if (lastRow > 1) {
-    sht.getRange(2, 1, lastRow - 1, headers.length).getValues()
-      .forEach(function(r) {
-        seen.add(dedupCols.map(function(c){ return String(r[c]||''); }).join('|'));
-      });
-  }
-  const toAppend = rows.filter(function(row) {
-    return !seen.has(dedupCols.map(function(c){ return String(row[c]||''); }).join('|'));
-  });
-  if (toAppend.length) {
-    sht.getRange(sht.getLastRow() + 1, 1, toAppend.length, toAppend[0].length).setValues(toAppend);
-  }
-}
-
-// Get sheet by name or create it with bold blue headers + frozen first row
-function getOrCreate(ss, name, headers) {
-  let sht = ss.getSheetByName(name);
-  if (!sht) {
-    sht = ss.insertSheet(name);
-    if (headers && headers.length) {
-      sht.appendRow(headers);
-      sht.getRange(1, 1, 1, headers.length)
-        .setFontWeight('bold').setBackground('#1a56db').setFontColor('#ffffff').setWrap(true);
-      sht.setFrozenRows(1);
-    }
-  }
-  return sht;
+function logEntry(ss,ts,data){
+  let s=ss.getSheetByName('Log')||ss.insertSheet('Log');
+  if(s.getLastRow()===0)s.appendRow(['Time','Center','Students','Fees','Source']);
+  s.appendRow([ts,data.center||(data.students||[]).length,(data.students||[]).length,(data.fees||[]).length,data.source||'manual']);
 }`;
 
 function getSnapshot() {
@@ -8749,75 +8445,16 @@ async function syncSheets(silent) {
     const marksIndex = JSON.parse(localStorage.getItem('_erp_marks_index')||'[]');
     const allMarks = marksIndex.map(k => { try { return JSON.parse(localStorage.getItem(k)); } catch(e){return null;} }).filter(Boolean);
 
-    // Collect staff attendance and salary payments
-    let _staffAtt = {};
-    let _salaryPay = {};
-    try { _staffAtt  = JSON.parse(localStorage.getItem('_erp_staff_att') || '{}'); } catch(e2) {}
-    try { _salaryPay = JSON.parse(localStorage.getItem('_erp_salary_payments') || '{}'); } catch(e2) {}
-
-    // Collect Day Order, WA templates, fee structure
-    let _dayOrder = {};
-    try { _dayOrder = JSON.parse(localStorage.getItem('_erp_day_order') || '{}'); } catch(e2) {}
-
-    // Collect missed subjects per student (_erp_missed_{studentId})
-    const _missedSubjects = {};
-    try {
-      for (let _i = 0; _i < localStorage.length; _i++) {
-        const _k = localStorage.key(_i);
-        if (_k && _k.startsWith('_erp_missed_')) {
-          const _stId = _k.slice('_erp_missed_'.length);
-          try { _missedSubjects[_stId] = JSON.parse(localStorage.getItem(_k) || '{}'); } catch(e3) {}
-        }
-      }
-    } catch(e2) {}
-
-    // Collect dayOrder log (_erp_att_dayorder_{YYYY-MM-DD}_{batchId})
-    const _dayOrderLog = {};
-    try {
-      for (let _j = 0; _j < localStorage.length; _j++) {
-        const _k2 = localStorage.key(_j);
-        if (_k2 && _k2.startsWith('_erp_att_dayorder_')) {
-          // key: _erp_att_dayorder_YYYY-MM-DD_batchId  → store as "YYYY-MM-DD_batchId"
-          const _logKey = _k2.slice('_erp_att_dayorder_'.length);
-          _dayOrderLog[_logKey] = localStorage.getItem(_k2);
-        }
-      }
-    } catch(e2) {}
-
-    const _waKeys = [
-      'absent_ta','absent_en','late_ta','late_en','monthly_ta','monthly_en',
-      'marks_ta','marks_en','holiday_ta','holiday_en','birthday_ta','birthday_en',
-      'fees_ta','fees_en','admission_ta','admission_en',
-      'exam_notice_ta','exam_notice_en','fee_receipt_ta','fee_receipt_en',
-      'result_ta','result_en','attend_ta','attend_en'
-    ];
-    const _waTemplates = {};
-    _waKeys.forEach(function(k) {
-      const v = localStorage.getItem('_erp_wt_' + k) || '';
-      if (v) _waTemplates[k] = v;
-    });
-
-    let _feeStructure = [];
-    try { _feeStructure = JSON.parse(localStorage.getItem('_erp_fee_structure') || '[]'); } catch(e2) {}
-    if (!_feeStructure.length && typeof feeStructure !== 'undefined') _feeStructure = feeStructure;
-
     const body = JSON.stringify({
-      center:         CFG.CENTER.name || 'Kalam Tuition',
-      timestamp:      new Date().toISOString(),
-      source:         'manual',
-      students:       snapshot.students || [],
-      fees:           snapshot.fees     || [],
-      staff:          snapshot.staff    || staffData || [],
-      exams:          snapshot.exams    || [],
-      attendance:     snapshot.attState || {},
-      marks:          allMarks,
-      staffAtt:       _staffAtt,
-      salaryPayments: _salaryPay,
-      dayOrder:       _dayOrder,
-      waTemplates:    _waTemplates,
-      feeStructure:   _feeStructure,
-      missedSubjects: _missedSubjects,
-      dayOrderLog:    _dayOrderLog,
+      center:     CFG.CENTER.name || 'Kalam Tuition',
+      timestamp:  new Date().toISOString(),
+      source:     'manual',
+      students:   snapshot.students  || [],
+      fees:       snapshot.fees      || [],
+      staff:      snapshot.staffData || [],
+      exams:      snapshot.exams     || [],
+      attendance: snapshot.attState  || {},
+      marks:      allMarks,
     });
     // Send to Apps Script — use no-cors since Google's endpoint requires it
     // We verify the URL format and Apps Script will receive the data

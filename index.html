@@ -1684,7 +1684,7 @@ tbody tr:hover td{background:var(--bg)}
   </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js" onload="if(document.getElementById('pg-dashboard').classList.contains('active'))initCharts()"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js" onload="if(window.initCharts && document.getElementById('pg-dashboard').classList.contains('active'))initCharts()"></script>
 
 <!-- ── PWA Install Banner ─────────────────────────── -->
 <div id="pwa-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;background:var(--sd);padding:14px 16px;z-index:500;display:none;align-items:center;gap:12px;border-top:1px solid rgba(255,255,255,.1)">
@@ -8266,7 +8266,187 @@ function initAI(){renderAICards();renderPredictCards();renderStudyPlannerCards()
 /* ═══════════════════════════════════════════════════════
    BACKUP
 ═══════════════════════════════════════════════════════ */
-const BK_GS_CODE = `// ═══ Kalam Tuition ERP — Google Apps Script v3.0 ════════════
+const BK_GS_CODE = `// ═══ Kalam Tuition ERP — Google Apps Script v3.1 ════════════
+// 1. Open Google Sheet → Extensions → Apps Script
+// 2. Paste this entire code, replace SPREADSHEET_ID below
+// 3. Deploy → New Deployment → Web App → Execute as: Me → Who has access: Anyone → Deploy
+// 4. Copy the Web App URL → paste in ERP Settings → Backup & Sync
+
+const SPREADSHEET_ID = 'YOUR_SPREADSHEET_ID_HERE';
+
+function doPost(e) {
+  try {
+    const data = JSON.parse(e.postData.contents);
+    const ss   = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const ts   = new Date().toLocaleString('en-IN');
+
+    // ── Students ──────────────────────────────────────────────
+    writeSht(ss, 'Students',
+      ['Time','ID','Adm No','Name','Grade','Parent','Phone','Course','Subjects','Fee','Adm Date','Status'],
+      (data.students||[]).map(s=>[ts,s.id||'',s.admNo||'',s.name||'',s.grade||'',
+        s.parent||'',s.phone||'',s.course||'',s.subjects||'',
+        s.fee||0,s.admDate||'',s.status||'active']));
+
+    // ── Fees ──────────────────────────────────────────────────
+    writeSht(ss, 'Fees',
+      ['Time','Receipt','Student','Month','Total','Paid','Balance','Mode','Status','Type','Paid On'],
+      (data.fees||[]).map(f=>[ts,f.rcpt||'',f.student||'',f.month||'',
+        f.total||0,f.paid||0,f.balance||0,f.mode||'Cash',
+        f.status||'pending',f.type||'monthly',f.paidOn||'']));
+
+    // ── Staff ─────────────────────────────────────────────────
+    writeSht(ss, 'Staff',
+      ['Time','ID','Name','Role','Phone','Base Salary','Consolidated Pay','Status'],
+      (data.staff||[]).map(s=>[ts,s.id||'',s.name||'',s.role||'',
+        s.phone||'',s.baseSalary||0,s.consolidatedPay||s.baseSalary||0,s.status||'active']));
+
+    // ── Batches ───────────────────────────────────────────────
+    writeSht(ss, 'Batches',
+      ['Time','ID','Name','Grade','Session','Days','Fee','Teacher'],
+      (data.batches||[]).map(b=>[ts,b.id||'',b.name||'',b.grade||'',
+        b.session||'',(b.days||[]).join(','),b.fee||0,b.teacher||'']));
+
+    // ── Exams ─────────────────────────────────────────────────
+    writeSht(ss, 'Exams',
+      ['Time','ID','Exam Name','Subject','Type','Date','Full Marks','Pass Marks','Batch'],
+      (data.exams||[]).map(ex=>[ts,ex.id||'',ex.name||'',ex.subject||'',
+        ex.type||'',ex.date||'',ex.maxMarks||100,ex.passMarks||35,ex.batch||'All']));
+
+    // ── Marks ─────────────────────────────────────────────────
+    const markRows = [];
+    Object.entries(data.marks||{}).forEach(([examKey, examMarks])=>{
+      if (!examMarks || typeof examMarks !== 'object') return;
+      Object.entries(examMarks).forEach(([studentId, score])=>{
+        markRows.push([ts, examKey, studentId, score]);
+      });
+    });
+    if (markRows.length > 0)
+      writeSht(ss, 'Marks', ['Time','Exam Key','Student ID','Score'], markRows);
+
+    // ── Attendance ────────────────────────────────────────────
+    const attRows = [];
+    Object.entries(data.attendanceFull||data.attendance||{}).slice(0,2000).forEach(([k,v])=>{
+      attRows.push([ts, k, typeof v==='object'? JSON.stringify(v): String(v||'')]);
+    });
+    if (attRows.length > 0)
+      writeSht(ss, 'Attendance', ['Time','Key','Value'], attRows);
+
+    // ── Salary Payments ───────────────────────────────────────
+    // salaryPayments can be array or object {staffId|month: {...}}
+    const salArr = Array.isArray(data.salaryPayments)
+      ? data.salaryPayments
+      : Object.entries(data.salaryPayments||{}).map(([k,v])=>({key:k,...v}));
+    writeSht(ss, 'Salary',
+      ['Time','Key','Staff ID','Name','Month','Amount','Mode','Paid On','Note'],
+      salArr.map(p=>[ts,p.key||'',p.staffId||'',p.name||'',
+        p.month||'',p.amount||0,p.mode||'Cash',p.paidOn||p.date||'',p.note||'']));
+
+    // ── Notifications ─────────────────────────────────────────
+    writeSht(ss, 'Notifications',
+      ['Time','ID','Type','Message','Date','Read'],
+      (data.notifications||[]).map(n=>[ts,n.id||'',n.type||'',
+        n.message||n.msg||'',n.date||'',n.read?'Yes':'No']));
+
+    // ── Fee Structure ─────────────────────────────────────────
+    const fs = data.feeStructure||{};
+    const fsRows = Object.entries(fs).map(([grade,cfg])=>[ts,grade,
+      cfg.monthlyFee||0,cfg.admFee||0,cfg.lateFee||0]);
+    if (fsRows.length > 0)
+      writeSht(ss, 'FeeStructure', ['Time','Grade','Monthly Fee','Adm Fee','Late Fee'], fsRows);
+
+    // ── Timetables ────────────────────────────────────────────
+    const ttRows = [];
+    Object.entries(data.timetables||{}).forEach(([key,val])=>{
+      ttRows.push([ts, key, JSON.stringify(val||{})]);
+    });
+    if (ttRows.length > 0)
+      writeSht(ss, 'Timetables', ['Time','Batch Key','JSON Data'], ttRows);
+
+    // ── Student Summary (stars, activities, notes) ────────────
+    const sumRows = [];
+    Object.entries(data.studentSummary||{}).forEach(([key,val])=>{
+      // key format: _erp_sum_{studentId}_{year}_{month}
+      const parts  = key.replace('_erp_sum_','').split('_');
+      const stuId  = parts.slice(0,-2).join('_');
+      const year   = parts[parts.length-2]||'';
+      const month  = parts[parts.length-1]||'';
+      const stu    = (data.students||[]).find(s=>s.id===stuId);
+      sumRows.push([ts, key, stuId, stu?stu.name:'', year, month,
+        val.stars||0, (val.activities||[]).join(','), val.note||'']);
+    });
+    if (sumRows.length > 0)
+      writeSht(ss, 'StudentSummary',
+        ['Time','Key','Student ID','Student Name','Year','Month','Stars','Activities','Note'],
+        sumRows);
+
+    // ── WhatsApp Templates ────────────────────────────────────
+    const waRows = [];
+    Object.entries(data.waTemplates||{}).forEach(([k,v])=>waRows.push([ts,k,v||'']));
+    if (data.feeRcptTemplate) waRows.push([ts,'_erp_fee_rcpt_template',data.feeRcptTemplate]);
+    if (data.admTemplate)     waRows.push([ts,'_erp_adm_template',data.admTemplate]);
+    if (waRows.length > 0)
+      writeSht(ss, 'Templates', ['Time','Key','Template Text'], waRows);
+
+    // ── AI / Diagnostic Data ──────────────────────────────────
+    const aiRows = [];
+    Object.entries(data.aiData||{}).forEach(([k,v])=>{
+      aiRows.push([ts, k, typeof v==='object'? JSON.stringify(v): String(v||'')]);
+    });
+    if (aiRows.length > 0)
+      writeSht(ss, 'AI_Data', ['Time','Key','JSON Data'], aiRows);
+
+    // ── Log ───────────────────────────────────────────────────
+    logEntry(ss, ts, data);
+
+    return ContentService.createTextOutput(JSON.stringify({
+      status:'ok', ts,
+      counts:{
+        students    : (data.students||[]).length,
+        fees        : (data.fees||[]).length,
+        staff       : (data.staff||[]).length,
+        batches     : (data.batches||[]).length,
+        exams       : (data.exams||[]).length,
+        marks       : Object.keys(data.marks||{}).length,
+        attendance  : attRows.length,
+        salary      : salArr.length,
+        summary     : sumRows.length,
+        templates   : waRows.length,
+      }
+    })).setMimeType(ContentService.MimeType.JSON);
+
+  } catch(err) {
+    return ContentService.createTextOutput(
+      JSON.stringify({status:'error',msg:err.toString()})
+    ).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function writeSht(ss, name, headers, rows) {
+  let s = ss.getSheetByName(name) || ss.insertSheet(name);
+  if (s.getLastRow() === 0) {
+    s.appendRow(headers);
+    s.getRange(1,1,1,headers.length)
+      .setFontWeight('bold').setBackground('#1a56db').setFontColor('#fff');
+  }
+  const last = s.getLastRow();
+  if (last > 1) s.deleteRows(2, last - 1);
+  if (rows.length) s.getRange(2,1,rows.length,headers.length).setValues(rows);
+}
+
+function logEntry(ss, ts, data) {
+  let s = ss.getSheetByName('Log') || ss.insertSheet('Log');
+  if (s.getLastRow() === 0)
+    s.appendRow(['Time','Center','Students','Fees','Batches','Exams','Source']);
+  s.appendRow([
+    ts,
+    (data.center && data.center.name) || data.center || 'KTC',
+    (data.students||[]).length,
+    (data.fees||[]).length,
+    (data.batches||[]).length,
+    (data.exams||[]).length,
+    data.source || 'manual'
+  ]);
+}`;
 // 1. Open Google Sheet → Extensions → Apps Script
 // 2. Paste this entire code, replace SPREADSHEET_ID below
 // 3. Deploy → New Deployment → Web App → Execute as: Me → Who has access: Anyone → Deploy
@@ -8468,13 +8648,27 @@ function getSnapshot() {
     });
   } catch(e) {}
 
-  // Collect all summary/AI data (_erp_sum_*, _erp_diag_*)
+  // Collect Student Summary data (_erp_sum_*) — separate from AI
+  const studentSummary = {};
+  try {
+    Object.keys(localStorage).filter(k => k.startsWith('_erp_sum_')).forEach(k => {
+      try { studentSummary[k] = JSON.parse(localStorage.getItem(k)); } catch(e) { studentSummary[k] = localStorage.getItem(k); }
+    });
+  } catch(e) {}
+
+  // Collect all summary/AI data (_erp_diag_* only — sum moved above)
   const aiData = {};
   try {
-    Object.keys(localStorage).filter(k => k.startsWith('_erp_sum_') || k.startsWith('_erp_diag_')).forEach(k => {
+    Object.keys(localStorage).filter(k => k.startsWith('_erp_diag_')).forEach(k => {
       try { aiData[k] = JSON.parse(localStorage.getItem(k)); } catch(e) { aiData[k] = localStorage.getItem(k); }
     });
   } catch(e) {}
+
+  // salaryPayments is stored as an object {staffId|month: {...}} — convert to array
+  const salaryPaymentsRaw = ls('_erp_salary_payments') || {};
+  const salaryPaymentsArr = Array.isArray(salaryPaymentsRaw)
+    ? salaryPaymentsRaw
+    : Object.entries(salaryPaymentsRaw).map(([k, v]) => ({ key: k, ...v }));
 
   return {
     version:          '3.0',
@@ -8489,7 +8683,7 @@ function getSnapshot() {
     exams:            exams      || [],
     batches:          batches    || [],
     notifications:    ls('_erp_notifs') || [],
-    salaryPayments:   ls('_erp_salary_payments') || [],
+    salaryPayments:   salaryPaymentsArr,
 
     // Attendance
     attState:         attState   || {},
@@ -8515,6 +8709,9 @@ function getSnapshot() {
 
     // WhatsApp templates
     waTemplates:      waTemplates,
+
+    // Student Summary (stars, activities, notes per student per month)
+    studentSummary:   studentSummary,
 
     // AI / diagnostic data
     aiData:           aiData,
@@ -8718,6 +8915,7 @@ async function syncSheets(silent) {
       feeRcptTemplate:  snapshot.feeRcptTemplate  || '',
       admTemplate:      snapshot.admTemplate      || '',
       waTemplates:      snapshot.waTemplates      || {},
+      studentSummary:   snapshot.studentSummary   || {},
       aiData:           snapshot.aiData           || {},
     });
     // Send to Apps Script — use no-cors since Google's endpoint requires it

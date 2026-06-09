@@ -2494,7 +2494,16 @@ const MODALS = {
       <div class="fg"><label class="fl">Phone *</label><input class="fi" id="m-sfphone" type="tel" placeholder="9876543210"></div>
       <div class="fg"><label class="fl">Email</label><input class="fi" id="m-sfemail" type="email" placeholder="staff@email.com"></div>
     </div>
-    <div class="fg"><label class="fl">Subjects Taught</label><input class="fi" id="m-sfsub" placeholder="Mathematics, Physics"></div>
+    <div class="frow">
+      <div class="fg"><label class="fl">Subjects Taught</label><input class="fi" id="m-sfsub" placeholder="Mathematics, Physics"></div>
+      <div class="fg"><label class="fl">Session *</label>
+        <select class="fi" id="m-sfsession" style="font-weight:600">
+          <option value="both">☀️🌙 Both (Morning &amp; Evening)</option>
+          <option value="morning">☀️ Morning Only</option>
+          <option value="evening">🌙 Evening Only</option>
+        </select>
+      </div>
+    </div>
     <div class="frow">
       <div class="fg"><label class="fl">Join Date</label><input class="fi" id="m-sfjoin" type="date"></div>
       <div class="fg"><label class="fl">Experience</label><input class="fi" id="m-sfexp" placeholder="e.g. 5 yrs"></div>
@@ -5121,7 +5130,23 @@ function selectExam(i) {
   const pass = e.passMarks || Math.round((e.maxMarks||100)*0.35);
   const dateStr = e.date ? new Date(e.date+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) : e.date;
   const typeLabel = {unit_test:'Unit Test',monthly:'Monthly Test',quarterly:'Quarterly',halfyearly:'Half-Yearly',annual:'Annual',model:'Model Exam',public:'Public Exam'}[e.type] || e.type;
-  const activeStudents = students.filter(s => s && s.name && s.status === 'active');
+  // Filter students: only those matching the exam's batch/grade
+  let activeStudents = students.filter(s => s && s.name && s.status === 'active');
+  if (e.batch && e.batch !== 'All' && e.batch.trim() !== '') {
+    const batchLower = e.batch.trim().toLowerCase();
+    // Extract grade number hint from batch string (e.g. "Grade 10", "10th", "10")
+    const gradeHint = batchLower.replace(/[^0-9]/g, '').trim();
+    const filtered = activeStudents.filter(s => {
+      const sc = (s.course || '').toLowerCase();
+      const sg = String(s.grade || '').toLowerCase();
+      // Match by course name containing batch string
+      const courseMatch = sc.includes(batchLower) || batchLower.includes(sc);
+      // Match by grade number
+      const gradeMatch = gradeHint && (sg === gradeHint || sg.replace(/[^0-9]/g,'') === gradeHint);
+      return courseMatch || gradeMatch;
+    });
+    if (filtered.length > 0) activeStudents = filtered;
+  }
 
   // Load existing saved marks for this exam
   const savedKey = '_erp_marks_' + e.id;
@@ -5334,7 +5359,20 @@ function saveMarksToStorage(examIdx) {
   const key  = '_erp_marks_' + e.id;
   const pass = e.passMarks || Math.round((e.maxMarks||100) * 0.35);
   const marksMap = {};
-  const activeStudents = students.filter(s => s && s.name && s.status === 'active');
+  let activeStudents = students.filter(s => s && s.name && s.status === 'active');
+  // Filter by exam batch/grade (same logic as selectExam)
+  if (e.batch && e.batch !== 'All' && e.batch.trim() !== '') {
+    const batchLower = e.batch.trim().toLowerCase();
+    const gradeHint = batchLower.replace(/[^0-9]/g, '').trim();
+    const filtered = activeStudents.filter(s => {
+      const sc = (s.course || '').toLowerCase();
+      const sg = String(s.grade || '').toLowerCase();
+      const courseMatch = sc.includes(batchLower) || batchLower.includes(sc);
+      const gradeMatch = gradeHint && (sg === gradeHint || sg.replace(/[^0-9]/g,'') === gradeHint);
+      return courseMatch || gradeMatch;
+    });
+    if (filtered.length > 0) activeStudents = filtered;
+  }
 
   activeStudents.forEach(s => {
     // New per-student IDs (from upgraded marks panel)
@@ -5691,6 +5729,7 @@ function renderStaff() {
       </td>
       <td><span class="badge bp" style="font-size:10px">${s.desg}</span></td>
       <td style="font-size:11px;color:var(--tx2)">${s.subjects}</td>
+      <td><span style="font-size:10px;font-weight:600;background:${s.session==='morning'?'#fef9c3':s.session==='evening'?'#ede9fe':'#dbeafe'};color:${s.session==='morning'?'#92400e':s.session==='evening'?'#5b21b6':'#1e40af'};padding:2px 7px;border-radius:8px">${s.session==='morning'?'☀️ Morning':s.session==='evening'?'🌙 Evening':'☀️🌙 Both'}</span></td>
       <td style="font-weight:600;font-size:12px">₹${(s.baseSalary||0).toLocaleString('en-IN')}</td>
       <td style="font-weight:700;color:#16a34a;font-size:12px">₹${net.toLocaleString('en-IN')}</td>
       <td style="font-size:11px">${s.exp}</td>
@@ -5724,6 +5763,7 @@ function saveStaff() {
     email: document.getElementById('m-sfemail')?.value.trim() || '',
     desg: document.getElementById('m-sfdesg')?.value || 'Teacher',
     subjects: document.getElementById('m-sfsub')?.value.trim() || '—',
+    session: document.getElementById('m-sfsession')?.value || 'both',
     joinDate: document.getElementById('m-sfjoin')?.value || '',
     exp: document.getElementById('m-sfexp')?.value.trim() || '0 yrs',
     consolidatedPay: basic, extraDed: other, extraDedNote: otherNote,
@@ -5759,7 +5799,16 @@ function editStaffMember(idx) {
       <div class="fg"><label class="fl">Phone</label><input class="fi" id="esf-phone" value="${s.phone||''}" type="tel"></div>
       <div class="fg"><label class="fl">Email</label><input class="fi" id="esf-email" value="${s.email||''}" type="email"></div>
     </div>
-    <div class="fg"><label class="fl">Subjects</label><input class="fi" id="esf-sub" value="${s.subjects||''}"></div>
+    <div class="frow">
+      <div class="fg"><label class="fl">Subjects</label><input class="fi" id="esf-sub" value="${s.subjects||''}"></div>
+      <div class="fg"><label class="fl">Session</label>
+        <select class="fi" id="esf-session" style="font-weight:600">
+          <option value="both"${(s.session||'both')==='both'?' selected':''}>☀️🌙 Both</option>
+          <option value="morning"${s.session==='morning'?' selected':''}>☀️ Morning Only</option>
+          <option value="evening"${s.session==='evening'?' selected':''}>🌙 Evening Only</option>
+        </select>
+      </div>
+    </div>
     <div class="frow">
       <div class="fg"><label class="fl">Join Date</label><input class="fi" id="esf-join" type="date" value="${s.joinDate||''}"></div>
       <div class="fg"><label class="fl">Experience</label><input class="fi" id="esf-exp" value="${s.exp||''}"></div>
@@ -5792,6 +5841,7 @@ function saveEditStaff(idx) {
   s.phone      = document.getElementById('esf-phone')?.value.trim() || s.phone;
   s.email      = document.getElementById('esf-email')?.value.trim() || s.email;
   s.subjects   = document.getElementById('esf-sub')?.value.trim()   || s.subjects;
+  s.session    = document.getElementById('esf-session')?.value      || s.session || 'both';
   s.joinDate   = document.getElementById('esf-join')?.value         || s.joinDate;
   s.exp        = document.getElementById('esf-exp')?.value.trim()   || s.exp;
   s.consolidatedPay = parseFloat(document.getElementById('esf-basic')?.value) || s.consolidatedPay || 0;
@@ -5851,10 +5901,9 @@ function renderStaffAttGrid() {
   var days    = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   var months  = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   var d = dateObj.getDate(), mo = months[dateObj.getMonth()], yr = dateObj.getFullYear();
-  var dayName = days[dateObj.getDay()];
-  var isSun = dateObj.getDay() === 0;
-  var isSat = dateObj.getDay() === 6;
-  var isWeekend = isSun || isSat;
+  var dayName  = days[dateObj.getDay()];
+  var isSun    = dateObj.getDay() === 0;
+  var isWeekend= isSun || dateObj.getDay() === 6;
 
   var grid = document.getElementById('sf-att-grid');
   var savedBanner = document.getElementById('sf-att-saved');
@@ -5867,52 +5916,85 @@ function renderStaffAttGrid() {
 
   var bannerBg  = isSun ? '#fff1f2' : isWeekend ? '#fef9c3' : 'var(--prl)';
   var bannerTxt = isSun ? '#dc2626' : isWeekend ? '#92400e' : 'var(--pr)';
-  var wkTag     = isWeekend ? ('<span style="font-size:10px;background:' + (isSun?'#fee2e2':'#fef9c3') + ';color:' + bannerTxt + ';padding:2px 8px;border-radius:8px;margin-left:8px">' + (isSun?'Sunday':'Saturday') + '</span>') : '';
+  var wkTag     = isWeekend ? '<span style="font-size:10px;background:'+(isSun?'#fee2e2':'#fef9c3')+';color:'+bannerTxt+';padding:2px 8px;border-radius:8px;margin-left:8px">'+(isSun?'Sunday':'Saturday')+'</span>' : '';
 
-  var pCount=0, lateCount=0, clCount=0, lopCount=0, hCount=0;
+  // Summary counts (per session slot)
+  var totM=0,totE=0, pM=0,pE=0, lM=0,lE=0, aM=0,aE=0;
+
+  function makeSelect(staffId, session, val) {
+    var colors = {
+      '':   {bg:'var(--bg)',   cl:'var(--tx2)', bd:'var(--br)'},
+      'L':  {bg:'#fef9c3',    cl:'#ca8a04',    bd:'#fde047'},
+      'CL': {bg:'#fef3c7',    cl:'#92400e',    bd:'#fde68a'},
+      'LOP':{bg:'#ede9fe',    cl:'#5b21b6',    bd:'#c4b5fd'},
+      'H':  {bg:'#dbeafe',    cl:'#1e40af',    bd:'#bfdbfe'},
+      'A':  {bg:'#fff1f2',    cl:'#dc2626',    bd:'#fecdd3'},
+    };
+    var c = colors[val] || colors[''];
+    return '<select onchange="setStaffAtt(\''+staffId+'\',\''+date+'\',\''+session+'\',this.value)" '
+      + 'style="border:1.5px solid '+c.bd+';background:'+c.bg+';color:'+c.cl+';'
+      + 'font-size:11px;font-weight:'+(val?'700':'500')+';border-radius:8px;padding:6px 8px;'
+      + 'cursor:pointer;font-family:inherit;width:100%;min-width:120px">'
+      + '<option value=""'    +(val===''   ?' selected':'')+'>✅ Present</option>'
+      + '<option value="A"'  +(val==='A'  ?' selected':'')+'>❌ Absent</option>'
+      + '<option value="L"'  +(val==='L'  ?' selected':'')+'>⏰ Late</option>'
+      + '<option value="CL"' +(val==='CL' ?' selected':'')+'>CL — Casual Leave</option>'
+      + '<option value="LOP"'+(val==='LOP'?' selected':'')+'>LOP — Loss of Pay</option>'
+      + '<option value="H"'  +(val==='H'  ?' selected':'')+'>H — Holiday</option>'
+      + '</select>';
+  }
+
   var rows = '';
   for (var i=0; i<staffData.length; i++) {
-    var s   = staffData[i];
-    var key = s.id + '|' + date;
-    var val = staffAtt[key] || '';
-    var pay = s.consolidatedPay || s.baseSalary || 0;
-    var net = pay - (s.extraDed||0);
+    var s       = staffData[i];
+    var sess    = s.session || 'both';
+    var showMor = sess === 'both' || sess === 'morning';
+    var showEve = sess === 'both' || sess === 'evening';
+    var morVal  = showMor ? (staffAtt[s.id+'|'+date+'|morning'] || '') : null;
+    var eveVal  = showEve ? (staffAtt[s.id+'|'+date+'|evening'] || '') : null;
 
-    if (val==='L')   lateCount++;
-    else if (val==='CL')  clCount++;
-    else if (val==='LOP') lopCount++;
-    else if (val==='H')   hCount++;
-    else pCount++;
+    // Legacy single-key migration
+    if (showMor && morVal === '' && !showEve) {
+      var legacy = staffAtt[s.id+'|'+date];
+      if (legacy) morVal = legacy;
+    }
 
-    var badge = '';
-    if (val==='L')   badge = '<span style="font-size:10px;background:#fef9c3;color:#ca8a04;padding:2px 8px;border-radius:10px;font-weight:700;margin-left:6px">⏰ Late</span>';
-    if (val==='CL')  badge = '<span style="font-size:10px;background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:10px;font-weight:700;margin-left:6px">CL</span>';
-    if (val==='LOP') badge = '<span style="font-size:10px;background:#ede9fe;color:#5b21b6;padding:2px 8px;border-radius:10px;font-weight:700;margin-left:6px">LOP</span>';
-    if (val==='H')   badge = '<span style="font-size:10px;background:#dbeafe;color:#1e40af;padding:2px 8px;border-radius:10px;font-weight:700;margin-left:6px">Holiday</span>';
+    if (showMor) { totM++; if (morVal==='A') aM++; else if (morVal==='L') lM++; else pM++; }
+    if (showEve) { totE++; if (eveVal==='A') aE++; else if (eveVal==='L') lE++; else pE++; }
 
-    var rowBg  = val==='L'?'#fefce8' : val==='LOP'?'#faf5ff' : val==='CL'?'#fffbeb' : val==='H'?'#eff6ff' : 'var(--card)';
-    var bdr    = val==='L'?'#fde047' : val==='LOP'?'#c4b5fd' : val==='CL'?'#fde68a'  : val==='H'?'#bfdbfe' : 'var(--br)';
-    var selBg  = val==='L'?'#fef9c3' : val==='LOP'?'#ede9fe' : val==='CL'?'#fef3c7'  : val==='H'?'#dbeafe' : 'var(--bg)';
-    var selClr = val==='L'?'#ca8a04' : val==='LOP'?'#5b21b6' : val==='CL'?'#92400e'  : val==='H'?'#1e40af' : 'var(--tx2)';
-    var selWt  = val ? '700' : '500';
+    // Row border color based on worst status
+    var allVals = [morVal, eveVal].filter(v=>v!==null);
+    var worst   = allVals.includes('LOP')?'LOP':allVals.includes('A')?'A':allVals.includes('CL')?'CL':allVals.includes('L')?'L':allVals.includes('H')?'H':'';
+    var rowBdr  = worst==='A'?'#fecdd3':worst==='LOP'?'#c4b5fd':worst==='L'?'#fde047':worst==='H'?'#bfdbfe':'var(--br)';
 
-    var pOpt  = '<option value=""'    + (val===''    ?' selected':'') + '>&#10003; Present</option>';
-    var ltOpt = '<option value="L"'  + (val==='L'   ?' selected':'') + '>&#9200; Late Arrival</option>';
-    var clOpt = '<option value="CL"' + (val==='CL'  ?' selected':'') + '>CL &mdash; Casual Leave</option>';
-    var lOpt  = '<option value="LOP"'+ (val==='LOP' ?' selected':'') + '>LOP &mdash; Loss of Pay</option>';
-    var hOpt  = '<option value="H"'  + (val==='H'   ?' selected':'') + '>H &mdash; Holiday</option>';
+    rows += '<div style="padding:12px 16px;border-bottom:.5px solid '+rowBdr+';background:var(--card)">';
+    rows += '  <div style="display:flex;align-items:center;gap:10px;margin-bottom:'+(sess==='both'?'10px':'0')+'">';
+    rows += '    <div class="av" style="background:'+s.color+';width:36px;height:36px;font-size:15px;font-weight:700;flex-shrink:0">'+(s.name||'?')[0]+'</div>';
+    rows += '    <div style="flex:1;min-width:0">';
+    rows += '      <div style="font-size:13px;font-weight:600;color:var(--tx)">'+s.name+'</div>';
+    rows += '      <div style="font-size:10px;color:var(--tx3)">'+s.desg
+              +' &nbsp;·&nbsp; <span style="background:'+(sess==='morning'?'#fef9c3':sess==='evening'?'#ede9fe':'#dbeafe')+';color:'+(sess==='morning'?'#92400e':sess==='evening'?'#5b21b6':'#1e40af')+';padding:1px 6px;border-radius:6px;font-weight:600">'
+              +(sess==='morning'?'☀️ Morning':sess==='evening'?'🌙 Evening':'☀️🌙 Both')+'</span></div>';
+    rows += '    </div>';
+    if (sess !== 'both') {
+      // Single session — show one dropdown inline
+      rows += makeSelect(s.id, sess === 'morning' ? 'morning' : 'evening', sess === 'morning' ? morVal : eveVal);
+    }
+    rows += '  </div>';
 
-    rows += '<div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:.5px solid '+ bdr +';background:'+rowBg+'">';
-    rows += '<div class="av" style="background:'+s.color+';width:38px;height:38px;font-size:16px;font-weight:700;flex-shrink:0">'+(s.name||'?')[0]+'</div>';
-    rows += '<div style="flex:1;min-width:0">';
-    rows += '  <div style="font-size:13px;font-weight:600;color:var(--tx)">'+s.name+badge+'</div>';
-    rows += '  <div style="font-size:11px;color:var(--tx2);margin-top:2px">'+s.desg+' &nbsp;&middot;&nbsp; &#8377;'+net.toLocaleString('en-IN')+'/mo</div>';
-    rows += '</div>';
-    rows += '<select onchange="setStaffAtt(\''+s.id+'\',\''+date+'\',this.value)" ';
-    rows += '  style="border:1.5px solid '+(val?bdr:'var(--br)')+';background:'+selBg+';color:'+selClr+';';
-    rows += '         font-size:12px;font-weight:'+selWt+';border-radius:8px;padding:8px 10px;';
-    rows += '         cursor:pointer;font-family:inherit;min-width:140px">';
-    rows += pOpt + ltOpt + clOpt + lOpt + hOpt + '</select>';
+    if (sess === 'both') {
+      // Two dropdowns side by side
+      rows += '  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">';
+      rows += '    <div>';
+      rows += '      <div style="font-size:10px;font-weight:700;color:#92400e;margin-bottom:4px">☀️ MORNING</div>';
+      rows += makeSelect(s.id, 'morning', morVal);
+      rows += '    </div>';
+      rows += '    <div>';
+      rows += '      <div style="font-size:10px;font-weight:700;color:#5b21b6;margin-bottom:4px">🌙 EVENING</div>';
+      rows += makeSelect(s.id, 'evening', eveVal);
+      rows += '    </div>';
+      rows += '  </div>';
+    }
     rows += '</div>';
   }
 
@@ -5924,22 +6006,36 @@ function renderStaffAttGrid() {
     + wkTag
     + '</div>'
     + rows
-    + '<div style="padding:10px 16px;background:var(--bg);font-size:11px;color:var(--tx2);display:flex;gap:14px;flex-wrap:wrap;border-top:.5px solid var(--br)">'
-    + '  <span><b style="color:#16a34a">&#10003; Present:</b> '+pCount+'</span>'
-    + '  <span><b style="color:#ca8a04">&#9200; Late:</b> '+lateCount+'</span>'
-    + '  <span><b style="color:#ca8a04">CL:</b> '+clCount+'</span>'
-    + '  <span><b style="color:#5b21b6">LOP:</b> '+lopCount+'</span>'
-    + '  <span><b style="color:#1e40af">H:</b> '+hCount+'</span>'
-    + '  <span style="color:var(--tx3)">Total: '+staffData.length+' staff</span>'
+    + '<div style="padding:10px 16px;background:var(--bg);font-size:11px;color:var(--tx2);display:grid;grid-template-columns:1fr 1fr;gap:6px;border-top:.5px solid var(--br)">'
+    + '  <div style="padding:6px 10px;background:#fef9c3;border-radius:6px">'
+    + '    <div style="font-size:10px;font-weight:700;color:#92400e;margin-bottom:2px">☀️ Morning</div>'
+    + '    <span style="color:#16a34a">✅ Present: <b>'+pM+'</b></span> &nbsp;'
+    + '    <span style="color:#dc2626">❌ Absent: <b>'+aM+'</b></span> &nbsp;'
+    + '    <span style="color:#ca8a04">⏰ Late: <b>'+lM+'</b></span>'
+    + '  </div>'
+    + '  <div style="padding:6px 10px;background:#ede9fe;border-radius:6px">'
+    + '    <div style="font-size:10px;font-weight:700;color:#5b21b6;margin-bottom:2px">🌙 Evening</div>'
+    + '    <span style="color:#16a34a">✅ Present: <b>'+pE+'</b></span> &nbsp;'
+    + '    <span style="color:#dc2626">❌ Absent: <b>'+aE+'</b></span> &nbsp;'
+    + '    <span style="color:#ca8a04">⏰ Late: <b>'+lE+'</b></span>'
+    + '  </div>'
     + '</div>'
     + '</div>';
 }
 
-function setStaffAtt(staffId, date, val) {
-  const key = `${staffId}|${date}`;
+function setStaffAtt(staffId, date, session, val) {
+  // New key format: staffId|date|session
+  const key = staffId + '|' + date + '|' + session;
   if (val) staffAtt[key] = val;
   else delete staffAtt[key];
-  // Auto-save on every change
+  // Also keep legacy key (staffId|date) for payroll LOP calc backward compat
+  // Use worst of morning/evening as the legacy value
+  const mor = staffAtt[staffId+'|'+date+'|morning'] || '';
+  const eve = staffAtt[staffId+'|'+date+'|evening'] || '';
+  const worst = [mor,eve].includes('LOP')?'LOP':[mor,eve].includes('A')?'A':[mor,eve].includes('CL')?'CL':[mor,eve].includes('L')?'L':[mor,eve].includes('H')?'H':'';
+  if (worst) staffAtt[staffId+'|'+date] = worst;
+  else delete staffAtt[staffId+'|'+date];
+  // Auto-save
   try { localStorage.setItem('_erp_staff_att', JSON.stringify(staffAtt)); } catch(e){}
 }
 
@@ -8266,7 +8362,7 @@ function initAI(){renderAICards();renderPredictCards();renderStudyPlannerCards()
 /* ═══════════════════════════════════════════════════════
    BACKUP
 ═══════════════════════════════════════════════════════ */
-const BK_GS_CODE = `// ═══ Kalam Tuition ERP — Google Apps Script v3.1 ════════════
+const BK_GS_CODE = `// ═══ Kalam Tuition ERP — Google Apps Script v3.2 ════════════
 // 1. Open Google Sheet → Extensions → Apps Script
 // 2. Paste this entire code, replace SPREADSHEET_ID below
 // 3. Deploy → New Deployment → Web App → Execute as: Me → Who has access: Anyone → Deploy
@@ -8281,170 +8377,266 @@ function doPost(e) {
     const ts   = new Date().toLocaleString('en-IN');
 
     // ── Students ──────────────────────────────────────────────
-    writeSht(ss, 'Students',
+    overwriteSht(ss, 'Students',
       ['Time','ID','Adm No','Name','Grade','Parent','Phone','Course','Subjects','Fee','Adm Date','Status'],
       (data.students||[]).map(s=>[ts,s.id||'',s.admNo||'',s.name||'',s.grade||'',
-        s.parent||'',s.phone||'',s.course||'',s.subjects||'',
+        s.parent||'',s.phone||'',s.course||'',(s.subjects||[]).join?s.subjects.join(','):s.subjects||'',
         s.fee||0,s.admDate||'',s.status||'active']));
 
     // ── Fees ──────────────────────────────────────────────────
-    writeSht(ss, 'Fees',
+    overwriteSht(ss, 'Fees',
       ['Time','Receipt','Student','Month','Total','Paid','Balance','Mode','Status','Type','Paid On'],
       (data.fees||[]).map(f=>[ts,f.rcpt||'',f.student||'',f.month||'',
         f.total||0,f.paid||0,f.balance||0,f.mode||'Cash',
         f.status||'pending',f.type||'monthly',f.paidOn||'']));
 
     // ── Staff ─────────────────────────────────────────────────
-    writeSht(ss, 'Staff',
+    overwriteSht(ss, 'Staff',
       ['Time','ID','Name','Role','Phone','Base Salary','Consolidated Pay','Status'],
       (data.staff||[]).map(s=>[ts,s.id||'',s.name||'',s.role||'',
         s.phone||'',s.baseSalary||0,s.consolidatedPay||s.baseSalary||0,s.status||'active']));
 
     // ── Batches ───────────────────────────────────────────────
-    writeSht(ss, 'Batches',
+    overwriteSht(ss, 'Batches',
       ['Time','ID','Name','Grade','Session','Days','Fee','Teacher'],
       (data.batches||[]).map(b=>[ts,b.id||'',b.name||'',b.grade||'',
         b.session||'',(b.days||[]).join(','),b.fee||0,b.teacher||'']));
 
     // ── Exams ─────────────────────────────────────────────────
-    writeSht(ss, 'Exams',
+    overwriteSht(ss, 'Exams',
       ['Time','ID','Exam Name','Subject','Type','Date','Full Marks','Pass Marks','Batch'],
       (data.exams||[]).map(ex=>[ts,ex.id||'',ex.name||'',ex.subject||'',
         ex.type||'',ex.date||'',ex.maxMarks||100,ex.passMarks||35,ex.batch||'All']));
 
     // ── Marks ─────────────────────────────────────────────────
     const markRows = [];
-    Object.entries(data.marks||{}).forEach(([examKey, examMarks])=>{
-      if (!examMarks || typeof examMarks !== 'object') return;
-      Object.entries(examMarks).forEach(([studentId, score])=>{
-        markRows.push([ts, examKey, studentId, score]);
-      });
+    Object.entries(data.marks||{}).forEach(([examKey, val])=>{
+      if (!val || typeof val !== 'object') return;
+      const examName = val.examName||examKey;
+      const subject  = val.subject||'';
+      const maxMarks = val.maxMarks||100;
+      const passMarks= val.passMarks||35;
+      if (val.marks && typeof val.marks === 'object') {
+        // Full exam record: { examId, examName, marks: { studentId: {marks, absent, pass} } }
+        const stu = data.students||[];
+        Object.entries(val.marks).forEach(([sid,m])=>{
+          const s = stu.find(x=>x.id===sid)||{};
+          const score = typeof m==='object'? m.marks : m;
+          const absent= typeof m==='object'? (m.absent?'Yes':'No') : 'No';
+          const pass  = typeof m==='object'? (m.pass?'Pass':'Fail') : '';
+          markRows.push([ts,examKey,examName,subject,maxMarks,passMarks,sid,s.name||'',score,absent,pass]);
+        });
+      } else {
+        markRows.push([ts,examKey,examName,subject,maxMarks,passMarks,'','',val,'','']);
+      }
     });
-    if (markRows.length > 0)
-      writeSht(ss, 'Marks', ['Time','Exam Key','Student ID','Score'], markRows);
+    if (markRows.length>0)
+      overwriteSht(ss,'Marks',
+        ['Time','Exam Key','Exam Name','Subject','Max Marks','Pass Marks','Student ID','Student Name','Score','Absent','Result'],
+        markRows);
 
     // ── Attendance ────────────────────────────────────────────
     const attRows = [];
-    Object.entries(data.attendanceFull||data.attendance||{}).slice(0,2000).forEach(([k,v])=>{
-      attRows.push([ts, k, typeof v==='object'? JSON.stringify(v): String(v||'')]);
+    // Use full attendance store (all _erp_att_* keys)
+    Object.entries(data.attendanceFull||data.attendance||{}).forEach(([key,val])=>{
+      if (key === '_erp_att_index') return;
+      // Each value is an object like { "studentId|batchId|session": "P"/"A"/"L" }
+      if (typeof val === 'object' && val !== null && !Array.isArray(val)) {
+        // Parse date/batch/session from key: _erp_att_{date}_{batchId}_{session}
+        const keyParts = key.replace('_erp_att_','').split('_');
+        const date     = keyParts[0]||'';
+        const batch    = keyParts.slice(1,-1).join('_')||'';
+        const session  = keyParts[keyParts.length-1]||'';
+        Object.entries(val).forEach(([k,status])=>{
+          const parts = k.split('|');
+          const stuId = parts[0]||'';
+          const stu   = (data.students||[]).find(s=>s.id===stuId)||{};
+          attRows.push([ts,date,batch,session,stuId,stu.name||'',status]);
+        });
+      } else {
+        attRows.push([ts,key,'','','','',String(val||'')]);
+      }
     });
-    if (attRows.length > 0)
-      writeSht(ss, 'Attendance', ['Time','Key','Value'], attRows);
+    if (attRows.length>0)
+      overwriteSht(ss,'Attendance',
+        ['Time','Date','Batch','Session','Student ID','Student Name','Status'],
+        attRows.slice(0,3000));
+
+    // ── Day Order ─────────────────────────────────────────────
+    const dayOrderRows = [];
+    const dayOrderMap = data.dayOrder||{};
+    Object.entries(dayOrderMap).forEach(([dayNum, subjects])=>{
+      const subjList = Array.isArray(subjects) ? subjects : [subjects];
+      subjList.forEach((subj,i)=>{
+        dayOrderRows.push([ts, dayNum, i+1, subj||'']);
+      });
+    });
+    overwriteSht(ss,'DayOrder',
+      ['Time','Day Number','Subject Order','Subject Name'],
+      dayOrderRows);
+
+    // ── Timetables ────────────────────────────────────────────
+    const ttRows = [];
+    Object.entries(data.timetables||{}).forEach(([key,val])=>{
+      if (!val || typeof val!=='object') return;
+      const batchName = key.replace('_erp_tt_','');
+      // val.days is an array of { dayName, subjects: [] }
+      if (Array.isArray(val.days)) {
+        val.days.forEach((day,di)=>{
+          (day.subjects||[]).forEach((subj,si)=>{
+            ttRows.push([ts, batchName, di+1, day.dayName||('Day '+(di+1)), si+1, subj||'']);
+          });
+        });
+      } else {
+        ttRows.push([ts, batchName, '', '', '', JSON.stringify(val)]);
+      }
+    });
+    if (ttRows.length>0)
+      overwriteSht(ss,'Timetables',
+        ['Time','Batch','Day Number','Day Name','Subject Order','Subject'],
+        ttRows);
 
     // ── Salary Payments ───────────────────────────────────────
-    // salaryPayments can be array or object {staffId|month: {...}}
     const salArr = Array.isArray(data.salaryPayments)
       ? data.salaryPayments
-      : Object.entries(data.salaryPayments||{}).map(([k,v])=>({key:k,...v}));
-    writeSht(ss, 'Salary',
+      : Object.entries(data.salaryPayments||{}).map(([k,v])=>({key:k,...(typeof v==='object'?v:{amount:v})}));
+    overwriteSht(ss,'Salary',
       ['Time','Key','Staff ID','Name','Month','Amount','Mode','Paid On','Note'],
       salArr.map(p=>[ts,p.key||'',p.staffId||'',p.name||'',
         p.month||'',p.amount||0,p.mode||'Cash',p.paidOn||p.date||'',p.note||'']));
 
     // ── Notifications ─────────────────────────────────────────
-    writeSht(ss, 'Notifications',
+    overwriteSht(ss,'Notifications',
       ['Time','ID','Type','Message','Date','Read'],
       (data.notifications||[]).map(n=>[ts,n.id||'',n.type||'',
         n.message||n.msg||'',n.date||'',n.read?'Yes':'No']));
 
     // ── Fee Structure ─────────────────────────────────────────
-    const fs = data.feeStructure||{};
-    const fsRows = Object.entries(fs).map(([grade,cfg])=>[ts,grade,
-      cfg.monthlyFee||0,cfg.admFee||0,cfg.lateFee||0]);
-    if (fsRows.length > 0)
-      writeSht(ss, 'FeeStructure', ['Time','Grade','Monthly Fee','Adm Fee','Late Fee'], fsRows);
+    const fsRows = Object.entries(data.feeStructure||{}).map(([grade,cfg])=>[ts,grade,
+      cfg.monthlyFee||0,cfg.admFee||0,cfg.lateFee||0,cfg.subjectFee||0]);
+    if (fsRows.length>0)
+      overwriteSht(ss,'FeeStructure',
+        ['Time','Grade','Monthly Fee','Adm Fee','Late Fee','Subject Fee'],
+        fsRows);
 
-    // ── Timetables ────────────────────────────────────────────
-    const ttRows = [];
-    Object.entries(data.timetables||{}).forEach(([key,val])=>{
-      ttRows.push([ts, key, JSON.stringify(val||{})]);
-    });
-    if (ttRows.length > 0)
-      writeSht(ss, 'Timetables', ['Time','Batch Key','JSON Data'], ttRows);
-
-    // ── Student Summary (stars, activities, notes) ────────────
+    // ── Student Summary ───────────────────────────────────────
     const sumRows = [];
     Object.entries(data.studentSummary||{}).forEach(([key,val])=>{
-      // key format: _erp_sum_{studentId}_{year}_{month}
-      const parts  = key.replace('_erp_sum_','').split('_');
-      const stuId  = parts.slice(0,-2).join('_');
-      const year   = parts[parts.length-2]||'';
-      const month  = parts[parts.length-1]||'';
-      const stu    = (data.students||[]).find(s=>s.id===stuId);
-      sumRows.push([ts, key, stuId, stu?stu.name:'', year, month,
-        val.stars||0, (val.activities||[]).join(','), val.note||'']);
+      const clean  = key.replace('_erp_sum_','');
+      const parts  = clean.split('_');
+      const month  = parts.pop()||'';
+      const year   = parts.pop()||'';
+      const stuId  = parts.join('_');
+      const stu    = (data.students||[]).find(s=>s.id===stuId)||{};
+      sumRows.push([ts,stuId,stu.name||'',year,month,
+        val.stars||0,(val.activities||[]).join(', '),val.note||'']);
     });
-    if (sumRows.length > 0)
-      writeSht(ss, 'StudentSummary',
-        ['Time','Key','Student ID','Student Name','Year','Month','Stars','Activities','Note'],
+    if (sumRows.length>0)
+      overwriteSht(ss,'StudentSummary',
+        ['Time','Student ID','Student Name','Year','Month','Stars','Activities','Note'],
         sumRows);
 
     // ── WhatsApp Templates ────────────────────────────────────
     const waRows = [];
-    Object.entries(data.waTemplates||{}).forEach(([k,v])=>waRows.push([ts,k,v||'']));
-    if (data.feeRcptTemplate) waRows.push([ts,'_erp_fee_rcpt_template',data.feeRcptTemplate]);
-    if (data.admTemplate)     waRows.push([ts,'_erp_adm_template',data.admTemplate]);
-    if (waRows.length > 0)
-      writeSht(ss, 'Templates', ['Time','Key','Template Text'], waRows);
+    Object.entries(data.waTemplates||{}).forEach(([k,v])=>waRows.push([ts,k.replace('_erp_wt_',''),v||'']));
+    if (data.feeRcptTemplate) waRows.push([ts,'fee_receipt',data.feeRcptTemplate]);
+    if (data.admTemplate)     waRows.push([ts,'admission',  data.admTemplate]);
+    if (waRows.length>0)
+      overwriteSht(ss,'Templates',['Time','Template Name','Template Text'],waRows);
 
-    // ── AI / Diagnostic Data ──────────────────────────────────
+    // ── AI / Reports / Diagnostic Data ────────────────────────
     const aiRows = [];
     Object.entries(data.aiData||{}).forEach(([k,v])=>{
-      aiRows.push([ts, k, typeof v==='object'? JSON.stringify(v): String(v||'')]);
+      const val = typeof v==='object'? JSON.stringify(v): String(v||'');
+      aiRows.push([ts, k, val.substring(0,50000)]);
     });
-    if (aiRows.length > 0)
-      writeSht(ss, 'AI_Data', ['Time','Key','JSON Data'], aiRows);
+    if (aiRows.length>0)
+      overwriteSht(ss,'AI_Data',['Time','Key','Data'],aiRows);
 
-    // ── Log ───────────────────────────────────────────────────
-    logEntry(ss, ts, data);
+    // ── Settings ──────────────────────────────────────────────
+    const center = data.center||{};
+    overwriteSht(ss,'Settings',
+      ['Time','Setting','Value'],[
+        [ts,'center_name',    center.name    ||''],
+        [ts,'center_phone',   center.phone   ||''],
+        [ts,'center_address', center.address ||''],
+        [ts,'center_email',   center.email   ||''],
+        [ts,'adm_lang',       data.admLang   ||''],
+        [ts,'fee_rcpt_lang',  data.feeRcptLang||''],
+        [ts,'dark_mode',      data.darkMode  ||''],
+        [ts,'lates_to_leave', data.latesToLeave||''],
+        [ts,'last_monthly_reset',data.lastMonthlyReset||''],
+        [ts,'backup_version', '3.2'],
+        [ts,'sync_time',      ts],
+      ]);
+
+    // ── Log (append only — keeps history) ────────────────────
+    logEntry(ss, ts, data, attRows.length, salArr.length, sumRows.length);
 
     return ContentService.createTextOutput(JSON.stringify({
       status:'ok', ts,
       counts:{
-        students    : (data.students||[]).length,
-        fees        : (data.fees||[]).length,
-        staff       : (data.staff||[]).length,
-        batches     : (data.batches||[]).length,
-        exams       : (data.exams||[]).length,
-        marks       : Object.keys(data.marks||{}).length,
-        attendance  : attRows.length,
-        salary      : salArr.length,
-        summary     : sumRows.length,
-        templates   : waRows.length,
+        students   : (data.students||[]).length,
+        fees       : (data.fees||[]).length,
+        staff      : (data.staff||[]).length,
+        batches    : (data.batches||[]).length,
+        exams      : (data.exams||[]).length,
+        marks      : markRows.length,
+        attendance : attRows.length,
+        dayOrder   : dayOrderRows.length,
+        timetables : ttRows.length,
+        salary     : salArr.length,
+        summary    : sumRows.length,
+        templates  : waRows.length,
+        ai         : aiRows.length,
       }
     })).setMimeType(ContentService.MimeType.JSON);
 
   } catch(err) {
     return ContentService.createTextOutput(
-      JSON.stringify({status:'error',msg:err.toString()})
+      JSON.stringify({status:'error',msg:err.toString(),stack:err.stack||''})
     ).setMimeType(ContentService.MimeType.JSON);
   }
 }
 
-function writeSht(ss, name, headers, rows) {
+// Overwrite sheet data (keep header, replace all rows)
+function overwriteSht(ss, name, headers, rows) {
   let s = ss.getSheetByName(name) || ss.insertSheet(name);
   if (s.getLastRow() === 0) {
     s.appendRow(headers);
     s.getRange(1,1,1,headers.length)
       .setFontWeight('bold').setBackground('#1a56db').setFontColor('#fff');
+  } else {
+    // Ensure header is correct
+    s.getRange(1,1,1,headers.length).setValues([headers])
+      .setFontWeight('bold').setBackground('#1a56db').setFontColor('#fff');
   }
   const last = s.getLastRow();
   if (last > 1) s.deleteRows(2, last - 1);
-  if (rows.length) s.getRange(2,1,rows.length,headers.length).setValues(rows);
+  if (rows && rows.length) {
+    s.getRange(2, 1, rows.length, headers.length).setValues(rows);
+  }
 }
 
-function logEntry(ss, ts, data) {
+// Log — append only, keeps full sync history
+function logEntry(ss, ts, data, attCount, salCount, sumCount) {
   let s = ss.getSheetByName('Log') || ss.insertSheet('Log');
-  if (s.getLastRow() === 0)
-    s.appendRow(['Time','Center','Students','Fees','Batches','Exams','Source']);
+  if (s.getLastRow() === 0) {
+    s.appendRow(['Time','Center','Students','Fees','Staff','Batches','Exams','Attendance','Salary','Summary','Source']);
+    s.getRange(1,1,1,11).setFontWeight('bold').setBackground('#1a56db').setFontColor('#fff');
+  }
   s.appendRow([
     ts,
-    (data.center && data.center.name) || data.center || 'KTC',
+    (data.center&&data.center.name)||data.center||'KTC',
     (data.students||[]).length,
     (data.fees||[]).length,
+    (data.staff||[]).length,
     (data.batches||[]).length,
     (data.exams||[]).length,
-    data.source || 'manual'
+    attCount||0,
+    salCount||0,
+    sumCount||0,
+    data.source||'manual'
   ]);
 }`;
 
@@ -8461,10 +8653,15 @@ function getSnapshot() {
     });
   } catch(e) {}
 
-  // Collect all attendance keys (_erp_att_* and _erp_att_dayorder_*)
+  // Collect all attendance keys (_erp_att_*)
   const attendanceFull = {};
   try {
-    Object.keys(localStorage).filter(k => k.startsWith('_erp_att_')).forEach(k => {
+    // Use index if available for efficiency
+    const attIndex = JSON.parse(localStorage.getItem('_erp_att_index') || '[]');
+    const keysToRead = attIndex.length > 0
+      ? attIndex
+      : Object.keys(localStorage).filter(k => k.startsWith('_erp_att_'));
+    keysToRead.forEach(k => {
       try { attendanceFull[k] = JSON.parse(localStorage.getItem(k)); } catch(e) {
         attendanceFull[k] = localStorage.getItem(k);
       }
@@ -8498,10 +8695,17 @@ function getSnapshot() {
     });
   } catch(e) {}
 
-  // Collect all summary/AI data (_erp_diag_* only — sum moved above)
+  // Collect all AI / diagnostic / report data
   const aiData = {};
   try {
+    // Diagnostic data
     Object.keys(localStorage).filter(k => k.startsWith('_erp_diag_')).forEach(k => {
+      try { aiData[k] = JSON.parse(localStorage.getItem(k)); } catch(e) { aiData[k] = localStorage.getItem(k); }
+    });
+    // Per-student AI / report keys (_erp_rep_*, _erp_ai_*, _erp_student_rep_*)
+    Object.keys(localStorage).filter(k =>
+      k.startsWith('_erp_rep_') || k.startsWith('_erp_ai_') || k.startsWith('_erp_student_rep_')
+    ).forEach(k => {
       try { aiData[k] = JSON.parse(localStorage.getItem(k)); } catch(e) { aiData[k] = localStorage.getItem(k); }
     });
   } catch(e) {}
@@ -8521,7 +8725,8 @@ function getSnapshot() {
     // Core data
     students:         students   || [],
     fees:             fees       || [],
-    staffData:        staffData  || [],
+    staffData:        staffData  || [],   // kept for restore compatibility
+    staff:            staffData  || [],   // key Apps Script expects
     exams:            exams      || [],
     batches:          batches    || [],
     notifications:    ls('_erp_notifs') || [],
@@ -8554,6 +8759,9 @@ function getSnapshot() {
 
     // Student Summary (stars, activities, notes per student per month)
     studentSummary:   studentSummary,
+
+    // Staff Attendance (Morning + Evening sessions)
+    staffAttendance:  ls('_erp_staff_att') || {},
 
     // AI / diagnostic data
     aiData:           aiData,
@@ -8759,6 +8967,7 @@ async function syncSheets(silent) {
       waTemplates:      snapshot.waTemplates      || {},
       studentSummary:   snapshot.studentSummary   || {},
       aiData:           snapshot.aiData           || {},
+      staffAttendance:  snapshot.staffAttendance  || {},
     });
     // Send to Apps Script — use no-cors since Google's endpoint requires it
     // We verify the URL format and Apps Script will receive the data

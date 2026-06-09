@@ -5134,18 +5134,40 @@ function selectExam(i) {
   let activeStudents = students.filter(s => s && s.name && s.status === 'active');
   if (e.batch && e.batch !== 'All' && e.batch.trim() !== '') {
     const batchLower = e.batch.trim().toLowerCase();
-    // Extract grade number hint from batch string (e.g. "Grade 10", "10th", "10")
-    const gradeHint = batchLower.replace(/[^0-9]/g, '').trim();
+    // Extract grade number hint from batch string (e.g. "Grade 10", "10th", "X" → "10")
+    // Step 1: try roman/word grade aliases first (e.g. "X" → 10, "XII" → 12)
+    const romanMap = {i:1,ii:2,iii:3,iv:4,v:5,vi:6,vii:7,viii:8,ix:9,x:10,xi:11,xii:12};
+    const wordMap  = {kg:'KG',lkg:'KG',ukg:'KG',one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,eleven:11,twelve:12};
+    // Extract raw number from batch name (handles "Grade 10", "10th", "Class 10", "10")
+    const numMatch = batchLower.match(/\b(\d{1,2})\b/);
+    const gradeHint = numMatch ? numMatch[1] : '';
+    // Helper: normalize any grade value to a comparable number string
+    function normalizeGrade(g) {
+      const gs = String(g || '').trim();
+      if (!gs) return '';
+      if (/^\d+$/.test(gs)) return gs; // already numeric
+      const upper = gs.toUpperCase();
+      if (romanMap[gs.toLowerCase()]) return String(romanMap[gs.toLowerCase()]);
+      if (upper === 'KG' || upper === 'LKG' || upper === 'UKG') return upper;
+      // Extract digits if mixed (e.g. "10th", "Gr.10")
+      const d = gs.match(/\d+/);
+      return d ? d[0] : gs.toLowerCase();
+    }
     const filtered = activeStudents.filter(s => {
       const sc = (s.course || '').toLowerCase();
-      const sg = String(s.grade || '').toLowerCase();
-      // Match by course name containing batch string
+      const sg = normalizeGrade(s.grade);
+      // Match by exact batch name in course
       const courseMatch = sc.includes(batchLower) || batchLower.includes(sc);
-      // Match by grade number
-      const gradeMatch = gradeHint && (sg === gradeHint || sg.replace(/[^0-9]/g,'') === gradeHint);
+      // Match by grade number (compare normalized forms)
+      const gradeMatch = gradeHint !== '' && sg !== '' && (
+        sg === gradeHint ||
+        sg === normalizeGrade(e.batch) // handles roman/word grade in batch name
+      );
       return courseMatch || gradeMatch;
     });
-    if (filtered.length > 0) activeStudents = filtered;
+    // BUG FIX: Always use filtered result — never fall back to all students when filter yields 0.
+    // If no students match this batch/grade, show empty list (correct behavior).
+    activeStudents = filtered;
   }
 
   // Load existing saved marks for this exam
@@ -5363,15 +5385,30 @@ function saveMarksToStorage(examIdx) {
   // Filter by exam batch/grade (same logic as selectExam)
   if (e.batch && e.batch !== 'All' && e.batch.trim() !== '') {
     const batchLower = e.batch.trim().toLowerCase();
-    const gradeHint = batchLower.replace(/[^0-9]/g, '').trim();
+    const romanMap = {i:1,ii:2,iii:3,iv:4,v:5,vi:6,vii:7,viii:8,ix:9,x:10,xi:11,xii:12};
+    const numMatch = batchLower.match(/\b(\d{1,2})\b/);
+    const gradeHint = numMatch ? numMatch[1] : '';
+    function normalizeGrade(g) {
+      const gs = String(g || '').trim();
+      if (!gs) return '';
+      if (/^\d+$/.test(gs)) return gs;
+      if (romanMap[gs.toLowerCase()]) return String(romanMap[gs.toLowerCase()]);
+      const upper = gs.toUpperCase();
+      if (upper === 'KG' || upper === 'LKG' || upper === 'UKG') return upper;
+      const d = gs.match(/\d+/);
+      return d ? d[0] : gs.toLowerCase();
+    }
     const filtered = activeStudents.filter(s => {
       const sc = (s.course || '').toLowerCase();
-      const sg = String(s.grade || '').toLowerCase();
+      const sg = normalizeGrade(s.grade);
       const courseMatch = sc.includes(batchLower) || batchLower.includes(sc);
-      const gradeMatch = gradeHint && (sg === gradeHint || sg.replace(/[^0-9]/g,'') === gradeHint);
+      const gradeMatch = gradeHint !== '' && sg !== '' && (
+        sg === gradeHint || sg === normalizeGrade(e.batch)
+      );
       return courseMatch || gradeMatch;
     });
-    if (filtered.length > 0) activeStudents = filtered;
+    // BUG FIX: Always use filtered result — no fallback to all students.
+    activeStudents = filtered;
   }
 
   activeStudents.forEach(s => {
@@ -8412,7 +8449,9 @@ function doPost(e) {
     const markRows = [];
     Object.entries(data.marks||{}).forEach(([examKey, val])=>{
       if (!val || typeof val !== 'object') return;
-      const examName = val.examName||examKey;
+      // FIX: strip _erp_marks_ prefix if present
+      const cleanKey = examKey.replace(/^_erp_marks_/, '');
+      const examName = val.examName || val.name || cleanKey;
       const subject  = val.subject||'';
       const maxMarks = val.maxMarks||100;
       const passMarks= val.passMarks||35;
@@ -8424,10 +8463,10 @@ function doPost(e) {
           const score = typeof m==='object'? m.marks : m;
           const absent= typeof m==='object'? (m.absent?'Yes':'No') : 'No';
           const pass  = typeof m==='object'? (m.pass?'Pass':'Fail') : '';
-          markRows.push([ts,examKey,examName,subject,maxMarks,passMarks,sid,s.name||'',score,absent,pass]);
+          markRows.push([ts,cleanKey,examName,subject,maxMarks,passMarks,sid,s.name||'',score,absent,pass]);
         });
       } else {
-        markRows.push([ts,examKey,examName,subject,maxMarks,passMarks,'','',val,'','']);
+        markRows.push([ts,cleanKey,examName,subject,maxMarks,passMarks,'','',val,'','']);
       }
     });
     if (markRows.length>0)
@@ -8944,13 +8983,23 @@ async function syncSheets(silent) {
     const marksIndex = JSON.parse(localStorage.getItem('_erp_marks_index')||'[]');
     const allMarks = marksIndex.map(k => { try { return JSON.parse(localStorage.getItem(k)); } catch(e){return null;} }).filter(Boolean);
 
+    // FIX: Build full marks payload from marksIndex localStorage keys
+    const marksPayload = {};
+    marksIndex.forEach(k => {
+      try {
+        const m = JSON.parse(localStorage.getItem(k));
+        if (m) marksPayload[k.replace('_erp_marks_','')] = m;
+      } catch(e) {}
+    });
+    const staffList = snapshot.staffData || snapshot.staff || [];
     const body = JSON.stringify({
       center:           snapshot.center,
       timestamp:        new Date().toISOString(),
       source:           'manual',
       students:         snapshot.students         || [],
       fees:             snapshot.fees             || [],
-      staff:            snapshot.staffData        || [],
+      staff:            staffList,                        // FIX: GS reads 'staff' key
+      staffData:        staffList,                        // FIX: also send staffData (legacy compat)
       exams:            snapshot.exams            || [],
       batches:          snapshot.batches          || [],
       notifications:    snapshot.notifications    || [],
@@ -8959,7 +9008,7 @@ async function syncSheets(silent) {
       attendanceFull:   snapshot.attendanceFull   || {},
       timetables:       snapshot.timetables       || {},
       dayOrder:         snapshot.dayOrder         || {},
-      marks:            snapshot.marks            || {},
+      marks:            Object.keys(marksPayload).length ? marksPayload : (snapshot.marks || {}),
       marksIndex:       snapshot.marksIndex       || [],
       feeStructure:     snapshot.feeStructure     || {},
       feeRcptTemplate:  snapshot.feeRcptTemplate  || '',

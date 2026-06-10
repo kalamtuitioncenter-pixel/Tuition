@@ -33,8 +33,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Tamil:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-:root{--bg:#f1f5f9;--bg2:#f8fafc;--card:#fff;--tx:#0f172a;--tx2:#475569;--tx3:#94a3b8;--br:#e2e8f0;--br2:#cbd5e1;--pr:#1a56db;--pr2:#1239a5;--prl:#eff6ff;--sd:#0f172a;--sd2:#1e293b;--radius:10px;--shadow:0 1px 3px rgba(0,0,0,.07)}
-.dark{--bg:#0f172a;--bg2:#1e293b;--card:#273549;--tx:#f1f5f9;--tx2:#94a3b8;--tx3:#475569;--br:#334155;--br2:#475569;--prl:#1e3a8a}
+:root{--bg:#f1f5f9;--bg2:#f8fafc;--card:#fff;--tx:#0f172a;--tx2:#475569;--tx3:#94a3b8;--br:#e2e8f0;--br2:#cbd5e1;--pr:#1a56db;--pr2:#1239a5;--prl:#eff6ff;--sd:#0f172a;--sd2:#1e293b;--radius:10px;--shadow:0 1px 3px rgba(0,0,0,.07);--att-absent-bg:#fff5f5;--att-late-bg:#fefce8}
+.dark{--bg:#0f172a;--bg2:#1e293b;--card:#273549;--tx:#f1f5f9;--tx2:#94a3b8;--tx3:#475569;--br:#334155;--br2:#475569;--prl:#1e3a8a;--att-absent-bg:#3b0f0f;--att-late-bg:#312a07}
 body{font-family:'Inter','Noto Sans Tamil',system-ui,sans-serif;background:var(--bg);color:var(--tx);font-size:13px;min-height:100vh}
 ::-webkit-scrollbar{width:4px;height:4px}
 ::-webkit-scrollbar-thumb{background:var(--br2);border-radius:2px}
@@ -132,10 +132,11 @@ tbody tr:hover td{background:var(--bg)}
 .att-row:last-child{border-bottom:none}
 .att-row:hover{background:var(--bg)}
 .att-btns{display:flex;gap:5px;margin-left:auto}
-.att-btn{width:30px;height:28px;border-radius:6px;border:.5px solid var(--br);background:transparent;cursor:pointer;font-size:10px;font-weight:700;transition:.12s;color:var(--tx2);font-family:inherit}
-.att-btn.ps{background:#dcfce7;border-color:#16a34a;color:#16a34a}
-.att-btn.as{background:#fee2e2;border-color:#dc2626;color:#dc2626}
-.att-btn.ls{background:#fef9c3;border-color:#ca8a04;color:#ca8a04}
+.att-btn{min-width:42px;height:28px;padding:0 7px;border-radius:6px;border:1.5px solid var(--br);background:var(--bg);cursor:pointer;font-size:10px;font-weight:700;transition:.12s;color:var(--tx3);font-family:inherit;white-space:nowrap}
+.att-btn:hover{border-color:var(--br2);color:var(--tx)}
+.att-btn.ps{background:#dcfce7;border-color:#16a34a;color:#166534;box-shadow:0 0 0 2px #bbf7d040}
+.att-btn.as{background:#fee2e2;border-color:#dc2626;color:#991b1b;box-shadow:0 0 0 2px #fecaca40}
+.att-btn.ls{background:#fef9c3;border-color:#ca8a04;color:#78350f;box-shadow:0 0 0 2px #fde68a40}
 /* Avatar */
 .av{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0}
 .av-lg{width:40px;height:40px;font-size:14px}
@@ -447,7 +448,7 @@ tbody tr:hover td{background:var(--bg)}
   .frow{grid-template-columns:1fr}
   .fee-sum{gap:8px}
   .att-row{padding:7px 10px}
-  .att-btn{width:28px;height:26px;font-size:10px}
+  .att-btn{min-width:38px;height:26px;padding:0 5px;font-size:9px}
   /* Marks grid */
   #pg-marks>div{grid-template-columns:1fr!important}
   /* WA & AI 2-col grids → 1 col */
@@ -478,7 +479,7 @@ tbody tr:hover td{background:var(--bg)}
 @media(hover:none){
   .nav-item{padding:10px 12px}
   .btn{padding:9px 14px}
-  .att-btn{width:32px;height:30px}
+  .att-btn{min-width:44px;height:30px;padding:0 8px}
   .fi{font-size:16px}  /* prevent iOS zoom on input */
 }
 </style>
@@ -1136,7 +1137,7 @@ tbody tr:hover td{background:var(--bg)}
     </button>
     <button class="btn btn-p" style="margin-left:auto" onclick="showModal('addFee')"><svg viewBox="0 0 14 14" fill="none"><path d="M7 2v10M2 7h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><span id="btn-add-fee">New Fee Entry</span></button>
   </div>
-  <div class="tbl-wrap"><table><thead><tr><th style="width:22%">Type / Period</th><th style="width:12%">Total</th><th style="width:12%">Balance</th><th style="width:10%">Mode</th><th style="width:10%">Status</th><th style="width:34%">Action</th></tr></thead><tbody id="fee-body"></tbody></table></div>
+  <div class="tbl-wrap"><table><thead><tr><th style="width:72%">Fee Details</th><th style="width:28%">Action</th></tr></thead><tbody id="fee-body"></tbody></table></div>
 </div>
 
 <!-- ═══════════════ MARKS ═══════════════ -->
@@ -1356,9 +1357,13 @@ tbody tr:hover td{background:var(--bg)}
   <div id="ai-study-planner-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-bottom:16px"></div>
 
   <!-- AI Growth Forecast Section -->
-  <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;margin-top:4px">
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;margin-top:4px;flex-wrap:wrap">
     <div style="font-size:11px;font-weight:700;color:#065f46;text-transform:uppercase;letter-spacing:.06em">📈 AI Growth Forecast</div>
-    <div style="flex:1;height:.5px;background:#a7f3d0"></div>
+    <div style="flex:1;height:.5px;background:#a7f3d0;min-width:20px"></div>
+    <select id="gf-grade-filter" onchange="window._gfPage=0;window._gfGradeFilter=this.value;renderGrowthForecastCards()"
+      style="font-size:11px;padding:3px 10px;border-radius:8px;border:.5px solid #6ee7b7;background:#d1fae5;color:#065f46;font-weight:600;cursor:pointer;outline:none;font-family:inherit">
+      <option value="all">🎓 All Classes</option>
+    </select>
     <span style="font-size:9px;background:#d1fae5;color:#065f46;padding:2px 8px;border-radius:8px;font-weight:700">வளர்ச்சி கணிப்பு</span>
   </div>
   <div id="ai-growth-forecast-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-bottom:16px"></div>
@@ -2235,13 +2240,25 @@ function fillTemplate(template, student, extra={}) {
 /* ── WhatsApp opener — hard-close PWA after launch ─────── */
 function cleanPhone(phone) {
   const num = (phone || '').replace(/\D/g, '');
-  return num.startsWith('91') ? num : '91' + num;
+  // If already has country code (11+ digits starting with 91), use as-is
+  // If 10-digit Indian number, add 91 prefix
+  // If starts with 91 but only 10 digits total (i.e., local number starting with 91xx), add 91
+  if (num.length === 12 && num.startsWith('91')) return num;
+  if (num.length === 13 && num.startsWith('091')) return num.slice(1); // remove leading 0
+  if (num.length === 11 && num.startsWith('0')) return '91' + num.slice(1); // 011-digit with STD 0
+  return '91' + num.slice(-10); // take last 10 digits, add 91
 }
 
 function openWA(phone, msg) {
   const clean   = cleanPhone(phone);
   const encoded = encodeURIComponent(msg);
-  window.location.href = 'whatsapp://send?phone=' + clean + '&text=' + encoded;
+  // Detect mobile (Android/iOS) — use deep link; desktop — use wa.me web
+  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if (isMobile) {
+    window.location.href = 'whatsapp://send?phone=' + clean + '&text=' + encoded;
+  } else {
+    window.open('https://wa.me/' + clean + '?text=' + encoded, '_blank');
+  }
 }
 
 function openWAFallback(phone, msg) {
@@ -2535,7 +2552,7 @@ const MODALS = {
     </div>
     <div class="frow">
       <div class="fg"><label class="fl">Date *</label><input class="fi" type="date" id="m-exdate"></div>
-      <div class="fg"><label class="fl">Batch / Grade</label><input class="fi" id="m-exbatch" placeholder="e.g. Grade 10 / All"></div>
+      <div class="fg"><label class="fl">Batch / Grade</label><select class="fi" id="m-exbatch" onchange="updateExamBatchDropdown('m-exbatch')"><option value="All">🌐 All Students</option></select></div>
     </div>
     <div class="frow">
       <div class="fg"><label class="fl">Full Marks (Max) *</label><input class="fi" type="number" id="m-exmarks" value="100" min="1" oninput="syncPassMarks()"></div>
@@ -2713,6 +2730,7 @@ function showModal(type) {
   root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal">${MODALS[type]()}</div></div>`;
   if (type==='marksWA') renderMarksWAEntry();
   if (type==='addStudent') autoFillAdmNo();
+  if (type==='addExam') setTimeout(() => updateExamBatchDropdown('m-exbatch'), 30);
 }
 function closeModal() { document.getElementById('modal-root').innerHTML = ''; }
 function openUpgrade() { showModal('upgrade'); }
@@ -2765,7 +2783,17 @@ function renderStudents(data) {
   </tr>`).join('');
   updateDashStats();
 }
-function filterStudents(q) { renderStudents(q ? students.filter(s=>s.name.toLowerCase().includes(q.toLowerCase())||s.id.includes(q)) : students); }
+function filterStudents(q) {
+  if (!q) { renderStudents(students); return; }
+  const lq = q.toLowerCase();
+  renderStudents(students.filter(s =>
+    (s.name||'').toLowerCase().includes(lq) ||
+    (s.id||'').toLowerCase().includes(lq) ||
+    (s.phone||'').includes(q) ||
+    (s.parent||'').toLowerCase().includes(lq) ||
+    (s.admNo||'').toLowerCase().includes(lq)
+  ));
+}
 function filterStudentStatus(v) { renderStudents(v==='all' ? students : students.filter(s=>s.status===v)); }
 
 function saveStudent() {
@@ -2798,6 +2826,7 @@ function saveStudent() {
   students.unshift({
     id:`${prefix}-${yr}-${serial}`, admNo, name, parent, phone,
     grade, dob, school, course, subjects, status:'active',
+    admDate: new Date().toLocaleDateString('en-IN'),
     color: COLORS[students.length % COLORS.length]
   });
   saveStudents();
@@ -3057,25 +3086,25 @@ function renderAttList() {
   // ── Render rows ───────────────────────────────────────
   document.getElementById('att-wrap').innerHTML = activeStudents.map(s => {
     const val = attState[_attKey(s.id, batchId, session)] || '';
-    const rowBg = val==='L'?'#fefce8':val==='A'?'#fff5f5':'var(--card)';
+    const rowBg = val==='L'?'var(--att-late-bg)':val==='A'?'var(--att-absent-bg)':'var(--card)';
     const rowBorder = val==='L'?'border-left:3px solid #ca8a04':val==='A'?'border-left:3px solid #dc2626':'';
-    return `<div class="att-row" style="background:${rowBg};${rowBorder}">
+    return `<div class="att-row" data-sid="${s.id}" style="background:${rowBg};${rowBorder}">
       <div class="av" style="background:${s.color}">${(s.name||'?')[0]}</div>
       <div class="att-name">
         <div style="display:flex;align-items:center;gap:6px">
           <span style="font-weight:500;font-size:13px">${s.name}</span>
-          ${val==='L'?'<span style="font-size:9px;background:#fef9c3;color:#ca8a04;padding:1px 6px;border-radius:8px;font-weight:700">⏰ Late</span>':''}
-          ${val==='A'?'<span style="font-size:9px;background:#fee2e2;color:#dc2626;padding:1px 6px;border-radius:8px;font-weight:700">✗ Absent</span>':''}
+          ${val==='L'?'<span class="att-status-badge" style="font-size:9px;background:#fef9c3;color:#ca8a04;padding:1px 6px;border-radius:8px;font-weight:700">⏰ Late</span>':''}
+          ${val==='A'?'<span class="att-status-badge" style="font-size:9px;background:#fee2e2;color:#dc2626;padding:1px 6px;border-radius:8px;font-weight:700">✗ Absent</span>':''}
         </div>
         <div style="font-size:10px;color:var(--tx3)">${s.grade==='KG'?'KG':'Gr.'+s.grade} · ${s.parent}
           ${s.course?`<span style="margin-left:4px;background:var(--prl);color:var(--pr);padding:0 5px;border-radius:8px;font-size:9px">${s.course}</span>`:''}
         </div>
       </div>
       <div class="att-btns">
-        <button class="att-btn ${val==='P'?'ps':''}" onclick="setAtt('${s.id}','P',this)" style="color:#16a34a">P</button>
-        <button class="att-btn ${val==='A'?'as':''}" onclick="setAtt('${s.id}','A',this)" style="color:#dc2626">A</button>
-        <button class="att-btn ${val==='L'?'ls':''}" onclick="setAtt('${s.id}','L',this)" style="color:#ca8a04">L</button>
-        ${val==='L'||val==='A'?`<button class="btn btn-wa btn-sm" style="font-size:9px;padding:2px 7px" onclick="sendOneAttWA('${s.id}','${val}')">📱</button>`:''}
+        <button class="att-btn ${val==='P'?'ps':''}" onclick="setAtt(this,'P')">✅ P</button>
+        <button class="att-btn ${val==='A'?'as':''}" onclick="setAtt(this,'A')">✗ A</button>
+        <button class="att-btn ${val==='L'?'ls':''}" onclick="setAtt(this,'L')">⏰ L</button>
+        ${val==='L'||val==='A'?`<button class="btn btn-wa btn-sm att-wa-quick" style="font-size:9px;padding:2px 7px" onclick="sendRowAttWA(this)">📱</button>`:''}
       </div>
     </div>`;
   }).join('');
@@ -3083,7 +3112,12 @@ function renderAttList() {
   updateAttCounts(activeStudents, batchId, session);
 }
 
-function setAtt(sid, v, btn) {
+function setAtt(btn, v) {
+  const row = btn.closest('.att-row');
+  if (!row) return;
+  const sid = row.dataset.sid;           // Read student ID from data attribute — no string injection
+  if (!sid) return;
+
   const date    = document.getElementById('att-date')?.value || new Date().toISOString().split('T')[0];
   const batchId = document.getElementById('att-batch')?.value || '';
   const session = document.getElementById('att-session')?.value || 'morning';
@@ -3092,9 +3126,35 @@ function setAtt(sid, v, btn) {
   if (v) attState[key] = v; else delete attState[key];
 
   // Update button states on the row
-  const row = btn.closest('.att-row');
   row.querySelectorAll('.att-btn').forEach(b => b.classList.remove('ps','as','ls'));
   btn.classList.add(v==='P'?'ps':v==='A'?'as':'ls');
+
+  // Update row background color immediately (uses CSS variables for dark mode support)
+  row.style.background = v==='A' ? 'var(--att-absent-bg)' : v==='L' ? 'var(--att-late-bg)' : 'var(--card)';
+  row.style.borderLeft  = v==='A' ? '3px solid #dc2626' : v==='L' ? '3px solid #ca8a04' : '';
+
+  // Update absent/late badge in name area
+  const nameDiv = row.querySelector('.att-name > div');
+  if (nameDiv) {
+    const oldBadge = nameDiv.querySelector('.att-status-badge');
+    if (oldBadge) oldBadge.remove();
+    if (v === 'A') {
+      nameDiv.insertAdjacentHTML('beforeend',
+        '<span class="att-status-badge" style="font-size:9px;background:#fee2e2;color:#dc2626;padding:1px 6px;border-radius:8px;font-weight:700">✗ Absent</span>');
+    } else if (v === 'L') {
+      nameDiv.insertAdjacentHTML('beforeend',
+        '<span class="att-status-badge" style="font-size:9px;background:#fef9c3;color:#ca8a04;padding:1px 6px;border-radius:8px;font-weight:700">⏰ Late</span>');
+    }
+  }
+
+  // Add/remove WA button dynamically
+  const existingWA = row.querySelector('.att-wa-quick');
+  if (existingWA) existingWA.remove();
+  if (v === 'A' || v === 'L') {
+    const attBtns = row.querySelector('.att-btns');
+    if (attBtns) attBtns.insertAdjacentHTML('beforeend',
+      `<button class="btn btn-wa btn-sm att-wa-quick" style="font-size:9px;padding:2px 7px" onclick="sendRowAttWA(this)">📱</button>`);
+  }
 
   // Auto-save immediately
   _saveAttSession(date, batchId, session);
@@ -4226,6 +4286,19 @@ function sendAllLateWA() {
 }
 
 /* ── Send WA for a single student from the att row (P/A/L button) ── */
+/* Send WA alert from attendance row — reads student ID from data-sid attribute */
+function sendRowAttWA(btn) {
+  const row = btn.closest('.att-row');
+  if (!row) return;
+  const sid     = row.dataset.sid;
+  const batchId = document.getElementById('att-batch')?.value || '';
+  const session = document.getElementById('att-session')?.value || 'morning';
+  const key     = _attKey(sid, batchId, session);
+  const status  = attState[key] || '';
+  if (!status || status === 'P') return;
+  sendOneAttWA(sid, status);
+}
+
 function sendOneAttWA(studentId, status) {
   const s = students.find(x => x.id === studentId);
   if (!s) return;
@@ -4377,7 +4450,7 @@ function _renderFeesFiltered(tabVal, month) {
           </div>
         </div>
       </td>
-      <td colspan="2" style="padding:7px 12px;text-align:right">
+      <td style="padding:7px 12px;text-align:right">
         <span style="font-size:10px;color:var(--tx3)">${recs.length} record${recs.length!==1?'s':''}</span>
       </td>
     </tr>`;
@@ -4392,20 +4465,27 @@ function _renderFeesFiltered(tabVal, month) {
         : `<span style="font-size:9px;background:#dcfce7;color:#166534;padding:1px 5px;border-radius:6px;font-weight:600;margin-left:4px">Monthly</span>`;
       const subjTag = f.subject ? ` · <span style="font-size:10px;color:#7c3aed">${f.subject}</span>` : '';
 
-      html += `<tr style="background:${isPaid?'transparent':'#fffbeb22'};border-left:3px solid ${isPaid?'#bbf7d0':'#fcd34d'}">
-        <td style="padding:6px 12px 6px 24px">
-          ${typeTag}<span style="font-size:11px;color:var(--tx2);margin-left:4px">${f.month}${subjTag}</span>
+      html += `<tr style="background:${isPaid?'transparent':'#fffbeb08'};border-left:3px solid ${isPaid?'#bbf7d0':'#fcd34d'}">
+        <td style="padding:7px 12px 7px 20px">
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+            ${typeTag}
+            <span style="font-size:12px;font-weight:600;color:var(--tx)">${f.month}</span>
+            ${subjTag}
+            <span class="badge ${bm[f.status]||'ba'}" style="font-size:9px">${f.status}</span>
+          </div>
+          <div style="font-size:10px;color:var(--tx3);margin-top:2px;display:flex;gap:10px">
+            <span>Total: <b style="color:var(--tx)">₹${(f.total||0).toLocaleString('en-IN')}</b></span>
+            <span>Paid: <b style="color:#16a34a">₹${(f.paid||0).toLocaleString('en-IN')}</b></span>
+            ${f.balance>0?`<span>Due: <b style="color:#dc2626">₹${f.balance.toLocaleString('en-IN')}</b></span>`:''}
+            <span style="color:var(--tx3)">${f.mode||'Cash'}</span>
+          </div>
         </td>
-        <td style="font-size:12px;padding:6px 8px">₹${(f.total||0).toLocaleString('en-IN')}</td>
-        <td style="font-size:12px;font-weight:600;color:${f.balance>0?'#dc2626':'#16a34a'};padding:6px 8px">${f.balance>0?'₹'+f.balance.toLocaleString('en-IN'):'✅'}</td>
-        <td style="font-size:11px;color:var(--tx3);padding:6px 8px">${f.mode||'Cash'}</td>
-        <td style="padding:6px 8px"><span class="badge ${bm[f.status]||'ba'}">${f.status}</span></td>
-        <td style="padding:6px 8px" colspan="3">
-          <div style="display:flex;gap:4px;align-items:center">
+        <td style="padding:7px 8px;text-align:right;white-space:nowrap">
+          <div style="display:flex;gap:4px;align-items:center;justify-content:flex-end">
             ${isPaid
-              ? `<span style="font-size:11px;color:#16a34a;font-weight:600">✅ Done</span>`
+              ? `<span style="font-size:11px;color:#16a34a;font-weight:700;background:#dcfce7;padding:2px 8px;border-radius:6px">✅ Paid</span>`
               : `<button onclick="openCollectModal('${rcptEsc}')"
-                   style="background:#16a34a;color:#fff;border:none;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">
+                   style="background:#16a34a;color:#fff;border:none;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">
                    💰 Collect
                  </button>`}
             <button onclick="openEditFeeModal('${rcptEsc}')"
@@ -5124,6 +5204,73 @@ function renderExams() {
         </div>`;
       }).join(''));
 }
+/**
+ * filterStudentsByBatch(students, batchStr)
+ *
+ * Robust grade-aware student filter used by selectExam() and saveMarksToStorage().
+ *
+ * Fixes two bugs:
+ *  1. Old code fell back to ALL students when filtered.length === 0 — wrong.
+ *     Now we always return only matched students (empty array if no match).
+ *  2. Old gradeHint only extracted digits ("Grade 10" → "10") and compared
+ *     directly to s.grade — failed when s.grade is stored as Roman numeral
+ *     ("X", "XI", "XII") or other formats.  Now we normalise both sides to a
+ *     canonical integer string before comparing.
+ */
+function filterStudentsByBatch(studentList, batchStr) {
+  // ── Grade-format normalisation map ──────────────────────────────────────
+  // Maps every known grade representation → canonical digit string
+  const GRADE_NORM = {
+    'kg':'kg', 'lkg':'kg', 'ukg':'kg',
+    'i':'1','ii':'2','iii':'3','iv':'4','v':'5',
+    'vi':'6','vii':'7','viii':'8','ix':'9','x':'10',
+    'xi':'11','xii':'12',
+    '1':'1','2':'2','3':'3','4':'4','5':'5',
+    '6':'6','7':'7','8':'8','9':'9','10':'10',
+    '11':'11','12':'12'
+  };
+
+  function normaliseGrade(raw) {
+    if (!raw) return '';
+    const s = String(raw).trim().toLowerCase();
+    // Direct lookup (handles Roman + digit formats)
+    if (GRADE_NORM[s]) return GRADE_NORM[s];
+    // Strip non-alphanumeric suffixes (e.g. "10th", "10 a") → try digits only
+    const digitsOnly = s.replace(/[^0-9]/g, '');
+    if (digitsOnly && GRADE_NORM[digitsOnly]) return GRADE_NORM[digitsOnly];
+    return s; // return as-is for unknown formats
+  }
+
+  const batchLower  = batchStr.trim().toLowerCase();
+
+  // Extract digit-only hint from batch string: "Grade 10" / "10th" / "X" / "10"
+  // First try digit extraction, then try Roman-numeral word lookup
+  const batchWords  = batchLower.split(/\s+/);
+  let   gradeHint   = '';
+  for (const w of batchWords) {
+    const norm = normaliseGrade(w);
+    if (norm) { gradeHint = norm; break; }
+  }
+  // Fallback: strip all non-digits from full batch string
+  if (!gradeHint) {
+    const raw = batchLower.replace(/[^0-9]/g, '').trim();
+    if (raw) gradeHint = raw;
+  }
+
+  return studentList.filter(s => {
+    const sc = (s.course || '').toLowerCase();
+
+    // 1. Course name match (e.g. batch field = "Grade 10 Morning")
+    const courseMatch = sc.includes(batchLower) || batchLower.includes(sc);
+
+    // 2. Normalised grade match — handles "10" == "X" == "10th" etc.
+    const studentGradeNorm = normaliseGrade(s.grade);
+    const gradeMatch = gradeHint !== '' && studentGradeNorm === gradeHint;
+
+    return courseMatch || gradeMatch;
+  });
+}
+
 function selectExam(i) {
   selExam = i; renderExams();
   const e    = exams[i];
@@ -5133,41 +5280,7 @@ function selectExam(i) {
   // Filter students: only those matching the exam's batch/grade
   let activeStudents = students.filter(s => s && s.name && s.status === 'active');
   if (e.batch && e.batch !== 'All' && e.batch.trim() !== '') {
-    const batchLower = e.batch.trim().toLowerCase();
-    // Extract grade number hint from batch string (e.g. "Grade 10", "10th", "X" → "10")
-    // Step 1: try roman/word grade aliases first (e.g. "X" → 10, "XII" → 12)
-    const romanMap = {i:1,ii:2,iii:3,iv:4,v:5,vi:6,vii:7,viii:8,ix:9,x:10,xi:11,xii:12};
-    const wordMap  = {kg:'KG',lkg:'KG',ukg:'KG',one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,eleven:11,twelve:12};
-    // Extract raw number from batch name (handles "Grade 10", "10th", "Class 10", "10")
-    const numMatch = batchLower.match(/\b(\d{1,2})\b/);
-    const gradeHint = numMatch ? numMatch[1] : '';
-    // Helper: normalize any grade value to a comparable number string
-    function normalizeGrade(g) {
-      const gs = String(g || '').trim();
-      if (!gs) return '';
-      if (/^\d+$/.test(gs)) return gs; // already numeric
-      const upper = gs.toUpperCase();
-      if (romanMap[gs.toLowerCase()]) return String(romanMap[gs.toLowerCase()]);
-      if (upper === 'KG' || upper === 'LKG' || upper === 'UKG') return upper;
-      // Extract digits if mixed (e.g. "10th", "Gr.10")
-      const d = gs.match(/\d+/);
-      return d ? d[0] : gs.toLowerCase();
-    }
-    const filtered = activeStudents.filter(s => {
-      const sc = (s.course || '').toLowerCase();
-      const sg = normalizeGrade(s.grade);
-      // Match by exact batch name in course
-      const courseMatch = sc.includes(batchLower) || batchLower.includes(sc);
-      // Match by grade number (compare normalized forms)
-      const gradeMatch = gradeHint !== '' && sg !== '' && (
-        sg === gradeHint ||
-        sg === normalizeGrade(e.batch) // handles roman/word grade in batch name
-      );
-      return courseMatch || gradeMatch;
-    });
-    // BUG FIX: Always use filtered result — never fall back to all students when filter yields 0.
-    // If no students match this batch/grade, show empty list (correct behavior).
-    activeStudents = filtered;
+    activeStudents = filterStudentsByBatch(activeStudents, e.batch);
   }
 
   // Load existing saved marks for this exam
@@ -5177,7 +5290,7 @@ function selectExam(i) {
 
   const rows = activeStudents.map((s,j) => {
     const saved   = savedMarks[s.id];
-    const marksVal = saved && !saved.absent ? saved.marks : '';
+    const marksVal = (saved && !saved.absent && saved.marks !== null && saved.marks !== undefined) ? saved.marks : '';
     const isAbsent = saved ? saved.absent : false;
     return `<tr id="mr-${s.id}">
       <td>
@@ -5246,7 +5359,7 @@ function selectExam(i) {
             <th style="width:28%">Student</th>
             <th style="width:8%;text-align:center">AB</th>
             <th style="width:18%">Marks / ${e.maxMarks}</th>
-            <th style="width:10%;text-align:center">Grade</th>
+            <th style="width:12%;text-align:center">Grade</th>
             <th style="width:36%">Pass / Fail</th>
           </tr>
         </thead>
@@ -5268,11 +5381,14 @@ function selectExam(i) {
 
 /* Helper: return grade letter respecting custom passMarks */
 function _gradeLabel(marks, max, pass) {
-  var v=parseFloat(marks),pct=(v/max)*100;
-  if(v<pass)return'<span style="color:#dc2626;font-weight:700">F</span>';
-  var l=pct>=91?'A+':pct>=81?'A':pct>=71?'B+':pct>=61?'B':pct>=51?'C':pct>=35?'D':'D';
-  var c=pct>=81?'#16a34a':pct>=71?'#16a34a':pct>=61?'#0284c7':pct>=51?'#ca8a04':'#f97316';
-  return'<span style="color:'+c+';font-weight:700">'+l+'</span>';
+  var v=parseFloat(marks), pct=(v/max)*100;
+  // F — below pass mark
+  if(v < pass) return '<span style="background:#fee2e2;color:#dc2626;font-weight:800;padding:2px 7px;border-radius:5px">F</span>';
+  // Pass grades — distinct colors per band
+  var l = pct>=91?'A+' : pct>=81?'A' : pct>=71?'B+' : pct>=61?'B' : pct>=51?'C' : 'D';
+  var bg= pct>=91?'#dcfce7' : pct>=81?'#bbf7d0' : pct>=71?'#dbeafe' : pct>=61?'#e0f2fe' : pct>=51?'#fef9c3' : '#fef3c7';
+  var cl= pct>=91?'#14532d' : pct>=81?'#166534' : pct>=71?'#1e40af' : pct>=61?'#0369a1' : pct>=51?'#854d0e' : '#92400e';
+  return '<span style="background:'+bg+';color:'+cl+';font-weight:800;padding:2px 7px;border-radius:5px;font-size:11px">'+l+'</span>';
 }
 
 /* Toggle absent checkbox in marks panel */
@@ -5316,8 +5432,12 @@ function calcGradeEx(inp, examId, max, pass, sid) {
 function updateMarksStats(examId, max, pass, activeStudents) {
   const el = document.getElementById('marks-stats-'+examId);
   if (!el) return;
+  // Only count students whose inputs are actually rendered in the panel
+  const panel = document.getElementById('marks-panel');
+  const renderedIds = panel ? Array.from(panel.querySelectorAll('input[id^="mk-"]')).map(el => el.id.replace('mk-','')) : [];
+  const visibleStudents = activeStudents.filter(s => renderedIds.includes(s.id));
   let passed=0, failed=0, absent=0, notEntered=0;
-  activeStudents.forEach(s => {
+  (visibleStudents.length > 0 ? visibleStudents : activeStudents).forEach(s => {
     const cb = document.getElementById('ab-'+s.id);
     if (cb && cb.checked) { absent++; return; }
     const mk = document.getElementById('mk-'+s.id);
@@ -5335,9 +5455,9 @@ function calcGrade(inp, max, j) {
   // Legacy fallback — new marks panel uses calcGradeEx per student ID
   const pct = (parseFloat(inp.value)||0)/max*100;
   const pass = selExam>=0&&exams[selExam]?.passMarks ? exams[selExam].passMarks : Math.round(max*0.35);
-  const g = parseFloat(inp.value)<pass?'F':pct>=91?'A+':pct>=81?'A':pct>=71?'B+':pct>=61?'B':pct>=51?'C':pct>=35?'D':'D';
+  const g = parseFloat(inp.value)<pass?'F':pct>=91?'A+':pct>=81?'A':pct>=71?'B+':pct>=61?'B':pct>=51?'C':'D';
   const gEl=document.getElementById('grd-'+j), pb=document.getElementById('pb-'+j);
-  if(gEl){gEl.textContent=inp.value?g:'';gEl.style.color=parseFloat(inp.value)>=pass?'#16a34a':'#dc2626';}
+  if(gEl){gEl.innerHTML=inp.value?_gradeLabel(parseFloat(inp.value)||0,max,pass):'';}
   if(pb){pb.style.width=Math.min(100,pct)+'%';pb.style.background=parseFloat(inp.value)>=pass?'#16a34a':pct>=(pass/max*100*0.8)?'#ca8a04':'#dc2626';}
 }
 function syncPassMarks() {
@@ -5348,6 +5468,42 @@ function syncPassMarks() {
     passEl.dataset.auto = 'yes';
   }
 }
+
+/**
+ * updateExamBatchDropdown(selId, currentVal?)
+ * Populates a batch/grade <select> with all batches + grade options.
+ * Called when addExam / editExam modals open, and on change to refresh.
+ */
+function updateExamBatchDropdown(selId, currentVal) {
+  const sel = document.getElementById(selId);
+  if (!sel) return;
+  const val = currentVal !== undefined ? currentVal : sel.value || 'All';
+
+  const grades = ['KG','1','2','3','4','5','6','7','8','9','10','11','12'];
+  let html = '<option value="All">🌐 All Students</option>';
+
+  const bList = (typeof batches !== 'undefined' ? batches : []).filter(b => b && b.name);
+  if (bList.length > 0) {
+    html += '<optgroup label="📋 Batches">';
+    bList.forEach(b => {
+      html += `<option value="${b.name}" ${val===b.name?'selected':''}>${b.name}</option>`;
+    });
+    html += '</optgroup>';
+  }
+  html += '<optgroup label="🎓 By Grade">';
+  grades.forEach(g => {
+    const v = 'Grade ' + g;
+    html += `<option value="${v}" ${val===v?'selected':''}>${v}</option>`;
+  });
+  html += '</optgroup>';
+
+  sel.innerHTML = html;
+  // Re-apply saved value in case it wasn't in the list yet
+  if (val && sel.value !== val) sel.value = 'All';
+}
+
+/* Call populators whenever addExam modal opens (hooked into showModal) */
+const _origShowModal = (typeof showModal === 'function') ? showModal : null;
 function saveExam() {
   const name = document.getElementById('m-exname')?.value.trim();
   if (!name) { showToast('Enter exam name'); return; }
@@ -5384,31 +5540,7 @@ function saveMarksToStorage(examIdx) {
   let activeStudents = students.filter(s => s && s.name && s.status === 'active');
   // Filter by exam batch/grade (same logic as selectExam)
   if (e.batch && e.batch !== 'All' && e.batch.trim() !== '') {
-    const batchLower = e.batch.trim().toLowerCase();
-    const romanMap = {i:1,ii:2,iii:3,iv:4,v:5,vi:6,vii:7,viii:8,ix:9,x:10,xi:11,xii:12};
-    const numMatch = batchLower.match(/\b(\d{1,2})\b/);
-    const gradeHint = numMatch ? numMatch[1] : '';
-    function normalizeGrade(g) {
-      const gs = String(g || '').trim();
-      if (!gs) return '';
-      if (/^\d+$/.test(gs)) return gs;
-      if (romanMap[gs.toLowerCase()]) return String(romanMap[gs.toLowerCase()]);
-      const upper = gs.toUpperCase();
-      if (upper === 'KG' || upper === 'LKG' || upper === 'UKG') return upper;
-      const d = gs.match(/\d+/);
-      return d ? d[0] : gs.toLowerCase();
-    }
-    const filtered = activeStudents.filter(s => {
-      const sc = (s.course || '').toLowerCase();
-      const sg = normalizeGrade(s.grade);
-      const courseMatch = sc.includes(batchLower) || batchLower.includes(sc);
-      const gradeMatch = gradeHint !== '' && sg !== '' && (
-        sg === gradeHint || sg === normalizeGrade(e.batch)
-      );
-      return courseMatch || gradeMatch;
-    });
-    // BUG FIX: Always use filtered result — no fallback to all students.
-    activeStudents = filtered;
+    activeStudents = filterStudentsByBatch(activeStudents, e.batch);
   }
 
   activeStudents.forEach(s => {
@@ -5464,7 +5596,7 @@ function editExam(i) {
       </div>
       <div class="frow">
         <div class="fg"><label class="fl">Date</label><input class="fi" type="date" id="ee-date" value="${e.date}"></div>
-        <div class="fg"><label class="fl">Batch / Grade</label><input class="fi" id="ee-batch" value="${e.batch||'All'}"></div>
+        <div class="fg"><label class="fl">Batch / Grade</label><select class="fi" id="ee-batch" onchange="updateExamBatchDropdown('ee-batch')"><option value="All">🌐 All Students</option></select></div>
       </div>
       <div class="frow">
         <div class="fg"><label class="fl">Full Marks</label><input class="fi" type="number" id="ee-max" value="${e.maxMarks}"></div>
@@ -5473,12 +5605,21 @@ function editExam(i) {
       <div class="fg"><label class="fl">Syllabus / Topics</label>
         <textarea class="fi" id="ee-syl" rows="2" style="resize:none;font-family:inherit;line-height:1.5">${e.syllabus||''}</textarea>
       </div>
+      <div style="background:var(--bg);border-radius:8px;padding:10px 12px;border:.5px solid var(--br);margin-top:4px">
+        <div style="font-size:11px;font-weight:700;color:var(--tx);margin-bottom:6px">📱 WhatsApp Notice</div>
+        <button class="btn btn-wa btn-sm" style="width:100%;justify-content:center;font-size:11px"
+          onclick="closeModal();setTimeout(()=>showExamNoticeWAModal(${i}),150)">
+          📱 Send Exam Notice to Parents
+        </button>
+      </div>
       <div class="modal-foot">
         <button class="btn btn-p" onclick="applyEditExam(${i})">✅ Update Exam</button>
         <button class="btn" onclick="closeModal()">Cancel</button>
       </div>
     </div>
   </div>`;
+  // Populate batch dropdown and pre-select current exam batch
+  setTimeout(() => updateExamBatchDropdown('ee-batch', e.batch || 'All'), 30);
 }
 
 function applyEditExam(i) {
@@ -5959,25 +6100,27 @@ function renderStaffAttGrid() {
   var totM=0,totE=0, pM=0,pE=0, lM=0,lE=0, aM=0,aE=0;
 
   function makeSelect(staffId, session, val) {
+    // '' = Present (default), clearly colored green when not changed
     var colors = {
-      '':   {bg:'var(--bg)',   cl:'var(--tx2)', bd:'var(--br)'},
-      'L':  {bg:'#fef9c3',    cl:'#ca8a04',    bd:'#fde047'},
-      'CL': {bg:'#fef3c7',    cl:'#92400e',    bd:'#fde68a'},
-      'LOP':{bg:'#ede9fe',    cl:'#5b21b6',    bd:'#c4b5fd'},
-      'H':  {bg:'#dbeafe',    cl:'#1e40af',    bd:'#bfdbfe'},
-      'A':  {bg:'#fff1f2',    cl:'#dc2626',    bd:'#fecdd3'},
+      '':   {bg:'#dcfce7', cl:'#166534', bd:'#16a34a'},   // Present → green
+      'P':  {bg:'#dcfce7', cl:'#166534', bd:'#16a34a'},   // explicit Present
+      'L':  {bg:'#fef9c3', cl:'#78350f', bd:'#ca8a04'},   // Late → yellow
+      'CL': {bg:'#fef3c7', cl:'#92400e', bd:'#fde68a'},   // Casual Leave → amber
+      'LOP':{bg:'#ede9fe', cl:'#5b21b6', bd:'#c4b5fd'},   // LOP → purple
+      'H':  {bg:'#dbeafe', cl:'#1e40af', bd:'#bfdbfe'},   // Holiday → blue
+      'A':  {bg:'#fee2e2', cl:'#991b1b', bd:'#dc2626'},   // Absent → red
     };
     var c = colors[val] || colors[''];
     return '<select onchange="setStaffAtt(\''+staffId+'\',\''+date+'\',\''+session+'\',this.value)" '
-      + 'style="border:1.5px solid '+c.bd+';background:'+c.bg+';color:'+c.cl+';'
-      + 'font-size:11px;font-weight:'+(val?'700':'500')+';border-radius:8px;padding:6px 8px;'
-      + 'cursor:pointer;font-family:inherit;width:100%;min-width:120px">'
-      + '<option value=""'    +(val===''   ?' selected':'')+'>✅ Present</option>'
-      + '<option value="A"'  +(val==='A'  ?' selected':'')+'>❌ Absent</option>'
-      + '<option value="L"'  +(val==='L'  ?' selected':'')+'>⏰ Late</option>'
-      + '<option value="CL"' +(val==='CL' ?' selected':'')+'>CL — Casual Leave</option>'
-      + '<option value="LOP"'+(val==='LOP'?' selected':'')+'>LOP — Loss of Pay</option>'
-      + '<option value="H"'  +(val==='H'  ?' selected':'')+'>H — Holiday</option>'
+      + 'style="border:2px solid '+c.bd+';background:'+c.bg+';color:'+c.cl+';'
+      + 'font-size:12px;font-weight:700;border-radius:8px;padding:7px 10px;'
+      + 'cursor:pointer;font-family:inherit;width:100%;min-width:130px;outline:none">'
+      + '<option value=""'    +(val===''||val==='P'?' selected':'')+' style="background:#dcfce7;color:#166534">✅ Present</option>'
+      + '<option value="A"'  +(val==='A'  ?' selected':'')+' style="background:#fee2e2;color:#991b1b">❌ Absent</option>'
+      + '<option value="L"'  +(val==='L'  ?' selected':'')+' style="background:#fef9c3;color:#78350f">⏰ Late</option>'
+      + '<option value="CL"' +(val==='CL' ?' selected':'')+' style="background:#fef3c7;color:#92400e">🌿 CL — Casual Leave</option>'
+      + '<option value="LOP"'+(val==='LOP'?' selected':'')+' style="background:#ede9fe;color:#5b21b6">💸 LOP — Loss of Pay</option>'
+      + '<option value="H"'  +(val==='H'  ?' selected':'')+' style="background:#dbeafe;color:#1e40af">🏖 Holiday</option>'
       + '</select>';
   }
 
@@ -6461,14 +6604,26 @@ function exportPayrollCSV() {
   const month = monthEl?.value || new Date().toISOString().slice(0,7);
   const [yr,mo] = month.split('-').map(Number);
   const daysInMonth = new Date(yr,mo,0).getDate();
-  let csv = 'Staff ID,Name,Designation,Consolidated Pay,LOP Days,LOP Deduction,Extra Deduction,Extra Note,NET PAY\n';
+  let csv = 'Staff ID,Name,Designation,Base Salary,HRA,TA,Gross,LOP Days,LOP Deduction,Extra Deduction,Extra Note,NET PAY\n';
   staffData.forEach(s => {
-    let lop=0;
+    let lop=0, absent=0;
     for(let d=1;d<=daysInMonth;d++){
       const dt=`${yr}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-      if((staffAtt[`${s.id}|${dt}`]||'')==='LOP') lop++;
+      const v=staffAtt[`${s.id}|${dt}`]||'';
+      if(v==='LOP') lop++;
+      if(v==='A') absent++;
     }
-    csv+=`${s.id||''},${s.name},${s.desg},${s.baseSalary||0},${s.hra||0},${s.ta||0},${gross},${s.pf||0},${s.tax||0},${absDed},${s.otherDed||0},${net},${absent}
+    const base=s.baseSalary||0;
+    const hra=s.hra||0;
+    const ta=s.ta||0;
+    const gross=base+hra+ta;
+    const lopDed=daysInMonth>0?Math.round(gross/daysInMonth*lop):0;
+    const extraDed=s.extraDed||0;
+    const pf=s.pf||0;
+    const tax=s.tax||0;
+    const otherDed=s.otherDed||0;
+    const net=Math.max(0,gross-lopDed-extraDed-pf-tax-otherDed);
+    csv+=`${s.id||''},${s.name||''},${s.desg||''},${base},${hra},${ta},${gross},${lop},${lopDed},${extraDed},${s.extraDedNote||''},${net}
 `;
   });
   const blob=new Blob([csv],{type:'text/csv'});
@@ -8184,12 +8339,38 @@ function renderGrowthForecastCards() {
   const grid=document.getElementById('ai-growth-forecast-cards');
   if(!grid) return;
   const ta=lang==='ta';
-  const active=students.filter(s=>s&&s.name&&s.status==='active');
+  const allActive=students.filter(s=>s&&s.name&&s.status==='active');
 
-  if(active.length===0){
+  // ── Populate grade dropdown ─────────────────────────────────
+  const sel=document.getElementById('gf-grade-filter');
+  if(sel){
+    const grades=['KG','1','2','3','4','5','6','7','8','9','10','11','12'];
+    const existGrades=[...new Set(allActive.map(s=>String(s.grade||'').trim()))].sort((a,b)=>{
+      const ai=grades.indexOf(a),bi=grades.indexOf(b);
+      return (ai===-1?99:ai)-(bi===-1?99:bi);
+    });
+    const curVal=sel.value||'all';
+    sel.innerHTML='<option value="all">🎓 '+(ta?'அனைத்து வகுப்புகள்':'All Classes')+'</option>'
+      +existGrades.map(g=>`<option value="${g}" ${curVal===g?'selected':''}>${ta?'வகுப்பு ':'Grade '}${g} (${allActive.filter(s=>String(s.grade||'').trim()===g).length})</option>`).join('');
+    if(curVal!=='all') sel.value=curVal;
+  }
+
+  // ── Apply grade filter ──────────────────────────────────────
+  const gradeFilter=window._gfGradeFilter||'all';
+  const active=gradeFilter==='all'
+    ? allActive
+    : allActive.filter(s=>String(s.grade||'').trim()===gradeFilter);
+
+  if(allActive.length===0){
     grid.innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:32px;color:var(--tx3);
       font-size:13px;background:var(--card);border-radius:12px;border:.5px solid var(--br)">
       ${ta?'மாணவர்களை சேர்த்த பிறகு AI Growth Forecast தோன்றும்':'Add students to see AI Growth Forecast'}</div>`;
+    return;
+  }
+  if(active.length===0){
+    grid.innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--tx3);
+      font-size:13px;background:var(--card);border-radius:12px;border:.5px solid var(--br)">
+      ${ta?'இந்த வகுப்பில் மாணவர்கள் இல்லை':'No students found for this grade'}</div>`;
     return;
   }
 
@@ -8200,7 +8381,12 @@ function renderGrowthForecastCards() {
     </div>`;
   };
 
-  grid.innerHTML=active.slice(0,6).map(s=>{
+  const _gfPage = window._gfPage || 0;
+  const _gfPageSize = 15;
+  const _gfStart = _gfPage * _gfPageSize;
+  const _gfSlice = active.slice(_gfStart, _gfStart + _gfPageSize);
+
+  grid.innerHTML=_gfSlice.map(s=>{
     const fc=_gfCompute(s);
     const trendIcon =fc.trend>2?'📈':fc.trend<-2?'📉':'➡️';
     const trendColor=fc.trend>2?'#16a34a':fc.trend<-2?'#dc2626':'#ca8a04';
@@ -8288,11 +8474,18 @@ function renderGrowthForecastCards() {
     </div>`;
   }).join('');
 
-  if(active.length>6){
-    grid.innerHTML+=`<div style="display:flex;align-items:center;justify-content:center;
-      background:var(--card);border:.5px solid var(--br);border-radius:12px;padding:20px;
-      color:#065f46;font-size:12px;font-weight:600">
-      +${active.length-6} ${lang==='ta'?'மாணவர்கள் மேலும் உள்ளனர்':'more students'}</div>`;
+  // Pagination controls
+  const _gfTotalPages = Math.ceil(active.length / _gfPageSize);
+  if(_gfTotalPages > 1) {
+    let pgHtml = '<div style="grid-column:1/-1;display:flex;align-items:center;justify-content:center;gap:8px;padding:12px 0">';
+    pgHtml += `<span style="font-size:11px;color:var(--tx3)">${_gfStart+1}–${Math.min(_gfStart+_gfPageSize,active.length)} / ${active.length} ${lang==='ta'?'மாணவர்கள்':'students'}</span>`;
+    pgHtml += `<button onclick="window._gfPage=Math.max(0,(window._gfPage||0)-1);renderGrowthForecastCards()" style="padding:4px 12px;border-radius:7px;border:.5px solid var(--br);background:var(--card);color:var(--tx);cursor:pointer;font-size:11px;${_gfPage===0?'opacity:.4;pointer-events:none':''}">◀</button>`;
+    for(let _p=0;_p<_gfTotalPages;_p++){
+      pgHtml += `<button onclick="window._gfPage=${_p};renderGrowthForecastCards()" style="width:28px;height:28px;border-radius:7px;border:.5px solid ${_p===_gfPage?'#065f46':'var(--br)'};background:${_p===_gfPage?'#065f46':'var(--card)'};color:${_p===_gfPage?'#fff':'var(--tx)'};cursor:pointer;font-size:11px;font-weight:600">${_p+1}</button>`;
+    }
+    pgHtml += `<button onclick="window._gfPage=Math.min(${_gfTotalPages-1},(window._gfPage||0)+1);renderGrowthForecastCards()" style="padding:4px 12px;border-radius:7px;border:.5px solid var(--br);background:var(--card);color:var(--tx);cursor:pointer;font-size:11px;${_gfPage>=_gfTotalPages-1?'opacity:.4;pointer-events:none':''}">▶</button>`;
+    pgHtml += '</div>';
+    grid.innerHTML += pgHtml;
   }
 }
 
@@ -8449,9 +8642,7 @@ function doPost(e) {
     const markRows = [];
     Object.entries(data.marks||{}).forEach(([examKey, val])=>{
       if (!val || typeof val !== 'object') return;
-      // FIX: strip _erp_marks_ prefix if present
-      const cleanKey = examKey.replace(/^_erp_marks_/, '');
-      const examName = val.examName || val.name || cleanKey;
+      const examName = val.examName||examKey;
       const subject  = val.subject||'';
       const maxMarks = val.maxMarks||100;
       const passMarks= val.passMarks||35;
@@ -8463,10 +8654,10 @@ function doPost(e) {
           const score = typeof m==='object'? m.marks : m;
           const absent= typeof m==='object'? (m.absent?'Yes':'No') : 'No';
           const pass  = typeof m==='object'? (m.pass?'Pass':'Fail') : '';
-          markRows.push([ts,cleanKey,examName,subject,maxMarks,passMarks,sid,s.name||'',score,absent,pass]);
+          markRows.push([ts,examKey,examName,subject,maxMarks,passMarks,sid,s.name||'',score,absent,pass]);
         });
       } else {
-        markRows.push([ts,cleanKey,examName,subject,maxMarks,passMarks,'','',val,'','']);
+        markRows.push([ts,examKey,examName,subject,maxMarks,passMarks,'','',val,'','']);
       }
     });
     if (markRows.length>0)
@@ -8983,23 +9174,13 @@ async function syncSheets(silent) {
     const marksIndex = JSON.parse(localStorage.getItem('_erp_marks_index')||'[]');
     const allMarks = marksIndex.map(k => { try { return JSON.parse(localStorage.getItem(k)); } catch(e){return null;} }).filter(Boolean);
 
-    // FIX: Build full marks payload from marksIndex localStorage keys
-    const marksPayload = {};
-    marksIndex.forEach(k => {
-      try {
-        const m = JSON.parse(localStorage.getItem(k));
-        if (m) marksPayload[k.replace('_erp_marks_','')] = m;
-      } catch(e) {}
-    });
-    const staffList = snapshot.staffData || snapshot.staff || [];
     const body = JSON.stringify({
       center:           snapshot.center,
       timestamp:        new Date().toISOString(),
       source:           'manual',
       students:         snapshot.students         || [],
       fees:             snapshot.fees             || [],
-      staff:            staffList,                        // FIX: GS reads 'staff' key
-      staffData:        staffList,                        // FIX: also send staffData (legacy compat)
+      staff:            snapshot.staffData        || [],
       exams:            snapshot.exams            || [],
       batches:          snapshot.batches          || [],
       notifications:    snapshot.notifications    || [],
@@ -9008,7 +9189,7 @@ async function syncSheets(silent) {
       attendanceFull:   snapshot.attendanceFull   || {},
       timetables:       snapshot.timetables       || {},
       dayOrder:         snapshot.dayOrder         || {},
-      marks:            Object.keys(marksPayload).length ? marksPayload : (snapshot.marks || {}),
+      marks:            snapshot.marks            || {},
       marksIndex:       snapshot.marksIndex       || [],
       feeStructure:     snapshot.feeStructure     || {},
       feeRcptTemplate:  snapshot.feeRcptTemplate  || '',
@@ -10142,6 +10323,7 @@ const WT_VARS = {
   admission:'{parent_name} · {student_name} · {class} · {batch} · {admission_no} · {fee} · {center_name} · {center_phone}',
   fee_receipt:'{student_name} · {parent_name} · {class} · {batch} · {receipt_no} · {month} · {amount_paid} · {total_paid} · {total_fee} · {balance} · {payment_mode} · {date_time} · {status} · {center_name} · {center_phone}',
   monthly_summary:'{parent_name} · {student_name} · {grade} · {month_name} · {year} · {present_days} · {absent_days} · {late_days} · {att_pct} · {att_status} · {late_status} · {stars} · {star_label} · {activities} · {rank} · {total_students} · {marks_section} · {teacher_note} · {center_name} · {center_phone}',
+  exam_notice: '{parent_name} · {student_name} · {grade} · {exam_name} · {subject} · {exam_date} · {max_marks} · {pass_marks} · {syllabus} · {center_name} · {center_phone}',
 };
 
 const WT_SAMPLE = {
@@ -10155,6 +10337,7 @@ const WT_SAMPLE = {
   admission:{ parent_name:'Suresh', student_name:'Monisha', grade:'10', batch:'Maths Group – Evening', admNo:'ADM-2026-012', fee:'1500', center_name:'KTC', center_phone:'9876543210' },
   fee_receipt:{ studentName:'Monisha', parent:'Suresh', grade:'Class 10', course:'Maths Group – Evening', rcpt:'RCP-MF-51941', month:'May 2026', collected:1200, totalPaid:1200, totalFee:1500, balance:300, mode:'Cash', dateTime:'15 May 2026 at 04:35 PM' },
   monthly_summary:{ parent_name:'Suresh', student_name:'Monisha', grade:'10', month_name:'மே', year:'2026', present_days:'22', absent_days:'2', late_days:'1', att_pct:'88', att_status:'நல்லது ✅', late_status:'1 நாட்கள் தாமதம் ⚠️', stars:'4', star_label:'நல்லது 🌟', activities:'📚 வீட்டுப்பாடம், 🏆 குவிஸ்', rank:'3 / 12', marks_section:'• Monthly Test (Maths): 87/100 — A (87%)', teacher_note:'மிகவும் கவனமாக உள்ளார்.', center_name:'KTC', center_phone:'9876543210' },
+  exam_notice: { parent_name:'Suresh', student_name:'Monisha', grade:'10', exam_name:'Monthly Test', subject:'Mathematics', exam_date:'20 Jun 2026', max_marks:'100', pass_marks:'35', syllabus:'Chapter 1–4, Algebra', center_name:'KTC', center_phone:'9876543210' },
 };
 
 const WT_ALL_TYPES = [
@@ -10168,6 +10351,7 @@ const WT_ALL_TYPES = [
   {id:'admission',       label:'Admission Welcome',    emoji:'🎓', color:'#185FA5'},
   {id:'fee_receipt',     label:'Fee Receipt',          emoji:'🧾', color:'#16a34a'},
   {id:'monthly_summary', label:'Student Monthly Summary', emoji:'📋', color:'#f59e0b'},
+  {id:'exam_notice',      label:'Exam Notice',              emoji:'📝', color:'#0369a1'},
 ];
 
 let wtActiveType = null;
@@ -10191,6 +10375,7 @@ function initWATemplatesPage() {
 function selectWTType(typeId) {
   wtActiveType = typeId;
   const t = WT_ALL_TYPES.find(x=>x.id===typeId);
+  if (!t) { console.warn('[ERP] selectWTType: unknown type:', typeId); return; }
   // Highlight tab
   WT_ALL_TYPES.forEach(x => {
     const btn = document.getElementById('wttab-'+x.id);
@@ -10222,8 +10407,10 @@ function selectWTType(typeId) {
 }
 
 function getWTDefault(typeId, lang) {
-  // Tamil only — ignore lang param
-  if (typeId === 'admission') return ADM_TEMPLATES['ta'] || ADM_TEMPLATES['en'] || '';
+  if (typeId === 'admission') {
+    const useTa = lang === 'ta';
+    return (useTa ? ADM_TEMPLATES.ta : ADM_TEMPLATES.en) || ADM_TEMPLATES.ta || '';
+  }
   if (typeId === 'fee_receipt') return FEE_RECEIPT_TEMPLATES['ta'] || FEE_RECEIPT_TEMPLATES['en'] || '';
   const tmplArr = WA_TEMPLATES[typeId]?.ta || [''];
   return tmplArr[0] || '';
@@ -10524,6 +10711,11 @@ function initFeeReceiptTemplate() {
 }
 
 function initAdmissions() {
+  // Restore recent admissions from localStorage
+  try {
+    const saved = localStorage.getItem('_erp_adm_recent');
+    if (saved) { admRecentList = JSON.parse(saved) || []; }
+  } catch(e) {}
   // Populate batch dropdown from batches array
   const courseEl = document.getElementById('adm-course');
   if (courseEl) {
@@ -10544,7 +10736,7 @@ function initAdmissions() {
     if (langSel) langSel.value = savedLang;
     const tmplEl = document.getElementById('adm-wa-template');
     if (tmplEl) {
-      tmplEl.value = saved || (savedLang === 'ta' ? ADM_TEMPLATES.ta : ADM_TEMPLATES['ta']);
+      tmplEl.value = saved || (savedLang === 'ta' ? ADM_TEMPLATES.ta : ADM_TEMPLATES.en);
     }
   } catch(e){}
   refreshAdmPreview();
@@ -10867,12 +11059,12 @@ function refreshAdmPreview() {
   // Only switch to language default if the textarea currently contains a default template
   // (i.e. the user hasn't made custom edits). Never overwrite custom content.
   const currentVal = tmplEl.value;
-  const isShowingDefault = currentVal === ADM_TEMPLATES['ta'] || currentVal === ADM_TEMPLATES.ta ||
-    currentVal === ADM_TEMPLATES['ta'] + '\n\n─────────────\n\n' + ADM_TEMPLATES.ta || currentVal === '';
+  const isShowingDefault = currentVal === ADM_TEMPLATES.en || currentVal === ADM_TEMPLATES.ta ||
+    currentVal === ADM_TEMPLATES.en + '\n\n─────────────\n\n' + ADM_TEMPLATES.ta || currentVal === '';
   if (isShowingDefault) {
-    if (lang_ === 'en') tmplEl.value = ADM_TEMPLATES['ta'];
+    if (lang_ === 'en') tmplEl.value = ADM_TEMPLATES.en;
     else if (lang_ === 'ta') tmplEl.value = ADM_TEMPLATES.ta;
-    else tmplEl.value = ADM_TEMPLATES['ta'] + '\n\n─────────────\n\n' + ADM_TEMPLATES.ta;
+    else tmplEl.value = ADM_TEMPLATES.en + '\n\n─────────────\n\n' + ADM_TEMPLATES.ta;
   }
 
   // Auto-save any edit immediately so it persists across navigations
@@ -10895,7 +11087,7 @@ function refreshAdmPreview() {
 function resetAdmTemplate() {
   const lang_ = document.getElementById('adm-wa-lang')?.value || 'en';
   const tmplEl = document.getElementById('adm-wa-template');
-  if (tmplEl) tmplEl.value = lang_ === 'ta' ? ADM_TEMPLATES.ta : ADM_TEMPLATES['ta'];
+  if (tmplEl) tmplEl.value = lang_ === 'ta' ? ADM_TEMPLATES.ta : ADM_TEMPLATES.en;
   try { localStorage.removeItem('_erp_adm_template'); } catch(e) {}
   refreshAdmPreview();
   showToast('Template reset to default');
@@ -10960,6 +11152,7 @@ function submitAdmission() {
   // Add to recent admissions
   admRecentList.unshift({ admNo, name, grade, parent, phone, date: new Date().toLocaleDateString('en-IN'), message });
   if (admRecentList.length > 20) admRecentList.pop();
+  try { localStorage.setItem('_erp_adm_recent', JSON.stringify(admRecentList)); } catch(e) {}
 
   // Auto-create fee records for the new student
   (function() {
@@ -11019,25 +11212,144 @@ function submitAdmission() {
 }
 
 function showAdmSuccess(s, message, phone) {
-  const root = document.getElementById('modal-root');
-  root.innerHTML = `<div class="modal-bg"><div class="modal" style="max-width:420px">
-    <div style="text-align:center;padding:8px 0 6px">
-      <div style="font-size:44px;margin-bottom:8px">🎉</div>
-      <div style="font-size:16px;font-weight:700;color:var(--tx);margin-bottom:4px">${s.name} Admitted!</div>
-      <div style="font-size:12px;color:var(--tx2);margin-bottom:14px">${s.admNo} · Class ${s.grade==='KG'?'KG':s.grade} · ${new Date().toLocaleDateString('en-IN')}</div>
-      <div style="background:#dcfce7;border-radius:8px;padding:12px;font-size:11px;color:#166534;font-family:'Noto Sans Tamil',system-ui;line-height:1.6;text-align:left;max-height:160px;overflow-y:auto;white-space:pre-wrap;margin-bottom:14px">${message}</div>
-      <div style="display:flex;gap:8px;margin-bottom:8px">
-        <button class="btn btn-wa" style="flex:1;justify-content:center;padding:11px;font-weight:600" onclick="var _msg=document.querySelector('.modal div[style*=dcfce7]')?.textContent||''; closeModal(); openWA('${phone}', _msg);">
-          📱 Send via WhatsApp
-        </button>
-        <button class="btn" style="padding:11px 14px" onclick="closeModal()">Skip</button>
+  // Find the fee records just created for this student
+  const stuFees   = fees.filter(f => f.studentId === s.id);
+  const monthlyF  = stuFees.find(f => f.type === 'monthly');
+  const admF      = stuFees.find(f => f.type === 'admission');
+  const totalDue  = stuFees.reduce((a,f) => a + (f.total||0), 0);
+  const curMonth  = _feeMonthLabel(new Date());
+
+  const feeRows = stuFees.map(f => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:.5px dashed var(--br)">
+      <div>
+        <div style="font-size:12px;font-weight:600;color:var(--tx)">${f.type==='admission'?'🎓 Admission Fee':'📅 Monthly Fee — '+f.month}</div>
+        <div style="font-size:10px;color:var(--tx3)">Receipt: ${f.rcpt}</div>
       </div>
-      <button class="btn" style="width:100%;justify-content:center;padding:10px;font-size:12px;font-weight:600;color:#185FA5;border-color:#185FA5"
-        onclick="closeModal(); navTo('fees');">
-        💰 Go to Fees to Add Fee Record
-      </button>
+      <div style="font-size:14px;font-weight:800;color:#dc2626">₹${(f.total||0).toLocaleString('en-IN')}</div>
+    </div>`).join('');
+
+  const root = document.getElementById('modal-root');
+  root.innerHTML = `<div class="modal-bg"><div class="modal" style="max-width:460px">
+
+    <!-- Header -->
+    <div style="text-align:center;padding:8px 0 10px">
+      <div style="font-size:44px;margin-bottom:6px">🎉</div>
+      <div style="font-size:16px;font-weight:700;color:var(--tx);margin-bottom:2px">${s.name} — Admitted!</div>
+      <div style="font-size:11px;color:var(--tx3)">${s.admNo} · ${s.grade==='KG'?'KG':'Class '+s.grade} · ${new Date().toLocaleDateString('en-IN')}</div>
     </div>
+
+    <!-- Fee Summary -->
+    <div style="background:var(--bg);border-radius:10px;padding:12px 14px;border:.5px solid var(--br);margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">💰 Fees Due — ${curMonth}</div>
+      ${feeRows || '<div style="font-size:12px;color:var(--tx3);text-align:center;padding:8px 0">No fees configured</div>'}
+      ${totalDue > 0 ? `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding-top:8px;margin-top:4px">
+        <span style="font-size:13px;font-weight:700;color:var(--tx)">Total Due</span>
+        <span style="font-size:20px;font-weight:800;color:#dc2626">₹${totalDue.toLocaleString('en-IN')}</span>
+      </div>` : ''}
+    </div>
+
+    <!-- Collect Now section -->
+    ${totalDue > 0 ? `
+    <div style="background:#f0fdf4;border-radius:10px;padding:12px 14px;border:.5px solid #bbf7d0;margin-bottom:14px">
+      <div style="font-size:12px;font-weight:700;color:#166534;margin-bottom:10px">✅ Collect Fee Now</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+        <div>
+          <label style="font-size:10px;font-weight:600;color:var(--tx2);display:block;margin-bottom:3px">Amount Collected ₹</label>
+          <input type="number" id="adm-collect-amt" class="fi" value="${totalDue}" style="font-size:14px;font-weight:700;padding:7px 10px">
+        </div>
+        <div>
+          <label style="font-size:10px;font-weight:600;color:var(--tx2);display:block;margin-bottom:3px">Payment Mode</label>
+          <select id="adm-collect-mode" class="fi" style="font-size:13px;padding:7px 10px">
+            <option value="Cash">💵 Cash</option>
+            <option value="UPI">📱 UPI</option>
+            <option value="Bank Transfer">🏦 Bank Transfer</option>
+            <option value="Cheque">📝 Cheque</option>
+          </select>
+        </div>
+      </div>
+      <button onclick="collectAdmissionFee('${s.id}','${phone}',\`${message.replace(/`/g,"'")}\`)"
+        style="width:100%;padding:11px;background:#16a34a;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px">
+        💰 Confirm Collection &amp; Send Receipt on WhatsApp
+      </button>
+    </div>` : ''}
+
+    <!-- WA Welcome Message -->
+    <div style="background:#dcfce7;border-radius:8px;padding:10px 12px;font-size:11px;color:#166534;font-family:'Noto Sans Tamil',system-ui;line-height:1.6;text-align:left;max-height:130px;overflow-y:auto;white-space:pre-wrap;margin-bottom:12px">${message}</div>
+
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-wa" style="flex:1;justify-content:center;padding:10px;font-weight:600"
+        onclick="var _m=this.closest('.modal').querySelector('[style*=dcfce7]')?.textContent||''; closeModal(); openWA('${phone}',_m);">
+        📱 Send Welcome WA
+      </button>
+      <button class="btn" style="padding:10px 14px" onclick="closeModal()">Done</button>
+    </div>
+
   </div></div>`;
+}
+
+function collectAdmissionFee(studentId, phone, waMsg) {
+  const amt  = parseFloat(document.getElementById('adm-collect-amt')?.value) || 0;
+  const mode = document.getElementById('adm-collect-mode')?.value || 'Cash';
+  if (amt <= 0) { showToast('Enter amount to collect'); return; }
+
+  const stuFees = fees.filter(f => f.studentId === studentId && f.status !== 'paid');
+  if (stuFees.length === 0) { showToast('No pending fees found'); return; }
+
+  const now         = new Date();
+  const dateStr     = now.toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric'});
+  const timeStr     = now.toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit', hour12:true});
+  const dateTimeStr = dateStr + ' at ' + timeStr;
+
+  // Distribute collected amount: admission fee first, then monthly
+  let remaining = amt;
+  const sortedFees = [...stuFees].sort((a,b) => a.type === 'admission' ? -1 : 1);
+  sortedFees.forEach(f => {
+    if (remaining <= 0) return;
+    const paying = Math.min(remaining, f.balance || f.total || 0);
+    f.paid    = (f.paid || 0) + paying;
+    f.balance = Math.max(0, (f.total || 0) - f.paid);
+    f.mode    = mode;
+    f.status  = f.balance <= 0 ? 'paid' : 'partial';
+    f.paidOn  = dateTimeStr;
+    remaining -= paying;
+  });
+
+  saveFees();
+  updateDashStats();
+  renderFees(fees);
+  runBackup('change');
+
+  const s = students.find(x => x.id === studentId);
+  const totalFeeSum = stuFees.reduce((a,f) => a + (f.total||0), 0);
+  const totalPaid   = stuFees.reduce((a,f) => a + (f.paid||0), 0);
+  const balance     = Math.max(0, totalFeeSum - totalPaid);
+
+  // Build receipt WA message
+  const rcptMsg = buildFeeReceiptWA({
+    studentName : s?.name || '',
+    parent      : s?.parent || '',
+    grade       : s ? (s.grade==='KG'?'KG':'Class '+s.grade) : '',
+    course      : s?.course || '',
+    rcpt        : stuFees[0]?.rcpt || '',
+    month       : _feeMonthLabel(now) + ' (Admission)',
+    subject     : '',
+    collected   : amt,
+    totalFee    : totalFeeSum,
+    totalPaid   : totalPaid,
+    balance     : balance,
+    mode,
+    dateTime    : dateTimeStr,
+    isFullyPaid : balance <= 0,
+  });
+
+  closeModal();
+  showToast(`✅ ₹${amt.toLocaleString('en-IN')} collected from ${s?.name || 'student'}`);
+
+  // Show receipt WA modal
+  setTimeout(() => {
+    showFeeReceiptModal(phone, rcptMsg, s?.name || '', amt, balance, dateTimeStr, stuFees[0]?.rcpt || '');
+  }, 300);
 }
 
 function resetAdmForm() {

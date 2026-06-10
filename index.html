@@ -11216,16 +11216,19 @@ function showAdmSuccess(s, message, phone) {
   const stuFees   = fees.filter(f => f.studentId === s.id);
   const monthlyF  = stuFees.find(f => f.type === 'monthly');
   const admF      = stuFees.find(f => f.type === 'admission');
-  const totalDue  = stuFees.reduce((a,f) => a + (f.total||0), 0);
+  // Only the admission fee is collected now; monthly fee is collected separately via Fees page
+  const admDue    = admF ? (admF.total || 0) : 0;
   const curMonth  = _feeMonthLabel(new Date());
 
   const feeRows = stuFees.map(f => `
     <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:.5px dashed var(--br)">
       <div>
-        <div style="font-size:12px;font-weight:600;color:var(--tx)">${f.type==='admission'?'🎓 Admission Fee':'📅 Monthly Fee — '+f.month}</div>
+        <div style="font-size:12px;font-weight:600;color:var(--tx)">${f.type==='admission'?'🎓 Admission Fee':'📅 Monthly Fee — '+f.month}
+          ${f.type==='monthly'?'<span style="font-size:9px;background:#fef9c3;color:#854d0e;padding:1px 5px;border-radius:6px;margin-left:4px">Collect via Fees page</span>':''}
+        </div>
         <div style="font-size:10px;color:var(--tx3)">Receipt: ${f.rcpt}</div>
       </div>
-      <div style="font-size:14px;font-weight:800;color:#dc2626">₹${(f.total||0).toLocaleString('en-IN')}</div>
+      <div style="font-size:14px;font-weight:800;color:${f.type==='monthly'?'var(--tx3)':'#dc2626'}">₹${(f.total||0).toLocaleString('en-IN')}</div>
     </div>`).join('');
 
   const root = document.getElementById('modal-root');
@@ -11240,23 +11243,18 @@ function showAdmSuccess(s, message, phone) {
 
     <!-- Fee Summary -->
     <div style="background:var(--bg);border-radius:10px;padding:12px 14px;border:.5px solid var(--br);margin-bottom:14px">
-      <div style="font-size:11px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">💰 Fees Due — ${curMonth}</div>
+      <div style="font-size:11px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">💰 Fees Created</div>
       ${feeRows || '<div style="font-size:12px;color:var(--tx3);text-align:center;padding:8px 0">No fees configured</div>'}
-      ${totalDue > 0 ? `
-      <div style="display:flex;justify-content:space-between;align-items:center;padding-top:8px;margin-top:4px">
-        <span style="font-size:13px;font-weight:700;color:var(--tx)">Total Due</span>
-        <span style="font-size:20px;font-weight:800;color:#dc2626">₹${totalDue.toLocaleString('en-IN')}</span>
-      </div>` : ''}
     </div>
 
-    <!-- Collect Now section -->
-    ${totalDue > 0 ? `
+    <!-- Collect Admission Fee Now section (admission fee only) -->
+    ${admDue > 0 ? `
     <div style="background:#f0fdf4;border-radius:10px;padding:12px 14px;border:.5px solid #bbf7d0;margin-bottom:14px">
-      <div style="font-size:12px;font-weight:700;color:#166534;margin-bottom:10px">✅ Collect Fee Now</div>
+      <div style="font-size:12px;font-weight:700;color:#166534;margin-bottom:10px">✅ Collect Admission Fee Now</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
         <div>
-          <label style="font-size:10px;font-weight:600;color:var(--tx2);display:block;margin-bottom:3px">Amount Collected ₹</label>
-          <input type="number" id="adm-collect-amt" class="fi" value="${totalDue}" style="font-size:14px;font-weight:700;padding:7px 10px">
+          <label style="font-size:10px;font-weight:600;color:var(--tx2);display:block;margin-bottom:3px">Admission Fee ₹</label>
+          <input type="number" id="adm-collect-amt" class="fi" value="${admDue}" style="font-size:14px;font-weight:700;padding:7px 10px">
         </div>
         <div>
           <label style="font-size:10px;font-weight:600;color:var(--tx2);display:block;margin-bottom:3px">Payment Mode</label>
@@ -11293,8 +11291,9 @@ function collectAdmissionFee(studentId, phone, waMsg) {
   const mode = document.getElementById('adm-collect-mode')?.value || 'Cash';
   if (amt <= 0) { showToast('Enter amount to collect'); return; }
 
-  const stuFees = fees.filter(f => f.studentId === studentId && f.status !== 'paid');
-  if (stuFees.length === 0) { showToast('No pending fees found'); return; }
+  // Only collect admission-type fees here; monthly fees stay pending
+  const stuFees = fees.filter(f => f.studentId === studentId && f.status !== 'paid' && f.type === 'admission');
+  if (stuFees.length === 0) { showToast('No pending admission fee found'); return; }
 
   const now         = new Date();
   const dateStr     = now.toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric'});

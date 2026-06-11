@@ -509,6 +509,7 @@ tbody tr:hover td{background:var(--bg)}
     <button class="nav-item" data-page="admissions"><svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="3" stroke="currentColor" stroke-width="1.3"/><path d="M2 14c0-3.3 2.7-5 6-5s6 1.7 6 5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M12 8v4M10 10h4" stroke="#25d366" stroke-width="1.4" stroke-linecap="round"/></svg><span id="nl-admissions">Admissions</span></button>
     <button class="nav-item" data-page="batches"><svg viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="5" height="5" rx="1" stroke="#7c3aed" stroke-width="1.3"/><rect x="9" y="2" width="5" height="5" rx="1" stroke="#7c3aed" stroke-width="1.3"/><rect x="2" y="9" width="5" height="5" rx="1" stroke="#7c3aed" stroke-width="1.3"/><rect x="9" y="9" width="5" height="5" rx="1" stroke="#7c3aed" stroke-width="1.3"/></svg><span id="nl-batches">Batches</span></button>
     <button class="nav-item" data-page="attendance"><svg viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5 2v2M11 2v2M2 7h12M5.5 10.5l1.5 1.5 3-3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg><span id="nl-attendance">Attendance</span></button>
+    <button class="nav-item" data-page="reports"><svg viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5 11V7M8 11V5M11 11V8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg><span id="nl-reports">Reports</span></button>
     <button class="nav-item" data-page="fees"><svg viewBox="0 0 16 16" fill="none"><rect x="2" y="4" width="12" height="9" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M2 7h12M6 10h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg><span id="nl-fees">Fees</span></button>
     <button class="nav-item" data-page="marks"><svg viewBox="0 0 16 16" fill="none"><path d="M3 12V4l5-2 5 2v8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M6 8h4M6 10.5h2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg><span id="nl-marks">Marks & Exams</span></button>
     <div class="nav-sec" id="ns-mgmt">Management</div>
@@ -544,6 +545,13 @@ tbody tr:hover td{background:var(--bg)}
 
 <!-- ═══════════════ DASHBOARD ═══════════════ -->
 <div class="page active" id="pg-dashboard">
+
+  <!-- Today's Holiday / Day Order status -->
+  <div id="dash-holiday-dayorder" style="margin-bottom:10px;display:none;border-radius:10px;padding:10px 14px;border:.5px solid var(--br);background:var(--card)">
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12px;font-weight:600">
+      <span id="dash-hol-do-content"></span>
+    </div>
+  </div>
 
   <!-- Monthly Reset Banner (Day 1 of month) -->
   <div id="dash-monthly-reset-banner" style="display:none;margin-bottom:10px;border-radius:10px;padding:10px 14px;background:linear-gradient(135deg,#1e3a8a,#1a56db);color:#fff">
@@ -1010,7 +1018,7 @@ tbody tr:hover td{background:var(--bg)}
 <!-- ═══════════════ ATTENDANCE ═══════════════ -->
 <div class="page" id="pg-attendance">
   <div class="toolbar">
-    <select class="fi" style="width:auto" id="att-batch" onchange="syncSessionToBatch();renderAttList()"></select>
+    <select class="fi" style="width:auto" id="att-batch" onchange="syncSessionToBatch();renderAttList()" title="Used only for Day Order / timetable lookup — does not filter students"></select>
     <select class="fi" style="width:auto;min-width:110px" id="att-grade-filter" onchange="renderAttList()">
       <option value="all">🎓 All Classes</option>
     </select>
@@ -1095,6 +1103,31 @@ tbody tr:hover td{background:var(--bg)}
     <button class="btn btn-wa" onclick="sendLateWA()" style="padding:9px 14px;background:#ca8a04;border-color:#a16207"><svg viewBox="0 0 16 16" fill="none" width="14" height="14"><circle cx="8" cy="8" r="5" stroke="currentColor" stroke-width="1.3"/><path d="M8 5v3l2 1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>Alert Late</button>
     <button class="btn" onclick="showMonthlyAttSummary()" style="padding:9px 14px"><svg viewBox="0 0 16 16" fill="none" width="14" height="14"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.3"/><path d="M5 8h6M5 5h4M5 11h6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>Monthly Report</button>
   </div>
+</div>
+
+<!-- ═══════════════ REPORTS ═══════════════ -->
+<div class="page" id="pg-reports">
+  <div class="toolbar">
+    <select class="fi" style="width:auto" id="rep-type" onchange="renderReportsPage()">
+      <option value="daily">📅 Daily</option>
+      <option value="weekly">🗓 Weekly</option>
+      <option value="monthly">📆 Monthly</option>
+      <option value="student">👤 Student-wise</option>
+      <option value="class">🏫 Class-wise</option>
+      <option value="session">☀️🌙 Session-wise</option>
+    </select>
+    <input type="date" class="fi" style="width:auto" id="rep-date" onchange="renderReportsPage()">
+    <select class="fi" style="width:auto" id="rep-class" onchange="renderReportsPage()">
+      <option value="all">🎓 All Classes</option>
+    </select>
+    <select class="fi" style="width:auto" id="rep-session" onchange="renderReportsPage()">
+      <option value="all">☀️🌙 All Sessions</option>
+      <option value="morning">☀️ Morning</option>
+      <option value="evening">🌙 Evening</option>
+    </select>
+    <select class="fi" style="width:auto;display:none" id="rep-student" onchange="renderReportsPage()"></select>
+  </div>
+  <div id="rep-content"></div>
 </div>
 
 <!-- ═══════════════ FEES ═══════════════ -->
@@ -2354,7 +2387,7 @@ const T = {
     pref_dark:'Dark Mode',dark_off:'Currently off',dark_on:'Currently on',
     cancel:'Cancel',
     admissions:'Admissions',
-    batches:'Batch Management',
+    batches:'Batch Management', reports:'Reports',
   },
   ta:{
     dashboard:'டாஷ்போர்டு',students:'மாணவர்கள்',attendance:'வருகை பதிவு',fees:'கட்டணம்',
@@ -2382,7 +2415,7 @@ const T = {
     waPreviewTitle:'செய்தி முன்னோட்டம்',waQueueTitle:'செய்தி வரிசை',
     pref_dark:'இருண்ட பயன்முறை',dark_off:'தற்போது அணைவு',dark_on:'தற்போது இயக்கம்',
     cancel:'ரத்து',
-    admissions:'சேர்க்கை',
+    admissions:'சேர்க்கை', reports:'அறிக்கைகள்',
   }
 };
 const t = k => T[lang][k] || T.en[k] || k;
@@ -2648,6 +2681,7 @@ function navTo(id) {
     }, 150);
   }
   if (id === 'batches') { renderBatchesPage(); }
+  if (id === 'reports') { if (typeof renderReportsPage === 'function') renderReportsPage(); }
   if (id === 'fees') {
     const now = new Date();
     window._feeSelectedMonth = _feeMonthLabel(now);
@@ -2697,6 +2731,7 @@ function applyLang() {
     'nl-fees':t('fees'),'nl-marks':t('marks'),'nl-staff':t('staff'),'nl-shop':t('shop'),
     'nl-whatsapp':t('whatsapp'),'nl-notifications':t('notifications'),'nl-ai':t('ai'),
     'nl-backup':t('backup'),'nl-settings':t('settings'),'nl-admissions':t('admissions'),'nl-batches':t('batches'),
+    'nl-reports':t('reports'),
     'lang-lbl':t('langLbl'),'lang-toggle-btn':t('langSwitch'),
     'sl-1':t('totalStudents'),'sl-2':t('monthlyIncome'),'sl-3':t('pendingFees'),'sl-4':t('attToday'),
     'ct-income':t('incomeTrend'),'ct-fee':t('feeStatus'),'ct-qa':t('quickActions'),
@@ -3194,40 +3229,69 @@ function waStudent(id) {
 }
 
 /* ═══════════════════════════════════════════════════════
-   ATTENDANCE  — per-batch · per-session · per-day
-   Storage key: _erp_att_{YYYY-MM-DD}_{batchId}_{session}
-   attState key: {studentId}|{batchId}|{session}
+   ATTENDANCE  — per-class · per-session · per-day
+   Storage key: _erp_att_{YYYY-MM-DD}_{session}
+   attState key: {studentId}|{date}|{session}
+   (Legacy keys: {studentId}|{batchId}|{session} and storage
+    _erp_att_{date}_{batchId}_{session} are still READ for
+    backward-compat / migration but no longer written.)
 ═══════════════════════════════════════════════════════ */
 
-/* Build the composite attState key */
-function _attKey(sid, batchId, session) {
-  return sid + '|' + (batchId||'all') + '|' + session;
+/* Build the composite attState key (new format) */
+function _attKey(sid, date, session) {
+  return sid + '|' + date + '|' + session;
 }
 
-/* Build the localStorage key */
-function _attStorageKey(date, batchId, session) {
-  return '_erp_att_' + date + '_' + (batchId||'all') + '_' + session;
+/* Build the localStorage key (new format) */
+function _attStorageKey(date, session) {
+  return '_erp_att_' + date + '_' + session;
 }
 
-/* Load saved attendance for a specific date+batch+session into attState */
-function _loadAttSession(date, batchId, session) {
-  const sk = _attStorageKey(date, batchId, session);
-  // Clear existing keys for this batch+session before loading
-  const suffix = '|' + (batchId||'all') + '|' + session;
+/* Load saved attendance for a specific date+session into attState.
+   Also migrates any legacy per-batch records found for this date+session
+   (one-time merge, since legacy records were keyed per-batch and may
+   have one P/A/L status per student per batch — we take the first
+   non-empty value found across legacy batch keys). */
+function _loadAttSession(date, session) {
+  const sk = _attStorageKey(date, session);
+  const suffix = '|' + date + '|' + session;
+  // Clear existing keys for this date+session before loading
   Object.keys(attState).forEach(k => { if (k.endsWith(suffix)) delete attState[k]; });
+
+  let loaded = false;
   try {
     const saved = localStorage.getItem(sk);
     if (saved) {
       const parsed = JSON.parse(saved);
-      Object.keys(parsed).forEach(k => { if (k.endsWith(suffix)) attState[k] = parsed[k]; });
+      Object.keys(parsed).forEach(k => { if (k.endsWith(suffix)) { attState[k] = parsed[k]; loaded = true; } });
     }
   } catch(e) {}
+
+  // ── Legacy migration: scan old per-batch keys _erp_att_{date}_{batchId}_{session} ──
+  if (!loaded) {
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (!k || !k.startsWith('_erp_att_' + date + '_')) continue;
+        if (k === sk) continue; // skip new-format key
+        const rest = k.slice(('_erp_att_' + date + '_').length);
+        if (!rest.endsWith('_' + session)) continue;
+        const parsed = JSON.parse(localStorage.getItem(k) || '{}');
+        Object.keys(parsed).forEach(rk => {
+          const sid = rk.split('|')[0];
+          const newKey = _attKey(sid, date, session);
+          // First legacy value found for a student wins (don't overwrite)
+          if (parsed[rk] && !attState[newKey]) attState[newKey] = parsed[rk];
+        });
+      }
+    } catch(e) {}
+  }
 }
 
-/* Save current batch+session data only */
-function _saveAttSession(date, batchId, session) {
-  const sk = _attStorageKey(date, batchId, session);
-  const suffix = '|' + (batchId||'all') + '|' + session;
+/* Save current date+session data only (new format) */
+function _saveAttSession(date, session) {
+  const sk = _attStorageKey(date, session);
+  const suffix = '|' + date + '|' + session;
   const out = {};
   Object.keys(attState).forEach(k => { if (k.endsWith(suffix)) out[k] = attState[k]; });
   try {
@@ -3343,15 +3407,14 @@ function _populateDayOrderDropdown(date, batch) {
   try { restored = localStorage.getItem('_erp_last_dayorder_' + date) || ''; } catch(e) {}
 
   // Check if this date itself is a holiday — if so, show pending carry-over info
-  const batchId2 = document.getElementById('att-batch')?.value || '';
   const session2 = document.getElementById('att-session')?.value || 'morning';
-  const dateIsHoliday = _isHoliday && (_isHoliday(date, batchId2, session2));
+  const dateIsHoliday = _isHoliday && (_isHoliday(date, session2));
 
   if (restored && days.find(d => d.num === restored)) {
     sel.value = restored;
   } else {
     // No saved day order for this date → check pending carry-over from a holiday
-    const pending = (typeof _getPendingDayOrder === 'function') ? _getPendingDayOrder(batchId2, session2) : '';
+    const pending = (typeof _getPendingDayOrder === 'function') ? _getPendingDayOrder(session2) : '';
     if (pending && days.find(d => d.num === pending)) {
       sel.value = pending;
     } else if (prevVal && days.find(d => d.num === prevVal)) {
@@ -3368,22 +3431,26 @@ function renderAttList() {
   const dateEl = document.getElementById('att-date');
   if (!dateEl.value) dateEl.value = today;
   const date    = dateEl.value;
-  const batchId = document.getElementById('att-batch')?.value || '';
   const session = document.getElementById('att-session')?.value || 'morning';
+  // Optional "context batch" — used only for Day Order/timetable lookup, no longer filters students
+  const batchId = document.getElementById('att-batch')?.value || '';
   const batch   = batches.find(b => b.id === batchId);
 
   // ── Populate Day Order dropdown from timetable ──
   _populateDayOrderDropdown(date, batch);
 
-  // Load saved data for exactly this date + batch + session (fresh load, no bleed)
-  _loadAttSession(date, batchId, session);
+  // Load saved data for exactly this date + session (fresh load, no bleed)
+  _loadAttSession(date, session);
 
   // ── Session banner ────────────────────────────────────
   const banner     = document.getElementById('att-session-label');
   const batchLabel = document.getElementById('att-batch-label');
   const sessBanner = document.getElementById('att-session-banner');
   if (banner) banner.textContent = session === 'morning' ? '☀️ Morning Session' : '🌙 Evening Session';
-  if (batchLabel && batch) batchLabel.textContent = batch.name + ' · ' + (batch.days || 'Mon–Sat');
+  if (batchLabel) {
+    const selectedClass = (document.getElementById('att-grade-filter')?.value || 'all').trim();
+    batchLabel.textContent = selectedClass === 'all' ? 'All Classes' : ('Class ' + selectedClass);
+  }
   if (sessBanner) {
     const isMorn = session === 'morning';
     sessBanner.style.background   = isMorn ? '#fef9c3' : '#dbeafe';
@@ -3391,53 +3458,50 @@ function renderAttList() {
     sessBanner.style.borderColor  = isMorn ? '#fde68a' : '#bfdbfe';
   }
 
-  // ── Show saved status for OTHER session (both-session batches) ─
-  let otherSessInfo = '';
-  if (batch && batch.time === 'Both') {
+  // ── Show saved status for OTHER session ─
+  {
     const otherSess   = session === 'morning' ? 'evening' : 'morning';
-    const otherKey    = _attStorageKey(date, batchId, otherSess);
+    const otherKey    = _attStorageKey(date, otherSess);
     const otherSaved  = localStorage.getItem(otherKey);
     const otherLabel  = otherSess === 'morning' ? '☀️ Morning' : '🌙 Evening';
-    otherSessInfo = otherSaved
+    const otherSessInfo = otherSaved
       ? `<span style="font-size:10px;background:#dcfce7;color:#166534;padding:2px 7px;border-radius:8px;border:.5px solid #bbf7d0;margin-left:8px">✅ ${otherLabel} saved</span>`
       : `<span style="font-size:10px;background:#fef9c3;color:#854d0e;padding:2px 7px;border-radius:8px;border:.5px solid #fde68a;margin-left:8px">⏳ ${otherLabel} not yet saved</span>`;
     const batchLabelEl = document.getElementById('att-batch-label');
-    if (batchLabelEl) batchLabelEl.innerHTML = (batch.name + ' · ' + (batch.days||'Mon–Sat')) + otherSessInfo;
+    if (batchLabelEl) {
+      const selectedClass = (document.getElementById('att-grade-filter')?.value || 'all').trim();
+      batchLabelEl.innerHTML = (selectedClass === 'all' ? 'All Classes' : ('Class ' + selectedClass)) + otherSessInfo;
+    }
   }
 
   // ── Holiday banner ────────────────────────────────────
-  if (typeof _refreshHolidayBanner === 'function') _refreshHolidayBanner(date, batchId, session);
+  if (typeof _refreshHolidayBanner === 'function') _refreshHolidayBanner(date, session);
 
-  // ── Filter students — class filter applied FIRST inside _getBatchStudents ──
-  const activeStudents = _getBatchStudents(batchId);
+  // ── Filter students — by Class only (session no longer restricts list) ──
+  const activeStudents = _getClassStudents(session);
 
   if (activeStudents.length === 0) {
     // Show a specific message based on what filter is active
     const selectedClass = (document.getElementById('att-grade-filter')?.value || 'all').trim();
-    const batchName     = batch ? batch.name : '';
     let emptyMsg;
     if (selectedClass !== 'all') {
       emptyMsg = `<div style="font-size:28px;margin-bottom:8px">🎓</div>
         <div style="font-weight:600;color:var(--tx);margin-bottom:4px">No students found for Class ${selectedClass}</div>
         <div style="font-size:11px;color:var(--tx3)">Check that students are assigned Grade ${selectedClass} via Students → Edit.</div>`;
-    } else if (batchName) {
-      emptyMsg = `<div style="font-size:28px;margin-bottom:8px">📋</div>
-        <div style="font-weight:600;color:var(--tx);margin-bottom:4px">No students found for batch "${batchName}"</div>
-        <div style="font-size:11px;color:var(--tx3)">Assign students to this batch via Students → Edit.</div>`;
     } else {
       emptyMsg = `<div style="font-size:28px;margin-bottom:8px">📋</div>
         <div style="font-weight:600;color:var(--tx);margin-bottom:4px">No students found</div>
-        <div style="font-size:11px;color:var(--tx3)">Select a batch or class to view students.</div>`;
+        <div style="font-size:11px;color:var(--tx3)">Add students via Students → Add, or pick a Class above.</div>`;
     }
     document.getElementById('att-wrap').innerHTML =
       `<div style="padding:40px 20px;text-align:center;color:var(--tx2);font-size:13px;line-height:1.7">${emptyMsg}</div>`;
-    updateAttCounts(activeStudents, batchId, session);
+    updateAttCounts(activeStudents, date, session);
     return;
   }
 
   // ── Render rows ───────────────────────────────────────
   document.getElementById('att-wrap').innerHTML = activeStudents.map(s => {
-    const val = attState[_attKey(s.id, batchId, session)] || '';
+    const val = attState[_attKey(s.id, date, session)] || '';
     const rowBg = val==='L'?'var(--att-late-bg)':val==='A'?'var(--att-absent-bg)':'var(--card)';
     const rowBorder = val==='L'?'border-left:3px solid #ca8a04':val==='A'?'border-left:3px solid #dc2626':'';
     return `<div class="att-row" data-sid="${s.id}" style="background:${rowBg};${rowBorder}">
@@ -3461,7 +3525,7 @@ function renderAttList() {
     </div>`;
   }).join('');
 
-  updateAttCounts(activeStudents, batchId, session);
+  updateAttCounts(activeStudents, date, session);
 }
 
 function setAtt(btn, v) {
@@ -3471,9 +3535,8 @@ function setAtt(btn, v) {
   if (!sid) return;
 
   const date    = document.getElementById('att-date')?.value || new Date().toISOString().split('T')[0];
-  const batchId = document.getElementById('att-batch')?.value || '';
   const session = document.getElementById('att-session')?.value || 'morning';
-  const key     = _attKey(sid, batchId, session);
+  const key     = _attKey(sid, date, session);
 
   if (v) attState[key] = v; else delete attState[key];
 
@@ -3509,113 +3572,62 @@ function setAtt(btn, v) {
   }
 
   // Auto-save immediately
-  _saveAttSession(date, batchId, session);
+  _saveAttSession(date, session);
 
   // Refresh visible counts
-  const batchStudents = _getBatchStudents(batchId);
-  updateAttCounts(batchStudents, batchId, session);
+  const classStudents = _getClassStudents(session);
+  updateAttCounts(classStudents, date, session);
 }
 
-function _getBatchStudents(batchId) {
+function _getClassStudents(session) {
   // ═══════════════════════════════════════════════════════════════════
-  // STRICT CLASS FILTER — PERMANENT FIX
-  // Rule: NEVER return all students. Always filter by class first.
-  // If class filter is active, it is the primary and mandatory filter.
-  // Batch matching is secondary and also must never fall back to all.
+  // CLASS + SESSION FILTER (batch-independent)
+  // Rule: filter by selected Class (grade). If "All Classes", return
+  // every active student. Session no longer restricts the student list
+  // (a class attends whichever session it's scheduled for) — session
+  // only affects which attendance record (P/A/L) is read/written.
   // ═══════════════════════════════════════════════════════════════════
-
-  // ── STEP 1: Read the selected class from the dropdown ─────────────
   const selectedClass = (document.getElementById('att-grade-filter')?.value || 'all').trim();
-  console.log('[ATT] Selected Class:', selectedClass === 'all' ? '(all / no filter)' : selectedClass);
 
-  // ── STEP 2: Start from active students only ───────────────────────
   let active = students.filter(s => s && s.name && s.status === 'active');
 
-  // ── STEP 3: Apply CLASS filter FIRST — this is the primary guard ──
-  // This runs BEFORE any batch logic so class boundaries are never crossed.
   if (selectedClass !== 'all') {
     active = active.filter(s => String(s.grade || '').trim() === selectedClass);
-    console.log('[ATT] After class filter (Class ' + selectedClass + '):', active.length, 'students');
-
-    // STRICT: if class filter yields zero, return empty — never widen scope
-    if (active.length === 0) {
-      console.warn('[ATT] No students found in Class', selectedClass, '— returning empty list. Students from other classes will NOT be shown.');
-      return [];
-    }
   }
-
-  // ── STEP 4: Apply BATCH filter on top of the already-filtered list ─
-  const batch = batches.find(b => b.id === batchId);
-  if (batch && batch.name) {
-    const bNameFull = batch.name.toLowerCase();
-
-    // Try exact course-name match first
-    const exactMatch = active.filter(s => s.course && s.course.toLowerCase().includes(bNameFull));
-    if (exactMatch.length > 0) {
-      active = exactMatch;
-      console.log('[ATT] Batch match (exact):', batch.name, '| Students:', active.length);
-    } else {
-      // Loose match: first word of batch name + optional grade hint guard
-      const gradeHint = (bNameFull.match(/\b(\d+)(?:st|nd|rd|th)?\b/) || [])[1];
-      const bFirst    = bNameFull.split(' ')[0];
-      const looseMatch = active.filter(s => {
-        if (!s.course) return false;
-        const sc = s.course.toLowerCase();
-        if (!sc.includes(bFirst)) return false;
-        if (gradeHint && s.grade && String(s.grade) !== gradeHint) return false;
-        return true;
-      });
-
-      if (looseMatch.length > 0) {
-        active = looseMatch;
-        console.log('[ATT] Batch match (loose):', batch.name, '| Students:', active.length);
-      } else {
-        // STRICT: batch found but no students match — return empty, never fall back to all
-        console.warn('[ATT] No students matched batch "' + batch.name + '" within the filtered set. batchId:', batchId, '— returning empty list.');
-        active = [];
-      }
-    }
-  } else if (batchId) {
-    // batchId given but batch object not found — return empty, not all students
-    console.warn('[ATT] Batch object not found for batchId:', batchId, '— returning empty list.');
-    active = [];
-  }
-
-  // ── STEP 5: Final debug log ───────────────────────────────────────
-  const renderedStudents = active;
-  console.log('[ATT] Filtered Students:', active.length);
-  console.log('[ATT] Rendered Students:', renderedStudents.length, renderedStudents.map(s => s.name + ' (Gr.' + s.grade + ')'));
 
   return active;
+}
+// Backward-compat alias (old name, batchId arg ignored)
+function _getBatchStudents(batchId) {
+  return _getClassStudents(document.getElementById('att-session')?.value || 'morning');
 }
 
 function markAllAtt(v, btn) {
   document.querySelectorAll('.seg .seg-b').forEach(b => b.classList.remove('on'));
   btn.classList.add('on');
   const date    = document.getElementById('att-date')?.value || new Date().toISOString().split('T')[0];
-  const batchId = document.getElementById('att-batch')?.value || '';
   const session = document.getElementById('att-session')?.value || 'morning';
-  const batchStudents = _getBatchStudents(batchId);
-  batchStudents.forEach(s => { attState[_attKey(s.id, batchId, session)] = v; });
-  _saveAttSession(date, batchId, session);
+  const classStudents = _getClassStudents(session);
+  classStudents.forEach(s => { attState[_attKey(s.id, date, session)] = v; });
+  _saveAttSession(date, session);
   renderAttList();
 }
 
-function updateAttCounts(batchStudents, batchId, session) {
-  if (!batchStudents) {
-    batchStudents = _getBatchStudents(document.getElementById('att-batch')?.value || '');
-    batchId  = document.getElementById('att-batch')?.value || '';
+function updateAttCounts(classStudents, date, session) {
+  if (!classStudents) {
+    date     = document.getElementById('att-date')?.value || new Date().toISOString().split('T')[0];
     session  = document.getElementById('att-session')?.value || 'morning';
+    classStudents = _getClassStudents(session);
   }
   let p = 0, a = 0, l = 0;
-  batchStudents.forEach(s => {
-    const v = attState[_attKey(s.id, batchId, session)] || '';
+  classStudents.forEach(s => {
+    const v = attState[_attKey(s.id, date, session)] || '';
     if (v === 'P') p++;
     else if (v === 'A') a++;
     else if (v === 'L') l++;
     // unmarked = not yet marked (don't count as present in totals)
   });
-  const tot = batchStudents.length;
+  const tot = classStudents.length;
   const marked = p + a + l;
   document.getElementById('att-pc-lbl').textContent = p + ' Present';
   document.getElementById('att-ac-lbl').textContent = a + ' Absent';
@@ -3808,9 +3820,13 @@ function saveDayOrderSetup() {
 
 function saveAttendance() {
   const date    = document.getElementById('att-date')?.value || new Date().toISOString().split('T')[0];
-  const batchId = document.getElementById('att-batch')?.value || '';
   const session = document.getElementById('att-session')?.value || 'morning';
-  const batch   = batches.find(b => b.id === batchId);
+
+  // ── Block save if this session is a holiday ──
+  if (_isHoliday(date, session)) {
+    showToast('🏖 This session is marked as a Holiday — attendance entry is closed.');
+    return;
+  }
 
   // ── COMPULSORY: Day Order must be selected ──
   const dayOrderEl = document.getElementById('att-day-order');
@@ -3831,28 +3847,27 @@ function saveAttendance() {
     return; // BLOCK save
   }
 
-  _saveAttSession(date, batchId, session);
+  _saveAttSession(date, session);
 
-  // ── Real working day saved — clear holiday carry-over, record last working day order ──
   const dayNum = document.getElementById('att-day-order')?.value || '';
+
+  // ── Store Date + DayOrder + Session as the attendance record's metadata ──
   if (dayNum) {
-    try { localStorage.removeItem('_erp_pending_dayorder_' + batchId + '_' + session); } catch(e) {}
-    try { localStorage.removeItem('_erp_pending_dayorder_' + batchId); } catch(e) {}
-    try { localStorage.setItem('_erp_last_working_dayorder_' + batchId + '_' + session, dayNum); } catch(e) {}
+    try { localStorage.setItem('_erp_att_meta_' + date + '_' + session, JSON.stringify({ date, session, dayOrder: dayNum })); } catch(e) {}
+    // Real working day saved — clear holiday carry-over for this session, record last working day order
+    try { localStorage.removeItem('_erp_pending_dayorder_' + session); } catch(e) {}
+    try { localStorage.setItem('_erp_last_working_dayorder_' + session, dayNum); } catch(e) {}
+    try { localStorage.setItem('_erp_last_dayorder_' + date, dayNum); } catch(e) {}
+    // Legacy key retained for older Summary cross-refs (batch-agnostic 'all')
+    try { localStorage.setItem('_erp_att_dayorder_' + date + '_all', String(dayNum)); } catch(e) {}
   }
 
   // ── Record missed subjects for absent students (Day Order integration) ──
-
-  // Always store the day order for this date+batch so Summary can cross-ref timetable
-  if (dayNum) {
-    try { localStorage.setItem('_erp_att_dayorder_' + date + '_' + batchId, String(dayNum)); } catch(e) {}
-  }
-
   if (dayNum && getSubjectsForDayOrder(dayNum).length > 0) {
-    const bStu = _getBatchStudents(batchId);
+    const cStu = _getClassStudents(session);
     let missCount = 0, lateCount = 0;
-    bStu.forEach(s => {
-      const status = attState[_attKey(s.id, batchId, session)] || '';
+    cStu.forEach(s => {
+      const status = attState[_attKey(s.id, date, session)] || '';
       if (status === 'A') {
         recordMissedSubjects(s.id, 'A', date, dayNum);
         missCount++;
@@ -3865,147 +3880,513 @@ function saveAttendance() {
     if (missCount > 0) parts.push(`${missCount} absent`);
     if (lateCount > 0) parts.push(`${lateCount} late (1st period tracked)`);
     if (parts.length > 0) showToast(`✅ Attendance saved — ${parts.join(' · ')} · Day Order ${dayNum}`);
-    else showToast(`✅ ${session === 'morning' ? '☀️ Morning' : '🌙 Evening'} attendance saved — ${batch ? batch.name : 'batch'}`);
+    else showToast(`✅ ${session === 'morning' ? '☀️ Morning' : '🌙 Evening'} attendance saved · Day Order ${dayNum}`);
   } else {
-    showToast(`✅ ${session === 'morning' ? '☀️ Morning' : '🌙 Evening'} attendance saved — ${batch ? batch.name : 'batch'}`);
+    showToast(`✅ ${session === 'morning' ? '☀️ Morning' : '🌙 Evening'} attendance saved · Day Order ${dayNum}`);
   }
+
+  // ── Day Order automation: auto-advance to next day order on this working day ──
+  _advanceDayOrderAfterSave(date, session, dayNum);
 
   renderAttList();
   runBackup('change');
 }
+
 /* ══════════════════════════════════════════════════════════
-   HOLIDAY MARKING — per date + batch + session
-   Stores holiday flag; day order auto-advances to next working day
+   HOLIDAY MANAGEMENT — Morning / Evening / Full-day
+   Records: { date, session: 'morning'|'evening'|'full', reason }
+   Stored in localStorage as _erp_holidays (array).
+   Blocks attendance entry for closed sessions; day order carries
+   over to the next working day for the affected session(s).
 ══════════════════════════════════════════════════════════ */
-function _holidayKey(date, batchId, session) {
-  return '_erp_holiday_' + date + '_' + batchId + '_' + session;
+function _loadHolidays() {
+  try { return JSON.parse(localStorage.getItem('_erp_holidays') || '[]'); } catch(e) { return []; }
 }
-function _isHoliday(date, batchId, session) {
-  try { return localStorage.getItem(_holidayKey(date, batchId, session)) === '1'; } catch(e) { return false; }
+function _saveHolidays(list) {
+  try { localStorage.setItem('_erp_holidays', JSON.stringify(list)); } catch(e) {}
+}
+
+/* Find a holiday record for date+session (treats 'full' as covering both sessions) */
+function _findHoliday(date, session) {
+  const list = _loadHolidays();
+  return list.find(h => h.date === date && (h.session === session || h.session === 'full')) || null;
+}
+
+/* Is the given date+session closed for attendance? */
+function _isHoliday(date, session) {
+  return !!_findHoliday(date, session);
+}
+
+/* Get the holiday record(s) for a date (both sessions) */
+function _getHolidaysForDate(date) {
+  return _loadHolidays().filter(h => h.date === date);
 }
 
 function markHoliday() {
   const date    = document.getElementById('att-date')?.value || new Date().toISOString().split('T')[0];
-  const batchId = document.getElementById('att-batch')?.value || '';
   const session = document.getElementById('att-session')?.value || 'morning';
-  const batch   = batches.find(b => b.id === batchId);
-  const isBoth  = batch && batch.time === 'Both';
   const dayNum  = document.getElementById('att-day-order')?.value || '';
 
-  // Build session options
-  const sessOptions = isBoth
-    ? `<div style="display:flex;flex-direction:column;gap:8px;margin:12px 0">
-        <button class="btn btn-p" style="justify-content:center" onclick="_applyHoliday('${date}','${batchId}','morning','${dayNum}')">☀️ Morning Only</button>
-        <button class="btn btn-p" style="justify-content:center" onclick="_applyHoliday('${date}','${batchId}','evening','${dayNum}')">🌙 Evening Only</button>
-        <button class="btn" style="justify-content:center;background:#f59e0b;color:#fff;border-color:#d97706" onclick="_applyHoliday('${date}','${batchId}','both','${dayNum}')">🏖 Both Sessions</button>
-      </div>`
-    : `<div style="margin:12px 0">
-        <button class="btn btn-p" style="width:100%;justify-content:center" onclick="_applyHoliday('${date}','${batchId}','${session}','${dayNum}')">${session==='morning'?'☀️ Morning':'🌙 Evening'} Session — Mark Holiday</button>
-      </div>`;
-
   const root = document.getElementById('modal-root');
-  root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal" style="max-width:360px">
+  root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal" style="max-width:380px">
     <div class="modal-title">🏖 Mark Holiday — ${date}</div>
-    <div style="font-size:12px;color:var(--tx2);margin-bottom:4px">Which session is off today?</div>
-    <div style="font-size:11px;color:var(--tx3);background:var(--bg);border-radius:8px;padding:8px 10px;margin-bottom:4px">
+    <div style="font-size:12px;color:var(--tx2);margin-bottom:8px">Which session is off on this date?</div>
+    <div class="fg"><label class="fl">Reason</label><input class="fi" id="mh-reason" placeholder="e.g. Pongal Festival" value="Holiday"></div>
+    <div style="font-size:11px;color:var(--tx3);background:var(--bg);border-radius:8px;padding:8px 10px;margin:8px 0">
       📅 Day Order <b>${dayNum||'(not set)'}</b> will carry over to the next working day for whichever session(s) you mark.
     </div>
-    ${sessOptions}
+    <div style="display:flex;flex-direction:column;gap:8px;margin:8px 0">
+      <button class="btn btn-p" style="justify-content:center" onclick="_applyHoliday('${date}','morning','${dayNum}')">☀️ Morning Only</button>
+      <button class="btn btn-p" style="justify-content:center" onclick="_applyHoliday('${date}','evening','${dayNum}')">🌙 Evening Only</button>
+      <button class="btn" style="justify-content:center;background:#f59e0b;color:#fff;border-color:#d97706" onclick="_applyHoliday('${date}','full','${dayNum}')">🏖 Full Day (Both Sessions)</button>
+    </div>
     <div class="modal-foot"><button class="btn" onclick="closeModal()">Cancel</button></div>
   </div></div>`;
 }
 
-function _applyHoliday(date, batchId, sessChoice, dayNum) {
-  const sessions = sessChoice === 'both' ? ['morning','evening'] : [sessChoice];
-  sessions.forEach(s => {
-    try { localStorage.setItem(_holidayKey(date, batchId, s), '1'); } catch(e) {}
-  });
-  // Store pending day order for this batch (carries to next working day)
+function _applyHoliday(date, sessChoice, dayNum) {
+  const reason = (document.getElementById('mh-reason')?.value || 'Holiday').trim() || 'Holiday';
+  const list = _loadHolidays().filter(h => !(h.date === date && (h.session === sessChoice || sessChoice === 'full')));
+  list.push({ date, session: sessChoice, reason });
+  _saveHolidays(list);
+
+  // Store pending day order carry-over for the affected session(s)
+  const sessions = sessChoice === 'full' ? ['morning','evening'] : [sessChoice];
   if (dayNum) {
     sessions.forEach(s => {
-      try { localStorage.setItem('_erp_pending_dayorder_' + batchId + '_' + s, dayNum); } catch(e) {}
+      try { localStorage.setItem('_erp_pending_dayorder_' + s, dayNum); } catch(e) {}
     });
     try { localStorage.setItem('_erp_last_dayorder_' + date, dayNum); } catch(e) {}
   }
   closeModal();
-  const label = sessChoice === 'both' ? 'Both Sessions' : (sessChoice === 'morning' ? '☀️ Morning' : '🌙 Evening');
-  showToast(`🏖 Holiday marked — ${label} on ${date}. Day Order ${dayNum||'?'} → next working day`);
+  const label = sessChoice === 'full' ? 'Full Day' : (sessChoice === 'morning' ? '☀️ Morning' : '🌙 Evening');
+  showToast(`🏖 Holiday marked — ${label} on ${date} (${reason}). Day Order ${dayNum||'?'} → next working day`);
   const curSession = document.getElementById('att-session')?.value || 'morning';
-  _refreshHolidayBanner(date, batchId, curSession);
+  _refreshHolidayBanner(date, curSession);
   renderAttList();
   runBackup('change');
 }
 
 function unmarkHoliday() {
   const date    = document.getElementById('att-date')?.value || new Date().toISOString().split('T')[0];
-  const batchId = document.getElementById('att-batch')?.value || '';
   const session = document.getElementById('att-session')?.value || 'morning';
-  try { localStorage.removeItem(_holidayKey(date, batchId, session)); } catch(e) {}
-  try { localStorage.removeItem(_holidayKey(date, batchId, 'morning')); } catch(e) {}
-  try { localStorage.removeItem(_holidayKey(date, batchId, 'evening')); } catch(e) {}
+  const list = _loadHolidays().filter(h => h.date !== date);
+  _saveHolidays(list);
   showToast('✅ Holiday removed for ' + date);
-  _refreshHolidayBanner(date, batchId, session);
+  _refreshHolidayBanner(date, session);
   renderAttList();
 }
 
 /* Refresh holiday banner visibility and text */
-function _refreshHolidayBanner(date, batchId, session) {
+function _refreshHolidayBanner(date, session) {
   const banner   = document.getElementById('att-holiday-banner');
   const labelEl  = document.getElementById('att-holiday-label');
   const hintEl   = document.getElementById('att-holiday-dayorder-hint');
   if (!banner) return;
 
-  const mornHol = _isHoliday(date, batchId, 'morning');
-  const eveHol  = _isHoliday(date, batchId, 'evening');
-  const curHol  = _isHoliday(date, batchId, session);
+  const recs    = _getHolidaysForDate(date);
+  const mornHol = !!_findHoliday(date, 'morning');
+  const eveHol  = !!_findHoliday(date, 'evening');
+  const curHol  = _isHoliday(date, session);
 
-  if (!mornHol && !eveHol) {
+  if (recs.length === 0) {
     banner.style.display = 'none';
     return;
   }
 
   banner.style.display = 'flex';
+  const reasons = [...new Set(recs.map(r => r.reason).filter(Boolean))];
+  const reasonStr = reasons.length ? ' — ' + reasons.join(', ') : '';
   let label = '';
-  if (mornHol && eveHol)       label = '🏖 Both sessions are marked as Holiday on this date';
-  else if (mornHol)            label = '🏖 ☀️ Morning session is marked as Holiday';
-  else                         label = '🏖 🌙 Evening session is marked as Holiday';
+  if (mornHol && eveHol)       label = '🏖 Full Day Holiday' + reasonStr;
+  else if (mornHol)            label = '🏖 ☀️ Morning session is a Holiday' + reasonStr;
+  else                         label = '🏖 🌙 Evening session is a Holiday' + reasonStr;
 
   if (labelEl) labelEl.textContent = label;
 
   // Show which day order will carry forward for the current session
-  const pending = _getPendingDayOrder(batchId, session);
+  const pending = _getPendingDayOrder(session);
   if (hintEl) {
     hintEl.textContent = pending
       ? `— Day Order ${pending} will be used on the next working ${session === 'morning' ? '☀️ Morning' : '🌙 Evening'}`
       : '';
   }
 
-  // Dim the attendance list when current session is a holiday
+  // Dim the attendance list and block save when current session is closed
   const wrap = document.getElementById('att-wrap');
   if (wrap) wrap.style.opacity = curHol ? '0.4' : '1';
   const saveBtn = document.querySelector('[onclick="saveAttendance()"]');
   if (saveBtn) {
     saveBtn.disabled = !!curHol;
     saveBtn.style.opacity = curHol ? '0.5' : '1';
-    saveBtn.title = curHol ? 'This session is a holiday — attendance not needed' : '';
+    saveBtn.title = curHol ? 'This session is a holiday — attendance entry is closed' : '';
   }
 }
 
-/* Get the pending (carried-over) day order for a batch+session */
-function _getPendingDayOrder(batchId, session) {
+/* Get the pending (carried-over) day order for a session */
+function _getPendingDayOrder(session) {
   try {
-    // Session-specific first, then fallback to generic
-    return localStorage.getItem('_erp_pending_dayorder_' + batchId + '_' + (session||'morning'))
-        || localStorage.getItem('_erp_pending_dayorder_' + batchId)
-        || '';
+    return localStorage.getItem('_erp_pending_dayorder_' + (session||'morning')) || '';
   } catch(e) { return ''; }
 }
 
-/* Helper: get a student's attendance value for the currently selected batch+session */
+/* ══════════════════════════════════════════════════════════
+   DAY ORDER AUTOMATION
+   - On a working day (attendance saved, not a holiday), auto-advance
+     the Day Order for the NEXT calendar working day of this session.
+   - If the next day is a holiday, the day order is held (carried over)
+     and applied automatically once a working day resumes.
+══════════════════════════════════════════════════════════ */
+function _allDayOrderNums() {
+  const nums = Object.keys(dayOrderMap).map(n => parseInt(n)).filter(n => !isNaN(n));
+  if (nums.length > 0) return nums.sort((a,b)=>a-b);
+  return [1,2,3,4,5,6];
+}
+
+function _nextDayOrderNum(current) {
+  const nums = _allDayOrderNums();
+  const cur  = parseInt(current);
+  const idx  = nums.indexOf(cur);
+  if (idx === -1 || idx === nums.length - 1) return String(nums[0]);
+  return String(nums[idx + 1]);
+}
+
+/* After saving a working day's attendance, compute & store the day order
+   that should be used next time this session has a working day. If that
+   next date is already known to be a holiday, it's stored as "pending"
+   so the banner/dropdown shows the carry-over; otherwise it's stashed as
+   the suggested next day order for the following date. */
+function _advanceDayOrderAfterSave(date, session, dayNum) {
+  if (!dayNum) return;
+  const next = _nextDayOrderNum(dayNum);
+  const nextDate = new Date(date);
+  nextDate.setDate(nextDate.getDate() + 1);
+  const nextDateStr = nextDate.toISOString().split('T')[0];
+
+  if (_isHoliday(nextDateStr, session)) {
+    // Hold — day order carries over until a working day resumes
+    try { localStorage.setItem('_erp_pending_dayorder_' + session, next); } catch(e) {}
+  } else {
+    // Pre-seed the next working day's Day Order suggestion
+    try { localStorage.setItem('_erp_last_dayorder_' + nextDateStr, next); } catch(e) {}
+    try { localStorage.removeItem('_erp_pending_dayorder_' + session); } catch(e) {}
+  }
+}
+
+/* Helper: get a student's attendance value for the currently selected date+session */
 function getStudentAtt(sid) {
-  const batchId = document.getElementById('att-batch')?.value || '';
+  const date    = document.getElementById('att-date')?.value || new Date().toISOString().split('T')[0];
   const session = document.getElementById('att-session')?.value || 'morning';
-  return attState[_attKey(sid, batchId, session)] || '';
+  return attState[_attKey(sid, date, session)] || '';
+}
+
+/* ══════════════════════════════════════════════════════════
+   REPORTS — Daily / Weekly / Monthly / Student-wise /
+   Class-wise / Session-wise, built off _erp_att_{date}_{session}
+══════════════════════════════════════════════════════════ */
+
+/* Read one date+session attendance record (new format, with legacy fallback) */
+function _readAttRecord(date, session) {
+  const out = {};
+  try {
+    const raw = localStorage.getItem(_attStorageKey(date, session));
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      Object.keys(parsed).forEach(k => {
+        const sid = k.split('|')[0];
+        out[sid] = parsed[k];
+      });
+    }
+  } catch(e) {}
+  // Legacy fallback if nothing found in new format
+  if (Object.keys(out).length === 0) {
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (!k || !k.startsWith('_erp_att_' + date + '_')) continue;
+        if (!k.endsWith('_' + session)) continue;
+        const parsed = JSON.parse(localStorage.getItem(k) || '{}');
+        Object.keys(parsed).forEach(rk => {
+          const sid = rk.split('|')[0];
+          if (parsed[rk] && !out[sid]) out[sid] = parsed[rk];
+        });
+      }
+    } catch(e) {}
+  }
+  return out;
+}
+
+function _repClassOptions() {
+  const grades = [...new Set(students.filter(s=>s&&s.grade&&s.status==='active').map(s=>String(s.grade).trim()))]
+    .sort((a,b)=>{const o=['KG','1','2','3','4','5','6','7','8','9','10','11','12'];const ai=o.indexOf(a),bi=o.indexOf(b);return(ai<0?99:ai)-(bi<0?99:bi);});
+  return grades;
+}
+
+function _repFilteredStudents() {
+  const cls = document.getElementById('rep-class')?.value || 'all';
+  let list = students.filter(s => s && s.name && s.status === 'active');
+  if (cls !== 'all') list = list.filter(s => String(s.grade||'').trim() === cls);
+  return list;
+}
+
+function renderReportsPage() {
+  // Populate class dropdown
+  const clsSel = document.getElementById('rep-class');
+  if (clsSel && clsSel.options.length <= 1) {
+    _repClassOptions().forEach(g => {
+      const o = document.createElement('option');
+      o.value = g; o.textContent = g==='KG' ? 'KG' : 'Class '+g;
+      clsSel.appendChild(o);
+    });
+  }
+  // Default date
+  const dateEl = document.getElementById('rep-date');
+  if (dateEl && !dateEl.value) dateEl.value = new Date().toISOString().split('T')[0];
+
+  const type = document.getElementById('rep-type')?.value || 'daily';
+  const studentSel = document.getElementById('rep-student');
+  if (studentSel) {
+    studentSel.style.display = (type === 'student') ? '' : 'none';
+    if (type === 'student' && studentSel.options.length === 0) {
+      _repFilteredStudents().forEach(s => {
+        const o = document.createElement('option');
+        o.value = s.id; o.textContent = s.name + ' (Gr.' + (s.grade||'-') + ')';
+        studentSel.appendChild(o);
+      });
+    }
+  }
+
+  const content = document.getElementById('rep-content');
+  if (!content) return;
+
+  if (type === 'daily')   return _renderDailyReport(content);
+  if (type === 'weekly')  return _renderWeeklyReport(content);
+  if (type === 'monthly') return _renderMonthlyReport(content);
+  if (type === 'student') return _renderStudentReport(content);
+  if (type === 'class')   return _renderClassReport(content);
+  if (type === 'session') return _renderSessionReport(content);
+}
+
+/* ── Daily Report ── */
+function _renderDailyReport(content) {
+  const date    = document.getElementById('rep-date')?.value || new Date().toISOString().split('T')[0];
+  const sessSel = document.getElementById('rep-session')?.value || 'all';
+  const sessions = sessSel === 'all' ? ['morning','evening'] : [sessSel];
+  const stuList = _repFilteredStudents();
+
+  const holidays = _getHolidaysForDate(date);
+
+  let html = `<div class="card" style="margin-bottom:12px"><div class="card-title" style="margin-bottom:8px">📅 Daily Attendance — ${date}</div>`;
+  if (holidays.length > 0) {
+    html += holidays.map(h => `<div style="font-size:11px;background:#fef3c7;color:#92400e;padding:4px 10px;border-radius:6px;margin-bottom:6px;display:inline-block;margin-right:6px">🏖 ${h.session==='full'?'Full Day':(h.session==='morning'?'☀️ Morning':'🌙 Evening')} Holiday — ${h.reason||'Holiday'}</div>`).join('');
+  }
+  html += '</div>';
+
+  sessions.forEach(sess => {
+    if (_isHoliday(date, sess)) {
+      html += `<div class="card" style="margin-bottom:10px;opacity:.7"><div class="card-title">${sess==='morning'?'☀️ Morning':'🌙 Evening'} — Holiday, no attendance</div></div>`;
+      return;
+    }
+    const rec = _readAttRecord(date, sess);
+    let p=0,a=0,l=0,unmarked=0;
+    const rows = stuList.map(s => {
+      const v = rec[s.id] || '';
+      if (v==='P') p++; else if (v==='A') a++; else if (v==='L') l++; else unmarked++;
+      const badge = v==='P'?'<span class="badge bg">P</span>':v==='A'?'<span class="badge br2">A</span>':v==='L'?'<span class="badge ba">L</span>':'<span class="badge" style="background:var(--bg);color:var(--tx3)">—</span>';
+      return `<tr><td style="padding:6px 10px;border-bottom:.5px solid var(--br)">${s.name}</td><td style="padding:6px 10px;text-align:center;border-bottom:.5px solid var(--br)">${s.grade==='KG'?'KG':'Class '+s.grade}</td><td style="padding:6px 10px;text-align:center;border-bottom:.5px solid var(--br)">${badge}</td></tr>`;
+    }).join('');
+    const meta = (()=>{ try { return JSON.parse(localStorage.getItem('_erp_att_meta_'+date+'_'+sess)||'null'); } catch(e){ return null; } })();
+    html += `<div class="card" style="margin-bottom:12px">
+      <div class="card-hd"><span class="card-title">${sess==='morning'?'☀️ Morning':'🌙 Evening'} ${meta?.dayOrder?(' · Day Order '+meta.dayOrder):''}</span>
+        <span style="font-size:11px;color:var(--tx2)">✅ ${p} Present · ✗ ${a} Absent · ⏰ ${l} Late · — ${unmarked} Unmarked</span></div>
+      <div style="max-height:340px;overflow-y:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead><tr style="background:var(--bg)"><th style="padding:6px 10px;text-align:left">Student</th><th style="padding:6px 10px;text-align:center">Class</th><th style="padding:6px 10px;text-align:center">Status</th></tr></thead>
+        <tbody>${rows || '<tr><td colspan="3" style="text-align:center;padding:16px;color:var(--tx3)">No students</td></tr>'}</tbody>
+      </table></div>
+    </div>`;
+  });
+
+  content.innerHTML = html;
+}
+
+/* ── Weekly Report (current week containing rep-date, Mon-Sat) ── */
+function _renderWeeklyReport(content) {
+  const date = document.getElementById('rep-date')?.value || new Date().toISOString().split('T')[0];
+  const sessSel = document.getElementById('rep-session')?.value || 'all';
+  const sessions = sessSel === 'all' ? ['morning','evening'] : [sessSel];
+  const stuList = _repFilteredStudents();
+
+  const d0 = new Date(date);
+  const dow = d0.getDay(); // 0=Sun..6=Sat
+  const monOffset = dow === 0 ? -6 : 1 - dow;
+  const monday = new Date(d0); monday.setDate(d0.getDate() + monOffset);
+  const weekDates = [];
+  for (let i=0;i<6;i++){ const d=new Date(monday); d.setDate(monday.getDate()+i); weekDates.push(d.toISOString().split('T')[0]); }
+
+  let html = `<div class="card" style="margin-bottom:12px"><div class="card-title">🗓 Weekly Attendance — ${weekDates[0]} to ${weekDates[5]}</div></div>`;
+
+  html += `<div class="card"><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11px">
+    <thead><tr style="background:var(--bg)"><th style="padding:6px 8px;text-align:left">Student</th>${weekDates.map(d=>`<th style="padding:6px 8px;text-align:center">${d.slice(5)}</th>`).join('')}<th style="padding:6px 8px;text-align:center">P/A/L</th></tr></thead>
+    <tbody>${stuList.map(s=>{
+      let p=0,a=0,l=0;
+      const cells = weekDates.map(d=>{
+        let cellStr = '';
+        sessions.forEach(sess=>{
+          if (_isHoliday(d,sess)) { cellStr += '🏖'; return; }
+          const rec = _readAttRecord(d,sess);
+          const v = rec[s.id]||'';
+          if (v==='P'){p++;cellStr+='✅';} else if(v==='A'){a++;cellStr+='✗';} else if(v==='L'){l++;cellStr+='⏰';} else cellStr+='·';
+        });
+        return `<td style="padding:6px 8px;text-align:center;border-bottom:.5px solid var(--br)">${cellStr}</td>`;
+      }).join('');
+      return `<tr><td style="padding:6px 8px;border-bottom:.5px solid var(--br)">${s.name}</td>${cells}<td style="padding:6px 8px;text-align:center;border-bottom:.5px solid var(--br);font-weight:700">${p}/${a}/${l}</td></tr>`;
+    }).join('') || '<tr><td colspan="8" style="text-align:center;padding:16px;color:var(--tx3)">No students</td></tr>'}</tbody>
+  </table></div></div>`;
+
+  content.innerHTML = html;
+}
+
+/* ── Monthly Report (reuses Monthly Attendance Summary modal data logic) ── */
+function _renderMonthlyReport(content) {
+  const date  = document.getElementById('rep-date')?.value || new Date().toISOString().split('T')[0];
+  const d     = new Date(date);
+  const yr = d.getFullYear(), mo = d.getMonth();
+  const monthStr = yr + '-' + String(mo+1).padStart(2,'0');
+  const stuList = _repFilteredStudents();
+
+  const data = {}; // sid -> {p,a,l}
+  for (let i=0;i<localStorage.length;i++){
+    const k = localStorage.key(i);
+    if (!k || !k.startsWith('_erp_att_')) continue;
+    const datePart = k.slice('_erp_att_'.length, '_erp_att_'.length+10);
+    if (!datePart.startsWith(monthStr)) continue;
+    try {
+      const rec = JSON.parse(localStorage.getItem(k));
+      Object.keys(rec).forEach(rk=>{
+        const sid = rk.split('|')[0];
+        if (!data[sid]) data[sid] = {p:0,a:0,l:0};
+        if (rec[rk]==='P') data[sid].p++;
+        else if (rec[rk]==='A') data[sid].a++;
+        else if (rec[rk]==='L') data[sid].l++;
+      });
+    } catch(e) {}
+  }
+
+  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  let html = `<div class="card" style="margin-bottom:12px"><div class="card-title">📆 Monthly Attendance — ${MONTHS[mo]} ${yr}</div></div>`;
+  html += `<div class="card"><table style="width:100%;border-collapse:collapse;font-size:12px">
+    <thead><tr style="background:var(--bg)"><th style="padding:6px 10px;text-align:left">Student</th><th style="padding:6px 10px;text-align:center">Class</th><th style="padding:6px 10px;text-align:center">Present</th><th style="padding:6px 10px;text-align:center">Absent</th><th style="padding:6px 10px;text-align:center">Late</th><th style="padding:6px 10px;text-align:center">%</th></tr></thead>
+    <tbody>${stuList.map(s=>{
+      const d2 = data[s.id]||{p:0,a:0,l:0};
+      const tot = d2.p+d2.a+d2.l;
+      const pct = tot>0?Math.round(d2.p/tot*100):0;
+      return `<tr><td style="padding:6px 10px;border-bottom:.5px solid var(--br)">${s.name}</td><td style="padding:6px 10px;text-align:center;border-bottom:.5px solid var(--br)">${s.grade==='KG'?'KG':'Class '+s.grade}</td><td style="padding:6px 10px;text-align:center;border-bottom:.5px solid var(--br);color:#16a34a;font-weight:700">${d2.p}</td><td style="padding:6px 10px;text-align:center;border-bottom:.5px solid var(--br);color:#dc2626;font-weight:700">${d2.a}</td><td style="padding:6px 10px;text-align:center;border-bottom:.5px solid var(--br);color:#ca8a04;font-weight:700">${d2.l}</td><td style="padding:6px 10px;text-align:center;border-bottom:.5px solid var(--br)">${tot>0?pct+'%':'—'}</td></tr>`;
+    }).join('') || '<tr><td colspan="6" style="text-align:center;padding:16px;color:var(--tx3)">No students</td></tr>'}</tbody>
+  </table></div>`;
+
+  content.innerHTML = html;
+}
+
+/* ── Student-wise Report ── */
+function _renderStudentReport(content) {
+  const sid = document.getElementById('rep-student')?.value;
+  const s = students.find(x=>x.id===sid);
+  if (!s) { content.innerHTML = '<div class="card">Select a student</div>'; return; }
+  const date = document.getElementById('rep-date')?.value || new Date().toISOString().split('T')[0];
+  const d = new Date(date);
+
+  let html = `<div class="card" style="margin-bottom:12px"><div class="card-title">👤 ${s.name} — ${s.grade==='KG'?'KG':'Class '+s.grade}</div></div>`;
+
+  // Last 30 days
+  let p=0,a=0,l=0;
+  const rows = [];
+  for (let i=29;i>=0;i--){
+    const dd = new Date(d); dd.setDate(d.getDate()-i);
+    const ds = dd.toISOString().split('T')[0];
+    ['morning','evening'].forEach(sess=>{
+      if (_isHoliday(ds,sess)) return;
+      const rec = _readAttRecord(ds,sess);
+      const v = rec[s.id]||'';
+      if (!v) return;
+      if (v==='P') p++; else if (v==='A') a++; else if (v==='L') l++;
+      rows.push({date:ds, session:sess, v});
+    });
+  }
+  html += `<div class="card" style="margin-bottom:12px"><div class="card-title" style="margin-bottom:6px">Last 30 Days</div>
+    <div style="display:flex;gap:10px;font-size:12px;font-weight:700">
+      <span style="color:#16a34a">✅ ${p} Present</span><span style="color:#dc2626">✗ ${a} Absent</span><span style="color:#ca8a04">⏰ ${l} Late</span>
+    </div></div>`;
+
+  html += `<div class="card"><div style="max-height:340px;overflow-y:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">
+    <thead><tr style="background:var(--bg)"><th style="padding:6px 10px;text-align:left">Date</th><th style="padding:6px 10px;text-align:center">Session</th><th style="padding:6px 10px;text-align:center">Status</th></tr></thead>
+    <tbody>${rows.slice().reverse().map(r=>{
+      const badge = r.v==='P'?'<span class="badge bg">Present</span>':r.v==='A'?'<span class="badge br2">Absent</span>':'<span class="badge ba">Late</span>';
+      return `<tr><td style="padding:6px 10px;border-bottom:.5px solid var(--br)">${r.date}</td><td style="padding:6px 10px;text-align:center;border-bottom:.5px solid var(--br)">${r.session==='morning'?'☀️':'🌙'}</td><td style="padding:6px 10px;text-align:center;border-bottom:.5px solid var(--br)">${badge}</td></tr>`;
+    }).join('') || '<tr><td colspan="3" style="text-align:center;padding:16px;color:var(--tx3)">No attendance records yet</td></tr>'}</tbody>
+  </table></div></div>`;
+
+  content.innerHTML = html;
+}
+
+/* ── Class-wise Report (today, grouped by class) ── */
+function _renderClassReport(content) {
+  const date    = document.getElementById('rep-date')?.value || new Date().toISOString().split('T')[0];
+  const sessSel = document.getElementById('rep-session')?.value || 'all';
+  const sessions = sessSel === 'all' ? ['morning','evening'] : [sessSel];
+
+  const active = students.filter(s=>s&&s.name&&s.status==='active');
+  const grades = _repClassOptions();
+
+  let html = `<div class="card" style="margin-bottom:12px"><div class="card-title">🏫 Class-wise Attendance — ${date}</div></div>`;
+  html += `<div class="card"><table style="width:100%;border-collapse:collapse;font-size:12px">
+    <thead><tr style="background:var(--bg)"><th style="padding:6px 10px;text-align:left">Class</th><th style="padding:6px 10px;text-align:center">Total</th><th style="padding:6px 10px;text-align:center">Present</th><th style="padding:6px 10px;text-align:center">Absent</th><th style="padding:6px 10px;text-align:center">Late</th><th style="padding:6px 10px;text-align:center">%</th></tr></thead>
+    <tbody>${grades.map(g=>{
+      const gStu = active.filter(s=>String(s.grade||'').trim()===g);
+      let p=0,a=0,l=0;
+      gStu.forEach(s=>{
+        sessions.forEach(sess=>{
+          if (_isHoliday(date,sess)) return;
+          const rec = _readAttRecord(date,sess);
+          const v = rec[s.id]||'';
+          if (v==='P') p++; else if (v==='A') a++; else if (v==='L') l++;
+        });
+      });
+      const tot=p+a+l; const pct = tot>0?Math.round(p/tot*100):0;
+      return `<tr><td style="padding:6px 10px;border-bottom:.5px solid var(--br);font-weight:600">${g==='KG'?'KG':'Class '+g}</td><td style="padding:6px 10px;text-align:center;border-bottom:.5px solid var(--br)">${gStu.length}</td><td style="padding:6px 10px;text-align:center;border-bottom:.5px solid var(--br);color:#16a34a;font-weight:700">${p}</td><td style="padding:6px 10px;text-align:center;border-bottom:.5px solid var(--br);color:#dc2626;font-weight:700">${a}</td><td style="padding:6px 10px;text-align:center;border-bottom:.5px solid var(--br);color:#ca8a04;font-weight:700">${l}</td><td style="padding:6px 10px;text-align:center;border-bottom:.5px solid var(--br)">${tot>0?pct+'%':'—'}</td></tr>`;
+    }).join('') || '<tr><td colspan="6" style="text-align:center;padding:16px;color:var(--tx3)">No classes found</td></tr>'}</tbody>
+  </table></div>`;
+
+  content.innerHTML = html;
+}
+
+/* ── Session-wise Report (Morning vs Evening totals for the date) ── */
+function _renderSessionReport(content) {
+  const date = document.getElementById('rep-date')?.value || new Date().toISOString().split('T')[0];
+  const stuList = _repFilteredStudents();
+
+  let html = `<div class="card" style="margin-bottom:12px"><div class="card-title">☀️🌙 Session-wise Attendance — ${date}</div></div>`;
+
+  html += '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px">';
+  ['morning','evening'].forEach(sess=>{
+    if (_isHoliday(date,sess)) {
+      html += `<div class="card" style="opacity:.7"><div class="card-title">${sess==='morning'?'☀️ Morning':'🌙 Evening'}</div><div style="padding:20px;text-align:center;color:var(--tx3)">🏖 Holiday</div></div>`;
+      return;
+    }
+    const rec = _readAttRecord(date,sess);
+    let p=0,a=0,l=0,u=0;
+    stuList.forEach(s=>{
+      const v = rec[s.id]||'';
+      if (v==='P')p++; else if(v==='A')a++; else if(v==='L')l++; else u++;
+    });
+    const tot=p+a+l; const pct = tot>0?Math.round(p/tot*100):0;
+    html += `<div class="card"><div class="card-title" style="margin-bottom:8px">${sess==='morning'?'☀️ Morning':'🌙 Evening'}</div>
+      <div class="stat-val" style="color:#2563eb">${tot>0?pct+'%':'—'}</div>
+      <div style="font-size:11px;color:var(--tx2);margin-top:6px">✅ ${p} Present · ✗ ${a} Absent · ⏰ ${l} Late · — ${u} Unmarked</div>
+    </div>`;
+  });
+  html += '</div>';
+
+  content.innerHTML = html;
 }
 
 
@@ -4834,9 +5215,9 @@ function sendRowAttWA(btn) {
   const row = btn.closest('.att-row');
   if (!row) return;
   const sid     = row.dataset.sid;
-  const batchId = document.getElementById('att-batch')?.value || '';
+  const date    = document.getElementById('att-date')?.value || new Date().toISOString().split('T')[0];
   const session = document.getElementById('att-session')?.value || 'morning';
-  const key     = _attKey(sid, batchId, session);
+  const key     = _attKey(sid, date, session);
   const status  = attState[key] || '';
   if (!status || status === 'P') return;
   sendOneAttWA(sid, status);
@@ -11039,6 +11420,59 @@ function renderIncomeSummary() {
   }
 }
 
+/* ── Today's Holiday / Day Order status — dashboard card ── */
+function renderDashHolidayDayOrder() {
+  const card = document.getElementById('dash-holiday-dayorder');
+  const content = document.getElementById('dash-hol-do-content');
+  if (!card || !content) return;
+
+  const today = new Date().toISOString().split('T')[0];
+  const recs  = (typeof _getHolidaysForDate === 'function') ? _getHolidaysForDate(today) : [];
+  const mornHol = recs.find(h => h.session === 'morning' || h.session === 'full');
+  const eveHol  = recs.find(h => h.session === 'evening' || h.session === 'full');
+
+  let parts = [];
+
+  if (recs.length > 0) {
+    const isFull = recs.some(h => h.session === 'full');
+    if (isFull) {
+      const reason = recs.find(h => h.session === 'full')?.reason || 'Holiday';
+      parts.push(`<span style="background:#fef3c7;color:#92400e;padding:3px 10px;border-radius:8px">🏖 Full Day Holiday — ${reason}</span>`);
+    } else {
+      if (mornHol) parts.push(`<span style="background:#fef3c7;color:#92400e;padding:3px 10px;border-radius:8px">🏖 ☀️ Morning Holiday — ${mornHol.reason||'Holiday'}</span>`);
+      if (eveHol)  parts.push(`<span style="background:#fef3c7;color:#92400e;padding:3px 10px;border-radius:8px">🏖 🌙 Evening Holiday — ${eveHol.reason||'Holiday'}</span>`);
+    }
+  }
+
+  // Day Order for today (saved or pending carry-over) per session
+  ['morning','evening'].forEach(sess => {
+    if (_isHoliday(today, sess)) {
+      const pending = (typeof _getPendingDayOrder === 'function') ? _getPendingDayOrder(sess) : '';
+      if (pending) {
+        const icon = sess === 'morning' ? '☀️' : '🌙';
+        parts.push(`<span style="background:var(--bg);border:.5px solid var(--br);padding:3px 10px;border-radius:8px;color:var(--tx2)">${icon} Day Order ${pending} pending → next working day</span>`);
+      }
+      return;
+    }
+    let dayNum = '';
+    try {
+      const meta = JSON.parse(localStorage.getItem('_erp_att_meta_' + today + '_' + sess) || 'null');
+      dayNum = meta?.dayOrder || localStorage.getItem('_erp_last_dayorder_' + today) || '';
+    } catch(e) {}
+    if (dayNum) {
+      const icon = sess === 'morning' ? '☀️' : '🌙';
+      parts.push(`<span style="background:#ede9fe;color:#5b21b6;padding:3px 10px;border-radius:8px">${icon} Day Order ${dayNum}</span>`);
+    }
+  });
+
+  if (parts.length === 0) {
+    card.style.display = 'none';
+    return;
+  }
+  card.style.display = '';
+  content.innerHTML = parts.join('');
+}
+
 /* ── Class-wise Strength — dashboard card ── */
 function renderClassStrength() {
   const barsEl = document.getElementById('dash-class-bars');
@@ -11144,11 +11578,10 @@ function updateDashStats() {
   if (el3) el3.textContent = '\u20B9' + totalPending.toLocaleString('en-IN');
 
   // Attendance %
-  const batchId = document.getElementById('att-batch')?.value || '';
+  const today2  = document.getElementById('att-date')?.value || new Date().toISOString().split('T')[0];
   const session = document.getElementById('att-session')?.value || 'morning';
-  const bStu    = (typeof _getBatchStudents === 'function') ? _getBatchStudents(batchId) : [];
-  const suffix  = '|' + (batchId||'all') + '|' + session;
-  const attVals = bStu.map(s => attState[s.id + suffix] || '');
+  const cStu    = (typeof _getClassStudents === 'function') ? _getClassStudents(session) : [];
+  const attVals = cStu.map(s => attState[_attKey(s.id, today2, session)] || '');
   const pCount  = attVals.filter(v => v === 'P').length;
   const marked  = attVals.filter(v => v !== '').length;
   if (el4) el4.textContent = marked > 0 ? Math.round(pCount / marked * 100) + '%' : '\u2014%';
@@ -11158,6 +11591,9 @@ function updateDashStats() {
 
   // Class-wise Strength card
   renderClassStrength();
+
+  // Holiday / Day Order status
+  renderDashHolidayDayOrder();
 
   // Charts
   if (window.Chart && document.getElementById('chart-income')) setTimeout(initCharts, 50);
@@ -13375,11 +13811,18 @@ function getStudentAttStats(student, year, month) {
       const datePart = k.slice(prefix.length, prefix.length + 10); // "YYYY-MM-DD"
       if (!datePart.startsWith(monthStr)) continue;
 
-      // Key format: _erp_att_YYYY-MM-DD_batchId_session
+      // New key format: _erp_att_YYYY-MM-DD_session
+      // Legacy key format: _erp_att_YYYY-MM-DD_batchId_session
       const rest    = k.slice(prefix.length + 11);
-      const lastU   = rest.lastIndexOf('_');
-      const batchId = rest.slice(0, lastU);
-      const session = rest.slice(lastU + 1); // "morning" or "evening"
+      let batchId = '', session = '';
+      if (rest === 'morning' || rest === 'evening') {
+        session = rest;
+        batchId = 'all';
+      } else {
+        const lastU   = rest.lastIndexOf('_');
+        batchId = rest.slice(0, lastU);
+        session = rest.slice(lastU + 1); // "morning" or "evening"
+      }
 
       try {
         const rec = JSON.parse(localStorage.getItem(k));

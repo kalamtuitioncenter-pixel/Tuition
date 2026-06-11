@@ -3408,15 +3408,29 @@ function renderAttList() {
   // ── Holiday banner ────────────────────────────────────
   if (typeof _refreshHolidayBanner === 'function') _refreshHolidayBanner(date, batchId, session);
 
-  // ── Filter students for this batch ────────────────────
+  // ── Filter students — class filter applied FIRST inside _getBatchStudents ──
   const activeStudents = _getBatchStudents(batchId);
 
   if (activeStudents.length === 0) {
+    // Show a specific message based on what filter is active
+    const selectedClass = (document.getElementById('att-grade-filter')?.value || 'all').trim();
+    const batchName     = batch ? batch.name : '';
+    let emptyMsg;
+    if (selectedClass !== 'all') {
+      emptyMsg = `<div style="font-size:28px;margin-bottom:8px">🎓</div>
+        <div style="font-weight:600;color:var(--tx);margin-bottom:4px">No students found for Class ${selectedClass}</div>
+        <div style="font-size:11px;color:var(--tx3)">Check that students are assigned Grade ${selectedClass} via Students → Edit.</div>`;
+    } else if (batchName) {
+      emptyMsg = `<div style="font-size:28px;margin-bottom:8px">📋</div>
+        <div style="font-weight:600;color:var(--tx);margin-bottom:4px">No students found for batch "${batchName}"</div>
+        <div style="font-size:11px;color:var(--tx3)">Assign students to this batch via Students → Edit.</div>`;
+    } else {
+      emptyMsg = `<div style="font-size:28px;margin-bottom:8px">📋</div>
+        <div style="font-weight:600;color:var(--tx);margin-bottom:4px">No students found</div>
+        <div style="font-size:11px;color:var(--tx3)">Select a batch or class to view students.</div>`;
+    }
     document.getElementById('att-wrap').innerHTML =
-      `<div style="padding:30px;text-align:center;color:var(--tx3);font-size:12px">
-        No students found for this batch.<br>
-        <span style="font-size:11px">Assign students to the batch via Students → Edit.</span>
-      </div>`;
+      `<div style="padding:40px 20px;text-align:center;color:var(--tx2);font-size:13px;line-height:1.7">${emptyMsg}</div>`;
     updateAttCounts(activeStudents, batchId, session);
     return;
   }
@@ -3503,34 +3517,75 @@ function setAtt(btn, v) {
 }
 
 function _getBatchStudents(batchId) {
+  // ═══════════════════════════════════════════════════════════════════
+  // STRICT CLASS FILTER — PERMANENT FIX
+  // Rule: NEVER return all students. Always filter by class first.
+  // If class filter is active, it is the primary and mandatory filter.
+  // Batch matching is secondary and also must never fall back to all.
+  // ═══════════════════════════════════════════════════════════════════
+
+  // ── STEP 1: Read the selected class from the dropdown ─────────────
+  const selectedClass = (document.getElementById('att-grade-filter')?.value || 'all').trim();
+  console.log('[ATT] Selected Class:', selectedClass === 'all' ? '(all / no filter)' : selectedClass);
+
+  // ── STEP 2: Start from active students only ───────────────────────
   let active = students.filter(s => s && s.name && s.status === 'active');
+
+  // ── STEP 3: Apply CLASS filter FIRST — this is the primary guard ──
+  // This runs BEFORE any batch logic so class boundaries are never crossed.
+  if (selectedClass !== 'all') {
+    active = active.filter(s => String(s.grade || '').trim() === selectedClass);
+    console.log('[ATT] After class filter (Class ' + selectedClass + '):', active.length, 'students');
+
+    // STRICT: if class filter yields zero, return empty — never widen scope
+    if (active.length === 0) {
+      console.warn('[ATT] No students found in Class', selectedClass, '— returning empty list. Students from other classes will NOT be shown.');
+      return [];
+    }
+  }
+
+  // ── STEP 4: Apply BATCH filter on top of the already-filtered list ─
   const batch = batches.find(b => b.id === batchId);
   if (batch && batch.name) {
     const bNameFull = batch.name.toLowerCase();
-    // Try exact full-name match first (most reliable)
+
+    // Try exact course-name match first
     const exactMatch = active.filter(s => s.course && s.course.toLowerCase().includes(bNameFull));
-    if (exactMatch.length > 0) { active = exactMatch; }
-    else {
-      // Fallback: match by batch name + grade guard to prevent cross-grade leakage
-      // Extract grade hint from batch name e.g. "10th" → "10", "8th" → "8"
+    if (exactMatch.length > 0) {
+      active = exactMatch;
+      console.log('[ATT] Batch match (exact):', batch.name, '| Students:', active.length);
+    } else {
+      // Loose match: first word of batch name + optional grade hint guard
       const gradeHint = (bNameFull.match(/\b(\d+)(?:st|nd|rd|th)?\b/) || [])[1];
-      const bFirst = bNameFull.split(' ')[0];
+      const bFirst    = bNameFull.split(' ')[0];
       const looseMatch = active.filter(s => {
         if (!s.course) return false;
         const sc = s.course.toLowerCase();
         if (!sc.includes(bFirst)) return false;
-        // If we found a grade hint in the batch name, enforce grade match
         if (gradeHint && s.grade && String(s.grade) !== gradeHint) return false;
         return true;
       });
-      if (looseMatch.length > 0) active = looseMatch;
+
+      if (looseMatch.length > 0) {
+        active = looseMatch;
+        console.log('[ATT] Batch match (loose):', batch.name, '| Students:', active.length);
+      } else {
+        // STRICT: batch found but no students match — return empty, never fall back to all
+        console.warn('[ATT] No students matched batch "' + batch.name + '" within the filtered set. batchId:', batchId, '— returning empty list.');
+        active = [];
+      }
     }
+  } else if (batchId) {
+    // batchId given but batch object not found — return empty, not all students
+    console.warn('[ATT] Batch object not found for batchId:', batchId, '— returning empty list.');
+    active = [];
   }
-  // Apply Class (grade) filter from the att-grade-filter dropdown
-  const gradeFilter = document.getElementById('att-grade-filter')?.value || 'all';
-  if (gradeFilter !== 'all') {
-    active = active.filter(s => String(s.grade || '').trim() === gradeFilter);
-  }
+
+  // ── STEP 5: Final debug log ───────────────────────────────────────
+  const renderedStudents = active;
+  console.log('[ATT] Filtered Students:', active.length);
+  console.log('[ATT] Rendered Students:', renderedStudents.length, renderedStudents.map(s => s.name + ' (Gr.' + s.grade + ')'));
+
   return active;
 }
 

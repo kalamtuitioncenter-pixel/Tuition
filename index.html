@@ -1011,6 +1011,9 @@ tbody tr:hover td{background:var(--bg)}
 <div class="page" id="pg-attendance">
   <div class="toolbar">
     <select class="fi" style="width:auto" id="att-batch" onchange="syncSessionToBatch();renderAttList()"></select>
+    <select class="fi" style="width:auto;min-width:110px" id="att-grade-filter" onchange="renderAttList()">
+      <option value="all">🎓 All Classes</option>
+    </select>
     <select class="fi" style="width:auto" id="att-session" onchange="renderAttList()">
       <option value="morning">☀️ Morning</option>
       <option value="evening">🌙 Evening</option>
@@ -1029,6 +1032,9 @@ tbody tr:hover td{background:var(--bg)}
     </button>
     <button class="btn btn-sm" onclick="openDayOrderSetup()" style="background:#7c3aed;color:#fff;border-color:#7c3aed" title="Configure Day Order subjects">
       📅 Setup
+    </button>
+    <button class="btn btn-sm" onclick="markHoliday()" id="btn-mark-holiday" style="background:#f59e0b;color:#fff;border-color:#d97706" title="Mark today as holiday — Day Order carries over to next working day">
+      🏖 Holiday
     </button>
     <button class="btn btn-sm" onclick="openQRScan()" style="background:#0891b2;color:#fff;border-color:#0891b2" title="QR Code Attendance">
       <svg viewBox="0 0 16 16" fill="none" width="13" height="13"><rect x="2" y="2" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1.3"/><rect x="9" y="2" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1.3"/><rect x="2" y="9" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1.3"/><path d="M9 9h2v2H9zM13 9h1v1h-1zM9 12h1v1H9zM11 11h1v2h1v-3h-2zM13 13h1v1h-1z" fill="currentColor"/></svg>
@@ -1076,6 +1082,11 @@ tbody tr:hover td{background:var(--bg)}
     <svg viewBox="0 0 16 16" fill="none" width="14" height="14"><circle cx="8" cy="8" r="5" stroke="currentColor" stroke-width="1.3"/><path d="M8 5v3l2 1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
     <span id="att-session-label">☀️ Morning Session</span>
     <span style="margin-left:auto;font-size:10px;font-weight:500;opacity:.7" id="att-batch-label"></span>
+  </div>
+  <div id="att-holiday-banner" style="display:none;margin-bottom:8px;padding:8px 14px;border-radius:8px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:8px;background:#fef3c7;color:#92400e;border:.5px solid #fde68a">
+    🏖 <span id="att-holiday-label">Today is marked as a Holiday</span>
+    <span id="att-holiday-dayorder-hint" style="margin-left:4px;font-size:11px;font-weight:500;opacity:.85"></span>
+    <button onclick="unmarkHoliday()" style="margin-left:auto;font-size:10px;padding:2px 10px;border-radius:6px;border:.5px solid #d97706;background:#fff7ed;color:#92400e;cursor:pointer;font-weight:700">✕ Remove Holiday</button>
   </div>
   <div class="card" style="padding:0;overflow:hidden;margin-bottom:12px" id="att-wrap"></div>
   <div style="display:flex;gap:8px">
@@ -1581,13 +1592,24 @@ tbody tr:hover td{background:var(--bg)}
   </div>
 </div>
 
-<!-- ═══════════════ NOTIFICATIONS ═══════════════ -->
+<!-- ═══════════════ NOTIFICATIONS / ADMIN PANEL ═══════════════ -->
 <div class="page" id="pg-notifications">
   <div style="background:#eff6ff;border:.5px solid #bfdbfe;border-radius:9px;padding:9px 14px;margin-bottom:10px;display:flex;align-items:center;gap:8px;font-size:12px;color:#1e40af">
     <svg viewBox="0 0 16 16" fill="none" width="14" height="14"><circle cx="8" cy="8" r="6" stroke="#2563eb" stroke-width="1.3"/><path d="M8 7v4M8 5.5v.5" stroke="#2563eb" stroke-width="1.4" stroke-linecap="round"/></svg>
-    <span><b>Admin Only</b> — Notifications are visible to admin and go to all parents/staff</span>
+    <span><b>Admin Only</b> — Daily summary, today's to-do and announcements for admin</span>
     <span class="badge bb" style="margin-left:auto">🔒 Admin</span>
   </div>
+
+  <!-- Today's Summary Cards -->
+  <div id="adm-summary-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:12px"></div>
+
+  <!-- Today's To-Do (Subjects / Schedule) -->
+  <div class="card" style="margin-bottom:12px">
+    <div class="card-hd"><span class="card-title">📋 Today's To-Do / Schedule</span></div>
+    <div id="adm-todo-list" style="padding:0 16px 12px"></div>
+  </div>
+
+  <!-- Announcements / Notifications -->
   <div class="toolbar">
     <button class="btn btn-p" onclick="showModal('sendNotif')"><svg viewBox="0 0 14 14" fill="none"><path d="M2 12l10-5L2 2v4l7 1-7 1v4z" fill="currentColor"/></svg><span id="btn-send-no">Send Notification</span></button>
   </div>
@@ -1620,6 +1642,21 @@ tbody tr:hover td{background:var(--bg)}
         </div>
       </div>
     </div>
+  </div>
+
+  <!-- AI Class / Batch Filter Bar -->
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap;background:var(--card);border:.5px solid var(--br);border-radius:10px;padding:9px 13px">
+    <svg viewBox="0 0 16 16" fill="none" style="width:15px;height:15px;flex-shrink:0;color:var(--pr)"><path d="M2 4h12M4 8h8M6 12h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+    <span style="font-size:11px;font-weight:600;color:var(--tx2)">Filter:</span>
+    <select id="ai-filter-class" class="fi" style="width:auto;font-size:11px;padding:4px 10px"
+      onchange="updateAIFilter()">
+      <option value="all">🎓 All Classes</option>
+    </select>
+    <select id="ai-filter-batch" class="fi" style="width:auto;font-size:11px;padding:4px 10px"
+      onchange="updateAIFilter()">
+      <option value="all">📦 All Batches</option>
+    </select>
+    <span id="ai-filter-count" style="font-size:10px;color:var(--tx3);margin-left:4px"></span>
   </div>
 
   <!-- AI Module Cards Grid -->
@@ -1892,6 +1929,9 @@ tbody tr:hover td{background:var(--bg)}
     </select>
     <select class="fi" id="sum-year-sel" style="width:auto" onchange="renderSummaryCards()">
       <option value="2025">2025</option><option value="2026">2026</option><option value="2027">2027</option>
+    </select>
+    <select class="fi" id="sum-grade-sel" style="width:auto" onchange="renderSummaryCards()">
+      <option value="all">அனைத்து வகுப்புகள்</option>
     </select>
     <select class="fi" id="sum-batch-sel" style="width:auto" onchange="renderSummaryCards()">
       <option value="all">அனைத்து பிரிவுகள்</option>
@@ -2291,7 +2331,7 @@ const T = {
   en:{
     dashboard:'Dashboard',students:'Students',attendance:'Attendance',fees:'Fees',
     marks:'Marks & Exams',staff:'Staff',shop:'Shop',whatsapp:'WhatsApp',
-    notifications:'Notifications',ai:'AI Features',backup:'Backup & Sync',settings:'Settings',
+    notifications:'Admin Panel',ai:'AI Features',backup:'Backup & Sync',settings:'Settings',
     main:'Main',mgmt:'Management',totalStudents:'Total Students',monthlyIncome:'Monthly Income',
     pendingFees:'Pending Fees',attToday:'Attendance Today',incomeTrend:'Income Trend (6 months)',
     feeStatus:'Fee Status',quickActions:'Quick Actions',qa1:'Mark Attendance',qa2:'Collect Fee',
@@ -2319,7 +2359,7 @@ const T = {
   ta:{
     dashboard:'டாஷ்போர்டு',students:'மாணவர்கள்',attendance:'வருகை பதிவு',fees:'கட்டணம்',
     marks:'மதிப்பெண்கள்',staff:'ஊழியர்கள்',shop:'கடை',whatsapp:'WhatsApp',
-    notifications:'அறிவிப்புகள்',ai:'AI அம்சங்கள்',backup:'காப்புப் பிரதி',settings:'அமைப்புகள்',
+    notifications:'நிர்வாகி பேனல்',ai:'AI அம்சங்கள்',backup:'காப்புப் பிரதி',settings:'அமைப்புகள்',
     main:'முதன்மை',mgmt:'மேலாண்மை',totalStudents:'மொத்த மாணவர்கள்',monthlyIncome:'மாதாந்திர வருமானம்',
     pendingFees:'நிலுவை கட்டணம்',attToday:'இன்றைய வருகை',incomeTrend:'வருமான போக்கு',
     feeStatus:'கட்டண நிலை',quickActions:'விரைவு செயல்கள்',qa1:'வருகை பதிவு',qa2:'கட்டணம் வசூலி',
@@ -2621,7 +2661,8 @@ function navTo(id) {
   if (id === 'wa-templates') { initWATemplatesPage(); }
   if (id === 'summary') { if (typeof renderSummaryCards === 'function') renderSummaryCards(); }
   if (id === 'marks') { if (typeof ewInit === 'function') ewInit(); }
-  if (id === 'timetable') { if (typeof initTimetablePage === 'function') initTimetablePage(); }}
+  if (id === 'timetable') { if (typeof initTimetablePage === 'function') initTimetablePage(); }
+  if (id === 'notifications') { if (typeof renderAdminPanel === 'function') renderAdminPanel(); }}
 
 function tbAddAction() {
   const active = document.querySelector('.page.active');
@@ -3297,14 +3338,25 @@ function _populateDayOrderDropdown(date, batch) {
     sel.appendChild(opt);
   });
 
-  // Auto-restore: check saved day order for this date, else keep previous
+  // Auto-restore: check saved day order for this date, else use pending (holiday carry-over), else keep previous
   let restored = '';
   try { restored = localStorage.getItem('_erp_last_dayorder_' + date) || ''; } catch(e) {}
 
+  // Check if this date itself is a holiday — if so, show pending carry-over info
+  const batchId2 = document.getElementById('att-batch')?.value || '';
+  const session2 = document.getElementById('att-session')?.value || 'morning';
+  const dateIsHoliday = _isHoliday && (_isHoliday(date, batchId2, session2));
+
   if (restored && days.find(d => d.num === restored)) {
     sel.value = restored;
-  } else if (prevVal && days.find(d => d.num === prevVal)) {
-    sel.value = prevVal;
+  } else {
+    // No saved day order for this date → check pending carry-over from a holiday
+    const pending = (typeof _getPendingDayOrder === 'function') ? _getPendingDayOrder(batchId2, session2) : '';
+    if (pending && days.find(d => d.num === pending)) {
+      sel.value = pending;
+    } else if (prevVal && days.find(d => d.num === prevVal)) {
+      sel.value = prevVal;
+    }
   }
 
   // Trigger UI update
@@ -3352,6 +3404,9 @@ function renderAttList() {
     const batchLabelEl = document.getElementById('att-batch-label');
     if (batchLabelEl) batchLabelEl.innerHTML = (batch.name + ' · ' + (batch.days||'Mon–Sat')) + otherSessInfo;
   }
+
+  // ── Holiday banner ────────────────────────────────────
+  if (typeof _refreshHolidayBanner === 'function') _refreshHolidayBanner(date, batchId, session);
 
   // ── Filter students for this batch ────────────────────
   const activeStudents = _getBatchStudents(batchId);
@@ -3454,20 +3509,27 @@ function _getBatchStudents(batchId) {
     const bNameFull = batch.name.toLowerCase();
     // Try exact full-name match first (most reliable)
     const exactMatch = active.filter(s => s.course && s.course.toLowerCase().includes(bNameFull));
-    if (exactMatch.length > 0) { active = exactMatch; return active; }
-    // Fallback: match by batch name + grade guard to prevent cross-grade leakage
-    // Extract grade hint from batch name e.g. "10th" → "10", "8th" → "8"
-    const gradeHint = (bNameFull.match(/\b(\d+)(?:st|nd|rd|th)?\b/) || [])[1];
-    const bFirst = bNameFull.split(' ')[0];
-    const looseMatch = active.filter(s => {
-      if (!s.course) return false;
-      const sc = s.course.toLowerCase();
-      if (!sc.includes(bFirst)) return false;
-      // If we found a grade hint in the batch name, enforce grade match
-      if (gradeHint && s.grade && String(s.grade) !== gradeHint) return false;
-      return true;
-    });
-    if (looseMatch.length > 0) active = looseMatch;
+    if (exactMatch.length > 0) { active = exactMatch; }
+    else {
+      // Fallback: match by batch name + grade guard to prevent cross-grade leakage
+      // Extract grade hint from batch name e.g. "10th" → "10", "8th" → "8"
+      const gradeHint = (bNameFull.match(/\b(\d+)(?:st|nd|rd|th)?\b/) || [])[1];
+      const bFirst = bNameFull.split(' ')[0];
+      const looseMatch = active.filter(s => {
+        if (!s.course) return false;
+        const sc = s.course.toLowerCase();
+        if (!sc.includes(bFirst)) return false;
+        // If we found a grade hint in the batch name, enforce grade match
+        if (gradeHint && s.grade && String(s.grade) !== gradeHint) return false;
+        return true;
+      });
+      if (looseMatch.length > 0) active = looseMatch;
+    }
+  }
+  // Apply Class (grade) filter from the att-grade-filter dropdown
+  const gradeFilter = document.getElementById('att-grade-filter')?.value || 'all';
+  if (gradeFilter !== 'all') {
+    active = active.filter(s => String(s.grade || '').trim() === gradeFilter);
   }
   return active;
 }
@@ -3716,8 +3778,15 @@ function saveAttendance() {
 
   _saveAttSession(date, batchId, session);
 
-  // ── Record missed subjects for absent students (Day Order integration) ──
+  // ── Real working day saved — clear holiday carry-over, record last working day order ──
   const dayNum = document.getElementById('att-day-order')?.value || '';
+  if (dayNum) {
+    try { localStorage.removeItem('_erp_pending_dayorder_' + batchId + '_' + session); } catch(e) {}
+    try { localStorage.removeItem('_erp_pending_dayorder_' + batchId); } catch(e) {}
+    try { localStorage.setItem('_erp_last_working_dayorder_' + batchId + '_' + session, dayNum); } catch(e) {}
+  }
+
+  // ── Record missed subjects for absent students (Day Order integration) ──
 
   // Always store the day order for this date+batch so Summary can cross-ref timetable
   if (dayNum) {
@@ -3749,6 +3818,134 @@ function saveAttendance() {
   renderAttList();
   runBackup('change');
 }
+/* ══════════════════════════════════════════════════════════
+   HOLIDAY MARKING — per date + batch + session
+   Stores holiday flag; day order auto-advances to next working day
+══════════════════════════════════════════════════════════ */
+function _holidayKey(date, batchId, session) {
+  return '_erp_holiday_' + date + '_' + batchId + '_' + session;
+}
+function _isHoliday(date, batchId, session) {
+  try { return localStorage.getItem(_holidayKey(date, batchId, session)) === '1'; } catch(e) { return false; }
+}
+
+function markHoliday() {
+  const date    = document.getElementById('att-date')?.value || new Date().toISOString().split('T')[0];
+  const batchId = document.getElementById('att-batch')?.value || '';
+  const session = document.getElementById('att-session')?.value || 'morning';
+  const batch   = batches.find(b => b.id === batchId);
+  const isBoth  = batch && batch.time === 'Both';
+  const dayNum  = document.getElementById('att-day-order')?.value || '';
+
+  // Build session options
+  const sessOptions = isBoth
+    ? `<div style="display:flex;flex-direction:column;gap:8px;margin:12px 0">
+        <button class="btn btn-p" style="justify-content:center" onclick="_applyHoliday('${date}','${batchId}','morning','${dayNum}')">☀️ Morning Only</button>
+        <button class="btn btn-p" style="justify-content:center" onclick="_applyHoliday('${date}','${batchId}','evening','${dayNum}')">🌙 Evening Only</button>
+        <button class="btn" style="justify-content:center;background:#f59e0b;color:#fff;border-color:#d97706" onclick="_applyHoliday('${date}','${batchId}','both','${dayNum}')">🏖 Both Sessions</button>
+      </div>`
+    : `<div style="margin:12px 0">
+        <button class="btn btn-p" style="width:100%;justify-content:center" onclick="_applyHoliday('${date}','${batchId}','${session}','${dayNum}')">${session==='morning'?'☀️ Morning':'🌙 Evening'} Session — Mark Holiday</button>
+      </div>`;
+
+  const root = document.getElementById('modal-root');
+  root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal" style="max-width:360px">
+    <div class="modal-title">🏖 Mark Holiday — ${date}</div>
+    <div style="font-size:12px;color:var(--tx2);margin-bottom:4px">Which session is off today?</div>
+    <div style="font-size:11px;color:var(--tx3);background:var(--bg);border-radius:8px;padding:8px 10px;margin-bottom:4px">
+      📅 Day Order <b>${dayNum||'(not set)'}</b> will carry over to the next working day for whichever session(s) you mark.
+    </div>
+    ${sessOptions}
+    <div class="modal-foot"><button class="btn" onclick="closeModal()">Cancel</button></div>
+  </div></div>`;
+}
+
+function _applyHoliday(date, batchId, sessChoice, dayNum) {
+  const sessions = sessChoice === 'both' ? ['morning','evening'] : [sessChoice];
+  sessions.forEach(s => {
+    try { localStorage.setItem(_holidayKey(date, batchId, s), '1'); } catch(e) {}
+  });
+  // Store pending day order for this batch (carries to next working day)
+  if (dayNum) {
+    sessions.forEach(s => {
+      try { localStorage.setItem('_erp_pending_dayorder_' + batchId + '_' + s, dayNum); } catch(e) {}
+    });
+    try { localStorage.setItem('_erp_last_dayorder_' + date, dayNum); } catch(e) {}
+  }
+  closeModal();
+  const label = sessChoice === 'both' ? 'Both Sessions' : (sessChoice === 'morning' ? '☀️ Morning' : '🌙 Evening');
+  showToast(`🏖 Holiday marked — ${label} on ${date}. Day Order ${dayNum||'?'} → next working day`);
+  const curSession = document.getElementById('att-session')?.value || 'morning';
+  _refreshHolidayBanner(date, batchId, curSession);
+  renderAttList();
+  runBackup('change');
+}
+
+function unmarkHoliday() {
+  const date    = document.getElementById('att-date')?.value || new Date().toISOString().split('T')[0];
+  const batchId = document.getElementById('att-batch')?.value || '';
+  const session = document.getElementById('att-session')?.value || 'morning';
+  try { localStorage.removeItem(_holidayKey(date, batchId, session)); } catch(e) {}
+  try { localStorage.removeItem(_holidayKey(date, batchId, 'morning')); } catch(e) {}
+  try { localStorage.removeItem(_holidayKey(date, batchId, 'evening')); } catch(e) {}
+  showToast('✅ Holiday removed for ' + date);
+  _refreshHolidayBanner(date, batchId, session);
+  renderAttList();
+}
+
+/* Refresh holiday banner visibility and text */
+function _refreshHolidayBanner(date, batchId, session) {
+  const banner   = document.getElementById('att-holiday-banner');
+  const labelEl  = document.getElementById('att-holiday-label');
+  const hintEl   = document.getElementById('att-holiday-dayorder-hint');
+  if (!banner) return;
+
+  const mornHol = _isHoliday(date, batchId, 'morning');
+  const eveHol  = _isHoliday(date, batchId, 'evening');
+  const curHol  = _isHoliday(date, batchId, session);
+
+  if (!mornHol && !eveHol) {
+    banner.style.display = 'none';
+    return;
+  }
+
+  banner.style.display = 'flex';
+  let label = '';
+  if (mornHol && eveHol)       label = '🏖 Both sessions are marked as Holiday on this date';
+  else if (mornHol)            label = '🏖 ☀️ Morning session is marked as Holiday';
+  else                         label = '🏖 🌙 Evening session is marked as Holiday';
+
+  if (labelEl) labelEl.textContent = label;
+
+  // Show which day order will carry forward for the current session
+  const pending = _getPendingDayOrder(batchId, session);
+  if (hintEl) {
+    hintEl.textContent = pending
+      ? `— Day Order ${pending} will be used on the next working ${session === 'morning' ? '☀️ Morning' : '🌙 Evening'}`
+      : '';
+  }
+
+  // Dim the attendance list when current session is a holiday
+  const wrap = document.getElementById('att-wrap');
+  if (wrap) wrap.style.opacity = curHol ? '0.4' : '1';
+  const saveBtn = document.querySelector('[onclick="saveAttendance()"]');
+  if (saveBtn) {
+    saveBtn.disabled = !!curHol;
+    saveBtn.style.opacity = curHol ? '0.5' : '1';
+    saveBtn.title = curHol ? 'This session is a holiday — attendance not needed' : '';
+  }
+}
+
+/* Get the pending (carried-over) day order for a batch+session */
+function _getPendingDayOrder(batchId, session) {
+  try {
+    // Session-specific first, then fallback to generic
+    return localStorage.getItem('_erp_pending_dayorder_' + batchId + '_' + (session||'morning'))
+        || localStorage.getItem('_erp_pending_dayorder_' + batchId)
+        || '';
+  } catch(e) { return ''; }
+}
+
 /* Helper: get a student's attendance value for the currently selected batch+session */
 function getStudentAtt(sid) {
   const batchId = document.getElementById('att-batch')?.value || '';
@@ -3787,6 +3984,10 @@ function showMonthlyAttSummary() {
         </select>
         <select class="fi" id="mas-year" style="width:auto" onchange="renderMAS()">
           ${[curYr-1,curYr,curYr+1].map(y=>`<option value="${y}" ${y===curYr?'selected':''}>${y}</option>`).join('')}
+        </select>
+        <select class="fi" id="mas-grade" style="width:auto" onchange="renderMAS()">
+          <option value="all">All Classes</option>
+          ${[...new Set(students.filter(s=>s&&s.grade).map(s=>String(s.grade).trim()))].sort((a,b)=>{const o=['KG','1','2','3','4','5','6','7','8','9','10','11','12'];const ai=o.indexOf(a),bi=o.indexOf(b);return(ai<0?99:ai)-(bi<0?99:bi);}).map(g=>`<option value="${g}">${g==='KG'?'KG':'Class '+g}</option>`).join('')}
         </select>
         <select class="fi" id="mas-batch" style="width:auto" onchange="renderMAS()">
           <option value="all">All Batches</option>
@@ -3827,6 +4028,7 @@ function renderMAS() {
   const mo     = parseInt(document.getElementById('mas-month')?.value ?? new Date().getMonth());
   const yr     = parseInt(document.getElementById('mas-year')?.value  ?? new Date().getFullYear());
   const batch  = document.getElementById('mas-batch')?.value || 'all';
+  const grade  = document.getElementById('mas-grade')?.value || 'all';
   const tbody  = document.getElementById('mas-tbody');
   const stats  = document.getElementById('mas-stats');
   if (!tbody) return;
@@ -3856,6 +4058,9 @@ function renderMAS() {
   let activeStudents = students.filter(s => s && s.name && s.status === 'active');
   if (batch !== 'all') {
     activeStudents = activeStudents.filter(s => s.course === batch || s.batch === batch);
+  }
+  if (grade !== 'all') {
+    activeStudents = activeStudents.filter(s => String(s.grade || '').trim() === grade);
   }
 
   // Sort: most absent first, then most late
@@ -7447,6 +7652,92 @@ function saveProduct() {
 }
 
 /* ═══════════════════════════════════════════════════════
+   ADMIN PANEL — daily summary, to-do, announcements
+═══════════════════════════════════════════════════════ */
+function _todayISO() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function renderAdminPanel() {
+  const today = _todayISO();
+
+  // ── Today's exams ───────────────────────────
+  const todaysExams = exams.filter(e => e.date === today);
+
+  // ── Today's student attendance (across all batches/sessions) ──
+  let pCount=0, aCount=0, lCount=0;
+  try {
+    Object.keys(localStorage).forEach(k => {
+      if (k.indexOf('_erp_att_'+today+'_') === 0) {
+        try {
+          const data = JSON.parse(localStorage.getItem(k) || '{}');
+          Object.values(data).forEach(v => {
+            if (v==='P') pCount++; else if (v==='A') aCount++; else if (v==='L') lCount++;
+          });
+        } catch(e){}
+      }
+    });
+  } catch(e){}
+  const totalMarked = pCount + aCount + lCount;
+
+  // ── Today's staff/teacher attendance ───────────
+  let sP=0, sA=0, sL=0, sH=0;
+  staffData.forEach(s => {
+    const v = staffAtt[s.id+'|'+today] || '';
+    if (v==='P') sP++; else if (v==='A') sA++; else if (v==='L') sL++; else if (v==='H') sH++;
+  });
+
+  // ── Build summary cards ───────────────────────
+  const cards = [
+    {lbl:'Total Students', val: students.length, icon:'👨‍🎓', color:'#185FA5', bg:'#dbeafe'},
+    {lbl:'Attendance Today', val: totalMarked ? (pCount+'/'+totalMarked+' Present') : 'Not marked', icon:'✅', color:'#16a34a', bg:'#dcfce7'},
+    {lbl:'Absent / Late Today', val: aCount+' A · '+lCount+' L', icon:'⚠️', color:'#dc2626', bg:'#fee2e2'},
+    {lbl:'Total Staff', val: staffData.length, icon:'👥', color:'#7c3aed', bg:'#ede9fe'},
+    {lbl:'Staff Attendance Today', val: (sP+sL)+'/'+staffData.length+' Present', icon:'🧑‍🏫', color:'#0891b2', bg:'#cffafe'},
+    {lbl:'Staff Absent / Leave', val: sA+' A · '+sL+' L · '+sH+' H', icon:'📌', color:'#ca8a04', bg:'#fef9c3'},
+    {lbl:"Today's Exams", val: todaysExams.length ? todaysExams.map(e=>e.name+' ('+e.subject+')').join(', ') : 'No exam today', icon:'📝', color:'#854F0B', bg:'#fef3c7'},
+    {lbl:'Pending Notifications', val: notifData.length, icon:'🔔', color:'#1D9E75', bg:'#dcfce7'},
+  ];
+
+  document.getElementById('adm-summary-grid').innerHTML = cards.map(c => `
+    <div class="stat" style="cursor:default">
+      <div class="stat-icon" style="background:${c.bg};font-size:18px;display:flex;align-items:center;justify-content:center">${c.icon}</div>
+      <div class="stat-lbl">${c.lbl}</div>
+      <div class="stat-val" style="color:${c.color};font-size:13px;line-height:1.4">${c.val}</div>
+    </div>`).join('');
+
+  // ── Today's To-Do (subjects/schedule) ──────────
+  let todoHtml = '';
+  try {
+    const subjects = (typeof getTodaySubjects === 'function') ? getTodaySubjects() : [];
+    if (subjects.length) {
+      todoHtml = subjects.map(s => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:.5px solid var(--br)">
+          <div>
+            <div style="font-size:12px;font-weight:600;color:var(--tx)">${s.subject || '—'}</div>
+            <div style="font-size:10px;color:var(--tx3)">${s.period || ''}</div>
+          </div>
+          <div style="font-size:11px;color:var(--tx2)">${s.start||''} – ${s.end||''}</div>
+        </div>`).join('');
+    }
+  } catch(e){}
+  if (todaysExams.length) {
+    todoHtml += todaysExams.map(e => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:.5px solid var(--br)">
+        <div>
+          <div style="font-size:12px;font-weight:600;color:#854F0B">📝 ${e.name} — ${e.subject}</div>
+          <div style="font-size:10px;color:var(--tx3)">Exam scheduled today</div>
+        </div>
+        <div style="font-size:11px;color:var(--tx2)">${e.maxMarks||''} marks</div>
+      </div>`).join('');
+  }
+  document.getElementById('adm-todo-list').innerHTML = todoHtml ||
+    '<div style="padding:20px;text-align:center;color:var(--tx3);font-size:12px">Nothing scheduled for today</div>';
+
+  renderNotifs();
+}
+
+/* ═══════════════════════════════════════════════════════
    NOTIFICATIONS
 ═══════════════════════════════════════════════════════ */
 function renderNotifs() {
@@ -8291,15 +8582,75 @@ function buildPredictReport(id, ta) {
   return ta ? `✅ கணிப்பு முடிந்தது.` : `✅ Prediction complete.`;
 }
 
+/* ── AI Class / Batch Filter helpers ──────────────────────────────── */
+function initAIFilter() {
+  const cls  = document.getElementById('ai-filter-class');
+  const bat  = document.getElementById('ai-filter-batch');
+  if (!cls || !bat) return;
+
+  // Populate class options
+  const grades = [...new Set(students.filter(s=>s&&s.grade).map(s=>String(s.grade).trim()))]
+    .sort((a,b)=>{const o=['KG','1','2','3','4','5','6','7','8','9','10','11','12'];const ai=o.indexOf(a),bi=o.indexOf(b);return(ai<0?99:ai)-(bi<0?99:bi);});
+  cls.innerHTML = '<option value="all">🎓 All Classes</option>' +
+    grades.map(g=>`<option value="${g}">${g==='KG'?'KG':'Class '+g}</option>`).join('');
+
+  // Populate batch options
+  const batches = [...new Set(students.filter(s=>s&&(s.course||s.batch)).map(s=>(s.course||s.batch).trim()).filter(Boolean))].sort();
+  bat.innerHTML = '<option value="all">📦 All Batches</option>' +
+    batches.map(b=>`<option value="${b}">${b}</option>`).join('');
+
+  updateAIFilterCount();
+}
+
+function updateAIFilter() {
+  updateAIFilterCount();
+  // Re-run active module if one is showing
+  const out = document.getElementById('ai-output');
+  if (window.activeAI && out && out.style.display !== 'none') {
+    runAI(window.activeAI);
+  }
+}
+
+function updateAIFilterCount() {
+  const cnt = document.getElementById('ai-filter-count');
+  if (!cnt) return;
+  const filtered = getAIFilteredStudents();
+  const cls  = document.getElementById('ai-filter-class')?.value  || 'all';
+  const bat  = document.getElementById('ai-filter-batch')?.value  || 'all';
+  if (cls === 'all' && bat === 'all') { cnt.textContent = ''; return; }
+  cnt.textContent = `${filtered.length} student${filtered.length!==1?'s':''} selected`;
+}
+
+function getAIFilteredStudents() {
+  const cls = document.getElementById('ai-filter-class')?.value  || 'all';
+  const bat = document.getElementById('ai-filter-batch')?.value  || 'all';
+  return students.filter(s => {
+    if (!s || !s.name) return false;
+    if (cls !== 'all' && String(s.grade||'').trim() !== cls) return false;
+    if (bat !== 'all' && (s.course||s.batch||'') !== bat) return false;
+    return true;
+  });
+}
+
 function getAICtx() {
-  const attVals = Object.values(attState);
+  const filtered = getAIFilteredStudents();
+  const attVals = filtered.map(s => attState[s.id] || '').filter(Boolean);
   const p = attVals.filter(v=>v==='P').length;
-  const tot = students.length || 1;
-  const paid = fees.filter(f=>f.status==='paid').length;
+  const tot = filtered.length || 1;
+  const filteredIds = new Set(filtered.map(s=>s.id));
+  const filteredFees = fees.filter(f => {
+    if (!f) return false;
+    const s = students.find(x=>x.name===f.student||x.id===f.studentId);
+    return s && filteredIds.has(s.id);
+  });
+  const paid = filteredFees.filter(f=>f.status==='paid').length;
   return {
-    students, date: dateStr, center_phone: CFG.CENTER.phone||'', attPct: Math.round(p/tot*100), feeRate: fees.length>0?Math.round(paid/fees.length*100):0,
-    totalCollected: fees.filter(f=>f.status==='paid').reduce((s,f)=>s+(f.paid||0),0),
-    totalPending: fees.filter(f=>f.status!=='paid').reduce((s,f)=>s+(f.balance||0),0),
+    students: filtered, date: dateStr, center_phone: CFG.CENTER.phone||'',
+    attPct: Math.round(p/tot*100),
+    feeRate: filteredFees.length>0?Math.round(paid/filteredFees.length*100):0,
+    totalCollected: filteredFees.filter(f=>f.status==='paid').reduce((s,f)=>s+(f.paid||0),0),
+    totalPending:   filteredFees.filter(f=>f.status!=='paid').reduce((s,f)=>s+(f.balance||0),0),
+    filteredFees,
   };
 }
 
@@ -8310,6 +8661,13 @@ function builtInAI(id) {
   const cPhone = CFG.CENTER.phone||'';
   const attPct = ctx.attPct;
   const feeRate = ctx.feeRate;
+  // Use filtered students & fees so all modules respect Class/Batch filter
+  const students = ctx.students;
+  const fees = ctx.filteredFees;
+  // Build filter label for report headers
+  const _cls = document.getElementById('ai-filter-class')?.value || 'all';
+  const _bat = document.getElementById('ai-filter-batch')?.value || 'all';
+  const filterTag = (_cls!=='all'||_bat!=='all') ? ` [${_cls!=='all'?(_cls==='KG'?'KG':'Class '+_cls):''}${_cls!=='all'&&_bat!=='all'?' · ':''}${_bat!=='all'?_bat:''}]` : '';
 
   // New module IDs mapped from old ones
   if (id==='weak' || id==='weak_subject') {
@@ -8501,8 +8859,12 @@ function builtInAI(id) {
 
   // ── NEW MODULE IDs ──────────────────────────────────────
   if (id === 'attend_late') {
-    const lateStudents = students.filter(s=>getStudentAtt(s.id)==='L');
-    const absentStudents = students.filter(s=>getStudentAtt(s.id)==='A');
+    const activeAll     = students.filter(s => s && s.name && s.status === 'active');
+    const lateStudents  = activeAll.filter(s => getStudentAtt(s.id) === 'L');
+    const absentStudents= activeAll.filter(s => getStudentAtt(s.id) === 'A');
+    const totalActive   = activeAll.length || 1;
+    const presentCount  = activeAll.filter(s => getStudentAtt(s.id) === 'P').length;
+    const activePct     = Math.round(presentCount / totalActive * 100);
 
     // Build late students' missed first-period subject info
     const lateMissedInfo = lateStudents.map(s => {
@@ -8514,39 +8876,45 @@ function builtInAI(id) {
       return { s, lateMissed };
     });
 
+    const clsLabel = s => s.grade ? (s.grade==='KG'?'KG':'Class '+s.grade) : '—';
+
     return ta
-      ? `📊 ${ctr} — வருகை & தாமத பகுப்பாய்வு\n${'='.repeat(42)}\n\nவருகை: ${attPct}% | மொத்த மாணவர்கள்: ${students.length}\n\n⚠️ இன்று வரவில்லை (${absentStudents.length}):${absentStudents.map(s=>`\n• ${s.name} — ${s.parent} 📞 ${s.phone}`).join('')||' — இல்லை'}\n\n🕐 தாமதமாக வந்தவர்கள் (${lateStudents.length}):${lateMissedInfo.map(({s,lateMissed})=>`\n• ${s.name}${lateMissed.length ? ' — 1st period miss: '+lateMissed.join(', ') : ''}`).join('')||' — இல்லை'}\n\n📋 பரிந்துரைகள்:\n1. 3 நாட்கள் தொடர்ச்சியாக வராதவர்களை உடனே அழைக்கவும்\n2. அடிக்கடி தாமதமாக வருபவர்களுக்கு எச்சரிக்கை அனுப்பவும்\n3. தாமதத்தால் 1st period பாடம் தொடர்ந்து miss ஆனால் கூடுதல் கவனிப்பு தேவை\n4. 75% கீழ் வருகை உள்ளவர்களுக்கு தனிக் கவனிப்பு தேவை`
-      : `📊 ${ctr} — Attendance & Late Arrival Analysis\n${'='.repeat(44)}\n\nToday's Attendance: ${attPct}% | Total Students: ${students.length}\n\n⚠️ Absent Today (${absentStudents.length}):${absentStudents.map(s=>`\n• ${s.name} — Parent: ${s.parent} 📞 ${s.phone}`).join('')||' — None'}\n\n🕐 Late Arrivals (${lateStudents.length}) — 1st Period Subject Missed:${lateMissedInfo.map(({s,lateMissed})=>`\n• ${s.name}${lateMissed.length ? ' — missed: '+lateMissed.join(', ') : ' — (no subject data yet)'}`).join('')||' — None'}\n\n📋 Action Steps:\n1. Call parents of students absent 3+ consecutive days\n2. Send WhatsApp late arrival warning (use WA module)\n3. Late students missing same 1st-period subject repeatedly → schedule makeup session\n4. Students below 75% attendance need personal intervention\n5. Check if late arrivals are from same area (transport issue)`;
+      ? `📊 ${ctr}${filterTag} — வருகை & தாமத பகுப்பாய்வு\n${'='.repeat(42)}\n\nவருகை: ${activePct}% | மொத்த செயலில் உள்ள மாணவர்கள்: ${totalActive}\n\n⚠️ இன்று வரவில்லை (${absentStudents.length}):${absentStudents.map(s=>`\n• ${s.name} (${clsLabel(s)}) — ${s.parent} 📞 ${s.phone}`).join('')||' — இல்லை'}\n\n🕐 தாமதமாக வந்தவர்கள் (${lateStudents.length}):${lateMissedInfo.map(({s,lateMissed})=>`\n• ${s.name} (${clsLabel(s)})${lateMissed.length ? ' — 1st period miss: '+lateMissed.join(', ') : ''}`).join('')||' — இல்லை'}\n\n📋 பரிந்துரைகள்:\n1. 3 நாட்கள் தொடர்ச்சியாக வராதவர்களை உடனே அழைக்கவும்\n2. அடிக்கடி தாமதமாக வருபவர்களுக்கு எச்சரிக்கை அனுப்பவும்\n3. தாமதத்தால் 1st period பாடம் தொடர்ந்து miss ஆனால் கூடுதல் கவனிப்பு தேவை\n4. 75% கீழ் வருகை உள்ளவர்களுக்கு தனிக் கவனிப்பு தேவை`
+      : `📊 ${ctr}${filterTag} — Attendance & Late Arrival Analysis\n${'='.repeat(44)}\n\nToday's Attendance: ${activePct}% | Active Students: ${totalActive}\n\n⚠️ Absent Today (${absentStudents.length}):${absentStudents.map(s=>`\n• ${s.name} (${clsLabel(s)}) — Parent: ${s.parent} 📞 ${s.phone}`).join('')||' — None'}\n\n🕐 Late Arrivals (${lateStudents.length}) — 1st Period Subject Missed:${lateMissedInfo.map(({s,lateMissed})=>`\n• ${s.name} (${clsLabel(s)})${lateMissed.length ? ' — missed: '+lateMissed.join(', ') : ' — (no subject data yet)'}`).join('')||' — None'}\n\n📋 Action Steps:\n1. Call parents of students absent 3+ consecutive days\n2. Send WhatsApp late arrival warning (use WA module)\n3. Late students missing same 1st-period subject repeatedly → schedule makeup session\n4. Students below 75% attendance need personal intervention\n5. Check if late arrivals are from same area (transport issue)`;
   }
 
   if (id === 'frequent_absent') {
     const highRisk = students.filter(s=>s.status==='inactive');
+    const clsLabel = s => s.grade ? (s.grade==='KG'?'KG':'Class '+s.grade) : '—';
     return ta
-      ? `🔴 ${ctr} — அடிக்கடி வராத மாணவர் பகுப்பாய்வு\n${'='.repeat(42)}\n\nமொத்த மாணவர்கள்: ${students.length}\nசெயலற்ற / அதிக இடைவெளி: ${highRisk.length}\n\n${highRisk.map((s,i)=>`${i+1}. ${s.name} (${s.id})\n   பெற்றோர்: ${s.parent} 📞 ${s.phone}\n   நிலை: ${s.status}`).join('\n\n')||'இல்லை'}\n\n📋 நடவடிக்கைகள்:\n1. இந்த மாணவர்களின் பெற்றோரை அழைக்கவும்\n2. மீண்டும் சேர்க்கைக்கு சிறப்பு தள்ளுபடி கொடுக்கவும்\n3. வாராந்திர வருகை சதவீதம் பெற்றோருக்கு அனுப்பவும்`
-      : `🔴 ${ctr} — Frequent Absentee Analysis\n${'='.repeat(44)}\n\nTotal Students: ${students.length}\nHigh-Risk / Inactive: ${highRisk.length}\n\n${highRisk.map((s,i)=>`${i+1}. ${s.name} (${s.id})\n   Parent: ${s.parent} 📞 ${s.phone}\n   Status: ${s.status}`).join('\n\n')||'None identified'}\n\n📋 Recommended Actions:\n1. Call parents of frequently absent students this week\n2. Offer special re-enrollment discount or counseling\n3. Send weekly attendance % report to parents via WhatsApp\n4. Investigate root cause: health, family, transport, or engagement issue`;
+      ? `🔴 ${ctr}${filterTag} — அடிக்கடி வராத மாணவர் பகுப்பாய்வு\n${'='.repeat(42)}\n\nமொத்த மாணவர்கள்: ${students.length}\nசெயலற்ற / அதிக இடைவெளி: ${highRisk.length}\n\n${highRisk.map((s,i)=>`${i+1}. ${s.name} (${clsLabel(s)}) — ${s.id}\n   பெற்றோர்: ${s.parent} 📞 ${s.phone}\n   நிலை: ${s.status}`).join('\n\n')||'இல்லை'}\n\n📋 நடவடிக்கைகள்:\n1. இந்த மாணவர்களின் பெற்றோரை அழைக்கவும்\n2. மீண்டும் சேர்க்கைக்கு சிறப்பு தள்ளுபடி கொடுக்கவும்\n3. வாராந்திர வருகை சதவீதம் பெற்றோருக்கு அனுப்பவும்`
+      : `🔴 ${ctr}${filterTag} — Frequent Absentee Analysis\n${'='.repeat(44)}\n\nTotal Students: ${students.length}\nHigh-Risk / Inactive: ${highRisk.length}\n\n${highRisk.map((s,i)=>`${i+1}. ${s.name} (${clsLabel(s)}) — ${s.id}\n   Parent: ${s.parent} 📞 ${s.phone}\n   Status: ${s.status}`).join('\n\n')||'None identified'}\n\n📋 Recommended Actions:\n1. Call parents of frequently absent students this week\n2. Offer special re-enrollment discount or counseling\n3. Send weekly attendance % report to parents via WhatsApp\n4. Investigate root cause: health, family, transport, or engagement issue`;
   }
 
   if (id === 'fee_forecast') {
     const pend = fees.filter(f=>f.status==='pending'||f.status==='overdue');
-    const pendStudents = students.filter(s=>pend.some(f=>f.student===s.name));
+    const pendStudents = students.filter(s=>pend.some(f=>f.student===s.name||f.studentId===s.id));
+    const clsLabel = s => s.grade ? (s.grade==='KG'?'KG':'Class '+s.grade) : '—';
     return ta
-      ? `💰 ${ctr} — கட்டண கணிப்பு பகுப்பாய்வு\n${'='.repeat(40)}\n\nகட்டண வசூல்: ${feeRate}%\nநிலுவை மாணவர்கள்: ${pendStudents.length}\n\n${pendStudents.map((s,i)=>{const f=pend.find(p=>p.student===s.name);return `${i+1}. ${s.name} — ₹${f?.balance||0} நிலுவை\n   📞 ${s.phone}`;}).join('\n')||'நிலுவை இல்லை'}\n\n📋 வசூல் உத்திகள்:\n1. மாதம் 1ம் தேதி WhatsApp நினைவூட்டல் அனுப்பவும்\n2. 2 மாதம் நிலுவை இருந்தால் நேரடியாக அழைக்கவும்\n3. UPI QR code கொடுத்து எளிதாக செலுத்த வழிசெய்யவும்`
-      : `💰 ${ctr} — Fee Defaulter Forecast\n${'='.repeat(44)}\n\nCollection Rate: ${feeRate}%\nStudents with Pending Fees: ${pendStudents.length}\n\n${pendStudents.map((s,i)=>{const f=pend.find(p=>p.student===s.name);return `${i+1}. ${s.name} — ₹${f?.balance||0} pending\n   Parent: ${s.parent} 📞 ${s.phone}`;}).join('\n')||'No pending fees — excellent!'}\n\n📋 Collection Strategies:\n1. Send WhatsApp fee reminder on 1st of every month\n2. Call directly after 5th for unpaid students\n3. Share UPI QR for easy digital payment\n4. Enforce 5% late fee after grace period — creates urgency`;
+      ? `💰 ${ctr}${filterTag} — கட்டண கணிப்பு பகுப்பாய்வு\n${'='.repeat(40)}\n\nகட்டண வசூல்: ${feeRate}%\nநிலுவை மாணவர்கள்: ${pendStudents.length}\n\n${pendStudents.map((s,i)=>{const f=pend.find(p=>p.student===s.name||p.studentId===s.id);return `${i+1}. ${s.name} (${clsLabel(s)}) — ₹${f?.balance||0} நிலுவை\n   📞 ${s.phone}`;}).join('\n')||'நிலுவை இல்லை'}\n\n📋 வசூல் உத்திகள்:\n1. மாதம் 1ம் தேதி WhatsApp நினைவூட்டல் அனுப்பவும்\n2. 2 மாதம் நிலுவை இருந்தால் நேரடியாக அழைக்கவும்\n3. UPI QR code கொடுத்து எளிதாக செலுத்த வழிசெய்யவும்`
+      : `💰 ${ctr}${filterTag} — Fee Defaulter Forecast\n${'='.repeat(44)}\n\nCollection Rate: ${feeRate}%\nStudents with Pending Fees: ${pendStudents.length}\n\n${pendStudents.map((s,i)=>{const f=pend.find(p=>p.student===s.name||p.studentId===s.id);return `${i+1}. ${s.name} (${clsLabel(s)}) — ₹${f?.balance||0} pending\n   Parent: ${s.parent} 📞 ${s.phone}`;}).join('\n')||'No pending fees — excellent!'}\n\n📋 Collection Strategies:\n1. Send WhatsApp fee reminder on 1st of every month\n2. Call directly after 5th for unpaid students\n3. Share UPI QR for easy digital payment\n4. Enforce 5% late fee after grace period — creates urgency`;
   }
 
   if (id === 'late_pattern') {
-    const lateToday = students.filter(s=>getStudentAtt(s.id)==='L');
+    const lateToday = students.filter(s=>s&&s.name&&s.status==='active'&&getStudentAtt(s.id)==='L');
+    const clsLabel = s => s.grade ? (s.grade==='KG'?'KG':'Class '+s.grade) : '—';
     return ta
-      ? `🕐 ${ctr} — தாமத வருகை வடிவ பகுப்பாய்வு\n${'='.repeat(42)}\n\nவருகை: ${attPct}%\nதாமதமாக வந்தவர்கள் (இன்று): ${lateToday.length}\n\n${lateToday.map((s,i)=>`${i+1}. ${s.name} (${s.id}) — ${s.parent} 📞 ${s.phone}`).join('\n')||'இன்று தாமதம் இல்லை'}\n\n📊 தாமத வடிவ கண்டுபிடிப்பு:\n• திங்கள் & வெள்ளி: அதிக தாமதம் (தொடக்கம் & முடிவு வாரம்)\n• காலை நேர வகுப்பு: கோடை காலத்தில் அதிக தாமதம்\n\n📋 தீர்வு நடவடிக்கைகள்:\n1. அடிக்கடி தாமதமாக வருபவர்களுக்கு WhatsApp எச்சரிக்கை\n2. பெற்றோரிடம் தாமத காரணம் கேட்கவும்\n3. பேருந்து / போக்குவரத்து சிக்கல் என்றால் Batch நேரம் மாற்றவும்`
-      : `🕐 ${ctr} — Late Arrival Pattern Analysis\n${'='.repeat(44)}\n\nAttendance: ${attPct}%\nLate Today: ${lateToday.length}\n\n${lateToday.map((s,i)=>`${i+1}. ${s.name} (${s.id}) — Parent: ${s.parent} 📞 ${s.phone}`).join('\n')||'No late arrivals today'}\n\n📊 Pattern Observations:\n• Monday & Friday: Highest late rate (start/end of week)\n• Morning batches: More late arrivals in summer months\n\n📋 Corrective Actions:\n1. Send WhatsApp warning to frequent late-comers\n2. Ask parents reason for repeated lateness\n3. If transport issue — adjust batch timing\n4. Track if late patterns correlate with poor marks`;
+      ? `🕐 ${ctr}${filterTag} — தாமத வருகை வடிவ பகுப்பாய்வு\n${'='.repeat(42)}\n\nவருகை: ${attPct}%\nதாமதமாக வந்தவர்கள் (இன்று): ${lateToday.length}\n\n${lateToday.map((s,i)=>`${i+1}. ${s.name} (${clsLabel(s)}) — ${s.parent} 📞 ${s.phone}`).join('\n')||'இன்று தாமதம் இல்லை'}\n\n📊 தாமத வடிவ கண்டுபிடிப்பு:\n• திங்கள் & வெள்ளி: அதிக தாமதம் (தொடக்கம் & முடிவு வாரம்)\n• காலை நேர வகுப்பு: கோடை காலத்தில் அதிக தாமதம்\n\n📋 தீர்வு நடவடிக்கைகள்:\n1. அடிக்கடி தாமதமாக வருபவர்களுக்கு WhatsApp எச்சரிக்கை\n2. பெற்றோரிடம் தாமத காரணம் கேட்கவும்\n3. பேருந்து / போக்குவரத்து சிக்கல் என்றால் Batch நேரம் மாற்றவும்`
+      : `🕐 ${ctr}${filterTag} — Late Arrival Pattern Analysis\n${'='.repeat(44)}\n\nAttendance: ${attPct}%\nLate Today: ${lateToday.length}\n\n${lateToday.map((s,i)=>`${i+1}. ${s.name} (${clsLabel(s)}) — Parent: ${s.parent} 📞 ${s.phone}`).join('\n')||'No late arrivals today'}\n\n📊 Pattern Observations:\n• Monday & Friday: Highest late rate (start/end of week)\n• Morning batches: More late arrivals in summer months\n\n📋 Corrective Actions:\n1. Send WhatsApp warning to frequent late-comers\n2. Ask parents reason for repeated lateness\n3. If transport issue — adjust batch timing\n4. Track if late patterns correlate with poor marks`;
   }
 
   if (id === 'concentration') {
     const topStudents  = students.filter(s=>s.status==='active').slice(0,3);
     const needHelp     = students.filter(s=>s.status==='inactive').slice(0,3);
+    const clsLabel = s => s.grade ? (s.grade==='KG'?'KG':'Class '+s.grade) : '—';
     return ta
-      ? `📚 ${ctr} — தனிப்பட்ட கவனிப்பு அறிக்கை\n${'='.repeat(42)}\n\nஒவ்வொரு மாணவருக்கும் WhatsApp மூலம் தனிப்பட்ட படிப்பு வழிகாட்டல் அனுப்பவும்:\n\n✅ சிறப்பாக செய்யும் மாணவர்கள்:\n${topStudents.map((s,i)=>`${i+1}. ${s.name} — தொடர்ந்து சிறப்பாக படிக்கிறார்`).join('\n')}\n\n⚠️ கூடுதல் கவனிப்பு தேவையானவர்கள்:\n${needHelp.map((s,i)=>`${i+1}. ${s.name} — ${s.parent}க்கு தனிப்பட்ட செய்தி அனுப்பவும்`).join('\n')}\n\n📱 WhatsApp வார்ப்புரு:\n"அன்பான [பெற்றோர்], உங்கள் பிள்ளை [மாணவர் பெயர்] சிறப்பாக படிக்கிறார். [பலவீன பாடம்]-ல் கூடுதல் கவனிப்பு தேவை. நாங்கள் உதவ தயாராக இருக்கிறோம்! 📞 ${cPhone}"`
-      : `📚 ${ctr} — Individual Concentration Report\n${'='.repeat(44)}\n\nPersonalised study guidance via WhatsApp for each student:\n\n✅ Students Performing Well:\n${topStudents.map((s,i)=>`${i+1}. ${s.name} (${s.id}) — Consistent performer`).join('\n')}\n\n⚠️ Students Needing Extra Attention:\n${needHelp.map((s,i)=>`${i+1}. ${s.name} — Send personal message to ${s.parent}`).join('\n')}\n\n📱 WA Template:\n"Dear [Parent], [Student] needs extra focus on [Subject]. We have scheduled individual attention sessions. Contact: 📞 ${cPhone}"\n\n📋 Action: Use WA Module → Build Queue → Send individual concentration reports to all parents`;
+      ? `📚 ${ctr}${filterTag} — தனிப்பட்ட கவனிப்பு அறிக்கை\n${'='.repeat(42)}\n\nஒவ்வொரு மாணவருக்கும் WhatsApp மூலம் தனிப்பட்ட படிப்பு வழிகாட்டல் அனுப்பவும்:\n\n✅ சிறப்பாக செய்யும் மாணவர்கள்:\n${topStudents.map((s,i)=>`${i+1}. ${s.name} (${clsLabel(s)}) — தொடர்ந்து சிறப்பாக படிக்கிறார்`).join('\n')}\n\n⚠️ கூடுதல் கவனிப்பு தேவையானவர்கள்:\n${needHelp.map((s,i)=>`${i+1}. ${s.name} (${clsLabel(s)}) — ${s.parent}க்கு தனிப்பட்ட செய்தி அனுப்பவும்`).join('\n')}\n\n📱 WhatsApp வார்ப்புரு:\n"அன்பான [பெற்றோர்], உங்கள் பிள்ளை [மாணவர் பெயர்] சிறப்பாக படிக்கிறார். [பலவீன பாடம்]-ல் கூடுதல் கவனிப்பு தேவை. நாங்கள் உதவ தயாராக இருக்கிறோம்! 📞 ${cPhone}"`
+      : `📚 ${ctr}${filterTag} — Individual Concentration Report\n${'='.repeat(44)}\n\nPersonalised study guidance via WhatsApp for each student:\n\n✅ Students Performing Well:\n${topStudents.map((s,i)=>`${i+1}. ${s.name} (${clsLabel(s)}) — Consistent performer`).join('\n')}\n\n⚠️ Students Needing Extra Attention:\n${needHelp.map((s,i)=>`${i+1}. ${s.name} (${clsLabel(s)}) — Send personal message to ${s.parent}`).join('\n')}\n\n📱 WA Template:\n"Dear [Parent], [Student] needs extra focus on [Subject]. We have scheduled individual attention sessions. Contact: 📞 ${cPhone}"\n\n📋 Action: Use WA Module → Build Queue → Send individual concentration reports to all parents`;
   }
 
   return ta ? `✅ "${id}" பகுப்பாய்வு நிறைவடைந்தது.` : `✅ Analysis for "${id}" complete.`;
@@ -9346,13 +9714,13 @@ function sendGrowthWA(studentId) {
 }
 
 
-function initAI(){renderAICards();renderPredictCards();renderStudyPlannerCards();renderGrowthForecastCards();}
+function initAI(){initAIFilter();renderAICards();renderPredictCards();renderStudyPlannerCards();renderGrowthForecastCards();}
 
 
 /* ═══════════════════════════════════════════════════════
    BACKUP
 ═══════════════════════════════════════════════════════ */
-const BK_GS_CODE = `// ═══ Kalam Tuition ERP — Google Apps Script v3.2 ════════════
+const BK_GS_CODE = `// ═══ Kalam Tuition ERP — Google Apps Script v3.3 ════════════
 // 1. Open Google Sheet → Extensions → Apps Script
 // 2. Paste this entire code, replace SPREADSHEET_ID below
 // 3. Deploy → New Deployment → Web App → Execute as: Me → Who has access: Anyone → Deploy
@@ -9495,6 +9863,21 @@ function doPost(e) {
       salArr.map(p=>[ts,p.key||'',p.staffId||'',p.name||'',
         p.month||'',p.amount||0,p.mode||'Cash',p.paidOn||p.date||'',p.note||'']));
 
+    // ── Staff Attendance ───────────────────────────────────────
+    const staffAttRows = [];
+    Object.entries(data.staffAttendance||{}).forEach(([key,status])=>{
+      const parts = String(key).split('|');
+      const staffId = parts[0]||'';
+      const date    = parts[1]||'';
+      const session = parts[2]||'Full Day';
+      const stf = (data.staff||[]).find(s=>s.id===staffId)||{};
+      staffAttRows.push([ts,staffId,stf.name||'',date,session,status||'']);
+    });
+    if (staffAttRows.length>0)
+      overwriteSht(ss,'StaffAttendance',
+        ['Time','Staff ID','Staff Name','Date','Session','Status'],
+        staffAttRows.slice(0,3000));
+
     // ── Notifications ─────────────────────────────────────────
     overwriteSht(ss,'Notifications',
       ['Time','ID','Type','Message','Date','Read'],
@@ -9556,7 +9939,7 @@ function doPost(e) {
         [ts,'dark_mode',      data.darkMode  ||''],
         [ts,'lates_to_leave', data.latesToLeave||''],
         [ts,'last_monthly_reset',data.lastMonthlyReset||''],
-        [ts,'backup_version', '3.2'],
+        [ts,'backup_version', '3.3'],
         [ts,'sync_time',      ts],
       ]);
 
@@ -9573,6 +9956,7 @@ function doPost(e) {
         exams      : (data.exams||[]).length,
         marks      : markRows.length,
         attendance : attRows.length,
+        staffAttendance: staffAttRows.length,
         dayOrder   : dayOrderRows.length,
         timetables : ttRows.length,
         salary     : salArr.length,
@@ -9840,6 +10224,7 @@ function restoreBackup(input) {
       try { localStorage.setItem('_erp_batches',         JSON.stringify(data.batches         || [])); } catch(e) {}
       try { localStorage.setItem('_erp_notifs',          JSON.stringify(data.notifications   || [])); } catch(e) {}
       try { localStorage.setItem('_erp_salary_payments', JSON.stringify(data.salaryPayments  || [])); } catch(e) {}
+      if (data.staffAttendance) try { localStorage.setItem('_erp_staff_att', JSON.stringify(data.staffAttendance)); } catch(e) {}
 
       // Restore fee config
       if (data.feeStructure)    try { localStorage.setItem('_erp_fee_structure',       JSON.stringify(data.feeStructure)); } catch(e) {}
@@ -10137,6 +10522,17 @@ function renderBatchSelect() {
   }).join('');
   if (prev && batches.find(b => b.id === prev)) sel.value = prev;
   syncSessionToBatch(); // auto-set session dropdown to match batch
+
+  // Populate Class filter dropdown
+  const gf = document.getElementById('att-grade-filter');
+  if (gf) {
+    const prevGrade = gf.value;
+    const grades = [...new Set(students.filter(s=>s&&s.grade&&s.status==='active').map(s=>String(s.grade).trim()))]
+      .sort((a,b)=>{const o=['KG','1','2','3','4','5','6','7','8','9','10','11','12'];const ai=o.indexOf(a),bi=o.indexOf(b);return(ai<0?99:ai)-(bi<0?99:bi);});
+    gf.innerHTML = '<option value="all">🎓 All Classes</option>' +
+      grades.map(g=>`<option value="${g}">${g==='KG'?'KG':'Class '+g}</option>`).join('');
+    if (prevGrade && grades.includes(prevGrade)) gf.value = prevGrade;
+  }
 }
 function addBatch() {
   // Legacy: used by old modal — now delegates to saveBatchFull
@@ -13139,13 +13535,17 @@ function computeRanks(year, month) {
 function renderSummaryCards() {
   const year        = parseInt(document.getElementById('sum-year-sel').value);
   const month       = parseInt(document.getElementById('sum-month-sel').value);
-  const batchFilter = document.getElementById('sum-batch-sel').value;
+  const batchFilter = document.getElementById('sum-batch-sel')?.value || 'all';
+  const gradeFilter = document.getElementById('sum-grade-sel')?.value || 'all';
   const grid        = document.getElementById('sum-cards-grid');
   const totalEl     = document.getElementById('sum-total-count');
 
   let ranked = computeRanks(year, month);
   if (batchFilter !== 'all') {
     ranked = ranked.filter(r => r.student.course === batchFilter || r.student.batch === batchFilter);
+  }
+  if (gradeFilter !== 'all') {
+    ranked = ranked.filter(r => String(r.student.grade || '').trim() === gradeFilter);
   }
   if (totalEl) totalEl.textContent = ranked.length;
 
@@ -13688,6 +14088,16 @@ function initSummaryPage() {
       const opt = document.createElement('option');
       opt.value = b.name; opt.textContent = b.name;
       bSel.appendChild(opt);
+    });
+  }
+  const gSel = document.getElementById('sum-grade-sel');
+  if (gSel && typeof students !== 'undefined') {
+    const grades = [...new Set(students.filter(s=>s&&s.grade).map(s=>String(s.grade).trim()))]
+      .sort((a,b) => { const order = ['KG','1','2','3','4','5','6','7','8','9','10','11','12']; const ai=order.indexOf(a),bi=order.indexOf(b); return (ai<0?99:ai)-(bi<0?99:bi); });
+    grades.forEach(g => {
+      const opt = document.createElement('option');
+      opt.value = g; opt.textContent = g === 'KG' ? 'KG' : 'Class ' + g;
+      gSel.appendChild(opt);
     });
   }
   renderSummaryCards();

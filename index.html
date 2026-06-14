@@ -1553,6 +1553,10 @@ tbody tr:hover td{background:var(--bg)}
         <svg viewBox="0 0 14 14" fill="none" width="13" height="13"><path d="M2 12l10-5L2 2v4l7 1-7 1v4z" fill="currentColor"/></svg>
         <span id="btn-build-queue">Build Message Queue</span>
       </button>
+      <!-- AI Monthly Report Button -->
+      <button id="ai-monthly-btn" class="btn btn-sm" style="width:100%;justify-content:center;margin-top:6px;padding:8px;background:#4338ca;color:#fff;border-color:#4338ca;font-size:11px;display:none" onclick="buildAIMonthlyReports()">
+        ✨ AI Monthly Reports — Personalised Study Tips
+      </button>
     </div>
 
     <div class="card">
@@ -2434,15 +2438,41 @@ const WA_TEMPLATES = {
   monthly: {
     ta: [`அன்பான {parent_name},
 
-📊 *மாதாந்திர வருகை அறிக்கை — {student_name}*
+📋 *மாதாந்திர மாணவர் அறிக்கை — {month_name} {year}*
+🏫 {center_name}
 
-வருகை சதவீதம்: *{att_pct}%*
-வந்த நாட்கள்: {present_days}
-வராத நாட்கள்: {absent_days}
+👤 மாணவர்: *{student_name}*
+🎓 வகுப்பு: {grade}
 
-தேவையான குறைந்தபட்சம்: 75%
+━━━━━━━━━━━━━━━━━━━━━
+📅 *வருகை நிலை*
+━━━━━━━━━━━━━━━━━━━━━
+✅ வந்த நாட்கள்: *{present_days}*
+❌ வராத நாட்கள்: *{absent_days}*
+⏰ தாமதம்: {late_days} நாட்கள்
+📊 வருகை சதவீதம்: *{att_pct}%*
 நிலை: {att_status}
 
+━━━━━━━━━━━━━━━━━━━━━
+📝 *தேர்வு மதிப்பெண்கள்*
+━━━━━━━━━━━━━━━━━━━━━
+{marks_section}
+
+━━━━━━━━━━━━━━━━━━━━━
+📚 *தவறிய பாடங்கள்*
+━━━━━━━━━━━━━━━━━━━━━
+{missed_subjects}
+
+━━━━━━━━━━━━━━━━━━━━━
+{study_tip}
+
+✍️ ஆசிரியர் குறிப்பு:
+{teacher_note}
+
+⭐ மாதாந்திர மதிப்பீடு: {star_label}
+🏅 வகுப்பு தரம்: {rank}
+
+📞 {center_phone}
 {center_name}`],
   },
   marks: {
@@ -2564,7 +2594,21 @@ function fillTemplate(template, student, extra={}) {
     .replace(/{holiday_date}/g, extra.hDate||today.toLocaleDateString('en-IN'))
     .replace(/{holiday_reason}/g, extra.hReason||'Public Holiday')
     .replace(/{holiday_name}/g, extra.hName||'Holiday')
-    .replace(/{resume_date}/g, extra.resumeDate||'Next working day');
+    .replace(/{resume_date}/g, extra.resumeDate||'Next working day')
+    // Monthly report extended variables
+    .replace(/{month_name}/g, extra.month_name||today.toLocaleString('en-IN',{month:'long'}))
+    .replace(/{year}/g, extra.year||String(today.getFullYear()))
+    .replace(/{late_days}/g, extra.late_days||'0')
+    .replace(/{late_status}/g, extra.late_status||'—')
+    .replace(/{stars}/g, extra.stars||'3')
+    .replace(/{star_label}/g, extra.star_label||'நல்லது 🌟🌟🌟')
+    .replace(/{rank}/g, extra.rank||'—')
+    .replace(/{total_students}/g, extra.total_students||'—')
+    .replace(/{marks_section}/g, extra.marks_section||'— தேர்வு மதிப்பெண்கள் இல்லை')
+    .replace(/{missed_subjects}/g, extra.missed_subjects||'—')
+    .replace(/{study_tip}/g, extra.study_tip||'தொடர்ந்து படிக்கவும்! 💪')
+    .replace(/{teacher_note}/g, extra.teacher_note||'சிறப்பாக செய்யட்டும்.')
+    .replace(/{activities}/g, extra.activities||'📚 வீட்டுப்பாடம்');
 }
 
 // Build WA message URL
@@ -6408,7 +6452,25 @@ function selectExam(i) {
       </button>
       <button class="btn btn-wa" onclick="openSendResultsModal(${i})" style="flex:1;justify-content:center">📱 Send Results</button>
       <button class="btn btn-sm" onclick="showExamNoticeWAModal(${i})" style="font-size:11px">📢 Exam Notice WA</button>
-    </div>`;
+    </div>
+    <!-- AI Insights Panel -->
+    <div id="exam-ai-panel-${e.id}" style="margin-top:12px;display:none">
+      <div style="background:linear-gradient(135deg,#4338ca18,#7c3aed10);border:.5px solid #7c3aed44;border-radius:12px;padding:14px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <span style="font-size:18px">✨</span>
+          <div style="font-size:12px;font-weight:700;color:#4338ca">AI Insights — ${e.name}</div>
+          <button onclick="document.getElementById('exam-ai-panel-${e.id}').style.display='none'" style="margin-left:auto;background:none;border:none;cursor:pointer;color:var(--tx3);font-size:16px;padding:0">✕</button>
+        </div>
+        <div id="exam-ai-loading-${e.id}" style="display:none;text-align:center;padding:12px 0;color:#7c3aed;font-size:12px">
+          <div style="animation:spin 1s linear infinite;display:inline-block;font-size:20px">⚙️</div><br>Analysing marks…
+        </div>
+        <div id="exam-ai-output-${e.id}" style="font-size:12px;color:var(--tx);line-height:1.7;white-space:pre-wrap;font-family:'Noto Sans Tamil',system-ui"></div>
+      </div>
+    </div>
+    <button class="btn btn-sm" onclick="runExamAIInsights(${i})"
+      style="margin-top:8px;width:100%;justify-content:center;font-size:11px;background:#4338ca;color:#fff;border-color:#4338ca;padding:7px">
+      ✨ AI Insights — Class Performance Analysis
+    </button>`;
 
   updateMarksStats(e.id, e.maxMarks, pass, activeStudents);
 }
@@ -6606,7 +6668,253 @@ function saveMarksToStorage(examIdx) {
 }
 
 
-/* ── Edit existing exam ── */
+/* ── AI Monthly Reports — Anthropic API powered ─────── */
+async function buildAIMonthlyReports() {
+  const now = new Date();
+  const monthName = now.toLocaleString('en-IN', { month: 'long' });
+  const year = now.getFullYear();
+  const ctr = CFG.CENTER;
+  const activeStudents = students.filter(s => s && s.name && s.status === 'active' && (s.phone || s.pphone));
+
+  if (activeStudents.length === 0) {
+    showToast('⚠️ No active students with phone numbers found');
+    return;
+  }
+
+  showToast('✨ Generating AI monthly reports… (this may take a moment)');
+
+  // Build AI reports for each student with personalised study tips
+  const queue = [];
+  for (const student of activeStudents) {
+    const extra = getWAExtra(student);
+    // Build context for AI
+    const weakSubjData = typeof getSubjectAvgMarks === 'function' ? getSubjectAvgMarks(student.id) : {};
+    const missedData   = typeof getMissedSubjects === 'function' ? getMissedSubjects(student.id) : {};
+    const weakList = Object.entries(weakSubjData).filter(([,v]) => v < 70).sort((a,b)=>a[1]-b[1]);
+    const missedList = Object.entries(missedData).filter(([,d])=>d.count>0).sort((a,b)=>b[1].count-a[1].count);
+
+    // Generate AI study tip using Anthropic API
+    let aiStudyTip = extra.study_tip;
+    try {
+      const prompt = `You are a helpful tuition teacher in Tamil Nadu. Write 2-3 sentence personalized weekend study tip (in Tamil) for a student.
+Student: ${student.name}, Grade: ${student.grade}
+Attendance this month: ${extra.att_pct}% (${extra.present_days} present, ${extra.absent_days} absent)
+${weakList.length > 0 ? 'Weak subjects: ' + weakList.map(([s,v])=>`${s} (${v}%)`).join(', ') : 'No weak subjects'}
+${missedList.length > 0 ? 'Missed classes in: ' + missedList.map(([s,d])=>`${s} (${d.count}x)`).join(', ') : 'No missed classes'}
+Recent exam performance: ${extra.marks_section}
+
+Write ONLY the study tip in Tamil (2-3 sentences). Start with 📖 emoji. Be specific, encouraging, and practical.`;
+
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 1000,
+          messages: [{ role: 'user', content: prompt }]
+        })
+      });
+      const data = await res.json();
+      const tip = data.content?.filter(c=>c.type==='text').map(c=>c.text).join('').trim();
+      if (tip) aiStudyTip = tip;
+    } catch(err) {
+      // Use fallback from getWAExtra
+    }
+
+    // Build the full monthly report message with AI tip
+    const gl = student.grade === 'KG' ? 'KG' : student.grade + ' ஆம் வகுப்பு';
+    const message = `அன்பான ${student.parent},
+
+📋 *மாதாந்திர மாணவர் அறிக்கை — ${monthName} ${year}*
+🏫 ${ctr.name}
+
+👤 மாணவர்: *${student.name}*
+🎓 வகுப்பு: ${gl}
+
+━━━━━━━━━━━━━━━━━━━━━
+📅 *வருகை நிலை*
+━━━━━━━━━━━━━━━━━━━━━
+✅ வந்த நாட்கள்: *${extra.present_days}*
+❌ வராத நாட்கள்: *${extra.absent_days}*
+⏰ தாமதம்: ${extra.late_days} நாட்கள்
+📊 வருகை சதவீதம்: *${extra.att_pct}%*
+நிலை: ${extra.att_status}
+
+━━━━━━━━━━━━━━━━━━━━━
+📝 *தேர்வு மதிப்பெண்கள்*
+━━━━━━━━━━━━━━━━━━━━━
+${extra.marks_section}
+
+━━━━━━━━━━━━━━━━━━━━━
+📚 *தவறிய பாடங்கள்*
+━━━━━━━━━━━━━━━━━━━━━
+${extra.missed_subjects}
+
+━━━━━━━━━━━━━━━━━━━━━
+✨ *AI படிப்பு பரிந்துரை*
+━━━━━━━━━━━━━━━━━━━━━
+${aiStudyTip}
+
+✍️ ஆசிரியர் குறிப்பு:
+${extra.teacher_note}
+
+⭐ மாதாந்திர மதிப்பீடு: ${extra.star_label}
+🏅 வகுப்பு தரம்: ${extra.rank}
+
+📞 ${ctr.phone}
+${ctr.name}`;
+
+    queue.push({ student, message, phone: student.phone || student.pphone, status: 'ready' });
+  }
+
+  waQueue = queue;
+  const qInfo = document.getElementById('wa-queue-info');
+  if (qInfo) qInfo.textContent = `Queue: ${queue.length} AI monthly reports ready ✨`;
+  renderWAQueueList(queue);
+  showToast(`✅ ${queue.length} AI monthly reports generated!`);
+}
+
+
+async function runExamAIInsights(examIdx) {
+  const e = exams[examIdx];
+  if (!e) return;
+  const key  = '_erp_marks_' + e.id;
+  const pass = e.passMarks || Math.round((e.maxMarks||100)*0.35);
+
+  // Load saved marks
+  let marksMap = {};
+  try { const raw = localStorage.getItem(key); if (raw) marksMap = JSON.parse(raw).marks || {}; } catch(er) {}
+
+  // Build student results
+  let activeStudents = students.filter(s => s && s.name && s.status==='active');
+  if (e.batch && e.batch !== 'All' && e.batch.trim() !== '') {
+    activeStudents = filterStudentsByBatch(activeStudents, e.batch);
+  }
+
+  const results = activeStudents.map(s => {
+    const m = marksMap[s.id];
+    if (!m) return null;
+    if (m.absent) return { name: s.name, grade: s.grade, absent: true };
+    const pct = m.marks !== null ? Math.round(m.marks / e.maxMarks * 100) : null;
+    return { name: s.name, grade: s.grade, marks: m.marks, maxMarks: e.maxMarks, pct, pass: m.marks >= pass };
+  }).filter(Boolean);
+
+  if (results.length === 0) {
+    showToast('⚠️ Save marks first before generating AI insights');
+    return;
+  }
+
+  const panel = document.getElementById('exam-ai-panel-' + e.id);
+  const loading = document.getElementById('exam-ai-loading-' + e.id);
+  const output = document.getElementById('exam-ai-output-' + e.id);
+  if (!panel) return;
+
+  panel.style.display = 'block';
+  loading.style.display = 'block';
+  output.textContent = '';
+  panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+  const present = results.filter(r => !r.absent);
+  const passed = present.filter(r => r.pass);
+  const failed = present.filter(r => !r.pass);
+  const avgPct = present.length > 0 ? Math.round(present.reduce((s,r) => s+(r.pct||0), 0) / present.length) : 0;
+  const highest = present.reduce((mx,r) => (r.marks||0) > (mx.marks||0) ? r : mx, present[0] || {});
+  const lowest  = present.filter(r => !r.absent).reduce((mn,r) => (r.marks||0) < (mn.marks||0) ? r : mn, present[0] || {});
+
+  const prompt = `You are an expert tuition centre academic analyst. Analyse this exam result and give a sharp, actionable insight report.
+
+Exam: ${e.name}
+Subject: ${e.subject}
+Class/Batch: ${e.batch || 'All'}
+Date: ${e.date || 'N/A'}
+Max Marks: ${e.maxMarks} | Pass Marks: ${pass}
+Syllabus: ${e.syllabus || 'N/A'}
+
+Results Summary:
+- Total students: ${results.length}
+- Present: ${present.length} | Absent: ${results.filter(r=>r.absent).length}
+- Passed: ${passed.length} | Failed: ${failed.length}
+- Class Average: ${avgPct}%
+- Pass %: ${present.length > 0 ? Math.round(passed.length/present.length*100) : 0}%
+- Highest: ${highest.name || '—'} — ${highest.marks}/${e.maxMarks} (${highest.pct}%)
+- Lowest (present): ${lowest.name || '—'} — ${lowest.marks}/${e.maxMarks} (${lowest.pct}%)
+
+Individual Results:
+${present.map(r => `${r.name}: ${r.marks}/${e.maxMarks} (${r.pct}%) — ${r.pass?'PASS':'FAIL'}`).join('\n')}
+${results.filter(r=>r.absent).map(r => `${r.name}: ABSENT`).join('\n')}
+
+Give a concise report (no markdown, use emoji icons) covering:
+1. 📊 Class Performance Overview (2-3 lines)
+2. 🏆 Top Performers (name + score)
+3. ⚠️ Students Needing Attention (name + gap to pass)
+4. 📚 Teaching Recommendations (3 specific action points)
+5. 🎯 Weekend Study Suggestion for weak students (1-2 specific tips for this subject)
+
+Keep it practical and motivating. Use Tamil center context. Max 250 words.`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await res.json();
+    const text = data.content?.filter(c=>c.type==='text').map(c=>c.text).join('') || 'Could not generate insights.';
+    loading.style.display = 'none';
+    // Typewriter
+    let i = 0;
+    const iv = setInterval(() => {
+      output.textContent += text[i++];
+      if (i >= text.length) clearInterval(iv);
+    }, 8);
+  } catch(err) {
+    loading.style.display = 'none';
+    // Fallback to built-in analysis
+    const fallback = buildExamInsightFallback(e, results, present, passed, failed, avgPct, pass, highest, lowest);
+    output.textContent = fallback;
+  }
+}
+
+function buildExamInsightFallback(e, results, present, passed, failed, avgPct, pass, highest, lowest) {
+  const passPct = present.length > 0 ? Math.round(passed.length/present.length*100) : 0;
+  const absentCount = results.filter(r=>r.absent).length;
+  let report = `📊 Class Performance — ${e.name}\n${'═'.repeat(42)}\n\n`;
+  report += `Students: ${results.length} | Present: ${present.length} | Absent: ${absentCount}\n`;
+  report += `Class Average: ${avgPct}% | Pass Rate: ${passPct}%\n`;
+  report += (passPct >= 75 ? '✅ Good class performance!' : passPct >= 50 ? '⚠️ Moderate — needs improvement' : '🔴 Low pass rate — immediate action needed') + '\n\n';
+
+  if (passed.length > 0) {
+    report += `🏆 Top Performers:\n`;
+    [...passed].sort((a,b)=>(b.marks||0)-(a.marks||0)).slice(0,3).forEach((r,i) => {
+      report += `  ${i+1}. ${r.name} — ${r.marks}/${e.maxMarks} (${r.pct}%)\n`;
+    });
+    report += '\n';
+  }
+
+  if (failed.length > 0) {
+    report += `⚠️ Needs Attention (${failed.length} students):\n`;
+    failed.sort((a,b)=>(b.marks||0)-(a.marks||0)).forEach((r,i) => {
+      const gap = pass - (r.marks||0);
+      report += `  ${i+1}. ${r.name} — ${r.marks}/${e.maxMarks} (${gap} marks to pass)\n`;
+    });
+    report += '\n';
+  }
+
+  report += `📚 Recommendations:\n`;
+  report += `  1. Schedule revision class for ${failed.length} failed students this week\n`;
+  report += `  2. Focus on weak topics in ${e.subject} — give practice worksheets\n`;
+  report += `  3. Send individual results to parents via WA with encouragement note\n\n`;
+  report += `🎯 Weekend Study Tip for Weak Students:\n`;
+  report += `  • Spend 1.5 hrs on ${e.subject} basics — re-read notes, solve 5 easy problems first\n`;
+  report += `  • Write key formulas/rules 3 times — builds memory retention`;
+  return report;
+}
+
+
 function editExam(i) {
   const e = exams[i];
   if (!e) return;
@@ -6704,7 +7012,11 @@ function showExamNoticeWAModal(examIdx) {
     ? new Date(e.date+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})
     : '—';
   const ctr    = CFG.CENTER;
-  const active = students.filter(s => s && s.name && s.status==='active');
+  let active = students.filter(s => s && s.name && s.status==='active');
+  // Filter by exam's batch/grade so only relevant students appear
+  if (e.batch && e.batch !== 'All' && e.batch.trim() !== '') {
+    active = filterStudentsByBatch(active, e.batch);
+  }
 
   function buildMsg(student) {
     const s     = student || active[0] || { name:'மாணவர்', parent:'பெற்றோர்', grade:'10' };
@@ -6777,7 +7089,11 @@ function sendExamNoticeToAll(exam, lang) {
     ? new Date(exam.date+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})
     : '—';
   const ctr    = CFG.CENTER;
-  const active = students.filter(s => s && s.name && s.status==='active' && (s.phone||s.pphone));
+  let active = students.filter(s => s && s.name && s.status==='active' && (s.phone||s.pphone));
+  // Filter by exam's batch/grade
+  if (exam.batch && exam.batch !== 'All' && exam.batch.trim() !== '') {
+    active = filterStudentsByBatch(active, exam.batch).filter(s => s.phone||s.pphone);
+  }
   if (active.length === 0) { showToast('⚠️ Phone number உள்ள மாணவர்கள் இல்லை'); return; }
 
   // Store exam on window so modal button can reach it
@@ -7974,6 +8290,9 @@ function setWAType(id, el) {
   renderWATypes();
   updateWATemplates();
   buildWAQueue();
+  // Show AI monthly button only for monthly type
+  const aiBtn = document.getElementById('ai-monthly-btn');
+  if (aiBtn) aiBtn.style.display = (id === 'monthly') ? '' : 'none';
 }
 
 function updateWATemplates() {
@@ -8033,11 +8352,87 @@ function updateWAPreview() {
 
 function getWAExtra(student) {
   const feeRecord = fees.find(f=>f.student===student.name&&f.status!=='paid');
+  const now = new Date();
+  const monthName = now.toLocaleString('en-IN', { month: 'long' });
+  const year = now.getFullYear();
+
+  // Per-student attendance for current month — use getStudentAttStats if available
+  let presentDays = 0, absentDays = 0, lateDays = 0;
+  let monthSubjectMissed = []; // from attStats for this month
+  try {
+    if (typeof getStudentAttStats === 'function') {
+      const attStats = getStudentAttStats(student, year, now.getMonth());
+      presentDays = attStats.present || 0;
+      absentDays  = attStats.absent  || 0;
+      lateDays    = attStats.late    || 0;
+      monthSubjectMissed = attStats.subjectMissed || [];
+    }
+  } catch(e) {}
+  const totalDays = presentDays + absentDays + lateDays;
+  const attPct = totalDays > 0 ? Math.round(presentDays / totalDays * 100) : 0;
+  const attStatus = attPct >= 85 ? '✅ சிறப்பு' : attPct >= 75 ? '✅ நல்லது' : attPct >= 60 ? '⚠️ கவலைப்படத்தக்கது' : '🔴 உடனடி கவனிப்பு தேவை';
+  const lateStatus = lateDays > 0 ? `${lateDays} நாட்கள் தாமதம் ⚠️` : '—';
+
+  // Per-student marks for current month exams
+  const studentMarksArr = (typeof getStudentMarksAuto === 'function') ? getStudentMarksAuto(student.id) : [];
+  const recentMarks = studentMarksArr.filter(m => !m.absent && m.marks !== null && m.maxMarks > 0);
+  const marksSection = recentMarks.length > 0
+    ? recentMarks.slice(-5).map(m => {
+        const pct = Math.round(m.marks / m.maxMarks * 100);
+        const gl = pct>=91?'A+':pct>=81?'A':pct>=71?'B+':pct>=61?'B':pct>=51?'C':'D';
+        return `• ${m.examName||m.subject||'Test'} (${m.subject||''}): ${m.marks}/${m.maxMarks} — ${gl} (${pct}%)`;
+      }).join('\n')
+    : '— இன்னும் தேர்வு மதிப்பெண்கள் இல்லை';
+
+  // Missed subjects — prefer this-month data from attStats, fall back to global
+  const missed = (typeof getMissedSubjects === 'function') ? getMissedSubjects(student.id) : {};
+  let missedList;
+  if (monthSubjectMissed.length > 0) {
+    missedList = monthSubjectMissed.slice(0, 3).map(s => `${s.subject} (${s.missed} வகுப்பு)`);
+  } else {
+    missedList = Object.entries(missed)
+      .filter(([,d]) => d.count > 0)
+      .sort((a,b) => b[1].count - a[1].count)
+      .slice(0, 3)
+      .map(([subj, d]) => `${subj} (${d.count} வகுப்பு)`);
+  }
+
+  // Star rating
+  const stars = attPct >= 90 ? '5' : attPct >= 80 ? '4' : attPct >= 70 ? '3' : attPct >= 60 ? '2' : '1';
+  const starLabel = {'5':'சிறப்பு 🌟🌟🌟🌟🌟','4':'நல்லது 🌟🌟🌟🌟','3':'சராசரி 🌟🌟🌟','2':'மேம்பட வேண்டும் 🌟🌟','1':'தீவிர கவனிப்பு 🌟'}[stars];
+  const rank = '—';
+
+  // Try to compute actual rank if computeRanks is available
+  let rankStr = '—';
+  try {
+    if (typeof computeRanks === 'function') {
+      const ranked = computeRanks(year, now.getMonth());
+      const myRank = ranked.findIndex(r => r.student && r.student.id === student.id);
+      if (myRank >= 0) rankStr = `${myRank + 1} / ${ranked.length}`;
+    }
+  } catch(e) {}
+
+  // Subject avg marks for weak subjects
+  const subjAvg = (typeof getSubjectAvgMarks === 'function') ? getSubjectAvgMarks(student.id) : {};
+  const weakSubjs = Object.entries(subjAvg).filter(([,v]) => v < 60).sort((a,b)=>a[1]-b[1]).slice(0,2);
+
+  // Weekend study suggestion based on weak subjects & missed subjects
+  let studyTip = '';
+  if (weakSubjs.length > 0) {
+    studyTip = `📖 இந்த வாரம் கவனிக்க: ${weakSubjs.map(([s,v])=>`${s} (${v}%)`).join(', ')} — கூடுதல் பயிற்சி தேவை`;
+  } else if (missedList.length > 0) {
+    studyTip = `📖 தவறிய பாடங்கள் மீட்டெடுக்க: ${missedList.join(', ')}`;
+  } else {
+    studyTip = '📖 தொடர்ந்து சிறப்பாக படிக்கவும்! 💪';
+  }
+
   return {
-    month: 'December 2024',
-    date: new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}),
+    month: `${monthName} ${year}`,
+    month_name: monthName,
+    year: String(year),
+    date: now.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}),
     amount: feeRecord?.balance||'2500',
-    dueDate: '5th January 2025',
+    dueDate: '5th ' + new Date(year, now.getMonth()+1, 0).toLocaleString('en-IN',{month:'long'}),
     overdue: feeRecord?.status==='overdue',
     examName: exams[0]?.name||'Monthly Test',
     subject: exams[0]?.subject||'Mathematics',
@@ -8047,6 +8442,26 @@ function getWAExtra(student) {
     gradeLetter: 'A',
     remarks: 'Excellent performance! Keep it up! 🌟',
     hDate: '', hReason: '', hName: '', resumeDate: '',
+    // Monthly report extras
+    present_days: String(presentDays),
+    absent_days: String(absentDays),
+    late_days: String(lateDays),
+    att_pct: String(attPct),
+    att_status: attStatus,
+    late_status: lateStatus,
+    stars,
+    star_label: starLabel,
+    rank: rankStr,
+    total_students: String(students.filter(s=>s.status==='active').length),
+    marks_section: marksSection,
+    missed_subjects: missedList.length > 0 ? missedList.join(', ') : '— இல்லை',
+    study_tip: studyTip,
+    teacher_note: recentMarks.length > 0
+      ? (Math.round(recentMarks.reduce((s,m)=>s+(m.marks/m.maxMarks*100),0)/recentMarks.length) >= 75
+          ? 'மிகவும் கவனமாக உள்ளார். தொடர்ந்து சிறப்பாக செய்யட்டும்! 🌟'
+          : 'இன்னும் கொஞ்சம் கஷ்டப்பட்டு படித்தால் சிறப்பான முடிவு கிடைக்கும். 💪')
+      : 'தொடர்ந்து வருகை தந்து படிக்கட்டும்.',
+    activities: '📚 வீட்டுப்பாடம்' + (lateDays > 0 ? ' · ⏰ நேரம் கடைப்பிடிக்கவும்' : ''),
   };
 }
 

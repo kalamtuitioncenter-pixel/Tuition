@@ -2017,11 +2017,38 @@ tbody tr:hover td{background:var(--bg)}
 </div><!-- /app -->
 
 <!-- Apps Script panel (hidden) -->
-<div id="apps-script-panel" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:300;display:none;align-items:center;justify-content:center;padding:16px">
+<div id="apps-script-panel" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:300;align-items:center;justify-content:center;padding:16px">
   <div style="background:var(--card);border-radius:12px;padding:20px;max-width:700px;width:100%;max-height:90vh;overflow-y:auto">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div style="font-size:14px;font-weight:600;color:#16a34a">Google Apps Script — Copy & Paste into Google Sheets</div><button onclick="document.getElementById('apps-script-panel').style.display='none'" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--tx2)">×</button></div>
-    <pre id="apps-script-code" style="background:var(--bg);border-radius:8px;padding:14px;font-size:11px;color:var(--tx2);overflow-x:auto;line-height:1.7;border:.5px solid var(--br);white-space:pre-wrap;max-height:400px;overflow-y:auto"></pre>
-    <div style="display:flex;gap:8px;margin-top:10px"><button class="btn btn-p btn-sm" onclick="copyAppsScript()">Copy Script</button><button class="btn btn-sm" onclick="document.getElementById('apps-script-panel').style.display='none'">Close</button></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div style="font-size:14px;font-weight:600;color:#16a34a">📋 Google Apps Script — Copy &amp; Paste into Google Sheets</div>
+      <button onclick="document.getElementById('apps-script-panel').style.display='none'" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--tx2)">×</button>
+    </div>
+    <!-- Step guide -->
+    <div style="background:#f0fdf4;border:.5px solid #86efac;border-radius:8px;padding:10px 12px;margin-bottom:10px;font-size:11px;color:#15803d;line-height:1.8">
+      <b>How to set up:</b><br>
+      1️⃣ Open your Google Sheet → <b>Extensions → Apps Script</b><br>
+      2️⃣ Delete everything in the editor, then click <b>"Copy Script"</b> below and paste (Ctrl+V)<br>
+      3️⃣ Replace <code>YOUR_SPREADSHEET_ID_HERE</code> with your Sheet ID (from the Sheet URL)<br>
+      4️⃣ Click <b>Deploy → New Deployment → Web App</b> → Execute as: <b>Me</b> → Access: <b>Anyone</b> → Deploy<br>
+      5️⃣ Copy the Web App URL → paste in ERP Settings → Backup &amp; Sync
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:6px">
+      <button class="btn btn-p btn-sm" onclick="copyAppsScript()" style="flex:1;justify-content:center;font-size:12px;padding:9px">
+        📋 Copy Script to Clipboard
+      </button>
+      <button class="btn btn-sm" onclick="selectAppsScriptText()" style="font-size:12px;padding:9px">
+        Select All
+      </button>
+    </div>
+    <div id="copy-confirm" style="display:none;text-align:center;color:#16a34a;font-size:12px;margin-bottom:6px;font-weight:600">
+      ✅ Copied! Now go to Apps Script editor and press Ctrl+V (paste)
+    </div>
+    <textarea id="apps-script-code" readonly
+      style="background:var(--bg);border-radius:8px;padding:14px;font-size:11px;color:var(--tx2);overflow-x:auto;line-height:1.7;border:.5px solid var(--br);white-space:pre;width:100%;box-sizing:border-box;height:320px;resize:none;font-family:'Courier New',monospace;tab-size:2"
+      spellcheck="false"></textarea>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button class="btn btn-sm" onclick="document.getElementById('apps-script-panel').style.display='none'" style="margin-left:auto">Close</button>
+    </div>
   </div>
 </div>
 
@@ -11114,13 +11141,33 @@ function testSheetConnection() {
 }
 
 function showAppsScript() {
-  const panel=document.getElementById('apps-script-panel');
-  const code=document.getElementById('apps-script-code');
-  if(code) code.textContent=BK_GS_CODE;
-  if(panel) panel.style.display='flex';
+  const panel = document.getElementById('apps-script-panel');
+  const code  = document.getElementById('apps-script-code');
+  const conf  = document.getElementById('copy-confirm');
+  if (code)  code.value = BK_GS_CODE;
+  if (conf)  conf.style.display = 'none';
+  if (panel) panel.style.display = 'flex';
 }
 function copyAppsScript() {
-  navigator.clipboard.writeText(BK_GS_CODE).then(()=>showToast('✅ Apps Script copied!')).catch(()=>{const ta=document.createElement('textarea');ta.value=BK_GS_CODE;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);showToast('✅ Copied!');});
+  const code = document.getElementById('apps-script-code');
+  const conf = document.getElementById('copy-confirm');
+  const text = BK_GS_CODE; // always copy from source, not DOM
+  navigator.clipboard.writeText(text)
+    .then(() => {
+      if (conf) { conf.style.display = 'block'; setTimeout(() => { if(conf) conf.style.display='none'; }, 4000); }
+      showToast('✅ Apps Script copied! Paste it in your Apps Script editor.');
+    })
+    .catch(() => {
+      // Fallback: select the textarea and copy
+      if (code) { code.select(); code.setSelectionRange(0, 99999); }
+      try { document.execCommand('copy'); } catch(e) {}
+      if (conf) { conf.style.display = 'block'; setTimeout(() => { if(conf) conf.style.display='none'; }, 4000); }
+      showToast('✅ Copied!');
+    });
+}
+function selectAppsScriptText() {
+  const code = document.getElementById('apps-script-code');
+  if (code) { code.focus(); code.select(); code.setSelectionRange(0, 99999); }
 }
 function initBackup() {
   // Restore saved Sheets URL

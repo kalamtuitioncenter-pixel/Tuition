@@ -10336,6 +10336,12 @@ const BK_GS_CODE = `// ═══ Kalam Tuition ERP — Google Apps Script v3.3 �
 
 const SPREADSHEET_ID = 'YOUR_SPREADSHEET_ID_HERE';
 
+// ── CORS preflight support — required for direct browser fetch ──
+function doOptions(e) {
+  return ContentService.createTextOutput('')
+    .setMimeType(ContentService.MimeType.TEXT);
+}
+
 function doPost(e) {
   try {
     const data = JSON.parse(e.postData.contents);
@@ -10581,22 +10587,29 @@ function doPost(e) {
   }
 }
 
-// Overwrite sheet data (keep header, replace all rows)
+// Overwrite sheet data (keep header, replace all rows) — batched for large datasets
 function overwriteSht(ss, name, headers, rows) {
   let s = ss.getSheetByName(name) || ss.insertSheet(name);
-  if (s.getLastRow() === 0) {
-    s.appendRow(headers);
-    s.getRange(1,1,1,headers.length)
-      .setFontWeight('bold').setBackground('#1a56db').setFontColor('#fff');
-  } else {
-    // Ensure header is correct
-    s.getRange(1,1,1,headers.length).setValues([headers])
-      .setFontWeight('bold').setBackground('#1a56db').setFontColor('#fff');
-  }
+  // Set / overwrite header
+  s.getRange(1, 1, 1, headers.length).setValues([headers])
+    .setFontWeight('bold').setBackground('#1a56db').setFontColor('#fff');
+  // Clear existing data rows
   const last = s.getLastRow();
   if (last > 1) s.deleteRows(2, last - 1);
-  if (rows && rows.length) {
-    s.getRange(2, 1, rows.length, headers.length).setValues(rows);
+  if (!rows || rows.length === 0) return;
+  // Write in batches of 500 rows to avoid Apps Script timeout on large datasets
+  const BATCH = 500;
+  for (let i = 0; i < rows.length; i += BATCH) {
+    const chunk = rows.slice(i, i + BATCH).map(row =>
+      // Ensure row has exactly headers.length cells, stringify objects
+      headers.map((_, ci) => {
+        const cell = row[ci];
+        if (cell === null || cell === undefined) return '';
+        if (typeof cell === 'object') return JSON.stringify(cell);
+        return cell;
+      })
+    );
+    s.getRange(2 + i, 1, chunk.length, headers.length).setValues(chunk);
   }
 }
 
@@ -10916,17 +10929,23 @@ function valSheetUrl(url) {
 async function syncSheets(silent) {
   const url = (document.getElementById('sheets-url')?.value || '').trim();
   if (!url) { if (!silent) showToast('Enter Google Apps Script URL first'); return; }
+
+  const isValidUrl = url.includes('script.google.com/macros/s/') && url.includes('/exec');
+  if (!isValidUrl) {
+    const statusEl = document.getElementById('sheets-sync-status');
+    if (statusEl) statusEl.innerHTML = '<span style="color:#dc2626">⚠️ URL format wrong. Must be: https://script.google.com/macros/s/…/exec</span>';
+    if (!silent) showToast('⚠️ Check your Apps Script URL format');
+    return;
+  }
+
   const btn      = document.getElementById('btn-sync-sheets');
   const statusEl = document.getElementById('sheets-sync-status');
   const resetBtn = () => { if(btn){ btn.disabled=false; btn.textContent='Sync Now'; } };
   if (btn) { btn.disabled=true; btn.textContent='Syncing…'; }
-  if (statusEl) { statusEl.style.display='block'; statusEl.textContent='Connecting to Google Sheets…'; }
+  if (statusEl) { statusEl.style.display='block'; statusEl.textContent='Sending data to Google Sheets…'; }
+
   try {
     const snapshot = getSnapshot();
-    // Collect saved marks from localStorage
-    const marksIndex = JSON.parse(localStorage.getItem('_erp_marks_index')||'[]');
-    const allMarks = marksIndex.map(k => { try { return JSON.parse(localStorage.getItem(k)); } catch(e){return null;} }).filter(Boolean);
-
     const body = JSON.stringify({
       center:           snapshot.center,
       timestamp:        new Date().toISOString(),
@@ -10952,36 +10971,84 @@ async function syncSheets(silent) {
       aiData:           snapshot.aiData           || {},
       staffAttendance:  snapshot.staffAttendance  || {},
     });
-    // Send to Apps Script — use no-cors since Google's endpoint requires it
-    // We verify the URL format and Apps Script will receive the data
-    const resp = await fetch(url, {
-      method: 'POST',
-      mode:   'no-cors',
-      headers: { 'Content-Type': 'text/plain' },
-      body:   body
-    });
-    // no-cors fetch always resolves (opaque response) — verify URL format instead
-    const isValidUrl = url.includes('script.google.com/macros/s/') && url.includes('/exec');
-    const now = new Date().toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'});
-    if (isValidUrl) {
-      if (statusEl) statusEl.innerHTML = '<span style="color:#16a34a">✅ Sent to Google Sheets at ' + now + ' — check your Sheet to confirm</span>';
-    } else {
-      if (statusEl) statusEl.innerHTML = '<span style="color:#dc2626">⚠️ URL format looks wrong. Must be: https://script.google.com/macros/s/…/exec</span>';
-      if (!silent) showToast('⚠️ Check your Apps Script URL format');
-      resetBtn(); return;
-    }
+
+    const sizeKB = (body.length / 1024).toFixed(1);
+    if (statusEl) statusEl.textContent = `Sending ${sizeKB} KB to Google Sheets…`;
+
+    // Try cors mode first (works when Apps Script has CORS headers enabled via doOptions)
+    // Fall back to no-cors if CORS error, with a clear warning about verification
+    let succeeded = false;
+    let errorMsg  = '';
+
     try {
-      bkHistory.unshift({ts:new Date().toISOString(),source:'sheets',
-        size:(body.length/1024).toFixed(1)+' KB',status:'ok'});
-      renderBkHistory();
-      addBkLog('['+now+'] Synced to Google Sheets ✓');
-    } catch(e2){}
-    if (!silent) showToast('✅ Synced to Google Sheets!');
-    // Save URL so it persists across reloads
-    try { localStorage.setItem('_erp_sheets_url', url); } catch(e){}
+      const resp = await fetch(url, {
+        method:  'POST',
+        mode:    'cors',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body:    body,
+      });
+      if (resp.ok) {
+        const result = await resp.json().catch(() => null);
+        const now = new Date().toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'});
+        if (result && result.status === 'ok') {
+          const c = result.counts || {};
+          const summary = `✅ Synced at ${now} — ${c.students||0} students · ${c.fees||0} fees · ${c.marks||0} marks · ${c.attendance||0} att rows · ${sizeKB} KB`;
+          if (statusEl) statusEl.innerHTML = `<span style="color:#16a34a">${summary}</span>`;
+          if (!silent) showToast('✅ Google Sheets synced successfully!');
+          addBkLog(`[${now}] Sheets sync ✅ — ${c.students||0} students, ${c.fees||0} fees, ${c.marks||0} marks · ${sizeKB} KB`);
+          bkHistory.unshift({ts:new Date().toISOString(),source:'sheets',size:sizeKB+' KB',status:'ok'});
+          renderBkHistory(); setBkStatus('ok','Google Sheets synced',summary);
+        } else if (result && result.status === 'error') {
+          throw new Error('Apps Script error: ' + (result.msg || 'Unknown error'));
+        } else {
+          throw new Error('Unexpected response from Apps Script');
+        }
+        succeeded = true;
+      } else {
+        throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
+      }
+    } catch(corsErr) {
+      // CORS failed — try no-cors as fallback (blind send, cannot verify)
+      errorMsg = corsErr.message || String(corsErr);
+      // Check if it's a CORS/network error (not an app error)
+      const isCORSErr = errorMsg.includes('Failed to fetch') || errorMsg.includes('CORS') || errorMsg.includes('NetworkError') || errorMsg.includes('Load failed');
+      if (isCORSErr) {
+        try {
+          await fetch(url, {
+            method:  'POST',
+            mode:    'no-cors',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body:    body,
+          });
+          // no-cors always "succeeds" — we cannot verify receipt
+          const now = new Date().toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'});
+          if (statusEl) statusEl.innerHTML =
+            `<span style="color:#ca8a04">⚠️ Data sent at ${now} (${sizeKB} KB) — Cannot confirm receipt due to CORS.<br>
+            <b>Check your Google Sheet → Log tab</b> to verify a new row appeared.<br>
+            To fix: add <code>doOptions()</code> to your Apps Script (see setup guide).</span>`;
+          if (!silent) showToast('⚠️ Sent — verify receipt in Google Sheet Log tab');
+          addBkLog(`[${now}] Sheets no-cors send — ${sizeKB} KB — verify in Sheet`);
+          bkHistory.unshift({ts:new Date().toISOString(),source:'sheets-nocors',size:sizeKB+' KB',status:'warn'});
+          renderBkHistory();
+          succeeded = true;
+        } catch(noCorsErr) {
+          throw new Error('Cannot reach Google Sheets: ' + (noCorsErr.message || 'Network error'));
+        }
+      } else {
+        throw corsErr; // Re-throw non-CORS errors
+      }
+    }
+
+    if (succeeded) {
+      try { localStorage.setItem('_erp_sheets_url', url); } catch(e){}
+    }
   } catch(err) {
-    if (statusEl) statusEl.innerHTML = '<span style="color:#dc2626">✗ ' + (err.message||'Connection failed') + '</span>';
-    if (!silent) showToast('Sync failed — check Apps Script URL');
+    const msg = err.message || 'Connection failed';
+    if (statusEl) statusEl.innerHTML = `<span style="color:#dc2626">❌ Sync failed: ${msg}<br>Check Apps Script URL and re-deploy.</span>`;
+    if (!silent) showToast('❌ Sync failed — ' + msg);
+    addBkLog(`[ERROR] Sheets sync failed: ${msg}`);
+    bkHistory.unshift({ts:new Date().toISOString(),source:'sheets',size:'—',status:'error'});
+    renderBkHistory();
   } finally {
     resetBtn();
   }
@@ -10989,31 +11056,60 @@ async function syncSheets(silent) {
 function testSheetConnection() {
   const url = (document.getElementById('sheets-url')?.value || '').trim();
   const statusEl = document.getElementById('sheets-sync-status');
-  if (!url) {
-    showToast('⚠️ Paste your Apps Script URL first');
-    return;
-  }
+  if (!url) { showToast('⚠️ Paste your Apps Script URL first'); return; }
   if (!url.includes('script.google.com/macros/s/') || !url.includes('/exec')) {
     if (statusEl) statusEl.innerHTML = '<span style="color:#dc2626">❌ URL format wrong — must be: https://script.google.com/macros/s/…/exec</span>';
-    showToast('❌ URL format is incorrect');
-    return;
+    showToast('❌ URL format is incorrect'); return;
   }
   if (statusEl) statusEl.innerHTML = '<span style="color:#ca8a04">🔗 Testing connection…</span>';
 
-  // Send a tiny test ping
+  const testPayload = JSON.stringify({
+    center: CFG.CENTER.name||'Test', timestamp: new Date().toISOString(),
+    source: 'test', students:[], fees:[], staff:[], exams:[], batches:[],
+    attendance:{}, attendanceFull:{}, timetables:{}, dayOrder:{}, marks:{},
+    feeStructure:{}, salaryPayments:[], waTemplates:{}, studentSummary:{},
+    staffAttendance:{}, aiData:{}, notifications:[]
+  });
+
+  // Try CORS first — gives real confirmation
   fetch(url, {
-    method:  'POST',
-    mode:    'no-cors',
-    headers: { 'Content-Type': 'text/plain' },
-    body:    JSON.stringify({ center: CFG.CENTER.name||'Test', timestamp: new Date().toISOString(), source:'test', students:[], fees:[], staff:[], exams:[], attendance:{} })
-  }).then(() => {
-    // no-cors always resolves — if URL is valid format, it reached Google
-    if (statusEl) statusEl.innerHTML = '<span style="color:#16a34a">✅ URL format valid — ping sent to Google. Check your Google Sheet for a new row in Log tab to confirm receipt.</span>';
-    showToast('✅ Test ping sent — check your Google Sheet Log tab!');
-    try { localStorage.setItem('_erp_sheets_url', url); } catch(e){}
-  }).catch(err => {
-    if (statusEl) statusEl.innerHTML = '<span style="color:#dc2626">❌ Network error: ' + (err.message||'Cannot reach URL') + '</span>';
-    showToast('❌ Connection failed — check URL and internet');
+    method: 'POST', mode: 'cors',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: testPayload
+  })
+  .then(resp => resp.json())
+  .then(result => {
+    if (result.status === 'ok') {
+      if (statusEl) statusEl.innerHTML =
+        '<span style="color:#16a34a">✅ Connection confirmed! Apps Script received test ping and replied successfully. Ready to sync.</span>';
+      showToast('✅ Google Sheets connected and working!');
+      try { localStorage.setItem('_erp_sheets_url', url); } catch(e){}
+    } else {
+      if (statusEl) statusEl.innerHTML =
+        `<span style="color:#dc2626">⚠️ Apps Script error: ${result.msg || JSON.stringify(result)}</span>`;
+    }
+  })
+  .catch(err => {
+    // CORS blocked — fall back to no-cors blind ping, direct user to check Log tab
+    const isCORSErr = (err.message||'').includes('Failed to fetch') || (err.message||'').includes('CORS') || (err.message||'').includes('NetworkError') || (err.message||'').includes('Load failed');
+    if (isCORSErr) {
+      fetch(url, {
+        method:'POST', mode:'no-cors',
+        headers:{'Content-Type':'text/plain;charset=utf-8'},
+        body: testPayload
+      }).then(() => {
+        if (statusEl) statusEl.innerHTML =
+          `<span style="color:#ca8a04">⚠️ Ping sent — but CORS is not enabled on your Apps Script.<br>
+          <b>Check your Google Sheet → Log tab</b> for a new "test" row to confirm receipt.<br>
+          To get full confirmation (✅): add the <code>doOptions()</code> function to your Apps Script and re-deploy.</span>`;
+        showToast('⚠️ Ping sent — check Sheet Log tab to verify');
+        try { localStorage.setItem('_erp_sheets_url', url); } catch(e){}
+      }).catch(() => {
+        if (statusEl) statusEl.innerHTML = '<span style="color:#dc2626">❌ Cannot reach URL — check your internet connection</span>';
+      });
+    } else {
+      if (statusEl) statusEl.innerHTML = `<span style="color:#dc2626">❌ Error: ${err.message||'Unknown error'}</span>`;
+    }
   });
 }
 

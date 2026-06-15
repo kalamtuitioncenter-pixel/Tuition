@@ -1010,11 +1010,12 @@ tbody tr:hover td{background:var(--bg)}
 <!-- ═══════════════ ATTENDANCE ═══════════════ -->
 <div class="page" id="pg-attendance">
   <div class="toolbar">
-    <select class="fi" style="width:auto" id="att-batch" onchange="syncSessionToBatch();renderAttList()"></select>
-    <select class="fi" style="width:auto;min-width:110px" id="att-grade-filter" onchange="renderAttList()">
+    <!-- Hidden batch select — still used internally by all attendance functions -->
+    <select class="fi" style="display:none" id="att-batch" onchange="syncSessionToBatch();renderAttList()"></select>
+    <select class="fi" style="width:auto;min-width:110px" id="att-grade-filter" onchange="autoSelectBatch();renderAttList()">
       <option value="all">🎓 All Classes</option>
     </select>
-    <select class="fi" style="width:auto" id="att-session" onchange="renderAttList()">
+    <select class="fi" style="width:auto" id="att-session" onchange="autoSelectBatch();renderAttList()">
       <option value="morning">☀️ Morning</option>
       <option value="evening">🌙 Evening</option>
     </select>
@@ -1081,7 +1082,8 @@ tbody tr:hover td{background:var(--bg)}
   <div id="att-session-banner" style="margin-bottom:8px;padding:8px 14px;border-radius:8px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:8px;background:#dbeafe;color:#1d4ed8;border:.5px solid #bfdbfe">
     <svg viewBox="0 0 16 16" fill="none" width="14" height="14"><circle cx="8" cy="8" r="5" stroke="currentColor" stroke-width="1.3"/><path d="M8 5v3l2 1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
     <span id="att-session-label">☀️ Morning Session</span>
-    <span style="margin-left:auto;font-size:10px;font-weight:500;opacity:.7" id="att-batch-label"></span>
+    <span style="margin-left:6px;font-size:10px;background:#bfdbfe;color:#1e40af;padding:2px 8px;border-radius:8px;font-weight:700" id="att-batch-label"></span>
+    <span style="margin-left:auto;font-size:10px;font-weight:500;opacity:.6">Group auto-selected</span>
   </div>
   <div id="att-holiday-banner" style="display:none;margin-bottom:8px;padding:8px 14px;border-radius:8px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:8px;background:#fef3c7;color:#92400e;border:.5px solid #fde68a">
     🏖 <span id="att-holiday-label">Today is marked as a Holiday</span>
@@ -1524,6 +1526,16 @@ tbody tr:hover td{background:var(--bg)}
   <!-- Message type selector -->
   <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-bottom:14px" id="wa-type-grid"></div>
 
+  <!-- AI Reports Class Filter (shown only when AI monthly type is active) -->
+  <div id="wa-ai-class-filter" style="display:none;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap;background:var(--card);border:.5px solid #c7d2fe;border-radius:10px;padding:9px 13px">
+    <svg viewBox="0 0 16 16" fill="none" style="width:15px;height:15px;flex-shrink:0;color:#4338ca"><path d="M2 4h12M4 8h8M6 12h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+    <span style="font-size:11px;font-weight:600;color:#4338ca">AI Report Filter:</span>
+    <select id="wa-ai-class-sel" class="fi" style="width:auto;font-size:11px;padding:4px 10px;border-color:#a5b4fc" onchange="updateWAAIClassFilter()">
+      <option value="all">🎓 All Classes</option>
+    </select>
+    <span id="wa-ai-class-count" style="font-size:10px;color:var(--tx3);margin-left:4px"></span>
+  </div>
+
   <!-- Message composer -->
   <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:14px">
     <div class="card">
@@ -1707,8 +1719,6 @@ tbody tr:hover td{background:var(--bg)}
         <div id="ai-report-sub" style="font-size:11px;color:var(--tx2);margin-top:2px"></div>
       </div>
       <div style="display:flex;gap:6px">
-        <button class="btn btn-sm btn-wa" id="ai-wa-btn" onclick="sendAIReportWA()" style="font-size:11px;display:none">📱 Send via WhatsApp</button>
-        <button class="btn btn-sm" id="ai-wa-edit-btn" onclick="navTo('wa-templates');setTimeout(()=>typeof selectWTType==='function'&&selectWTType('ai_report'),300)" style="font-size:11px;display:none">✏️ Template</button>
         <button class="btn btn-sm" id="ai-copy-btn" onclick="copyAIResp()" style="font-size:11px">📋 Copy</button>
         <button class="btn btn-sm" onclick="closeAIReport()" style="font-size:11px">✕ Close</button>
       </div>
@@ -3338,6 +3348,52 @@ function syncSessionToBatch() {
   } else {
     // Both sessions — enable all options, keep current selection
     Array.from(sessEl.options).forEach(o => { o.disabled = false; });
+  }
+}
+
+/* Auto-select the best matching batch when Class or Session changes.
+   Priority: exact class+session match → class-only match → session match → first batch */
+function autoSelectBatch() {
+  const selectedClass   = (document.getElementById('att-grade-filter')?.value || 'all').trim();
+  const selectedSession = (document.getElementById('att-session')?.value || 'morning');
+  const batchSel        = document.getElementById('att-batch');
+  if (!batchSel || batches.length === 0) return;
+
+  const sessionTime = selectedSession === 'morning' ? 'Morning' : 'Evening';
+
+  // Does any active student of this class belong to this batch?
+  function batchHasClass(b) {
+    if (selectedClass === 'all') return true;
+    return students.some(s =>
+      s && s.status === 'active' &&
+      String(s.grade || '').trim() === selectedClass &&
+      s.course && (
+        s.course.toLowerCase().startsWith(b.name.toLowerCase() + ' \u2013') ||
+        s.course.toLowerCase().startsWith(b.name.toLowerCase() + ' -') ||
+        s.course.toLowerCase() === b.name.toLowerCase()
+      )
+    );
+  }
+
+  // 1. Exact match: batch serves this class AND matches session
+  let best = batches.find(b =>
+    batchHasClass(b) && (b.time === sessionTime || b.time === 'Both')
+  );
+  // 2. Class-only match (any session)
+  if (!best) best = batches.find(b => batchHasClass(b));
+  // 3. Session-only match
+  if (!best) best = batches.find(b => b.time === sessionTime || b.time === 'Both');
+  // 4. Fallback: first batch
+  if (!best) best = batches[0];
+
+  if (best) {
+    batchSel.value = best.id;
+    // Re-enable all session options
+    const sessEl = document.getElementById('att-session');
+    if (sessEl) Array.from(sessEl.options).forEach(o => { o.disabled = false; });
+    // Update batch label in session banner
+    const batchLabel = document.getElementById('att-batch-label');
+    if (batchLabel) batchLabel.textContent = best.name + ' \u00b7 ' + (best.days || 'Mon\u2013Sat');
   }
 }
 
@@ -6699,14 +6755,19 @@ async function buildAIMonthlyReports() {
   const monthName = now.toLocaleString('en-IN', { month: 'long' });
   const year = now.getFullYear();
   const ctr = CFG.CENTER;
-  const activeStudents = students.filter(s => s && s.name && s.status === 'active' && (s.phone || s.pphone));
+  const selectedClass = document.getElementById('wa-ai-class-sel')?.value || 'all';
+  const allActive = students.filter(s => s && s.name && s.status === 'active' && (s.phone || s.pphone));
+  const activeStudents = selectedClass === 'all'
+    ? allActive
+    : allActive.filter(s => String(s.grade || '').trim() === selectedClass);
+  const classLabel = selectedClass === 'all' ? 'All Classes' : (selectedClass === 'KG' ? 'KG' : 'Class ' + selectedClass);
 
   if (activeStudents.length === 0) {
     showToast('⚠️ No active students with phone numbers found');
     return;
   }
 
-  showToast('✨ Generating AI monthly reports… (this may take a moment)');
+  showToast(`✨ Generating AI monthly reports for ${classLabel}… (this may take a moment)`);
 
   // Build AI reports for each student with personalised study tips
   const queue = [];
@@ -6794,9 +6855,9 @@ ${ctr.name}`;
 
   waQueue = queue;
   const qInfo = document.getElementById('wa-queue-info');
-  if (qInfo) qInfo.textContent = `Queue: ${queue.length} AI monthly reports ready ✨`;
+  if (qInfo) qInfo.textContent = `Queue: ${queue.length} AI monthly reports ready ✨ (${classLabel})`;
   renderWAQueueList(queue);
-  showToast(`✅ ${queue.length} AI monthly reports generated!`);
+  showToast(`✅ ${queue.length} AI monthly reports generated for ${classLabel}!`);
 }
 
 
@@ -8318,6 +8379,30 @@ function setWAType(id, el) {
   // Show AI monthly button only for monthly type
   const aiBtn = document.getElementById('ai-monthly-btn');
   if (aiBtn) aiBtn.style.display = (id === 'monthly') ? '' : 'none';
+  // Show/hide AI class filter for monthly type
+  const aiFilter = document.getElementById('wa-ai-class-filter');
+  if (aiFilter) {
+    aiFilter.style.display = (id === 'monthly') ? 'flex' : 'none';
+    if (id === 'monthly') populateWAAIClassFilter();
+  }
+}
+
+function populateWAAIClassFilter() {
+  const sel = document.getElementById('wa-ai-class-sel');
+  if (!sel) return;
+  const grades = [...new Set(students.filter(s => s && s.grade && s.status === 'active').map(s => String(s.grade).trim()))]
+    .sort((a, b) => { const o = ['KG','1','2','3','4','5','6','7','8','9','10','11','12']; const ai = o.indexOf(a), bi = o.indexOf(b); return (ai < 0 ? 99 : ai) - (bi < 0 ? 99 : bi); });
+  sel.innerHTML = '<option value="all">🎓 All Classes</option>' +
+    grades.map(g => `<option value="${g}">${g === 'KG' ? 'KG' : 'Class ' + g}</option>`).join('');
+  updateWAAIClassFilter();
+}
+
+function updateWAAIClassFilter() {
+  const cls = document.getElementById('wa-ai-class-sel')?.value || 'all';
+  const cnt = document.getElementById('wa-ai-class-count');
+  const activeStudents = students.filter(s => s && s.name && s.status === 'active' && (s.phone || s.pphone));
+  const filtered = cls === 'all' ? activeStudents : activeStudents.filter(s => String(s.grade || '').trim() === cls);
+  if (cnt) cnt.textContent = cls === 'all' ? '' : `${filtered.length} student${filtered.length !== 1 ? 's' : ''}`;
 }
 
 function updateWATemplates() {
@@ -9118,10 +9203,6 @@ function runPredictAI(id) {
   panel.style.display   = 'block';
   loading.style.display = 'block';
   output.style.display  = 'none';
-  var waBtn = document.getElementById('ai-wa-btn');
-  if (waBtn) waBtn.style.display = 'flex';
-  var waEditBtn = document.getElementById('ai-wa-edit-btn');
-  if (waEditBtn) waEditBtn.style.display = 'flex';
   panel.scrollIntoView({ behavior:'smooth', block:'start' });
 
   setTimeout(() => {
@@ -9219,7 +9300,7 @@ function buildPredictReport(id, ta) {
   return ta ? `✅ கணிப்பு முடிந்தது.` : `✅ Prediction complete.`;
 }
 
-/* ── AI Class Filter helpers ──────────────────────────────── */
+/* ── AI Class / Batch Filter helpers ──────────────────────────────── */
 function initAIFilter() {
   const cls  = document.getElementById('ai-filter-class');
   if (!cls) return;
@@ -9587,15 +9668,6 @@ async function runAI(id) {
   loading.style.display = 'block';
   output.style.display  = 'none';
 
-  // Only student-related AI reports can be sent via WhatsApp to parents.
-  // Admin-only modules (timetable, msgdraft) are excluded.
-  var waBtn2 = document.getElementById('ai-wa-btn');
-  var waEditBtn2 = document.getElementById('ai-wa-edit-btn');
-  var ADMIN_ONLY_AI = ['timetable','msgdraft'];
-  var _waVisible = ADMIN_ONLY_AI.includes(id) ? 'none' : 'flex';
-  if (waBtn2) waBtn2.style.display = _waVisible;
-  if (waEditBtn2) waEditBtn2.style.display = _waVisible;
-
   // Scroll to report
   setTimeout(function(){
     panel.scrollIntoView({behavior:'smooth', block:'start'});
@@ -9624,10 +9696,6 @@ function aiRunCard(el) {
 function closeAIReport() {
   var panel = document.getElementById('ai-report-panel');
   if (panel) panel.style.display = 'none';
-  var waBtn = document.getElementById('ai-wa-btn');
-  if (waBtn) waBtn.style.display = 'none';
-  var waEditBtn = document.getElementById('ai-wa-edit-btn');
-  if (waEditBtn) waEditBtn.style.display = 'none';
   activeAI = null;
   renderAICards();
 }
@@ -9662,55 +9730,6 @@ async function runCustomAI() {
 }
 
 function copyAIResp(){const t=document.getElementById('ai-stream')?.textContent||'';navigator.clipboard.writeText(t).then(()=>showToast(lang==='ta'?'நகலெடுக்கப்பட்டது!':'Copied!')).catch(()=>{});}
-
-/* ── Send the currently-open AI report to parents via WhatsApp ──────
-   Sends to every student in the current AI Class filter (Class filter only —
-   no Session/Batch filter). Uses the customisable "AI Report (Student)"
-   Tamil WhatsApp template (Settings → WA Templates).
-   Admin-only modules (timetable, msgdraft) never expose this button. */
-function sendAIReportWA() {
-  const ta = lang === 'ta';
-  const reportText = document.getElementById('ai-output')?.textContent
-                   || document.getElementById('ai-stream')?.textContent || '';
-  if (!reportText.trim()) {
-    showToast(ta ? 'அறிக்கை இன்னும் தயாராகவில்லை' : 'Report not ready yet');
-    return;
-  }
-
-  // Class filter only (no session/batch filter for AI WhatsApp send)
-  const targets = getAIFilteredStudents().filter(s => s && (s.phone || s.pphone));
-  if (targets.length === 0) {
-    showToast(ta ? '📞 எண் உள்ள மாணவர்கள் இல்லை' : '⚠️ No students with phone numbers in this class filter');
-    return;
-  }
-
-  const ctr = CFG.CENTER;
-  const titleEl = document.getElementById('ai-report-title');
-  const reportTitle = titleEl?.textContent || (ta ? 'AI அறிக்கை' : 'AI Report');
-
-  // Customised Tamil template (from WA Templates page) or built-in default
-  const template = (typeof getWTSaved === 'function' ? getWTSaved('ai_report','ta') : '') || AI_REPORT_TEMPLATE_TA;
-
-  showToast(ta ? `📱 ${targets.length} பெற்றோருக்கு அனுப்புகிறது…` : `📱 Sending to ${targets.length} parent(s)…`);
-
-  let delay = 0;
-  targets.forEach(s => {
-    setTimeout(() => {
-      const msg = fillAIReportTemplate(template, {
-        parent_name:  s.parent,
-        student_name: s.name,
-        grade:        s.grade==='KG' ? 'KG' : s.grade,
-        report_title: reportTitle,
-        report_body:  reportText.trim(),
-        center_name:  ctr.name,
-        center_phone: ctr.phone,
-      });
-      openWA(s.phone || s.pphone, msg);
-    }, delay);
-    delay += 900;
-  });
-}
-
 function clearAI(){activeAI=null;renderAICards();document.getElementById('ai-output').style.display='none';document.getElementById('ai-ph').style.display='block';}
 
 /* ── Late-to-Leave Config (Pro+) ─────────────────────── */
@@ -11326,7 +11345,7 @@ function renderBatchSelect() {
     return `<option value="${b.id}">${icon} ${b.name} (${b.time})</option>`;
   }).join('');
   if (prev && batches.find(b => b.id === prev)) sel.value = prev;
-  syncSessionToBatch(); // auto-set session dropdown to match batch
+  autoSelectBatch(); // auto-select batch based on current class + session
 
   // Populate Class filter dropdown
   const gf = document.getElementById('att-grade-filter');
@@ -12290,7 +12309,6 @@ const WT_VARS = {
   fee_receipt:'{student_name} · {parent_name} · {class} · {batch} · {receipt_no} · {month} · {amount_paid} · {total_paid} · {total_fee} · {balance} · {payment_mode} · {date_time} · {status} · {center_name} · {center_phone}',
   monthly_summary:'{parent_name} · {student_name} · {grade} · {month_name} · {year} · {present_days} · {absent_days} · {late_days} · {att_pct} · {att_status} · {late_status} · {stars} · {star_label} · {activities} · {rank} · {total_students} · {marks_section} · {teacher_note} · {center_name} · {center_phone}',
   exam_notice: '{parent_name} · {student_name} · {grade} · {exam_name} · {subject} · {exam_date} · {max_marks} · {pass_marks} · {syllabus} · {center_name} · {center_phone}',
-  ai_report: '{parent_name} · {student_name} · {grade} · {report_title} · {report_body} · {center_name} · {center_phone}',
 };
 
 const WT_SAMPLE = {
@@ -12305,7 +12323,6 @@ const WT_SAMPLE = {
   fee_receipt:{ studentName:'Monisha', parent:'Suresh', grade:'Class 10', course:'Maths Group – Evening', rcpt:'RCP-MF-51941', month:'May 2026', collected:1200, totalPaid:1200, totalFee:1500, balance:300, mode:'Cash', dateTime:'15 May 2026 at 04:35 PM' },
   monthly_summary:{ parent_name:'Suresh', student_name:'Monisha', grade:'10', month_name:'மே', year:'2026', present_days:'22', absent_days:'2', late_days:'1', att_pct:'88', att_status:'நல்லது ✅', late_status:'1 நாட்கள் தாமதம் ⚠️', stars:'4', star_label:'நல்லது 🌟', activities:'📚 வீட்டுப்பாடம், 🏆 குவிஸ்', rank:'3 / 12', marks_section:'• Monthly Test (Maths): 87/100 — A (87%)', teacher_note:'மிகவும் கவனமாக உள்ளார்.', center_name:'KTC', center_phone:'9876543210' },
   exam_notice: { parent_name:'Suresh', student_name:'Monisha', grade:'10', exam_name:'Monthly Test', subject:'Mathematics', exam_date:'20 Jun 2026', max_marks:'100', pass_marks:'35', syllabus:'Chapter 1–4, Algebra', center_name:'KTC', center_phone:'9876543210' },
-  ai_report: { parent_name:'Suresh', student_name:'Monisha', grade:'10', report_title:'வருகை & தாமத பகுப்பாய்வு', report_body:'வருகை: 82% | இன்று வரவில்லை: இல்லை\nதாமதமாக வந்தவர்கள்: இல்லை\n\n📋 பரிந்துரைகள்:\n1. தொடர்ந்து வருகை தரவும்', center_name:'KTC', center_phone:'9876543210' },
 };
 
 const WT_ALL_TYPES = [
@@ -12320,7 +12337,6 @@ const WT_ALL_TYPES = [
   {id:'fee_receipt',     label:'Fee Receipt',          emoji:'🧾', color:'#16a34a'},
   {id:'monthly_summary', label:'Student Monthly Summary', emoji:'📋', color:'#f59e0b'},
   {id:'exam_notice',      label:'Exam Notice',              emoji:'📝', color:'#0369a1'},
-  {id:'ai_report',        label:'AI Report (Student)',      emoji:'🤖', color:'#4338ca'},
 ];
 
 let wtActiveType = null;
@@ -12381,7 +12397,6 @@ function getWTDefault(typeId, lang) {
     return (useTa ? ADM_TEMPLATES.ta : ADM_TEMPLATES.en) || ADM_TEMPLATES.ta || '';
   }
   if (typeId === 'fee_receipt') return FEE_RECEIPT_TEMPLATES['ta'] || FEE_RECEIPT_TEMPLATES['en'] || '';
-  if (typeId === 'ai_report') return AI_REPORT_TEMPLATE_TA;
   const tmplArr = WA_TEMPLATES[typeId]?.ta || [''];
   return tmplArr[0] || '';
 }
@@ -12429,8 +12444,6 @@ function refreshWTPreview() {
     preview = fillFeeReceiptTemplate(template, sample);
   } else if (wtActiveType === 'monthly_summary') {
     preview = fillMonthlySummaryTemplate(template, sample);
-  } else if (wtActiveType === 'ai_report') {
-    preview = fillAIReportTemplate(template, sample);
   } else {
     // Build a fake student for fillTemplate
     const fakeStu = {
@@ -14696,34 +14709,6 @@ function fillMonthlySummaryTemplate(template, data) {
     .replace(/{center_name}/g,      data.center_name     || CFG.CENTER.name  || '')
     .replace(/{center_phone}/g,     data.center_phone    || CFG.CENTER.phone || '');
 }
-
-/* Default Tamil template for AI Report → WhatsApp (Student Reports) */
-const AI_REPORT_TEMPLATE_TA = `🙏 வணக்கம் *{parent_name}* அவர்களுக்கு,
-
-📊 *{report_title}*
-🏫 {center_name}
-
-👤 மாணவர்: *{student_name}* (வகுப்பு {grade})
-
-━━━━━━━━━━━━━━━━━━━━━
-{report_body}
-━━━━━━━━━━━━━━━━━━━━━
-
-📞 {center_phone}
-{center_name}`;
-
-function fillAIReportTemplate(template, data) {
-  if (!template) return '';
-  return template
-    .replace(/{parent_name}/g,  data.parent_name  || data.parent || 'பெற்றோர்')
-    .replace(/{student_name}/g, data.student_name || data.name   || 'மாணவர்')
-    .replace(/{grade}/g,        data.grade        || '—')
-    .replace(/{report_title}/g, data.report_title || '')
-    .replace(/{report_body}/g,  data.report_body  || '')
-    .replace(/{center_name}/g,  data.center_name  || CFG.CENTER.name  || '')
-    .replace(/{center_phone}/g, data.center_phone || CFG.CENTER.phone || '');
-}
-
 
 /* ════════════════════════════════════════════════════════
    WHATSAPP MESSAGE BUILDER — uses custom template if set

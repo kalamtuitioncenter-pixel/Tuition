@@ -484,6 +484,26 @@ tbody tr:hover td{background:var(--bg)}
   .att-btn{min-width:44px;height:30px;padding:0 8px}
   .fi{font-size:16px}  /* prevent iOS zoom on input */
 }
+
+/* ── Student Summary Module styles ── */
+.sum-card { background:var(--card);border:.5px solid var(--br);border-radius:14px;overflow:hidden;box-shadow:var(--shadow);transition:transform .15s,box-shadow .15s; }
+.sum-card:hover { transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.10); }
+.sum-card-header { padding:13px 15px 10px;display:flex;align-items:center;gap:11px;border-bottom:.5px solid var(--br); }
+.sum-rank-badge { width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0; }
+.sum-section { padding:10px 15px;border-bottom:.5px solid var(--br); }
+.sum-section:last-of-type { border-bottom:none; }
+.sum-section-title { font-size:9px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px;display:flex;align-items:center;gap:5px; }
+.sum-metric-row { display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--tx2);margin-bottom:5px; }
+.sum-metric-val { font-weight:700;color:var(--tx); }
+.sum-prog { height:5px;background:var(--bg);border-radius:3px;overflow:hidden;margin-top:4px; }
+.sum-prog-fill { height:100%;border-radius:3px;transition:width .5s; }
+.sum-stars { display:flex;gap:3px; }
+.sum-star { font-size:16px;cursor:pointer;transition:transform .1s;line-height:1; }
+.sum-star:hover { transform:scale(1.25); }
+.sum-card-foot { padding:10px 15px;background:var(--bg);display:flex;gap:7px;align-items:center; }
+.sum-activity-tag { display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:600;cursor:pointer;border:.5px solid transparent;transition:.12s; }
+.sum-activity-tag.on { box-shadow:0 0 0 1.5px currentColor; }
+.dark .sum-card-header { background:transparent; }
 </style>
 </head>
 <body>
@@ -535,11 +555,30 @@ tbody tr:hover td{background:var(--bg)}
   <header class="topbar">
     <button class="hamburger" onclick="toggleSb()"><svg viewBox="0 0 22 22" fill="none" width="22" height="22"><path d="M3 11h16M3 6h16M3 16h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
     <div class="tb-title" id="pg-title">Dashboard</div>
-    <div class="tb-right">
+    <div class="tb-right" style="gap:6px">
       <button class="btn btn-p btn-sm" id="tb-add-btn" style="display:none" onclick="tbAddAction()"><svg viewBox="0 0 14 14" fill="none"><path d="M7 2v10M2 7h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><span id="tb-add-lbl">Add</span></button>
+      <button id="bell-btn" onclick="toggleReminderPanel()" title="Daily Reminders" style="position:relative;background:none;border:none;cursor:pointer;padding:5px;border-radius:8px;display:flex;align-items:center;justify-content:center" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='none'">
+        <svg viewBox="0 0 22 22" fill="none" width="22" height="22"><path d="M11 3a1 1 0 0 1 1 1v.5A5.5 5.5 0 0 1 16.5 10v3l1.5 2H4l1.5-2v-3A5.5 5.5 0 0 1 10 4.5V4a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M9 17a2 2 0 0 0 4 0" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <span id="bell-badge" style="display:none;position:absolute;top:3px;right:3px;width:8px;height:8px;background:#ef4444;border-radius:50%;border:1.5px solid var(--card)"></span>
+      </button>
       <div class="av-sm" id="av-initials">KA</div>
     </div>
   </header>
+
+  <!-- Reminder Panel -->
+  <div id="reminder-panel" style="display:none;position:fixed;top:54px;right:12px;width:320px;max-height:80vh;background:var(--card);border:.5px solid var(--br);border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,.18);z-index:200;overflow:hidden;flex-direction:column">
+    <div style="padding:12px 16px 10px;border-bottom:.5px solid var(--br);display:flex;align-items:center;justify-content:space-between;background:linear-gradient(135deg,#1e3a8a,#185FA5)">
+      <div style="display:flex;align-items:center;gap:8px">
+        <svg viewBox="0 0 22 22" fill="none" width="18" height="18"><path d="M11 3a1 1 0 0 1 1 1v.5A5.5 5.5 0 0 1 16.5 10v3l1.5 2H4l1.5-2v-3A5.5 5.5 0 0 1 10 4.5V4a1 1 0 0 1 1-1Z" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/><path d="M9 17a2 2 0 0 0 4 0" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <span style="font-size:13px;font-weight:700;color:#fff">Daily Reminders</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <button onclick="openAddReminderForm()" style="background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:7px;padding:3px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">+ Add</button>
+        <button onclick="toggleReminderPanel()" style="background:none;border:none;color:rgba(255,255,255,.8);cursor:pointer;font-size:16px;padding:0 2px;font-family:inherit">&#x2715;</button>
+      </div>
+    </div>
+    <div id="reminder-list" style="overflow-y:auto;max-height:calc(80vh - 50px);padding:10px 12px 12px"></div>
+  </div>
   <div class="content" id="content">
 
 <!-- ═══════════════ DASHBOARD ═══════════════ -->
@@ -607,6 +646,37 @@ tbody tr:hover td{background:var(--bg)}
           <div style="font-size:20px;font-weight:800;color:#2563eb" id="income-sum-net">₹0</div>
           <div style="font-size:9px;color:#1d4ed8;margin-top:2px">Income − Expense</div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Expected Income Next Month Card ── -->
+  <div id="dash-expected-income" style="margin-bottom:14px">
+    <div style="background:var(--card);border:.5px solid var(--br);border-radius:12px;padding:14px 16px;box-shadow:var(--shadow)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div style="font-size:13px;font-weight:700;color:var(--tx)">🔮 Expected Income — Next Month</div>
+        <span style="font-size:10px;color:var(--tx3);background:var(--bg);border-radius:6px;padding:2px 8px;border:.5px solid var(--br)" id="exp-income-month-label"></span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+        <div style="background:#ccfbf1;border-radius:10px;padding:11px 13px;border:.5px solid #99f6e4">
+          <div style="font-size:10px;color:#0f766e;margin-bottom:4px">📋 Expected from Active Students</div>
+          <div style="font-size:20px;font-weight:800;color:#0f766e" id="exp-income-expected">₹0</div>
+          <div style="font-size:9px;color:#0f766e;margin-top:2px" id="exp-income-students">0 active students</div>
+        </div>
+        <div style="background:#fef9c3;border-radius:10px;padding:11px 13px;border:.5px solid #fde68a">
+          <div style="font-size:10px;color:#854d0e;margin-bottom:4px">⚠️ Carry-forward Pending</div>
+          <div style="font-size:20px;font-weight:800;color:#ca8a04" id="exp-income-carryover">₹0</div>
+          <div style="font-size:9px;color:#854d0e;margin-top:2px" id="exp-income-carryover-count">0 students</div>
+        </div>
+        <div style="background:linear-gradient(135deg,#ede9fe,#f5f3ff);border-radius:10px;padding:11px 13px;border:.5px solid #c4b5fd">
+          <div style="font-size:10px;color:#5b21b6;margin-bottom:4px">💎 Total Expected (Incl. Pending)</div>
+          <div style="font-size:20px;font-weight:800;color:#7c3aed" id="exp-income-total">₹0</div>
+          <div style="font-size:9px;color:#5b21b6;margin-top:2px">Monthly + Outstanding</div>
+        </div>
+      </div>
+      <div style="margin-top:10px;padding:8px 12px;background:var(--bg);border-radius:8px;font-size:11px;color:var(--tx2);display:flex;align-items:center;gap:6px">
+        <svg viewBox="0 0 14 14" fill="none" width="12" height="12"><circle cx="7" cy="7" r="5.5" stroke="#7c3aed" stroke-width="1.3"/><path d="M7 4.5v3l2 1.5" stroke="#7c3aed" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span id="exp-income-note">Based on fee structure × active students + unpaid carry-forward.</span>
       </div>
     </div>
   </div>
@@ -2903,13 +2973,35 @@ const MODALS = {
       : '';
     return `<div class="modal-title">${t('newFee')}</div>
     ${info}
-    <div class="fg"><label class="fl">Student</label><select class="fi" id="m-fee-st">${display.map(s=>`<option value="${s.id}">${s.name} (Gr.${s.grade==='KG'?'KG':s.grade})</option>`).join('')}</select></div>
-    <div class="frow"><div class="fg"><label class="fl">Fee Amount ₹</label><input class="fi" id="m-famt" value="2500" type="number" oninput="calcFeeM()"></div>
-    <div class="fg"><label class="fl">Discount ₹</label><input class="fi" id="m-fdisc" value="0" type="number" oninput="calcFeeM()"></div></div>
-    <div class="frow"><div class="fg"><label class="fl">Late Fee ₹</label><input class="fi" id="m-flate" value="0" type="number" oninput="calcFeeM()"></div>
-    <div class="fg"><label class="fl">Paid Amount ₹</label><input class="fi" id="m-fpaid" value="2500" type="number" oninput="calcFeeM()"></div></div>
-    <div style="background:var(--bg);border-radius:8px;padding:10px 13px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:var(--tx2)">Total Due</span><span style="font-size:18px;font-weight:700;color:var(--pr)" id="m-ftotal">₹2,500</span></div>
-    <div class="fg"><label class="fl">Payment Mode</label><select class="fi" id="m-fmode"><option>Cash</option><option>UPI</option><option>Bank Transfer</option></select></div>
+    <div class="fg"><label class="fl">Student</label><select class="fi" id="m-fee-st" onchange="onFeeStudentChange()">${display.map(s=>`<option value="${s.id}" data-admit="${s.admDate||s.admitDate||''}">${s.name} (Gr.${s.grade==='KG'?'KG':s.grade})</option>`).join('')}</select></div>
+    <!-- After-15-days duration selector -->
+    <div id="m-fee-duration-row" style="display:none;background:#fef9c3;border:.5px solid #fde68a;border-radius:8px;padding:9px 12px;margin-bottom:8px">
+      <div style="font-size:11px;font-weight:700;color:#92400e;margin-bottom:6px">&#x23F0; Admitted after 15th &#8212; Select Fee Duration</div>
+      <div style="display:flex;gap:8px">
+        <label style="flex:1;display:flex;align-items:center;gap:6px;cursor:pointer;background:#fff;border:.5px solid #fcd34d;border-radius:7px;padding:7px 10px;font-size:12px;font-weight:600;color:#92400e"><input type="radio" name="m-fee-dur" value="half" onchange="applyFeeDuration()" style="accent-color:#d97706"> 15-Day (Half)</label>
+        <label style="flex:1;display:flex;align-items:center;gap:6px;cursor:pointer;background:#fff;border:.5px solid #fcd34d;border-radius:7px;padding:7px 10px;font-size:12px;font-weight:600;color:#92400e"><input type="radio" name="m-fee-dur" value="full" onchange="applyFeeDuration()" style="accent-color:#d97706" checked> 30-Day (Full)</label>
+      </div>
+    </div>
+    <div class="frow">
+      <div class="fg"><label class="fl">Fee Amount ₹</label><input class="fi" id="m-famt" value="2500" type="number" oninput="calcFeeM()"></div>
+      <div class="fg"><label class="fl">Late Fee ₹</label><input class="fi" id="m-flate" value="0" type="number" oninput="calcFeeM()"></div>
+    </div>
+    <div style="background:var(--bg);border:.5px solid var(--br);border-radius:8px;padding:10px 12px;margin-bottom:8px">
+      <div style="font-size:11px;font-weight:700;color:var(--tx2);margin-bottom:8px">&#127891; Deductions</div>
+      <div class="frow">
+        <div class="fg"><label class="fl">Scholarship ₹</label><input class="fi" id="m-fscholar" value="0" type="number" placeholder="0" oninput="calcFeeM()"><div style="font-size:9px;color:var(--tx3);margin-top:2px">Merit / govt scholarship</div></div>
+        <div class="fg"><label class="fl">Other Discount ₹</label><input class="fi" id="m-fdisc" value="0" type="number" placeholder="0" oninput="calcFeeM()"><div style="font-size:9px;color:var(--tx3);margin-top:2px">Sibling / special / waiver</div></div>
+      </div>
+      <div class="fg" style="margin-top:6px"><label class="fl">Deduction Note</label><input class="fi" id="m-fdiscount-note" placeholder="e.g. Govt scholarship, sibling discount…" style="font-size:11px"></div>
+    </div>
+    <div class="frow">
+      <div class="fg"><label class="fl">Paid Amount ₹</label><input class="fi" id="m-fpaid" value="2500" type="number" oninput="calcFeeM()"></div>
+      <div class="fg"><label class="fl">Payment Mode</label><select class="fi" id="m-fmode"><option>Cash</option><option>UPI</option><option>Bank Transfer</option></select></div>
+    </div>
+    <div style="background:var(--bg);border-radius:8px;padding:10px 13px;margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:var(--tx2)">Total Due</span><span style="font-size:18px;font-weight:700;color:var(--pr)" id="m-ftotal">₹2,500</span></div>
+      <div id="m-fee-breakdown" style="font-size:10px;color:var(--tx3);margin-top:3px"></div>
+    </div>
     <div class="modal-foot"><button class="btn btn-p" onclick="saveFeeEntry()">${t('saveFee')}</button><button class="btn" onclick="closeModal()">${t('cancel')}</button></div>`;
   },
 
@@ -3364,6 +3456,7 @@ function autoSelectBatch() {
   // Does any active student of this class belong to this batch?
   function batchHasClass(b) {
     if (selectedClass === 'all') return true;
+    if (selectedClass === '__none__') return students.some(s => s && s.status === 'active' && !String(s.grade||'').trim());
     return students.some(s =>
       s && s.status === 'active' &&
       String(s.grade || '').trim() === selectedClass &&
@@ -3664,61 +3757,63 @@ function _getBatchStudents(batchId) {
   // ── STEP 2: Start from active students only ───────────────────────
   let active = students.filter(s => s && s.name && s.status === 'active');
 
-  // ── STEP 3: Apply CLASS filter FIRST — this is the primary guard ──
-  // This runs BEFORE any batch logic so class boundaries are never crossed.
-  if (selectedClass !== 'all') {
+  // ── STEP 3: Apply CLASS filter ───────────────────────────────────
+  // '__none__' = students with no class assigned.
+  // Any specific class shows only that class. 'all' shows everyone (batch filter applies next).
+  if (selectedClass === '__none__') {
+    active = active.filter(s => !String(s.grade || '').trim());
+    console.log('[ATT] Not-Assigned filter: students with no grade:', active.length);
+    if (active.length === 0) return [];
+  } else if (selectedClass !== 'all') {
     active = active.filter(s => String(s.grade || '').trim() === selectedClass);
     console.log('[ATT] After class filter (Class ' + selectedClass + '):', active.length, 'students');
-
-    // STRICT: if class filter yields zero, return empty — never widen scope
     if (active.length === 0) {
-      console.warn('[ATT] No students found in Class', selectedClass, '— returning empty list. Students from other classes will NOT be shown.');
+      console.warn('[ATT] No students found in Class', selectedClass, '— returning empty list.');
       return [];
     }
   }
 
-  // ── STEP 4: Apply BATCH filter on top of the already-filtered list ─
+  // ── STEP 4: BATCH filter — only when "All Classes" is selected ──────────────────
   //
-  // student.course is stored as "BatchName – Morning/Evening/Both"
-  // (set by the adm-course <select> which uses `b.name + " – " + b.time`).
+  // KEY RULE (auto-batch mode):
+  //   • Class IS selected  → show ALL students in that class, no batch filter.
+  //     Batch is auto-picked only as a storage key (save/load data).
+  //     Dropping students with no/mismatched course string is WRONG here.
   //
-  // EXACT MATCH strategy (in priority order):
-  //   1. course exactly equals  "BatchName – Time"        ← ideal, most students
-  //   2. course starts with     "BatchName"               ← handles legacy entries without time suffix
-  //   3. course exactly equals  batch.name                ← legacy entries stored without time suffix
+  //   • "All Classes" selected → apply batch filter strictly so we don’t
+  //     dump every student in the centre onto one list.
   //
-  // Fuzzy/first-word matching is REMOVED — it caused students from OTHER batches
-  // whose course names share a common first word (e.g. "10th Science" vs "10th Maths")
-  // to appear in the wrong batch's attendance list.
-  //
-  const batch = batches.find(b => b.id === batchId);
-  if (batch && batch.name) {
-    const bNameExact   = batch.name.toLowerCase();
-    const bNameWithTime = (batch.name + ' \u2013 ' + batch.time).toLowerCase();   // "Science Group – Morning"
-    const bNameDash    = (batch.name + ' - ' + batch.time).toLowerCase();         // hyphen variant
+  if (selectedClass !== 'all') {
+    // Class filter is active — batch is just a storage key, not a student filter.
+    console.log('[ATT] Class selected (' + selectedClass + ') — batch filter skipped. Students:', active.length);
+  } else {
+    const batch = batches.find(b => b.id === batchId);
+    if (batch && batch.name) {
+      const bNameExact    = batch.name.toLowerCase();
+      const bNameWithTime = (batch.name + ' \u2013 ' + batch.time).toLowerCase();
+      const bNameDash     = (batch.name + ' - ' + batch.time).toLowerCase();
 
-    const exactMatch = active.filter(s => {
-      if (!s.course) return false;
-      const sc = s.course.toLowerCase().trim();
-      return sc === bNameWithTime          // "science group – morning"  ← primary
-          || sc === bNameDash              // "science group - morning"  ← hyphen variant
-          || sc === bNameExact             // "science group"            ← legacy no-time
-          || sc.startsWith(bNameExact + ' \u2013 ')  // starts-with guard for any time variant
-          || sc.startsWith(bNameExact + ' - ');
-    });
+      const batchMatch = active.filter(s => {
+        if (!s.course) return false;
+        const sc = s.course.toLowerCase().trim();
+        return sc === bNameWithTime
+            || sc === bNameDash
+            || sc === bNameExact
+            || sc.startsWith(bNameExact + ' \u2013 ')
+            || sc.startsWith(bNameExact + ' - ');
+      });
 
-    if (exactMatch.length > 0) {
-      active = exactMatch;
-      console.log('[ATT] Batch match (exact):', batch.name, '| Students:', active.length);
-    } else {
-      // No students matched this batch — return empty; never fall back to all
-      console.warn('[ATT] No students matched batch "' + batch.name + '" (batchId: ' + batchId + '). Returning empty list. Assign students via Students → Edit → Batch.');
+      if (batchMatch.length > 0) {
+        active = batchMatch;
+        console.log('[ATT] Batch match:', batch.name, '| Students:', active.length);
+      } else {
+        console.warn('[ATT] No students matched batch "' + batch.name + '" (batchId: ' + batchId + '). Returning empty list.');
+        active = [];
+      }
+    } else if (batchId) {
+      console.warn('[ATT] Batch object not found for batchId:', batchId, '— returning empty list.');
       active = [];
     }
-  } else if (batchId) {
-    // batchId given but batch object not found — return empty, not all students
-    console.warn('[ATT] Batch object not found for batchId:', batchId, '— returning empty list.');
-    active = [];
   }
 
   // ── STEP 5: Final debug log ───────────────────────────────────────
@@ -4574,6 +4669,184 @@ function downloadMASReport() {
 }
 
 
+/* ══════════════════════════════════════════════════════════
+   WHATSAPP PAGE — renderWATypes, updateWAPreview, buildWAQueue
+══════════════════════════════════════════════════════════ */
+function renderWATypes() {
+  const grid = document.getElementById('wa-type-grid');
+  if (!grid) return;
+  const lic = window.__LIC__ || {};
+  const maxTypes = lic.features ? (lic.waTypes || 2) : 2;
+  grid.innerHTML = WA_TYPES.map((wt, i) => {
+    const isActive = waType === wt.id;
+    const locked = i >= maxTypes;
+    return `<button onclick="${locked ? 'openUpgrade()' : `setWAType('${wt.id}')`}"
+      style="padding:7px 6px;border-radius:9px;border:1.5px solid ${isActive ? wt.color : 'var(--br)'};
+        background:${isActive ? wt.bg : 'var(--card)'};color:${isActive ? wt.color : 'var(--tx2)'};
+        cursor:pointer;font-size:10px;font-weight:${isActive ? '700' : '500'};font-family:inherit;
+        text-align:center;transition:.15s;opacity:${locked ? '.5' : '1'}">
+      ${locked ? '🔒 ' : ''}${lang === 'ta' ? wt.labelTA : wt.label}
+    </button>`;
+  }).join('');
+}
+
+function setWAType(type) {
+  waType = type;
+  renderWATypes();
+  updateWAPreview();
+  buildWAQueue();
+  // Show/hide AI monthly button
+  const aiBtn = document.getElementById('ai-monthly-btn');
+  if (aiBtn) aiBtn.style.display = (type === 'monthly') ? 'block' : 'none';
+  // Show/hide AI class filter
+  const aiFilter = document.getElementById('wa-ai-class-filter');
+  if (aiFilter) aiFilter.style.display = (type === 'ai_monthly') ? 'flex' : 'none';
+}
+
+function updateWAPreview() {
+  const box = document.getElementById('wa-preview-box');
+  if (!box) return;
+  const wt = WA_TYPES.find(w => w.id === waType);
+  if (!wt) { box.textContent = 'Select a message type above.'; return; }
+
+  // Try custom saved template first
+  const saved = (typeof getWTSaved === 'function') ? getWTSaved(waType, 'ta') : null;
+  const tmplArr = saved ? [saved] : (WA_TEMPLATES[waType] ? (WA_TEMPLATES[waType].ta || []) : []);
+
+  // Custom override
+  const customMsg = document.getElementById('wa-custom-msg')?.value.trim() || '';
+  const tmpl = customMsg || (tmplArr[0] || 'No template available.');
+
+  // Sample substitution for preview
+  const sample = {
+    parent_name: 'Suresh', student_name: 'Monisha', grade: '10',
+    center_name: CFG.CENTER.name || 'KTC', center_phone: CFG.CENTER.phone || '9876543210',
+    date: new Date().toLocaleDateString('en-IN'), month_name: 'June', year: new Date().getFullYear(),
+    amount: '1500', month: _feeMonthLabel(), due_date: '5th',
+    exam_name: 'Monthly Test', subject: 'Maths', marks: '87', max_marks: '100',
+    percentage: '87', grade_letter: 'A', remarks: 'Excellent',
+    holiday_name: 'Holiday', holiday_date: 'Today', resume_date: 'Monday',
+    overdue_note: '', att_pct: '85', present_days: '20', absent_days: '4', att_status: '✅ Good',
+  };
+  let preview = tmpl;
+  Object.entries(sample).forEach(([k,v]) => { preview = preview.replace(new RegExp('{'+k+'}','g'), v); });
+  box.style.whiteSpace = 'pre-wrap';
+  box.style.fontFamily = "'Noto Sans Tamil', system-ui";
+  box.style.fontSize = '12px';
+  box.style.color = 'var(--tx)';
+  box.textContent = preview;
+}
+
+function buildWAQueue() {
+  const recipientSel = document.getElementById('wa-recipients-sel');
+  const filter = recipientSel ? recipientSel.value : 'all';
+  let targetStudents = students.filter(s => s && s.status === 'active');
+
+  if (filter === 'absent') {
+    const today = new Date().toISOString().split('T')[0];
+    const batchId = document.getElementById('att-batch')?.value || '';
+    const session = document.getElementById('att-session')?.value || 'morning';
+    targetStudents = targetStudents.filter(s => attState[s.id + '|' + (batchId||'all') + '|' + session] === 'A');
+  } else if (filter === 'late') {
+    const batchId = document.getElementById('att-batch')?.value || '';
+    const session = document.getElementById('att-session')?.value || 'morning';
+    targetStudents = targetStudents.filter(s => attState[s.id + '|' + (batchId||'all') + '|' + session] === 'L');
+  } else if (filter === 'pending') {
+    targetStudents = targetStudents.filter(s => fees.some(f => (f.studentId===s.id||f.student===s.name) && f.status !== 'paid' && f.balance > 0));
+  } else if (filter === 'overdue') {
+    targetStudents = targetStudents.filter(s => fees.some(f => (f.studentId===s.id||f.student===s.name) && f.status === 'overdue'));
+  } else if (filter === 'birthday') {
+    const now = new Date(); const cm = now.getMonth(); const cy = now.getFullYear();
+    targetStudents = targetStudents.filter(s => {
+      if (!s.dob) return false;
+      try { const d = new Date(s.dob); return d.getMonth() === cm; } catch(e) { return false; }
+    });
+  }
+
+  waQueue = targetStudents.map(s => {
+    const saved = (typeof getWTSaved === 'function') ? getWTSaved(waType, 'ta') : null;
+    const tmplArr = saved ? [saved] : (WA_TEMPLATES[waType] ? (WA_TEMPLATES[waType].ta || []) : []);
+    const customMsg = document.getElementById('wa-custom-msg')?.value.trim() || '';
+    let tmpl = customMsg || (tmplArr[0] || '');
+    const stFees = fees.filter(f => f.studentId === s.id || f.student === s.name);
+    const pendFee = stFees.find(f => f.status !== 'paid' && f.balance > 0);
+    const vars = {
+      parent_name: s.parent || 'Parent', student_name: s.name || 'Student',
+      grade: s.grade === 'KG' ? 'KG' : s.grade + 'ஆம் வகுப்பு',
+      center_name: CFG.CENTER.name || 'KTC', center_phone: CFG.CENTER.phone || '',
+      date: new Date().toLocaleDateString('en-IN'),
+      month_name: ['ஜனவரி','பிப்ரவரி','மார்ச்','ஏப்ரல்','மே','ஜூன்','ஜூலை','ஆகஸ்ட்','செப்டம்பர்','அக்டோபர்','நவம்பர்','டிசம்பர்'][new Date().getMonth()],
+      year: new Date().getFullYear(),
+      amount: pendFee ? pendFee.balance : (stFees[0] ? stFees[0].total : '0'),
+      month: _feeMonthLabel(), due_date: '5th', overdue_note: '',
+      att_pct: '—', present_days: '—', absent_days: '—', att_status: '—',
+      exam_name: '—', subject: '—', marks: '—', max_marks: '—', percentage: '—',
+      grade_letter: '—', remarks: '—', holiday_name: '—', holiday_date: '—', resume_date: '—',
+    };
+    Object.entries(vars).forEach(([k,v]) => { tmpl = tmpl.replace(new RegExp('{'+k+'}','g'), String(v)); });
+    return { student: s, msg: tmpl };
+  });
+
+  renderWAQueue();
+  const info = document.getElementById('wa-queue-info');
+  if (info) info.textContent = 'Queue: ' + waQueue.length + ' message' + (waQueue.length !== 1 ? 's' : '');
+}
+
+function renderWAQueue() {
+  const listEl = document.getElementById('wa-queue-list');
+  if (!listEl) return;
+  if (waQueue.length === 0) {
+    listEl.innerHTML = '<div style="color:var(--tx3);text-align:center;padding:20px;font-size:12px">No students match this filter. Try "All Parents" or check attendance.</div>';
+    return;
+  }
+  listEl.innerHTML = waQueue.map((item, i) => {
+    const s = item.student;
+    const phone = s.phone || s.pphone || '';
+    return `<div class="wa-queue-item" style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:.5px solid var(--br)">
+      <div class="av" style="background:${s.color||'#185FA5'};width:30px;height:30px;font-size:12px;flex-shrink:0">${(s.name||'?')[0]}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;font-size:12px;color:var(--tx)">${s.name}</div>
+        <div style="font-size:10px;color:var(--tx3)">${phone || 'No phone'} · Grade ${s.grade}</div>
+      </div>
+      <button class="btn btn-wa btn-sm" style="flex-shrink:0" onclick="sendSingleWA(${i})">📱 Send</button>
+    </div>`;
+  }).join('');
+}
+
+function sendSingleWA(i) {
+  const item = waQueue[i];
+  if (!item) return;
+  const s = item.student;
+  const phone = s.phone || s.pphone || '';
+  if (!phone) { showToast('⚠️ ' + s.name + ' — no phone number'); return; }
+  openWA(phone, item.msg);
+}
+
+function sendAllWA() {
+  if (waQueue.length === 0) { showToast('Queue is empty — build queue first'); return; }
+  let count = 0;
+  waQueue.forEach((item, i) => {
+    setTimeout(() => {
+      const s = item.student;
+      const phone = s.phone || s.pphone || '';
+      if (phone) { openWA(phone, item.msg); count++; }
+    }, i * 1500);
+  });
+  showToast('📱 Sending ' + waQueue.length + ' messages — WhatsApp will open sequentially');
+}
+
+function clearWAQueue() {
+  waQueue = [];
+  renderWAQueue();
+  const info = document.getElementById('wa-queue-info');
+  if (info) info.textContent = 'Queue: 0 messages';
+  showToast('Queue cleared');
+}
+
+function updateWAAIClassFilter() {
+  buildWAQueue();
+}
+
 function sendAttWA() {
   navTo('whatsapp');
   setTimeout(function() {
@@ -5234,18 +5507,76 @@ function sendSinglePendingWA(studentId, studentName, month) {
   showToast('📱 ' + studentName + ' பெற்றோருக்கு WA திறக்கிறது');
 }
 function calcFeeM() {
-  const a=parseFloat(document.getElementById('m-famt')?.value)||0;
-  const d=parseFloat(document.getElementById('m-fdisc')?.value)||0;
-  const l=parseFloat(document.getElementById('m-flate')?.value)||0;
-  const el=document.getElementById('m-ftotal');
-  if(el) el.textContent='₹'+Math.round(a-d+l).toLocaleString('en-IN');
+  const a  = parseFloat(document.getElementById('m-famt')?.value)||0;
+  const d  = parseFloat(document.getElementById('m-fdisc')?.value)||0;
+  const sc = parseFloat(document.getElementById('m-fscholar')?.value)||0;
+  const l  = parseFloat(document.getElementById('m-flate')?.value)||0;
+  const total = Math.max(0, a - d - sc + l);
+  const el = document.getElementById('m-ftotal');
+  if (el) el.textContent = '₹' + total.toLocaleString('en-IN');
+  const bd = document.getElementById('m-fee-breakdown');
+  if (bd) {
+    const parts = [];
+    if (sc > 0) parts.push('Scholarship: −₹' + sc.toLocaleString('en-IN'));
+    if (d  > 0) parts.push('Discount: −₹' + d.toLocaleString('en-IN'));
+    if (l  > 0) parts.push('Late fee: +₹' + l.toLocaleString('en-IN'));
+    bd.textContent = parts.join(' · ');
+  }
+}
+
+function onFeeStudentChange() {
+  const sel = document.getElementById('m-fee-st');
+  const opt = sel?.options[sel?.selectedIndex];
+  let admit = opt?.dataset?.admit || '';
+  const row = document.getElementById('m-fee-duration-row');
+  if (!row) return;
+  // Also look up from students array (admDate may be in Indian format DD/MM/YYYY)
+  const stId = sel?.value || '';
+  const st = students.find(s => s.id === stId);
+  if (!admit && st) admit = st.admDate || st.admitDate || '';
+  if (admit) {
+    let d = null;
+    if (admit.includes('/')) {
+      const parts = admit.split('/');
+      if (parts.length === 3) d = new Date(+parts[2], +parts[1] - 1, +parts[0]);
+    }
+    if (!d || isNaN(d)) d = new Date(admit);
+    const dayOfMonth = (!isNaN(d)) ? d.getDate() : 0;
+    row.style.display = (dayOfMonth > 15) ? 'block' : 'none';
+    if (dayOfMonth > 15) {
+      const fullRadio = row.querySelector('input[value="full"]');
+      if (fullRadio) { fullRadio.checked = true; }
+    }
+  } else { row.style.display = 'none'; }
+  // Auto-fill fee from fee structure
+  if (st && st.grade && typeof getFeeForClass === 'function') {
+    const fs = getFeeForClass(st.grade);
+    if (fs && fs.monthlyFee) {
+      const amtEl = document.getElementById('m-famt');
+      const paidEl = document.getElementById('m-fpaid');
+      if (amtEl) { amtEl.value = fs.monthlyFee; amtEl.dataset.base = fs.monthlyFee; }
+      if (paidEl) paidEl.value = fs.monthlyFee;
+      calcFeeM();
+    }
+  }
+}
+
+function applyFeeDuration() {
+  const dur = document.querySelector('input[name="m-fee-dur"]:checked')?.value || 'full';
+  const el = document.getElementById('m-famt');
+  if (!el) return;
+  if (!el.dataset.base) el.dataset.base = el.value;
+  el.value = dur === 'half' ? Math.round(parseFloat(el.dataset.base) / 2) : el.dataset.base;
+  calcFeeM();
 }
 function saveFeeEntry() {
   const amt   = parseFloat(document.getElementById('m-famt')?.value) || 0;
-  const disc  = parseFloat(document.getElementById('m-fdisc')?.value) || 0;
-  const late  = parseFloat(document.getElementById('m-flate')?.value) || 0;
-  const paid  = parseFloat(document.getElementById('m-fpaid')?.value) || 0;
-  const total = Math.max(0, amt - disc + late);
+  const disc    = parseFloat(document.getElementById('m-fdisc')?.value) || 0;
+  const scholar = parseFloat(document.getElementById('m-fscholar')?.value) || 0;
+  const late    = parseFloat(document.getElementById('m-flate')?.value) || 0;
+  const paid    = parseFloat(document.getElementById('m-fpaid')?.value) || 0;
+  const discNote = document.getElementById('m-fdiscount-note')?.value || '';
+  const total   = Math.max(0, amt - disc - scholar + late);
   if (total <= 0) { showToast('Enter a valid fee amount'); return; }
 
   const stEl    = document.getElementById('m-fee-st');
@@ -5265,6 +5596,7 @@ function saveFeeEntry() {
   const feeObj = {
     rcpt, student: stName, studentId: stId,
     month, total, paid, balance: bal,
+    discount: disc, scholarship: scholar, discountNote: discNote,
     mode: document.getElementById('m-fmode')?.value || 'Cash',
     status, type: 'monthly',
     paidOn: paid > 0 ? new Date().toLocaleDateString('en-IN') : '',
@@ -8138,6 +8470,33 @@ function _todayISO() {
   const d = new Date();
   return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
 }
+function renderNotifs() {
+  // Render notifications list in admin panel page
+  const el = document.getElementById('notif-body');
+  if (!el) return;
+  if (!notifData || notifData.length === 0) {
+    el.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--tx3);font-size:12px">No notifications yet — click Send Notification</td></tr>';
+    return;
+  }
+  el.innerHTML = notifData.slice().reverse().map((n, i) => {
+    const colors = { 'Fee Reminder':'#ca8a04','Exam Alert':'#7c3aed','Homework':'#185FA5','Absent Alert':'#dc2626','General':'#16a34a' };
+    const c = colors[n.type] || '#475569';
+    return `<tr>
+      <td><span style="font-weight:600;font-size:12px">${n.title||'—'}</span><div style="font-size:10px;color:var(--tx3)">${n.msg||''}</div></td>
+      <td><span class="badge" style="background:${c}22;color:${c}">${n.type||'General'}</span></td>
+      <td style="font-size:11px;color:var(--tx3)">${n.date||''}</td>
+      <td><button class="btn btn-sm" style="color:#dc2626;border-color:#fecdd3" onclick="deleteNotif(${notifData.length-1-i})">🗑</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function deleteNotif(i) {
+  notifData.splice(i, 1);
+  saveNotifs();
+  renderNotifs();
+  showToast('Notification deleted');
+}
+
 function renderAdminPanel() {
   const today = _todayISO();
 
@@ -8179,699 +8538,30 @@ function renderAdminPanel() {
     {lbl:'Pending Notifications', val: notifData.length, icon:'🔔', color:'#1D9E75', bg:'#dcfce7'},
   ];
 
+
+  // Expected Income next month
+  const activeCount = students.filter(s => s.status === 'active').length;
+  let expectedTotal = 0;
+  try {
+    const fs = JSON.parse(localStorage.getItem('_ktc_feeStruct') || '{}');
+    students.filter(s => s.status === 'active').forEach(s => {
+      expectedTotal += parseFloat(fs[String(s.grade||'').trim()] || fs['default'] || 0);
+    });
+  } catch(e){}
+  if (!expectedTotal) {
+    const tmf = fees.filter(f => f.month === _feeMonthLabel() && f.type === 'monthly' && !f._deleted);
+    if (tmf.length) expectedTotal = tmf.reduce((a,f)=>a+(f.total||0),0);
+  }
+  const nxM = (()=>{ const d=new Date(); d.setMonth(d.getMonth()+1); return d.toLocaleString('en-IN',{month:'long',year:'numeric'}); })();
+  cards.push({ lbl:'Expected Income · '+nxM, val: expectedTotal>0?'₹'+expectedTotal.toLocaleString('en-IN'):'₹— (setup fee structure)', icon:'💰', color:'#0f766e', bg:'#ccfbf1', sub:activeCount+' active students' });
+
   document.getElementById('adm-summary-grid').innerHTML = cards.map(c => `
     <div class="stat" style="cursor:default">
       <div class="stat-icon" style="background:${c.bg};font-size:18px;display:flex;align-items:center;justify-content:center">${c.icon}</div>
       <div class="stat-lbl">${c.lbl}</div>
       <div class="stat-val" style="color:${c.color};font-size:13px;line-height:1.4">${c.val}</div>
+      ${c.sub ? `<div style="font-size:9px;color:${c.color};opacity:.7;margin-top:1px">${c.sub}</div>` : ''}
     </div>`).join('');
-
-  // ── Daily Task Checklist ──────────────────────────────
-  renderDailyTasks();
-}
-
-/* ═══════════════════════════════════════════════════════
-   DAILY TASK CHECKLIST
-═══════════════════════════════════════════════════════ */
-const _DAILY_TASKS = [
-  { id:'dt1',  group:'☀️ Morning',        title:'Mark morning attendance',      sub:'All batches · Morning session',        badge:'Morning',  bc:'#FEF3C7', btc:'#D97706' },
-  { id:'dt2',  group:'☀️ Morning',        title:'Send absent alerts to parents', sub:'WhatsApp · Morning absentees',         badge:'Morning',  bc:'#FEF3C7', btc:'#D97706' },
-  { id:'dt3',  group:'☀️ Morning',        title:'Note late arrivals (L)',        sub:'Mark L on attendance screen',          badge:'Morning',  bc:'#FEF3C7', btc:'#D97706' },
-  { id:'dt4',  group:'🕐 During the Day', title:'Collect & record fees',         sub:'Students paying today',                badge:'Anytime',  bc:'#F1F5F9', btc:'#475569' },
-  { id:'dt5',  group:'🕐 During the Day', title:'Admit new students',            sub:'Fill admission form · Assign batch',   badge:'Anytime',  bc:'#F1F5F9', btc:'#475569' },
-  { id:'dt6',  group:'🌙 Evening',        title:'Mark evening attendance',       sub:'All batches · Evening session',        badge:'Evening',  bc:'#EFF6FF', btc:'#185FA5' },
-  { id:'dt7',  group:'🌙 Evening',        title:'Send absent alerts — evening',  sub:'WhatsApp · Evening absentees',         badge:'Evening',  bc:'#EFF6FF', btc:'#185FA5' },
-  { id:'dt8',  group:'🌙 Evening',        title:'Save both session attendance',  sub:'Morning + Evening · Save button',      badge:'Evening',  bc:'#EFF6FF', btc:'#185FA5' },
-  { id:'dt9',  group:'🔚 End of Day',     title:'Check dashboard stats',         sub:'Present/absent · Fee collection',      badge:'End of Day', bc:'#F0FDF4', btc:'#1D9E75' },
-  { id:'dt10', group:'🔚 End of Day',     title:'Send fee reminders',            sub:'Pending / overdue students via WA',    badge:'End of Day', bc:'#F0FDF4', btc:'#1D9E75' },
-  { id:'dt11', group:'📅 Monthly',        title:'Generate monthly fees',         sub:'1st of month · All active students',   badge:'Monthly',  bc:'#FDF4FF', btc:'#7C3AED' },
-  { id:'dt12', group:'📅 Monthly',        title:'Review attendance summary (MAS)',sub:'Flag students below 75%',             badge:'Monthly',  bc:'#FDF4FF', btc:'#7C3AED' },
-  { id:'dt13', group:'📅 Monthly',        title:'Send fee reminder broadcast',   sub:'WhatsApp · All pending parents',       badge:'Monthly',  bc:'#FDF4FF', btc:'#7C3AED' },
-];
-
-function _getTodoState() {
-  try {
-    const raw = localStorage.getItem('_erp_daily_tasks_v1');
-    if (!raw) return {};
-    const s = JSON.parse(raw);
-    const today = new Date().toISOString().split('T')[0];
-    if (s._date !== today) return {};
-    return s;
-  } catch(e) { return {}; }
-}
-
-function _saveTodoState(state) {
-  try {
-    const today = new Date().toISOString().split('T')[0];
-    localStorage.setItem('_erp_daily_tasks_v1', JSON.stringify({ ...state, _date: today }));
-  } catch(e) {}
-}
-
-function renderDailyTasks() {
-  const state = _getTodoState();
-  const wrap  = document.getElementById('adm-todo-list');
-  if (!wrap) return;
-
-  // Group tasks
-  const groups = [];
-  const seen   = {};
-  _DAILY_TASKS.forEach(t => {
-    if (!seen[t.group]) { seen[t.group] = true; groups.push(t.group); }
-  });
-
-  let html = '';
-  groups.forEach(g => {
-    const tasks = _DAILY_TASKS.filter(t => t.group === g);
-    html += `<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--tx3);padding:10px 4px 5px;border-bottom:1px solid var(--br)">${g}</div>`;
-    tasks.forEach(t => {
-      const done = !!state[t.id];
-      html += `
-        <div data-dtid="${t.id}" onclick="toggleDailyTask('${t.id}')"
-          style="display:flex;align-items:center;gap:10px;padding:9px 4px;border-bottom:.5px solid var(--br);cursor:pointer;border-radius:8px;transition:background .1s;${done ? 'opacity:.55' : ''}">
-          <div style="width:22px;height:22px;border-radius:50%;border:2px solid ${done ? '#1D9E75' : 'var(--br)'};
-            background:${done ? '#1D9E75' : 'var(--card)'};flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s">
-            ${done ? '<svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M2 5.5l2.5 2.5 4.5-4.5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}
-          </div>
-          <div style="flex:1;min-width:0">
-            <div style="font-size:12px;font-weight:500;color:${done ? 'var(--tx3)' : 'var(--tx)'};${done ? 'text-decoration:line-through' : ''}">${t.title}</div>
-            <div style="font-size:10px;color:var(--tx3);margin-top:1px">${t.sub}</div>
-          </div>
-          <span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:99px;background:${t.bc};color:${t.btc};flex-shrink:0">${t.badge}</span>
-        </div>`;
-    });
-  });
-
-  wrap.innerHTML = html;
-  _updateTodoProgress();
-}
-
-function toggleDailyTask(id) {
-  const state  = _getTodoState();
-  state[id]    = !state[id];
-  _saveTodoState(state);
-
-  // Inline update — no full re-render to avoid losing scroll position
-  const row = document.querySelector(`[data-dtid="${id}"]`);
-  if (row) {
-    const done = state[id];
-    row.style.opacity = done ? '.55' : '1';
-    const circle = row.querySelector('div');
-    circle.style.background    = done ? '#1D9E75' : 'var(--card)';
-    circle.style.borderColor   = done ? '#1D9E75' : 'var(--br)';
-    circle.innerHTML = done
-      ? '<svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M2 5.5l2.5 2.5 4.5-4.5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>'
-      : '';
-    const titleEl = row.querySelectorAll('div')[1]?.querySelector('div');
-    if (titleEl) {
-      titleEl.style.textDecoration = done ? 'line-through' : '';
-      titleEl.style.color = done ? 'var(--tx3)' : 'var(--tx)';
-    }
-    // Sparkle on complete
-    if (done) _todoSparkle(row);
-  }
-  _updateTodoProgress();
-}
-
-function _updateTodoProgress() {
-  const state  = _getTodoState();
-  const total  = _DAILY_TASKS.length;
-  const done   = _DAILY_TASKS.filter(t => state[t.id]).length;
-  const pct    = total ? Math.round(done / total * 100) : 0;
-
-  const bar  = document.getElementById('todo-prog-bar');
-  const dEl  = document.getElementById('todo-prog-done');
-  const lEl  = document.getElementById('todo-prog-left');
-  const cEl  = document.getElementById('todo-ring-count');
-  const adEl = document.getElementById('todo-all-done');
-
-  if (bar)  bar.style.width   = pct + '%';
-  if (dEl)  dEl.textContent   = done + ' done';
-  if (lEl)  lEl.textContent   = (total - done) + ' remaining';
-  if (cEl)  cEl.textContent   = done + ' / ' + total;
-  if (adEl) adEl.style.display = (done === total && total > 0) ? 'block' : 'none';
-}
-
-function resetDailyTasks() {
-  if (!confirm('Reset all daily tasks?')) return;
-  _saveTodoState({});
-  renderDailyTasks();
-}
-
-function _todoSparkle(el) {
-  const rect   = el.getBoundingClientRect();
-  const cx     = rect.left + 14;
-  const cy     = rect.top + rect.height / 2;
-  const colors = ['#185FA5','#1D9E75','#D97706','#7C3AED'];
-  for (let i = 0; i < 5; i++) {
-    const dot = document.createElement('div');
-    dot.style.cssText = `position:fixed;width:5px;height:5px;border-radius:50%;pointer-events:none;z-index:9999;
-      left:${cx + (Math.random() - .5) * 40}px;top:${cy}px;background:${colors[i % colors.length]};
-      animation:_tdPop .5s ease-out forwards`;
-    document.body.appendChild(dot);
-    setTimeout(() => dot.remove(), 600);
-  }
-}
-
-/* ═══════════════════════════════════════════════════════
-   NOTIFICATIONS
-═══════════════════════════════════════════════════════ */
-function renderNotifs() {
-  document.getElementById('notif-list-wrap').innerHTML = notifData.length===0?
-    '<div style="padding:30px;text-align:center;color:var(--tx3)">No notifications yet</div>' :
-    '<div style="padding:0 16px">'+notifData.map(n=>`
-    <div class="notif-item">
-      <div style="width:9px;height:9px;border-radius:50%;background:${n.color};flex-shrink:0;margin-top:4px"></div>
-      <div style="flex:1">
-        <div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="font-size:13px;font-weight:500;color:var(--tx)">${n.title}</span><span style="font-size:10px;color:var(--tx3)">${n.time}</span></div>
-        <div style="font-size:12px;color:var(--tx2)">${n.msg}</div>
-      </div>
-    </div>`).join('')+'</div>';
-}
-function saveNotif() {
-  const title=document.getElementById('m-ntitle')?.value||'Notification';
-  const msg=document.getElementById('m-nmsg')?.value||'';
-  notifData.unshift({title,msg,color:'#1D9E75',time:'Just now'});
-  saveNotifs();renderNotifs();closeModal();showToast('✅ Notification sent!');
-}
-
-/* ═══════════════════════════════════════════════════════
-   WHATSAPP MODULE
-═══════════════════════════════════════════════════════ */
-function renderWATypes() {
-  const lic = window.__LIC__||{};
-  const allowedTypes = (lic.features && lic.features.waTypes) || 7;
-  const grid = document.getElementById('wa-type-grid');
-  if (!grid) return;
-  const visibleWATypes = WA_TYPES.slice(0, allowedTypes);
-  grid.innerHTML = visibleWATypes.map(wt => `
-    <div onclick="setWAType('${wt.id}',this)" style="border:.5px solid var(--br);border-radius:9px;padding:10px 8px;text-align:center;cursor:pointer;background:${waType===wt.id?wt.bg:'var(--card)'};border-color:${waType===wt.id?wt.color:'var(--br)'};border-width:${waType===wt.id?'1.5px':'.5px'};transition:.12s">
-      <div style="font-size:12px;font-weight:600;color:${wt.color}">${lang==='ta'?wt.labelTA:wt.label}</div>
-    </div>`).join('');
-  updateWATemplates();
-  buildWAQueue();
-}
-
-function setWAType(id, el) {
-  waType = id;
-  renderWATypes();
-  updateWATemplates();
-  buildWAQueue();
-  // Show AI monthly button only for monthly type
-  const aiBtn = document.getElementById('ai-monthly-btn');
-  if (aiBtn) aiBtn.style.display = (id === 'monthly') ? '' : 'none';
-  // Show/hide AI class filter for monthly type
-  const aiFilter = document.getElementById('wa-ai-class-filter');
-  if (aiFilter) {
-    aiFilter.style.display = (id === 'monthly') ? 'flex' : 'none';
-    if (id === 'monthly') populateWAAIClassFilter();
-  }
-}
-
-function populateWAAIClassFilter() {
-  const sel = document.getElementById('wa-ai-class-sel');
-  if (!sel) return;
-  const grades = [...new Set(students.filter(s => s && s.grade && s.status === 'active').map(s => String(s.grade).trim()))]
-    .sort((a, b) => { const o = ['KG','1','2','3','4','5','6','7','8','9','10','11','12']; const ai = o.indexOf(a), bi = o.indexOf(b); return (ai < 0 ? 99 : ai) - (bi < 0 ? 99 : bi); });
-  sel.innerHTML = '<option value="all">🎓 All Classes</option>' +
-    grades.map(g => `<option value="${g}">${g === 'KG' ? 'KG' : 'Class ' + g}</option>`).join('');
-  updateWAAIClassFilter();
-}
-
-function updateWAAIClassFilter() {
-  const cls = document.getElementById('wa-ai-class-sel')?.value || 'all';
-  const cnt = document.getElementById('wa-ai-class-count');
-  const activeStudents = students.filter(s => s && s.name && s.status === 'active' && (s.phone || s.pphone));
-  const filtered = cls === 'all' ? activeStudents : activeStudents.filter(s => String(s.grade || '').trim() === cls);
-  if (cnt) cnt.textContent = cls === 'all' ? '' : `${filtered.length} student${filtered.length !== 1 ? 's' : ''}`;
-}
-
-function updateWATemplates() {
-  const sel = document.getElementById('wa-template-sel');
-  if (!sel) return;
-  const wt = WA_TYPES.find(w=>w.id===waType);
-  if (!wt) return;
-  const langKey = document.getElementById('wa-lang-sel')?.value === 'ta' ? 'ta' : 'en';
-  const hasSaved = !!getWTSaved(waType, 'ta');
-  const templates = WA_TEMPLATES[waType]?.[langKey] || WA_TEMPLATES[waType]?.ta || ['Default message'];
-  sel.innerHTML = templates.map((t,i)=>`<option value="${i}">${hasSaved && i===0 ? '✏️ Custom Template' : 'Template '+(i+1)}</option>`).join('');
-  // Also add a "✏️ Customise" link hint
-  const customBtn = document.getElementById('wa-custom-edit-hint');
-  if (!customBtn) {
-    const hint = document.createElement('div');
-    hint.id = 'wa-custom-edit-hint';
-    hint.style.cssText = 'font-size:11px;color:#128c7e;margin-top:4px;cursor:pointer;text-decoration:underline;';
-    hint.textContent = '✏️ Customise this template →';
-    hint.onclick = () => navTo('wa-templates');
-    sel.parentElement?.appendChild(hint);
-  }
-  updateWAPreview();
-}
-
-function updateWAPreview() {
-  const previewEl = document.getElementById('wa-preview-box');
-  if (!previewEl) return;
-  const langSel = document.getElementById('wa-lang-sel')?.value || 'en';
-  const templateIdx = parseInt(document.getElementById('wa-template-sel')?.value||'0');
-  const custom = document.getElementById('wa-custom-msg')?.value?.trim();
-
-  if (waType === 'holiday') {
-    previewEl.textContent = 'Holiday notice: Click "Build Message Queue" to enter holiday details.\n\nPreview will show here after you fill in the holiday information.';
-    return;
-  }
-
-  const demoStudent = students.find(s=>s.status==='active') || students[0] || {name:'Monisha',parent:'Suresh',grade:'10',phone:'9876543210',id:'demo'};
-  let template;
-  if (custom) {
-    template = custom;
-  } else {
-    const langKey = langSel==='ta'?'ta':(langSel==='both'?'both':'en');
-    if (langKey === 'both') {
-      // Prefer saved custom templates
-      const en = getWTSaved(waType,'en') || WA_TEMPLATES[waType]?.en?.[templateIdx] || '';
-      const ta = getWTSaved(waType,'ta') || WA_TEMPLATES[waType]?.ta?.[0] || '';
-      template = en + '\n\n─────────────\n\n' + ta;
-    } else {
-      template = getWTSaved(waType, 'ta') || WA_TEMPLATES[waType]?.[langKey]?.[templateIdx] || WA_TEMPLATES[waType]?.ta?.[0] || '';
-    }
-  }
-
-  const extra = getWAExtra(demoStudent);
-  previewEl.textContent = fillTemplate(template, demoStudent, extra);
-  buildWAQueue();
-}
-
-function getWAExtra(student) {
-  const feeRecord = fees.find(f=>f.student===student.name&&f.status!=='paid');
-  const now = new Date();
-  const monthName = now.toLocaleString('en-IN', { month: 'long' });
-  const year = now.getFullYear();
-
-  // Per-student attendance for current month — use getStudentAttStats if available
-  let presentDays = 0, absentDays = 0, lateDays = 0;
-  let monthSubjectMissed = []; // from attStats for this month
-  try {
-    if (typeof getStudentAttStats === 'function') {
-      const attStats = getStudentAttStats(student, year, now.getMonth());
-      presentDays = attStats.present || 0;
-      absentDays  = attStats.absent  || 0;
-      lateDays    = attStats.late    || 0;
-      monthSubjectMissed = attStats.subjectMissed || [];
-    }
-  } catch(e) {}
-  const totalDays = presentDays + absentDays + lateDays;
-  const attPct = totalDays > 0 ? Math.round(presentDays / totalDays * 100) : 0;
-  const attStatus = attPct >= 85 ? '✅ சிறப்பு' : attPct >= 75 ? '✅ நல்லது' : attPct >= 60 ? '⚠️ கவலைப்படத்தக்கது' : '🔴 உடனடி கவனிப்பு தேவை';
-  const lateStatus = lateDays > 0 ? `${lateDays} நாட்கள் தாமதம் ⚠️` : '—';
-
-  // Per-student marks for current month exams
-  const studentMarksArr = (typeof getStudentMarksAuto === 'function') ? getStudentMarksAuto(student.id) : [];
-  const recentMarks = studentMarksArr.filter(m => !m.absent && m.marks !== null && m.maxMarks > 0);
-  const marksSection = recentMarks.length > 0
-    ? recentMarks.slice(-5).map(m => {
-        const pct = Math.round(m.marks / m.maxMarks * 100);
-        const gl = pct>=91?'A+':pct>=81?'A':pct>=71?'B+':pct>=61?'B':pct>=51?'C':'D';
-        return `• ${m.examName||m.subject||'Test'} (${m.subject||''}): ${m.marks}/${m.maxMarks} — ${gl} (${pct}%)`;
-      }).join('\n')
-    : '— இன்னும் தேர்வு மதிப்பெண்கள் இல்லை';
-
-  // Missed subjects — prefer this-month data from attStats, fall back to global
-  const missed = (typeof getMissedSubjects === 'function') ? getMissedSubjects(student.id) : {};
-  let missedList;
-  if (monthSubjectMissed.length > 0) {
-    missedList = monthSubjectMissed.slice(0, 3).map(s => `${s.subject} (${s.missed} வகுப்பு)`);
-  } else {
-    missedList = Object.entries(missed)
-      .filter(([,d]) => d.count > 0)
-      .sort((a,b) => b[1].count - a[1].count)
-      .slice(0, 3)
-      .map(([subj, d]) => `${subj} (${d.count} வகுப்பு)`);
-  }
-
-  // Star rating
-  const stars = attPct >= 90 ? '5' : attPct >= 80 ? '4' : attPct >= 70 ? '3' : attPct >= 60 ? '2' : '1';
-  const starLabel = {'5':'சிறப்பு 🌟🌟🌟🌟🌟','4':'நல்லது 🌟🌟🌟🌟','3':'சராசரி 🌟🌟🌟','2':'மேம்பட வேண்டும் 🌟🌟','1':'தீவிர கவனிப்பு 🌟'}[stars];
-  const rank = '—';
-
-  // Try to compute actual rank if computeRanks is available
-  let rankStr = '—';
-  try {
-    if (typeof computeRanks === 'function') {
-      const ranked = computeRanks(year, now.getMonth());
-      const myRank = ranked.findIndex(r => r.student && r.student.id === student.id);
-      if (myRank >= 0) rankStr = `${myRank + 1} / ${ranked.length}`;
-    }
-  } catch(e) {}
-
-  // Subject avg marks for weak subjects
-  const subjAvg = (typeof getSubjectAvgMarks === 'function') ? getSubjectAvgMarks(student.id) : {};
-  const weakSubjs = Object.entries(subjAvg).filter(([,v]) => v < 60).sort((a,b)=>a[1]-b[1]).slice(0,2);
-
-  // Weekend study suggestion based on weak subjects & missed subjects
-  let studyTip = '';
-  if (weakSubjs.length > 0) {
-    studyTip = `📖 இந்த வாரம் கவனிக்க: ${weakSubjs.map(([s,v])=>`${s} (${v}%)`).join(', ')} — கூடுதல் பயிற்சி தேவை`;
-  } else if (missedList.length > 0) {
-    studyTip = `📖 தவறிய பாடங்கள் மீட்டெடுக்க: ${missedList.join(', ')}`;
-  } else {
-    studyTip = '📖 தொடர்ந்து சிறப்பாக படிக்கவும்! 💪';
-  }
-
-  return {
-    month: `${monthName} ${year}`,
-    month_name: monthName,
-    year: String(year),
-    date: now.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}),
-    amount: feeRecord?.balance||'2500',
-    dueDate: '5th ' + new Date(year, now.getMonth()+1, 0).toLocaleString('en-IN',{month:'long'}),
-    overdue: feeRecord?.status==='overdue',
-    examName: exams[0]?.name||'Monthly Test',
-    subject: exams[0]?.subject||'Mathematics',
-    marks: '85',
-    maxMarks: exams[0]?.maxMarks||100,
-    pct: '85',
-    gradeLetter: 'A',
-    remarks: 'Excellent performance! Keep it up! 🌟',
-    hDate: '', hReason: '', hName: '', resumeDate: '',
-    // Monthly report extras
-    present_days: String(presentDays),
-    absent_days: String(absentDays),
-    late_days: String(lateDays),
-    att_pct: String(attPct),
-    att_status: attStatus,
-    late_status: lateStatus,
-    stars,
-    star_label: starLabel,
-    rank: rankStr,
-    total_students: String(students.filter(s=>s.status==='active').length),
-    marks_section: marksSection,
-    missed_subjects: missedList.length > 0 ? missedList.join(', ') : '— இல்லை',
-    study_tip: studyTip,
-    teacher_note: recentMarks.length > 0
-      ? (Math.round(recentMarks.reduce((s,m)=>s+(m.marks/m.maxMarks*100),0)/recentMarks.length) >= 75
-          ? 'மிகவும் கவனமாக உள்ளார். தொடர்ந்து சிறப்பாக செய்யட்டும்! 🌟'
-          : 'இன்னும் கொஞ்சம் கஷ்டப்பட்டு படித்தால் சிறப்பான முடிவு கிடைக்கும். 💪')
-      : 'தொடர்ந்து வருகை தந்து படிக்கட்டும்.',
-    activities: '📚 வீட்டுப்பாடம்' + (lateDays > 0 ? ' · ⏰ நேரம் கடைப்பிடிக்கவும்' : ''),
-  };
-}
-
-function buildWAQueue() {
-  // Plan gate: Basic plan only gets first 2 WA types
-  const lic0 = window.__LIC__||{};
-  const allowedWaTypes = (lic0.features && lic0.features.waTypes) || 7;
-  const typeIndex = WA_TYPES.findIndex(w => w.id === waType);
-  if (typeIndex >= allowedWaTypes) {
-    showToast('This message type requires Pro plan — upgrade to unlock all 7 types');
-    waType = WA_TYPES[0].id; renderWATypes(); openUpgrade(); return;
-  }
-  const recipSel = document.getElementById('wa-recipients-sel')?.value || 'all';
-  const langSel = document.getElementById('wa-lang-sel')?.value || 'en';
-  const templateIdx = parseInt(document.getElementById('wa-template-sel')?.value||'0');
-  const custom = document.getElementById('wa-custom-msg')?.value?.trim();
-
-  if (waType === 'holiday') {
-    showToast('For holiday messages, use "Build Message Queue" button to enter details');
-    return;
-  }
-  if (waType === 'marks') {
-    showToast('For exam marks, use "Build Message Queue" to enter marks');
-    return;
-  }
-
-  // Get target students
-  let targetStudents = [];
-  if (recipSel === 'all') {
-    targetStudents = students.filter(s=>s.status==='active');
-  } else if (recipSel === 'absent') {
-    targetStudents = students.filter(s=>getStudentAtt(s.id)==='A');
-  } else if (recipSel === 'late') {
-    targetStudents = students.filter(s=>getStudentAtt(s.id)==='L');
-  } else if (recipSel === 'pending') {
-    targetStudents = students.filter(s=>fees.some(f=>f.student===s.name&&(f.status==='pending'||f.status==='partial')));
-  } else if (recipSel === 'overdue') {
-    targetStudents = students.filter(s=>fees.some(f=>f.student===s.name&&f.status==='overdue'));
-  } else if (recipSel === 'birthday') {
-    const today = new Date();
-    targetStudents = students.filter(s => {
-      if (!s.dob) return false;
-      const dob = new Date(s.dob);
-      return dob.getMonth()===today.getMonth();
-    });
-    if (waType !== 'birthday') { showToast('Switched to Birthday messages for birthday students'); waType = 'birthday'; renderWATypes(); }
-  }
-
-  if (targetStudents.length === 0) {
-    const qInfo = document.getElementById('wa-queue-info');
-    if (qInfo) qInfo.textContent = 'Queue: 0 messages (no students match this filter)';
-    renderWAQueueList([]);
-    return;
-  }
-
-  waQueue = targetStudents.map(student => {
-    let template;
-    if (custom) {
-      template = custom;
-    } else {
-      const langKey = langSel==='ta'?'ta':(langSel==='both'?'both':'en');
-      if (langKey === 'both') {
-        const en = getWTSaved(waType,'en') || WA_TEMPLATES[waType]?.en?.[templateIdx] || '';
-        const ta = getWTSaved(waType,'ta') || WA_TEMPLATES[waType]?.ta?.[0] || '';
-        template = en+'\n\n─────────────\n\n'+ta;
-      } else {
-        template = getWTSaved(waType, 'ta') || WA_TEMPLATES[waType]?.[langKey]?.[templateIdx] || WA_TEMPLATES[waType]?.ta?.[0] || '';
-      }
-    }
-    const extra = getWAExtra(student);
-    const message = fillTemplate(template, student, extra);
-    return { student, message, phone: student.phone, status: 'ready' };
-  });
-
-  const qInfo = document.getElementById('wa-queue-info');
-  if (qInfo) qInfo.textContent = `Queue: ${waQueue.length} message${waQueue.length!==1?'s':''} ready to send`;
-  renderWAQueueList(waQueue);
-  showToast(`✅ ${waQueue.length} messages queued for ${recipSel} students`);
-}
-
-function renderWAQueueList(queue) {
-  const listEl = document.getElementById('wa-queue-list');
-  if (!listEl) return;
-  if (!queue || queue.length === 0) {
-    listEl.innerHTML = '<div style="color:var(--tx3);text-align:center;padding:20px;font-size:12px">Queue is empty. Select recipients and click "Build Message Queue".</div>';
-    return;
-  }
-  listEl.innerHTML = queue.map((item,i) => `
-    <div class="wa-queue-item">
-      <div class="wa-status ${item.status==='sent'?'wa-sent':item.status==='ready'?'wa-ready':'wa-pending'}"></div>
-      <div class="av" style="background:${item.student.color};width:28px;height:28px;font-size:10px">${item.student.name[0]}</div>
-      <div style="flex:1;min-width:0">
-        <div style="font-size:13px;font-weight:500;color:var(--tx)">${item.student.name}</div>
-        <div style="font-size:11px;color:var(--tx3)">To: ${item.student.parent} · 📞 ${item.phone}</div>
-        <div style="font-size:11px;color:var(--tx2);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${item.message.split('\n')[0].slice(0,60)}…</div>
-      </div>
-      <div style="display:flex;gap:5px;flex-shrink:0">
-        <button class="btn btn-wa btn-sm" onclick="sendOneWA(${i})">Send</button>
-        <button class="btn btn-sm" onclick="previewOneWA(${i})">Preview</button>
-      </div>
-    </div>`).join('');
-}
-
-function sendOneWA(i) {
-  const item = waQueue[i];
-  if (!item) return;
-  // Show WA modal — user taps Open without leaving the app context
-  const root = document.getElementById('modal-root');
-  const msgEncoded = encodeURIComponent(item.message);
-  const waLink = waURL(item.phone, item.message);
-  root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()">
-    <div class="modal" style="max-width:420px">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-        <div style="width:38px;height:38px;background:#dcfce7;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px">📱</div>
-        <div>
-          <div style="font-size:14px;font-weight:700;color:var(--tx)">${item.student.name}</div>
-          <div style="font-size:11px;color:var(--tx3)">To: ${item.student.parent} · ${item.phone}</div>
-        </div>
-      </div>
-      <div style="background:#f0fdf4;border-radius:8px;padding:12px;font-size:12px;color:#166534;font-family:'Noto Sans Tamil',system-ui;line-height:1.7;white-space:pre-wrap;max-height:200px;overflow-y:auto;margin-bottom:12px">${item.message}</div>
-      <div style="display:flex;gap:8px">
-        <button class="btn btn-wa" style="flex:1;justify-content:center;padding:11px;font-weight:600" onclick="copyAndMarkWA(${i})">
-          📋 Copy
-        </button>
-        <button class="btn btn-wa" style="flex:2;justify-content:center;padding:11px;font-weight:600;background:#25d366;font-size:13px"
-          onclick="waQueue[${i}].status='sent'; renderWAQueueList(waQueue); closeModal(); openWA('${item.phone}', waQueue[${i}]?.message||'');">
-          📱 Send via WhatsApp
-        </button>
-        <button class="btn" style="padding:11px" onclick="closeModal()">✕</button>
-      </div>
-    </div>
-  </div>`;
-}
-
-function previewOneWA(i) {
-  const item = waQueue[i];
-  if (!item) return;
-  const root = document.getElementById('modal-root');
-  root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal">
-    <div class="modal-title">Message Preview — ${item.student.name}</div>
-    <div style="font-size:12px;color:var(--tx2);margin-bottom:8px">To: ${item.student.parent} · ${item.phone}</div>
-    <div class="wa-preview">${item.message}</div>
-    <div class="modal-foot">
-      <button class="btn btn-wa" onclick="sendOneWA(${i});closeModal()">Send via WhatsApp</button>
-      <button class="btn" onclick="closeModal()">Close</button>
-    </div>
-  </div></div>`;
-}
-
-function sendAllWA() {
-  if (!waQueue || waQueue.length === 0) { showToast('Build queue first'); return; }
-  const pending = waQueue.filter(w=>w.status!=='sent');
-  if (pending.length === 0) { showToast('All messages already sent!'); return; }
-  // Open first unsent
-  const first = pending[0];
-  openWA(first.phone, first.message);
-  first.status = 'sent';
-  renderWAQueueList(waQueue);
-  const remaining = waQueue.filter(w=>w.status!=='sent').length;
-  showToast(`📱 Opened WhatsApp for ${first.student.name}. ${remaining} remaining. Click "Send All" again for next.`);
-}
-
-function clearWAQueue() {
-  waQueue = [];
-  renderWAQueueList([]);
-  const qInfo = document.getElementById('wa-queue-info');
-  if (qInfo) qInfo.textContent = 'Queue: 0 messages';
-  showToast('Queue cleared');
-}
-
-function buildHolidayQueue() {
-  const hName = document.getElementById('m-hname')?.value || 'Holiday';
-  const hDate = document.getElementById('m-hdate')?.value || new Date().toLocaleDateString('en-IN');
-  const hResume = document.getElementById('m-hresume')?.value || '';
-  const hReason = document.getElementById('m-hreason')?.value || 'Public Holiday';
-  const langSel = document.getElementById('wa-lang-sel')?.value || 'en';
-  const langKey = langSel==='ta'?'ta':'en';
-  const template = WA_TEMPLATES.holiday?.[langKey]?.[0] || '';
-  const extra = { hDate: new Date(hDate).toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'}), hName, hReason, resumeDate: hResume ? new Date(hResume).toLocaleDateString('en-IN',{day:'2-digit',month:'long'}) : 'next working day' };
-  waQueue = students.filter(s=>s.status==='active').map(student => ({
-    student, phone: student.phone, status: 'ready',
-    message: fillTemplate(template, student, extra),
-  }));
-  renderWAQueueList(waQueue);
-  closeModal();
-  showToast(`✅ Holiday queue built for ${waQueue.length} parents`);
-}
-
-function buildMarksQueue() {
-  const examId = document.getElementById('m-wa-exam')?.value;
-  const exam = exams.find(e=>e.id===examId) || exams[0];
-  if (!exam) { showToast('No exam found. Please create an exam first.'); return; }
-
-  // Language: prefer Tamil if lang is set, else fallback to 'ta'
-  const langKey = (typeof lang !== 'undefined' && lang === 'ta') ? 'ta' : 'ta';
-  const template = WA_TEMPLATES.marks?.[langKey]?.[0] || WA_TEMPLATES.marks?.en?.[0] || '';
-  if (!template) { showToast('No marks message template found.'); return; }
-
-  // Load saved marks from localStorage (set by saveMarksToStorage)
-  const savedKey = '_erp_marks_' + exam.id;
-  let savedMarks = {};
-  try {
-    const raw = localStorage.getItem(savedKey);
-    if (raw) savedMarks = JSON.parse(raw).marks || {};
-  } catch(err) {}
-
-  const pass = exam.passMarks || Math.round((exam.maxMarks||100) * 0.35);
-  const _mwaActive = students.filter(s=>s&&s.name&&s.status==='active');
-
-  // Also read from modal inputs if open (in case user typed directly in modal)
-  waQueue = _mwaActive.map((student, i) => {
-    const modalInput = document.getElementById('mwa-marks-'+i);
-    const saved = savedMarks[student.id];
-
-    let marksVal, isAbsent;
-    if (modalInput && modalInput.value !== '') {
-      // Modal input takes priority if user typed something
-      marksVal = parseFloat(modalInput.value);
-      isAbsent = false;
-    } else if (saved) {
-      isAbsent  = saved.absent === true;
-      marksVal  = isAbsent ? null : (saved.marks !== undefined ? saved.marks : null);
-    } else {
-      marksVal = null;
-      isAbsent = false;
-    }
-
-    const hasMarks = !isAbsent && marksVal !== null && !isNaN(marksVal);
-    const pct = hasMarks && exam.maxMarks > 0 ? Math.round(marksVal / exam.maxMarks * 100) : 0;
-    const g   = hasMarks
-      ? (marksVal < pass ? 'F' : pct>=91?'A+':pct>=81?'A':pct>=71?'B+':pct>=61?'B':pct>=51?'C':pct>=35?'D':'D')
-      : '—';
-    const remarks = isAbsent
-      ? 'இன்று வரவில்லை — தொடர்பு கொள்ளவும்'
-      : hasMarks
-        ? (marksVal >= pass
-            ? (pct >= 80 ? 'சிறப்பான செயல்திறன்! தொடர்ந்து உழைக்கவும்! 🌟' : 'நல்ல முயற்சி! தொடர்ந்து படிக்கவும்! 👍')
-            : 'பலவீன பகுதிகளில் கவனம் செலுத்துங்கள். நாங்கள் உதவுவோம்! 💪')
-        : 'மதிப்பெண்கள் இன்னும் உள்ளிடப்படவில்லை';
-
-    const extra = {
-      examName    : exam.name,
-      subject     : exam.subject,
-      marks       : isAbsent ? 'வரவில்லை' : (hasMarks ? marksVal : '—'),
-      maxMarks    : exam.maxMarks,
-      pct         : hasMarks ? pct : '—',
-      gradeLetter : isAbsent ? 'AB' : g,
-      remarks,
-    };
-    return { student, phone: student.phone, status: 'ready', message: fillTemplate(template, student, extra) };
-  });
-
-  const withMarks  = waQueue.filter(w => w.message && w.message.trim()).length;
-  const noPhone    = waQueue.filter(w => !w.phone || w.phone.replace(/\D/g,'').length < 10).length;
-  renderWAQueueList(waQueue);
-  closeModal();
-  showToast('✅ ' + withMarks + ' result messages ready' + (noPhone > 0 ? ' · ⚠️ ' + noPhone + ' without phone number' : ''));
-}
-
-function renderMarksWAEntry() {
-  const examId = document.getElementById('m-wa-exam')?.value;
-  const exam = exams.find(e=>e.id===examId)||exams[0];
-  const el = document.getElementById('m-marks-entry');
-  if (!el || !exam) {
-    if (el) el.innerHTML = '<div style="padding:16px;text-align:center;color:var(--tx3);font-size:12px">No exam found. Please create an exam first.</div>';
-    return;
-  }
-  // Pre-fill saved marks from localStorage
-  const savedKey = '_erp_marks_' + exam.id;
-  let savedMarks = {};
-  try { const raw = localStorage.getItem(savedKey); if (raw) savedMarks = JSON.parse(raw).marks || {}; } catch(e) {}
-  const pass = exam.passMarks || Math.round((exam.maxMarks||100) * 0.35);
-
-  const active = students.filter(s=>s&&s.name&&s.status==='active');
-  const saved_count = active.filter(s => savedMarks[s.id] && !savedMarks[s.id].absent && savedMarks[s.id].marks !== null).length;
-
-  el.innerHTML = (saved_count > 0
-    ? `<div style="background:#dcfce7;border-bottom:.5px solid var(--br);padding:8px 12px;font-size:11px;color:#166534;font-weight:600">
-        ✅ ${saved_count} saved mark${saved_count!==1?'s':''} pre-loaded from "${exam.name}". Edit if needed, then click Build Queue.
-       </div>`
-    : `<div style="background:#fef9c3;border-bottom:.5px solid var(--br);padding:8px 12px;font-size:11px;color:#854d0e;font-weight:600">
-        ⚠️ No saved marks for "${exam.name}". Enter marks in the Marks & Exams page first, then Save Marks — or type them below.
-       </div>`)
-  + active.map((s,i)=>{
-    const saved = savedMarks[s.id];
-    const isAbsent = saved?.absent === true;
-    const savedVal = (!isAbsent && saved?.marks !== undefined) ? saved.marks : '';
-    const pct = savedVal !== '' ? Math.round(savedVal/exam.maxMarks*100) : null;
-    const g = pct !== null ? (savedVal < pass ? 'F' : pct>=91?'A+':pct>=81?'A':pct>=71?'B+':pct>=61?'B':pct>=51?'C':'D') : '';
-    const grColor = pct !== null ? (savedVal >= pass ? '#16a34a' : '#dc2626') : 'var(--tx3)';
-    return `<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:.5px solid var(--br);${isAbsent?'opacity:.55':''}">
-      <div class="av" style="background:${s.color};width:24px;height:24px;font-size:10px">${(s.name||'?')[0]}</div>
-      <div style="flex:1;font-size:12px;font-weight:500;color:var(--tx)">${s.name}</div>
-      ${isAbsent ? '<span style="font-size:11px;font-weight:700;color:#6b7280;min-width:65px;text-align:center">AB</span>' :
-        `<input class="fi" type="number" id="mwa-marks-${i}" min="0" max="${exam.maxMarks}" value="${savedVal}" placeholder="—"
-          style="width:65px;padding:5px 8px;text-align:center;font-size:12px;font-weight:600">`}
-      <span style="font-size:11px;color:var(--tx3)">/ ${exam.maxMarks}</span>
-      <span style="font-size:11px;font-weight:700;color:${grColor};min-width:22px;text-align:center">${isAbsent?'AB':g}</span>
-    </div>`;
-  }).join('');
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -11353,9 +11043,11 @@ function renderBatchSelect() {
     const prevGrade = gf.value;
     const grades = [...new Set(students.filter(s=>s&&s.grade&&s.status==='active').map(s=>String(s.grade).trim()))]
       .sort((a,b)=>{const o=['KG','1','2','3','4','5','6','7','8','9','10','11','12'];const ai=o.indexOf(a),bi=o.indexOf(b);return(ai<0?99:ai)-(bi<0?99:bi);});
+    const hasUnassigned = students.some(s=>s&&s.name&&s.status==='active'&&!String(s.grade||'').trim());
     gf.innerHTML = '<option value="all">🎓 All Classes</option>' +
-      grades.map(g=>`<option value="${g}">${g==='KG'?'KG':'Class '+g}</option>`).join('');
-    if (prevGrade && grades.includes(prevGrade)) gf.value = prevGrade;
+      grades.map(g=>`<option value="${g}">${g==='KG'?'KG':'Class '+g}</option>`).join('') +
+      (hasUnassigned ? '<option value="__none__">⚠️ Not Assigned</option>' : '');
+    if (prevGrade && (grades.includes(prevGrade) || prevGrade==='__none__')) gf.value = prevGrade;
   }
 }
 function addBatch() {
@@ -11811,6 +11503,45 @@ function renderIncomeSummary() {
     const lbl = netBox.querySelector('[style*="font-size:10px"]');
     if (lbl) lbl.style.color = net >= 0 ? '#1d4ed8' : '#991b1b';
   }
+  if (typeof renderExpectedIncome === 'function') renderExpectedIncome();
+}
+
+/* ── Expected Income — Next Month — dashboard card ── */
+function renderExpectedIncome() {
+  const now    = new Date();
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const nxDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  const nxLabel = MONTHS[nxDate.getMonth()] + ' ' + nxDate.getFullYear();
+
+  // Expected from active students based on fee structure
+  const activeStudents = students.filter(s => s && s.status === 'active');
+  let expectedTotal = 0;
+  activeStudents.forEach(s => {
+    const fs = (typeof getFeeForClass === 'function') ? getFeeForClass(s.grade) : null;
+    if (fs && fs.monthlyFee) expectedTotal += fs.monthlyFee;
+  });
+
+  // Pending carry-forward (all unpaid balances)
+  const pendingFees = fees.filter(f => f && f.rcpt && f.status !== 'paid' && f.balance > 0 && !f._deleted);
+  const carryoverTotal = pendingFees.reduce((s, f) => s + (f.balance || 0), 0);
+  const carryoverStudents = new Set(pendingFees.map(f => f.studentId || f.student)).size;
+  const grandTotal = expectedTotal + carryoverTotal;
+
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  set('exp-income-month-label',     nxLabel);
+  set('exp-income-expected',        '₹' + expectedTotal.toLocaleString('en-IN'));
+  set('exp-income-students',        activeStudents.length + ' active student' + (activeStudents.length !== 1 ? 's' : ''));
+  set('exp-income-carryover',       '₹' + carryoverTotal.toLocaleString('en-IN'));
+  set('exp-income-carryover-count', carryoverStudents + ' student' + (carryoverStudents !== 1 ? 's' : '') + ' with pending dues');
+  set('exp-income-total',           '₹' + grandTotal.toLocaleString('en-IN'));
+  const noteEl = document.getElementById('exp-income-note');
+  if (noteEl) {
+    if (expectedTotal === 0 && activeStudents.length > 0) {
+      noteEl.textContent = '⚠️ Set Fee Structure (Fees page) to see class-wise expected amounts.';
+    } else {
+      noteEl.textContent = 'Based on fee structure × ' + activeStudents.length + ' active students + ₹' + carryoverTotal.toLocaleString('en-IN') + ' unpaid carry-forward.';
+    }
+  }
 }
 
 /* ── Class-wise Strength — dashboard card ── */
@@ -11932,6 +11663,9 @@ function updateDashStats() {
 
   // Class-wise Strength card
   renderClassStrength();
+
+  // Expected Income Next Month card
+  renderExpectedIncome();
 
   // Charts
   if (window.Chart && document.getElementById('chart-income')) setTimeout(initCharts, 50);
@@ -14057,66 +13791,6 @@ if (document.readyState === 'loading') {
 <!-- ═══════════════════════════════════════════════════════
      STUDENT SUMMARY MODULE — மாணவர் மாதாந்திர அட்டவணை
 ════════════════════════════════════════════════════════ -->
-<style>
-/* Summary card styles */
-.sum-card {
-  background: var(--card);
-  border: .5px solid var(--br);
-  border-radius: 14px;
-  overflow: hidden;
-  box-shadow: var(--shadow);
-  transition: transform .15s, box-shadow .15s;
-}
-.sum-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,.10); }
-.sum-card-header {
-  padding: 13px 15px 10px;
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  border-bottom: .5px solid var(--br);
-}
-.sum-rank-badge {
-  width: 30px; height: 30px;
-  border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 11px; font-weight: 800;
-  flex-shrink: 0;
-}
-.sum-section {
-  padding: 10px 15px;
-  border-bottom: .5px solid var(--br);
-}
-.sum-section:last-of-type { border-bottom: none; }
-.sum-section-title {
-  font-size: 9px; font-weight: 700; color: var(--tx3);
-  text-transform: uppercase; letter-spacing: .07em;
-  margin-bottom: 8px; display: flex; align-items: center; gap: 5px;
-}
-.sum-metric-row {
-  display: flex; justify-content: space-between; align-items: center;
-  font-size: 11px; color: var(--tx2); margin-bottom: 5px;
-}
-.sum-metric-val { font-weight: 700; color: var(--tx); }
-.sum-prog { height: 5px; background: var(--bg); border-radius: 3px; overflow: hidden; margin-top: 4px; }
-.sum-prog-fill { height: 100%; border-radius: 3px; transition: width .5s; }
-.sum-stars { display: flex; gap: 3px; }
-.sum-star { font-size: 16px; cursor: pointer; transition: transform .1s; line-height: 1; }
-.sum-star:hover { transform: scale(1.25); }
-.sum-card-foot {
-  padding: 10px 15px;
-  background: var(--bg);
-  display: flex; gap: 7px; align-items: center;
-}
-.sum-activity-tag {
-  display: inline-flex; align-items: center; gap: 4px;
-  padding: 3px 9px; border-radius: 20px;
-  font-size: 10px; font-weight: 600;
-  cursor: pointer; border: .5px solid transparent;
-  transition: .12s;
-}
-.sum-activity-tag.on { box-shadow: 0 0 0 1.5px currentColor; }
-.dark .sum-card-header { background: transparent; }
-</style>
 
 <script>
 /* ═══════════════════════════════════════════════════════
@@ -15351,6 +15025,126 @@ function getTodaySubjects() {
 }
 
 
+</script>
+
+<script>
+/* ═══════════════════════════════════════════════════════
+   BELL REMINDER SYSTEM
+═══════════════════════════════════════════════════════ */
+function _loadReminders() {
+  try { return JSON.parse(localStorage.getItem('_ktc_reminders') || '[]'); } catch(e){ return []; }
+}
+function _saveReminders(r) {
+  localStorage.setItem('_ktc_reminders', JSON.stringify(r));
+}
+function toggleReminderPanel() {
+  const p = document.getElementById('reminder-panel');
+  if (!p) return;
+  const open = p.style.display === 'flex';
+  p.style.display = open ? 'none' : 'flex';
+  if (!open) renderReminderList();
+  // close on outside click
+  if (!open) {
+    setTimeout(() => {
+      document.addEventListener('click', function _close(e) {
+        if (!p.contains(e.target) && e.target.id !== 'bell-btn') {
+          p.style.display = 'none';
+          document.removeEventListener('click', _close);
+        }
+      });
+    }, 50);
+  }
+}
+function renderReminderList() {
+  const el = document.getElementById('reminder-list');
+  if (!el) return;
+  const reminders = _loadReminders();
+  updateBellBadge(reminders);
+  if (reminders.length === 0) {
+    el.innerHTML = '<div style="text-align:center;padding:24px 12px;color:var(--tx3);font-size:12px"><div style="font-size:28px;margin-bottom:8px">&#x1F514;</div>No reminders yet.<br>Tap <b>+ Add</b> to create one.</div>';
+    return;
+  }
+  const today = new Date().toDateString();
+  el.innerHTML = reminders.map((r, i) => {
+    const done = r.doneOn === today;
+    const urgent = !done && r.priority === 'high';
+    return `<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 10px;border-radius:10px;margin-bottom:6px;background:${done ? 'var(--bg)' : urgent ? '#fff7ed' : 'var(--bg)'};border:.5px solid ${done ? 'var(--br)' : urgent ? '#fed7aa' : 'var(--br)'}">
+      <button onclick="toggleReminderDone(${i})" style="flex-shrink:0;width:20px;height:20px;border-radius:50%;border:2px solid ${done ? '#16a34a' : urgent ? '#f97316' : '#9ca3af'};background:${done ? '#16a34a' : 'transparent'};cursor:pointer;display:flex;align-items:center;justify-content:center" title="${done ? 'Mark undone' : 'Mark done'}">
+        ${done ? '<svg viewBox="0 0 12 12" fill="none" width="10" height="10"><path d="M2 6l3 3 5-5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}
+      </button>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;font-weight:${done ? '400' : '600'};color:${done ? 'var(--tx3)' : 'var(--tx)'};text-decoration:${done ? 'line-through' : 'none'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.title}</div>
+        ${r.note ? `<div style="font-size:10px;color:var(--tx3);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.note}</div>` : ''}
+        <div style="display:flex;align-items:center;gap:6px;margin-top:4px">
+          ${r.time ? `<span style="font-size:10px;background:#dbeafe;color:#1e40af;border-radius:5px;padding:1px 6px">&#x23F0; ${r.time}</span>` : ''}
+          ${r.priority === 'high' ? '<span style="font-size:10px;background:#fee2e2;color:#dc2626;border-radius:5px;padding:1px 6px">&#x26A0; High</span>' : ''}
+          ${r.repeat ? `<span style="font-size:10px;color:var(--tx3)">&#x1F501; ${r.repeat}</span>` : ''}
+        </div>
+      </div>
+      <button onclick="deleteReminder(${i})" style="background:none;border:none;color:var(--tx3);cursor:pointer;font-size:14px;padding:0;flex-shrink:0" title="Delete">&#x00D7;</button>
+    </div>`;
+  }).join('');
+}
+function updateBellBadge(reminders) {
+  const today = new Date().toDateString();
+  const pending = reminders.filter(r => r.doneOn !== today).length;
+  const badge = document.getElementById('bell-badge');
+  if (badge) badge.style.display = pending > 0 ? 'block' : 'none';
+}
+function toggleReminderDone(i) {
+  const r = _loadReminders();
+  const today = new Date().toDateString();
+  r[i].doneOn = r[i].doneOn === today ? '' : today;
+  _saveReminders(r);
+  renderReminderList();
+}
+function deleteReminder(i) {
+  const r = _loadReminders();
+  r.splice(i, 1);
+  _saveReminders(r);
+  renderReminderList();
+}
+function openAddReminderForm() {
+  const el = document.getElementById('reminder-list');
+  if (!el) return;
+  el.innerHTML = `<div style="padding:4px 2px">
+    <div style="font-size:12px;font-weight:700;color:var(--tx);margin-bottom:10px">New Reminder</div>
+    <div class="fg" style="margin-bottom:8px"><label class="fl">Task / Title *</label><input class="fi" id="rmd-title" placeholder="e.g. Call parents of absentees" style="font-size:12px"></div>
+    <div class="fg" style="margin-bottom:8px"><label class="fl">Note (optional)</label><input class="fi" id="rmd-note" placeholder="e.g. Morning session first" style="font-size:12px"></div>
+    <div class="frow" style="margin-bottom:8px">
+      <div class="fg"><label class="fl">Time</label><input class="fi" type="time" id="rmd-time"></div>
+      <div class="fg"><label class="fl">Priority</label><select class="fi" id="rmd-priority"><option value="normal">Normal</option><option value="high">&#x26A0; High</option></select></div>
+    </div>
+    <div class="fg" style="margin-bottom:12px"><label class="fl">Repeat</label><select class="fi" id="rmd-repeat"><option value="">No repeat</option><option value="Daily">Daily</option><option value="Weekly">Weekly</option><option value="Monthly">Monthly</option></select></div>
+    <div style="display:flex;gap:8px">
+      <button onclick="saveReminder()" class="btn btn-p" style="flex:1">Save</button>
+      <button onclick="renderReminderList()" class="btn" style="flex:1">Cancel</button>
+    </div>
+  </div>`;
+  document.getElementById('rmd-title')?.focus();
+}
+function saveReminder() {
+  const title = document.getElementById('rmd-title')?.value.trim();
+  if (!title) { showToast('Enter a task title'); return; }
+  const r = _loadReminders();
+  r.unshift({
+    title,
+    note:     document.getElementById('rmd-note')?.value.trim() || '',
+    time:     document.getElementById('rmd-time')?.value || '',
+    priority: document.getElementById('rmd-priority')?.value || 'normal',
+    repeat:   document.getElementById('rmd-repeat')?.value || '',
+    createdOn: new Date().toLocaleDateString('en-IN'),
+    doneOn: ''
+  });
+  _saveReminders(r);
+  renderReminderList();
+  showToast('Reminder saved!');
+  updateBellBadge(r);
+}
+// Init badge on load
+document.addEventListener('DOMContentLoaded', () => {
+  updateBellBadge(_loadReminders());
+});
 </script>
 
 </body>

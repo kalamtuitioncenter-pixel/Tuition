@@ -1968,7 +1968,8 @@ tbody tr:hover td{background:var(--bg)}
     </div>
     <!-- TA editor -->
     <div id="wt-pane-ta">
-      <textarea class="fi" id="wt-tmpl-ta" rows="10" style="font-size:12px;font-family:'Noto Sans Tamil',system-ui;line-height:1.7;resize:vertical;width:100%;box-sizing:border-box" oninput="refreshWTPreview();autoSaveWTTemplate()"></textarea>
+      <textarea class="fi" id="wt-tmpl-ta" rows="10" placeholder="நேரடியாக இங்கே தட்டச்சு செய்யவும்… / Type your message here…" style="font-size:12px;font-family:'Noto Sans Tamil',system-ui;line-height:1.7;resize:vertical;width:100%;box-sizing:border-box;border:2px solid #25d366;transition:border-color .2s" onfocus="this.style.borderColor='#128c7e'" onblur="this.style.borderColor='#25d366'" oninput="refreshWTPreview();autoSaveWTTemplate()"></textarea>
+      <div style="font-size:10px;color:#16a34a;margin-top:4px">✏️ Tap / click the box above to edit • Changes auto-save as you type</div>
     </div>
 
     <!-- Live preview -->
@@ -2583,17 +2584,23 @@ const WA_TEMPLATES = {
   marks: {
     ta: [`அன்பான {parent_name},
 
-📝 *தேர்வு முடிவு — {student_name}*
+🏆 *தேர்வு முடிவு — {center_name}*
 
-தேர்வு: {exam_name}
-பாடம்: {subject}
-மதிப்பெண்: *{marks}/{max_marks}*
-சதவீதம்: {percentage}%
-தரம்: *{grade_letter}*
+👤 மாணவர்: *{student_name}* (வகுப்பு {grade})
+📚 பாடம்: *{subject}*
+📋 தேர்வு: *{exam_name}*
 
-{remarks}
+━━━━━━━━━━━━━━━━
+✏️ மதிப்பெண்: *{marks} / {max_marks}*
+📊 சதவீதம்: *{percentage}%*
+🎖️ தரம்: *{grade_letter}*
+{pass_status}
+━━━━━━━━━━━━━━━━
 
-{center_name}`],
+💬 {remarks}
+
+📞 {center_phone}
+🏫 {center_name}`],
   },
   exam_notice: {
     ta: [`அன்பான {parent_name},
@@ -2730,16 +2737,94 @@ function cleanPhone(phone) {
   return '91' + num.slice(-10); // take last 10 digits, add 91
 }
 
-function openWA(phone, msg) {
+/* ── Direct WA send (no edit modal) — used internally after edit ── */
+function _openWADirect(phone, msg) {
   const clean   = cleanPhone(phone);
   const encoded = encodeURIComponent(msg);
-  // Detect mobile (Android/iOS) — use deep link; desktop — use wa.me web
   const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
   if (isMobile) {
     window.location.href = 'whatsapp://send?phone=' + clean + '&text=' + encoded;
   } else {
     window.open('https://wa.me/' + clean + '?text=' + encoded, '_blank');
   }
+}
+
+/* ── openWA — always shows editable preview modal before sending ── */
+function openWA(phone, msg) {
+  const clean = cleanPhone(phone);
+  if (!clean || clean.length < 10) {
+    showToast('⚠️ தொலைபேசி எண் இல்லை / Invalid phone number');
+    return;
+  }
+  // Show editable WA modal
+  let modalRoot = document.getElementById('modal-root');
+  if (!modalRoot) { _openWADirect(phone, msg); return; }
+
+  modalRoot.innerHTML = `
+  <div class="modal-bg" onclick="if(event.target===this)closeModal()" style="z-index:400">
+    <div class="modal" style="max-width:460px;padding:18px 18px 16px">
+
+      <!-- Header -->
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+        <div style="width:40px;height:40px;background:#25d366;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">📱</div>
+        <div style="flex:1">
+          <div style="font-size:14px;font-weight:700;color:var(--tx)">WhatsApp Message</div>
+          <div style="font-size:11px;color:var(--tx2);margin-top:1px">📞 ${phone} &nbsp;·&nbsp; Edit message below before sending</div>
+        </div>
+        <button onclick="closeModal()" style="background:none;border:none;font-size:20px;color:var(--tx3);cursor:pointer;line-height:1;padding:0">×</button>
+      </div>
+
+      <!-- Editable textarea -->
+      <div style="margin-bottom:10px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
+          <label style="font-size:10px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em">Message</label>
+          <button onclick="document.getElementById('wa-edit-ta').value=window._waEditOrigMsg;document.getElementById('wa-live-preview').textContent=window._waEditOrigMsg" style="font-size:10px;color:#6366f1;background:none;border:none;cursor:pointer;font-family:inherit;padding:0">↺ Reset</button>
+        </div>
+        <textarea id="wa-edit-ta" rows="8"
+          style="width:100%;padding:10px 12px;border-radius:9px;border:1.5px solid var(--br2);background:var(--card);color:var(--tx);font-size:12px;font-family:'Noto Sans Tamil',system-ui;line-height:1.7;resize:vertical;outline:none;box-sizing:border-box;transition:border-color .15s"
+          oninput="document.getElementById('wa-live-preview').textContent=this.value;this.style.borderColor='#25d366'"
+          onfocus="this.style.borderColor='#25d366'"
+          onblur="this.style.borderColor='var(--br2)'"
+        >${msg.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
+      </div>
+
+      <!-- Live WhatsApp-style preview -->
+      <div style="margin-bottom:14px">
+        <div style="font-size:10px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">Preview</div>
+        <div id="wa-live-preview"
+          style="background:#e9fbe9;border-radius:10px 10px 10px 2px;padding:11px 13px;font-size:12px;color:#166534;line-height:1.7;white-space:pre-wrap;max-height:160px;overflow-y:auto;font-family:'Noto Sans Tamil',system-ui;border:.5px solid #bbf7d0;position:relative">
+          ${msg.replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+        </div>
+      </div>
+
+      <!-- Action buttons -->
+      <div style="display:flex;gap:8px">
+        <button onclick="_sendWAFromModal('${phone}')" class="btn btn-wa"
+          style="flex:1;justify-content:center;padding:11px;font-size:13px;font-weight:700;border-radius:9px">
+          <svg viewBox="0 0 20 20" fill="none" width="17" height="17" style="margin-right:4px"><circle cx="10" cy="10" r="9" fill="white" opacity=".25"/><path d="M14.5 12.3c-.3-.15-1.5-.75-1.75-.85-.25-.1-.43-.15-.61.15-.18.3-.7.85-.85 1.02-.15.18-.3.2-.55.07-.25-.13-1.05-.39-2-.97-.74-.52-1.24-1.16-1.38-1.36-.15-.2-.02-.3.11-.4l.37-.43c.12-.13.15-.23.22-.38.08-.15.04-.28 0-.4-.1-.13-.6-1.44-.83-1.97-.22-.52-.44-.45-.6-.46H6.2c-.18 0-.47.07-.72.32-.25.25-.95.93-.95 2.27 0 1.34.97 2.64 1.1 2.82.13.18 1.9 2.9 4.6 4.07.64.28 1.14.44 1.53.56.64.2 1.22.17 1.68-.1.5-.3 1-.98 1.16-1.88.08-.46.02-.74-.09-.88z" fill="white"/></svg>
+          Send on WhatsApp
+        </button>
+        <button onclick="closeModal()" class="btn" style="padding:11px 16px;border-radius:9px">Cancel</button>
+      </div>
+      <div style="text-align:center;font-size:10px;color:var(--tx3);margin-top:8px">WhatsApp will open with this message pre-filled</div>
+
+    </div>
+  </div>`;
+
+  // Store original message for reset
+  window._waEditOrigMsg = msg;
+  // Focus textarea
+  setTimeout(() => {
+    const ta = document.getElementById('wa-edit-ta');
+    if (ta) { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }
+  }, 80);
+}
+
+function _sendWAFromModal(phone) {
+  const ta  = document.getElementById('wa-edit-ta');
+  const msg = ta ? ta.value : (window._waEditOrigMsg || '');
+  closeModal();
+  setTimeout(() => _openWADirect(phone, msg), 100);
 }
 
 function openWAFallback(phone, msg) {
@@ -4801,12 +4886,20 @@ function renderWAQueue() {
   }
   listEl.innerHTML = waQueue.map((item, i) => {
     const s = item.student;
-    const phone = s.phone || s.pphone || '';
+    const phone = item._editedPhone !== undefined ? item._editedPhone : (s.phone || s.pphone || '');
+    const hasPhone = phone.replace(/\D/g,'').length >= 10;
     return `<div class="wa-queue-item" style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:.5px solid var(--br)">
       <div class="av" style="background:${s.color||'#185FA5'};width:30px;height:30px;font-size:12px;flex-shrink:0">${(s.name||'?')[0]}</div>
       <div style="flex:1;min-width:0">
         <div style="font-weight:600;font-size:12px;color:var(--tx)">${s.name}</div>
-        <div style="font-size:10px;color:var(--tx3)">${phone || 'No phone'} · Grade ${s.grade}</div>
+        <div style="display:flex;align-items:center;gap:5px;margin-top:2px">
+          <input id="waq-phone-${i}" value="${phone}" placeholder="Enter phone" type="tel"
+            style="font-size:11px;color:${hasPhone?'var(--tx2)':'#dc2626'};border:none;background:transparent;outline:none;width:105px;font-family:inherit;padding:0"
+            oninput="waQueue[${i}]._editedPhone=this.value;var d=this.value.replace(/\\D/g,'').length>=10;this.style.color=d?'var(--tx2)':'#dc2626'"
+            title="Tap to edit phone number">
+          <span style="font-size:10px;color:var(--tx3)">· Gr.${s.grade}</span>
+          ${!hasPhone ? '<span style="font-size:9px;background:#fee2e2;color:#dc2626;padding:1px 5px;border-radius:4px">✏️ add</span>' : ''}
+        </div>
       </div>
       <button class="btn btn-wa btn-sm" style="flex-shrink:0" onclick="sendSingleWA(${i})">📱 Send</button>
     </div>`;
@@ -4817,9 +4910,16 @@ function sendSingleWA(i) {
   const item = waQueue[i];
   if (!item) return;
   const s = item.student;
-  const phone = s.phone || s.pphone || '';
-  if (!phone) { showToast('⚠️ ' + s.name + ' — no phone number'); return; }
-  openWA(phone, item.msg);
+  // Use edited phone if provided, else fall back to student record
+  const rawPhone = (item._editedPhone !== undefined ? item._editedPhone : (s.phone || s.pphone || '')).replace(/\D/g,'');
+  if (!rawPhone || rawPhone.length < 10) { showToast('⚠️ ' + s.name + ' — enter a valid 10-digit phone number'); return; }
+  // Persist edited phone back to student record
+  if (item._editedPhone !== undefined && item._editedPhone !== (s.phone||'')) {
+    s.phone = item._editedPhone;
+    saveStudents();
+    showToast('📱 Phone updated & saved for ' + s.name);
+  }
+  openWA(rawPhone, item.msg);
 }
 
 function sendAllWA() {
@@ -4828,10 +4928,14 @@ function sendAllWA() {
   waQueue.forEach((item, i) => {
     setTimeout(() => {
       const s = item.student;
-      const phone = s.phone || s.pphone || '';
-      if (phone) { openWA(phone, item.msg); count++; }
+      const raw = (item._editedPhone !== undefined ? item._editedPhone : (s.phone || s.pphone || '')).replace(/\D/g,'');
+      if (raw && raw.length >= 10) {
+        if (item._editedPhone !== undefined && item._editedPhone !== (s.phone||'')) { s.phone = item._editedPhone; }
+        openWA(raw, item.msg); count++;
+      }
     }, i * 1500);
   });
+  saveStudents();
   showToast('📱 Sending ' + waQueue.length + ' messages — WhatsApp will open sequentially');
 }
 
@@ -4939,8 +5043,14 @@ function openSendResultsModal(examIdx) {
       </div>` : ''}
 
       <!-- Message preview (first student) -->
-      <div style="font-size:10px;font-weight:600;color:var(--tx3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em">
-        Message Preview (${window._resultStudents[0]?.s.name || ''})
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+        <div style="font-size:10px;font-weight:600;color:var(--tx3);text-transform:uppercase;letter-spacing:.04em">
+          Message Preview (${window._resultStudents[0]?.s.name || ''})
+        </div>
+        <button onclick="closeModal();navTo('wa-templates');setTimeout(()=>typeof selectWTType==='function'&&selectWTType('marks'),300)"
+          style="font-size:10px;color:#7c3aed;background:none;border:none;cursor:pointer;font-family:inherit;padding:0;text-decoration:underline;white-space:nowrap">
+          ✏️ Edit Template
+        </button>
       </div>
       <div id="res-preview" style="background:#dcfce7;border:.5px solid #bbf7d0;border-radius:8px;padding:10px 12px;
         font-size:11px;color:#166534;line-height:1.7;white-space:pre-wrap;max-height:130px;overflow-y:auto;
@@ -5013,6 +5123,7 @@ function _buildOneResultMsg(item, exam, pass) {
       : item.marks >= pass
         ? (item.pct >= 80 ? 'சிறப்பான செயல்திறன்! தொடர்ந்து உழைக்கவும்! 🌟' : 'நல்ல முயற்சி! தொடர்ந்து படிக்கவும்! 👍')
         : 'பலவீன பகுதிகளில் கவனம் செலுத்துங்கள். நாங்கள் உதவுவோம்! 💪';
+  const passStatus = item.absent ? '❌ வரவில்லை' : item.marks === null ? '—' : item.marks >= pass ? '✅ தேர்ச்சி' : '❌ தேர்ச்சியடையவில்லை';
   return tmpl
     .replace(/{parent_name}/g,  s.parent   || 'பெற்றோர்')
     .replace(/{student_name}/g, s.name     || '')
@@ -5023,6 +5134,7 @@ function _buildOneResultMsg(item, exam, pass) {
     .replace(/{max_marks}/g,    String(exam.maxMarks))
     .replace(/{percentage}/g,   String(pct))
     .replace(/{grade_letter}/g, item.grade || '—')
+    .replace(/{pass_status}/g,  passStatus)
     .replace(/{remarks}/g,      remarks)
     .replace(/{center_name}/g,  ctr.name   || '')
     .replace(/{center_phone}/g, ctr.phone  || '');
@@ -6182,7 +6294,7 @@ function sendFeeReceiptWA(phone) {
     showToast('⚠️ No phone number saved for this student. Add it in Students.');
     return;
   }
-  setTimeout(() => openWA(phone, msg), 200);
+  setTimeout(() => _openWADirect(phone, msg), 200);
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -8359,7 +8471,7 @@ function sendSalarySlipWA(phone) {
     showToast('⚠️ No phone number saved for this staff. Add it in Staff profile.');
     return;
   }
-  setTimeout(() => openWA(phone, msg), 200);
+  setTimeout(() => _openWADirect(phone, msg), 200);
 }
 
 function applyExtraDed(staffId) {
@@ -12035,7 +12147,7 @@ const WT_VARS = {
   absent:   '{parent_name} · {student_name} · {grade} · {center_name} · {center_phone}',
   late:     '{parent_name} · {student_name} · {grade} · {center_name} · {center_phone}',
   monthly:  '{parent_name} · {student_name} · {att_pct} · {present_days} · {absent_days} · {att_status} · {center_name} · {center_phone}',
-  marks:    '{parent_name} · {student_name} · {exam_name} · {subject} · {marks} · {max_marks} · {percentage} · {grade_letter} · {remarks} · {center_name}',
+  marks:    '{parent_name} · {student_name} · {grade} · {exam_name} · {subject} · {marks} · {max_marks} · {percentage} · {grade_letter} · {pass_status} · {remarks} · {center_name} · {center_phone}',
   holiday:  '{holiday_name} · {holiday_date} · {holiday_reason} · {resume_date} · {center_name}',
   birthday: '{student_name} · {parent_name} · {center_name}',
   fees:     '{parent_name} · {student_name} · {month} · {amount} · {due_date} · {overdue_note} · {center_name} · {center_phone}',
@@ -12049,7 +12161,7 @@ const WT_SAMPLE = {
   absent:   { parent_name:'Suresh', student_name:'Monisha', grade:'10', center_name:'KTC', center_phone:'9876543210' },
   late:     { parent_name:'Suresh', student_name:'Monisha', grade:'10', center_name:'KTC', center_phone:'9876543210' },
   monthly:  { parent_name:'Suresh', student_name:'Monisha', att_pct:'82', present_days:'20', absent_days:'4', att_status:'✅ Good', center_name:'KTC', center_phone:'9876543210' },
-  marks:    { parent_name:'Suresh', student_name:'Monisha', exam_name:'Monthly Test', subject:'Maths', marks:'87', max_marks:'100', percentage:'87', grade_letter:'A', remarks:'Excellent performance', center_name:'KTC' },
+  marks:    { parent_name:'Suresh', student_name:'Monisha', grade:'10', exam_name:'Monthly Test', subject:'Maths', marks:'87', max_marks:'100', percentage:'87', grade_letter:'A', pass_status:'✅ தேர்ச்சி', remarks:'சிறப்பான செயல்திறன்! தொடர்ந்து உழைக்கவும்! 🌟', center_name:'KTC', center_phone:'9876543210' },
   holiday:  { holiday_name:'Pongal', holiday_date:'14 Jan 2026', holiday_reason:'Pongal Festival', resume_date:'16 Jan 2026', center_name:'KTC' },
   birthday: { student_name:'Monisha', parent_name:'Suresh', center_name:'KTC' },
   fees:     { parent_name:'Suresh', student_name:'Monisha', month:'May 2026', amount:'1500', due_date:'5 Jun 2026', overdue_note:'', center_name:'KTC', center_phone:'9876543210' },
@@ -12063,7 +12175,7 @@ const WT_ALL_TYPES = [
   {id:'absent',          label:'Absent Alert',        emoji:'🚫', color:'#dc2626'},
   {id:'late',            label:'Late Alert',           emoji:'⏰', color:'#ca8a04'},
   {id:'monthly',         label:'Monthly Report',       emoji:'📊', color:'#2563eb'},
-  {id:'marks',           label:'Exam Marks',           emoji:'📝', color:'#7c3aed'},
+  {id:'marks',           label:'Exam Result',          emoji:'🏆', color:'#7c3aed'},
   {id:'holiday',         label:'Holiday Notice',       emoji:'🎉', color:'#0891b2'},
   {id:'birthday',        label:'Birthday Wish',        emoji:'🎂', color:'#16a34a'},
   {id:'fees',            label:'Fee Reminder',         emoji:'💰', color:'#854f0b'},
@@ -12123,6 +12235,8 @@ function selectWTType(typeId) {
   loadWTEditors(typeId);
   switchWTLang(wtActiveLang);
   refreshWTPreview();
+  // Auto-focus textarea so user can start editing immediately
+  setTimeout(() => { const ta = document.getElementById('wt-tmpl-ta'); if(ta) ta.focus(); }, 150);
 }
 
 function getWTDefault(typeId, lang) {
@@ -12178,6 +12292,22 @@ function refreshWTPreview() {
     preview = fillFeeReceiptTemplate(template, sample);
   } else if (wtActiveType === 'monthly_summary') {
     preview = fillMonthlySummaryTemplate(template, sample);
+  } else if (wtActiveType === 'marks') {
+    // Exam Result — fill all variables directly
+    preview = template
+      .replace(/{parent_name}/g,  sample.parent_name   || 'Suresh')
+      .replace(/{student_name}/g, sample.student_name  || 'Monisha')
+      .replace(/{grade}/g,        sample.grade         || '10')
+      .replace(/{exam_name}/g,    sample.exam_name     || 'Monthly Test')
+      .replace(/{subject}/g,      sample.subject       || 'Maths')
+      .replace(/{marks}/g,        sample.marks         || '87')
+      .replace(/{max_marks}/g,    sample.max_marks     || '100')
+      .replace(/{percentage}/g,   sample.percentage    || '87')
+      .replace(/{grade_letter}/g, sample.grade_letter  || 'A')
+      .replace(/{pass_status}/g,  sample.pass_status   || '✅ தேர்ச்சி')
+      .replace(/{remarks}/g,      sample.remarks       || 'சிறப்பான செயல்திறன்!')
+      .replace(/{center_name}/g,  sample.center_name   || 'KTC')
+      .replace(/{center_phone}/g, sample.center_phone  || '9876543210');
   } else {
     // Build a fake student for fillTemplate
     const fakeStu = {

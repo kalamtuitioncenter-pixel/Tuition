@@ -10230,312 +10230,474 @@ function initAI(){initAIFilter();renderAICards();renderPredictCards();renderStud
 /* ═══════════════════════════════════════════════════════
    BACKUP
 ═══════════════════════════════════════════════════════ */
-const BK_GS_CODE = `// ═══ Kalam Tuition ERP — Google Apps Script v3.3 ════════════
-// 1. Open Google Sheet → Extensions → Apps Script
-// 2. Paste this entire code, replace SPREADSHEET_ID below
-// 3. Deploy → New Deployment → Web App → Execute as: Me → Who has access: Anyone → Deploy
-// 4. Copy the Web App URL → paste in ERP Settings → Backup & Sync
+const BK_GS_CODE = `// ═══════════════════════════════════════════════════════════════════════════
+//  KTC Kalam Tuition ERP — Google Apps Script  v4.0  (100% Backup)
+//  Sheets created automatically: Students, Fees, Staff, Batches, Exams,
+//  Marks, Attendance, StaffAttendance, Salary, FeeStructure, DayOrder,
+//  Timetables, StudentSummary, Templates, Notifications, Settings, Log
+// ───────────────────────────────────────────────────────────────────────────
+//  SETUP (one-time):
+//  1. Open your Google Sheet → Extensions → Apps Script
+//  2. Delete any existing code, paste THIS entire file
+//  3. Change YOUR_SPREADSHEET_ID_HERE below to your Sheet's ID
+//     (from the Sheet URL: docs.google.com/spreadsheets/d/<<ID>>/edit)
+//  4. Click 💾 Save  →  Deploy → New Deployment
+//     • Type            : Web App
+//     • Execute as      : Me
+//     • Who has access  : Anyone
+//  5. Click Deploy → copy the Web App URL  (ends with /exec)
+//  6. Paste that URL in KTC ERP → Settings → Backup & Sync → Sheet URL
+//  7. Click "Sync Now" — first sync creates all sheets automatically ✅
+// ═══════════════════════════════════════════════════════════════════════════
 
-const SPREADSHEET_ID = 'YOUR_SPREADSHEET_ID_HERE';
+const SPREADSHEET_ID = 'YOUR_SPREADSHEET_ID_HERE';   // ← CHANGE THIS
 
-// ── CORS preflight support — required for direct browser fetch ──
+// ─── CORS preflight — required so the browser can read the response ────────
+function doGet(e) {
+  return ContentService
+    .createTextOutput(JSON.stringify({ status: 'ok', msg: 'KTC ERP Backup Script is live ✅' }))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
 function doOptions(e) {
   return ContentService.createTextOutput('')
     .setMimeType(ContentService.MimeType.TEXT);
 }
 
+// ─── Main entry point ─────────────────────────────────────────────────────
 function doPost(e) {
   try {
-    const data = JSON.parse(e.postData.contents);
+    const raw  = e.postData ? e.postData.contents : '{}';
+    const data = JSON.parse(raw);
     const ss   = SpreadsheetApp.openById(SPREADSHEET_ID);
-    const ts   = new Date().toLocaleString('en-IN');
+    const ts   = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
 
-    // ── Students ──────────────────────────────────────────────
+    const counts = {};
+
+    // ── 1. STUDENTS ──────────────────────────────────────────────────────
+    const students = data.students || [];
     overwriteSht(ss, 'Students',
-      ['Time','ID','Adm No','Name','Grade','Parent','Phone','Course','Subjects','Fee','Adm Date','Status'],
-      (data.students||[]).map(s=>[ts,s.id||'',s.admNo||'',s.name||'',s.grade||'',
-        s.parent||'',s.phone||'',s.course||'',(s.subjects||[]).join?s.subjects.join(','):s.subjects||'',
-        s.fee||0,s.admDate||'',s.status||'active']));
+      ['Time','ID','Adm No','Name','Grade','Parent','Phone','Course',
+       'Subjects','Monthly Fee','Adm Date','Status','Color'],
+      students.map(s => [
+        ts,
+        s.id        || '',
+        s.admNo     || '',
+        s.name      || '',
+        s.grade     || '',
+        s.parent    || '',
+        s.phone     || '',
+        s.course    || '',
+        Array.isArray(s.subjects) ? s.subjects.join(', ') : (s.subjects || ''),
+        s.fee       || 0,
+        s.admDate   || '',
+        s.status    || 'active',
+        s.color     || '',
+      ]));
+    counts.students = students.length;
 
-    // ── Fees ──────────────────────────────────────────────────
+    // ── 2. FEES ──────────────────────────────────────────────────────────
+    const fees = data.fees || [];
     overwriteSht(ss, 'Fees',
-      ['Time','Receipt','Student','Month','Total','Paid','Balance','Mode','Status','Type','Paid On'],
-      (data.fees||[]).map(f=>[ts,f.rcpt||'',f.student||'',f.month||'',
-        f.total||0,f.paid||0,f.balance||0,f.mode||'Cash',
-        f.status||'pending',f.type||'monthly',f.paidOn||'']));
+      ['Time','Receipt No','Student','Student ID','Month','Total','Paid',
+       'Balance','Mode','Status','Type','Paid On','Notes'],
+      fees.map(f => [
+        ts,
+        f.rcpt      || f.receiptNo || '',
+        f.student   || f.studentName || '',
+        f.studentId || f.sid || '',
+        f.month     || '',
+        Number(f.total   || 0),
+        Number(f.paid    || 0),
+        Number(f.balance || 0),
+        f.mode      || 'Cash',
+        f.status    || 'pending',
+        f.type      || 'monthly',
+        f.paidOn    || f.date || '',
+        f.notes     || f.note || '',
+      ]));
+    counts.fees = fees.length;
 
-    // ── Staff ─────────────────────────────────────────────────
+    // ── 3. STAFF ─────────────────────────────────────────────────────────
+    const staff = data.staff || data.staffData || [];
     overwriteSht(ss, 'Staff',
-      ['Time','ID','Name','Role','Phone','Base Salary','Consolidated Pay','Status'],
-      (data.staff||[]).map(s=>[ts,s.id||'',s.name||'',s.role||'',
-        s.phone||'',s.baseSalary||0,s.consolidatedPay||s.baseSalary||0,s.status||'active']));
+      ['Time','ID','Name','Role','Phone','Base Salary','Consolidated Pay',
+       'PF Deduction','Extra Deduction','Status'],
+      staff.map(s => [
+        ts,
+        s.id              || '',
+        s.name            || '',
+        s.role            || '',
+        s.phone           || '',
+        Number(s.baseSalary        || 0),
+        Number(s.consolidatedPay   || s.baseSalary || 0),
+        Number(s.pfDeduction       || 0),
+        Number(s.extraDeduction    || 0),
+        s.status          || 'active',
+      ]));
+    counts.staff = staff.length;
 
-    // ── Batches ───────────────────────────────────────────────
+    // ── 4. BATCHES ───────────────────────────────────────────────────────
+    const batches = data.batches || [];
     overwriteSht(ss, 'Batches',
-      ['Time','ID','Name','Grade','Session','Days','Fee','Teacher'],
-      (data.batches||[]).map(b=>[ts,b.id||'',b.name||'',b.grade||'',
-        b.session||'',(b.days||[]).join(','),b.fee||0,b.teacher||'']));
+      ['Time','ID','Name','Grade','Session','Days','Fee','Teacher','Subjects'],
+      batches.map(b => [
+        ts,
+        b.id      || '',
+        b.name    || '',
+        b.grade   || '',
+        b.session || '',
+        Array.isArray(b.days) ? b.days.join(', ') : (b.days || ''),
+        Number(b.fee || 0),
+        b.teacher || '',
+        Array.isArray(b.subjects) ? b.subjects.join(', ') : (b.subjects || ''),
+      ]));
+    counts.batches = batches.length;
 
-    // ── Exams ─────────────────────────────────────────────────
+    // ── 5. EXAMS ─────────────────────────────────────────────────────────
+    const exams = data.exams || [];
     overwriteSht(ss, 'Exams',
       ['Time','ID','Exam Name','Subject','Type','Date','Full Marks','Pass Marks','Batch'],
-      (data.exams||[]).map(ex=>[ts,ex.id||'',ex.name||'',ex.subject||'',
-        ex.type||'',ex.date||'',ex.maxMarks||100,ex.passMarks||35,ex.batch||'All']));
+      exams.map(ex => [
+        ts,
+        ex.id         || '',
+        ex.name       || '',
+        ex.subject    || '',
+        ex.type       || '',
+        ex.date       || '',
+        Number(ex.maxMarks  || 100),
+        Number(ex.passMarks || 35),
+        ex.batch      || 'All',
+      ]));
+    counts.exams = exams.length;
 
-    // ── Marks ─────────────────────────────────────────────────
+    // ── 6. MARKS ─────────────────────────────────────────────────────────
     const markRows = [];
-    Object.entries(data.marks||{}).forEach(([examKey, val])=>{
+    const marksData = data.marks || {};
+    Object.entries(marksData).forEach(([examKey, val]) => {
       if (!val || typeof val !== 'object') return;
-      const examName = val.examName||examKey;
-      const subject  = val.subject||'';
-      const maxMarks = val.maxMarks||100;
-      const passMarks= val.passMarks||35;
+      const examName  = val.examName  || examKey;
+      const subject   = val.subject   || '';
+      const maxMarks  = Number(val.maxMarks  || 100);
+      const passMarks = Number(val.passMarks || 35);
       if (val.marks && typeof val.marks === 'object') {
-        // Full exam record: { examId, examName, marks: { studentId: {marks, absent, pass} } }
-        const stu = data.students||[];
-        Object.entries(val.marks).forEach(([sid,m])=>{
-          const s = stu.find(x=>x.id===sid)||{};
-          const score = typeof m==='object'? m.marks : m;
-          const absent= typeof m==='object'? (m.absent?'Yes':'No') : 'No';
-          const pass  = typeof m==='object'? (m.pass?'Pass':'Fail') : '';
-          markRows.push([ts,examKey,examName,subject,maxMarks,passMarks,sid,s.name||'',score,absent,pass]);
+        Object.entries(val.marks).forEach(([sid, m]) => {
+          const stu    = students.find(x => x.id === sid) || {};
+          const score  = typeof m === 'object' ? m.marks  : m;
+          const absent = typeof m === 'object' ? (m.absent ? 'Yes' : 'No') : 'No';
+          const result = typeof m === 'object' ? (m.pass   ? 'Pass' : 'Fail') : '';
+          const grade  = typeof m === 'object' ? (m.grade  || '') : '';
+          const pct    = (absent === 'No' && score !== null && score !== undefined)
+                         ? ((Number(score) / maxMarks) * 100).toFixed(1) : '';
+          markRows.push([ts, examKey, examName, subject, maxMarks, passMarks,
+                         sid, stu.name || '', score, absent, result, grade, pct]);
         });
-      } else {
-        markRows.push([ts,examKey,examName,subject,maxMarks,passMarks,'','',val,'','']);
       }
     });
-    if (markRows.length>0)
-      overwriteSht(ss,'Marks',
-        ['Time','Exam Key','Exam Name','Subject','Max Marks','Pass Marks','Student ID','Student Name','Score','Absent','Result'],
+    if (markRows.length > 0)
+      overwriteSht(ss, 'Marks',
+        ['Time','Exam Key','Exam Name','Subject','Max Marks','Pass Marks',
+         'Student ID','Student Name','Score','Absent','Result','Grade','Percentage %'],
         markRows);
+    counts.marks = markRows.length;
 
-    // ── Attendance ────────────────────────────────────────────
+    // ── 7. STUDENT ATTENDANCE ─────────────────────────────────────────────
     const attRows = [];
-    // Use full attendance store (all _erp_att_* keys)
-    Object.entries(data.attendanceFull||data.attendance||{}).forEach(([key,val])=>{
+    const attData = data.attendanceFull || data.attendance || {};
+    Object.entries(attData).forEach(([key, val]) => {
       if (key === '_erp_att_index') return;
-      // Each value is an object like { "studentId|batchId|session": "P"/"A"/"L" }
       if (typeof val === 'object' && val !== null && !Array.isArray(val)) {
-        // Parse date/batch/session from key: _erp_att_{date}_{batchId}_{session}
-        const keyParts = key.replace('_erp_att_','').split('_');
-        const date     = keyParts[0]||'';
-        const batch    = keyParts.slice(1,-1).join('_')||'';
-        const session  = keyParts[keyParts.length-1]||'';
-        Object.entries(val).forEach(([k,status])=>{
-          const parts = k.split('|');
-          const stuId = parts[0]||'';
-          const stu   = (data.students||[]).find(s=>s.id===stuId)||{};
-          attRows.push([ts,date,batch,session,stuId,stu.name||'',status]);
+        // Key format: _erp_att_YYYY-MM-DD_batchId_session
+        const stripped  = key.replace('_erp_att_', '');
+        const firstDash = stripped.indexOf('_', 11); // skip date part YYYY-MM-DD
+        const date      = stripped.substring(0, 10);
+        const rest      = stripped.substring(11);
+        const lastUnder = rest.lastIndexOf('_');
+        const batch     = lastUnder >= 0 ? rest.substring(0, lastUnder) : rest;
+        const session   = lastUnder >= 0 ? rest.substring(lastUnder + 1) : '';
+        Object.entries(val).forEach(([k, status]) => {
+          const stuId = k.split('|')[0] || k;
+          const stu   = students.find(s => s.id === stuId) || {};
+          attRows.push([ts, date, batch, session, stuId, stu.name || '', status || '']);
         });
-      } else {
-        attRows.push([ts,key,'','','','',String(val||'')]);
       }
     });
-    if (attRows.length>0)
-      overwriteSht(ss,'Attendance',
+    if (attRows.length > 0)
+      overwriteSht(ss, 'Attendance',
         ['Time','Date','Batch','Session','Student ID','Student Name','Status'],
-        attRows.slice(0,3000));
+        attRows.slice(0, 5000)); // cap at 5000 rows for sheet limits
+    counts.attendance = attRows.length;
 
-    // ── Day Order ─────────────────────────────────────────────
-    const dayOrderRows = [];
-    const dayOrderMap = data.dayOrder||{};
-    Object.entries(dayOrderMap).forEach(([dayNum, subjects])=>{
-      const subjList = Array.isArray(subjects) ? subjects : [subjects];
-      subjList.forEach((subj,i)=>{
-        dayOrderRows.push([ts, dayNum, i+1, subj||'']);
-      });
+    // ── 8. STAFF ATTENDANCE ───────────────────────────────────────────────
+    const staffAttRows = [];
+    Object.entries(data.staffAttendance || {}).forEach(([key, status]) => {
+      const parts   = String(key).split('|');
+      const staffId = parts[0] || '';
+      const date    = parts[1] || '';
+      const session = parts[2] || 'Full Day';
+      const stf     = staff.find(s => s.id === staffId) || {};
+      staffAttRows.push([ts, staffId, stf.name || '', date, session, status || '']);
     });
-    overwriteSht(ss,'DayOrder',
+    if (staffAttRows.length > 0)
+      overwriteSht(ss, 'StaffAttendance',
+        ['Time','Staff ID','Staff Name','Date','Session','Status'],
+        staffAttRows.slice(0, 3000));
+    counts.staffAttendance = staffAttRows.length;
+
+    // ── 9. SALARY PAYMENTS ────────────────────────────────────────────────
+    const salRaw = data.salaryPayments || {};
+    const salArr = Array.isArray(salRaw)
+      ? salRaw
+      : Object.entries(salRaw).map(([k, v]) => ({
+          key: k,
+          ...(typeof v === 'object' ? v : { amount: v })
+        }));
+    overwriteSht(ss, 'Salary',
+      ['Time','Key','Staff ID','Staff Name','Month','Amount','Mode','Paid On',
+       'Working Days','Leave Days','LOP Days','Advance','PF','Extra Ded','Net Pay','Note'],
+      salArr.map(p => [
+        ts,
+        p.key         || '',
+        p.staffId     || '',
+        p.name        || (staff.find(s => s.id === p.staffId) || {}).name || '',
+        p.month       || '',
+        Number(p.amount      || p.netPay || 0),
+        p.mode        || 'Cash',
+        p.paidOn      || p.date || '',
+        Number(p.workingDays || 0),
+        Number(p.leaveDays   || 0),
+        Number(p.lopDays     || 0),
+        Number(p.advance     || 0),
+        Number(p.pf          || 0),
+        Number(p.extraDed    || 0),
+        Number(p.netPay      || p.amount || 0),
+        p.note        || '',
+      ]));
+    counts.salary = salArr.length;
+
+    // ── 10. FEE STRUCTURE ─────────────────────────────────────────────────
+    const fsRows = Object.entries(data.feeStructure || {}).map(([grade, cfg]) => [
+      ts, grade,
+      Number(cfg.monthlyFee  || 0),
+      Number(cfg.admFee      || 0),
+      Number(cfg.lateFee     || 0),
+      Number(cfg.subjectFee  || 0),
+      Number(cfg.examFee     || 0),
+    ]);
+    if (fsRows.length > 0)
+      overwriteSht(ss, 'FeeStructure',
+        ['Time','Grade','Monthly Fee','Adm Fee','Late Fee','Subject Fee','Exam Fee'],
+        fsRows);
+    counts.feeStructure = fsRows.length;
+
+    // ── 11. DAY ORDER ─────────────────────────────────────────────────────
+    const dayOrderRows = [];
+    Object.entries(data.dayOrder || {}).forEach(([dayNum, subjects]) => {
+      const list = Array.isArray(subjects) ? subjects : [subjects];
+      list.forEach((subj, i) => dayOrderRows.push([ts, dayNum, i + 1, subj || '']));
+    });
+    overwriteSht(ss, 'DayOrder',
       ['Time','Day Number','Subject Order','Subject Name'],
       dayOrderRows);
+    counts.dayOrder = dayOrderRows.length;
 
-    // ── Timetables ────────────────────────────────────────────
+    // ── 12. TIMETABLES ───────────────────────────────────────────────────
     const ttRows = [];
-    Object.entries(data.timetables||{}).forEach(([key,val])=>{
-      if (!val || typeof val!=='object') return;
-      const batchName = key.replace('_erp_tt_','');
-      // val.days is an array of { dayName, subjects: [] }
+    Object.entries(data.timetables || {}).forEach(([key, val]) => {
+      if (!val || typeof val !== 'object') return;
+      const batchName = key.replace('_erp_tt_', '');
       if (Array.isArray(val.days)) {
-        val.days.forEach((day,di)=>{
-          (day.subjects||[]).forEach((subj,si)=>{
-            ttRows.push([ts, batchName, di+1, day.dayName||('Day '+(di+1)), si+1, subj||'']);
+        val.days.forEach((day, di) => {
+          (day.subjects || []).forEach((subj, si) => {
+            ttRows.push([ts, batchName, di + 1, day.dayName || ('Day ' + (di + 1)), si + 1, subj || '']);
           });
         });
       } else {
-        ttRows.push([ts, batchName, '', '', '', JSON.stringify(val)]);
+        ttRows.push([ts, batchName, '', '', '', JSON.stringify(val).substring(0, 500)]);
       }
     });
-    if (ttRows.length>0)
-      overwriteSht(ss,'Timetables',
+    if (ttRows.length > 0)
+      overwriteSht(ss, 'Timetables',
         ['Time','Batch','Day Number','Day Name','Subject Order','Subject'],
         ttRows);
+    counts.timetables = ttRows.length;
 
-    // ── Salary Payments ───────────────────────────────────────
-    const salArr = Array.isArray(data.salaryPayments)
-      ? data.salaryPayments
-      : Object.entries(data.salaryPayments||{}).map(([k,v])=>({key:k,...(typeof v==='object'?v:{amount:v})}));
-    overwriteSht(ss,'Salary',
-      ['Time','Key','Staff ID','Name','Month','Amount','Mode','Paid On','Note'],
-      salArr.map(p=>[ts,p.key||'',p.staffId||'',p.name||'',
-        p.month||'',p.amount||0,p.mode||'Cash',p.paidOn||p.date||'',p.note||'']));
-
-    // ── Staff Attendance ───────────────────────────────────────
-    const staffAttRows = [];
-    Object.entries(data.staffAttendance||{}).forEach(([key,status])=>{
-      const parts = String(key).split('|');
-      const staffId = parts[0]||'';
-      const date    = parts[1]||'';
-      const session = parts[2]||'Full Day';
-      const stf = (data.staff||[]).find(s=>s.id===staffId)||{};
-      staffAttRows.push([ts,staffId,stf.name||'',date,session,status||'']);
-    });
-    if (staffAttRows.length>0)
-      overwriteSht(ss,'StaffAttendance',
-        ['Time','Staff ID','Staff Name','Date','Session','Status'],
-        staffAttRows.slice(0,3000));
-
-    // ── Notifications ─────────────────────────────────────────
-    overwriteSht(ss,'Notifications',
-      ['Time','ID','Type','Message','Date','Read'],
-      (data.notifications||[]).map(n=>[ts,n.id||'',n.type||'',
-        n.message||n.msg||'',n.date||'',n.read?'Yes':'No']));
-
-    // ── Fee Structure ─────────────────────────────────────────
-    const fsRows = Object.entries(data.feeStructure||{}).map(([grade,cfg])=>[ts,grade,
-      cfg.monthlyFee||0,cfg.admFee||0,cfg.lateFee||0,cfg.subjectFee||0]);
-    if (fsRows.length>0)
-      overwriteSht(ss,'FeeStructure',
-        ['Time','Grade','Monthly Fee','Adm Fee','Late Fee','Subject Fee'],
-        fsRows);
-
-    // ── Student Summary ───────────────────────────────────────
+    // ── 13. STUDENT SUMMARY (Stars / Activities / Notes) ─────────────────
     const sumRows = [];
-    Object.entries(data.studentSummary||{}).forEach(([key,val])=>{
-      const clean  = key.replace('_erp_sum_','');
+    Object.entries(data.studentSummary || {}).forEach(([key, val]) => {
+      const clean  = key.replace('_erp_sum_', '');
       const parts  = clean.split('_');
-      const month  = parts.pop()||'';
-      const year   = parts.pop()||'';
+      const month  = parts.pop() || '';
+      const year   = parts.pop() || '';
       const stuId  = parts.join('_');
-      const stu    = (data.students||[]).find(s=>s.id===stuId)||{};
-      sumRows.push([ts,stuId,stu.name||'',year,month,
-        val.stars||0,(val.activities||[]).join(', '),val.note||'']);
+      const stu    = students.find(s => s.id === stuId) || {};
+      const v      = typeof val === 'object' ? val : {};
+      sumRows.push([
+        ts, stuId, stu.name || '', year, month,
+        Number(v.stars || 0),
+        Array.isArray(v.activities) ? v.activities.join(', ') : (v.activities || ''),
+        v.note || '',
+      ]);
     });
-    if (sumRows.length>0)
-      overwriteSht(ss,'StudentSummary',
+    if (sumRows.length > 0)
+      overwriteSht(ss, 'StudentSummary',
         ['Time','Student ID','Student Name','Year','Month','Stars','Activities','Note'],
         sumRows);
+    counts.studentSummary = sumRows.length;
 
-    // ── WhatsApp Templates ────────────────────────────────────
+    // ── 14. WA TEMPLATES ─────────────────────────────────────────────────
     const waRows = [];
-    Object.entries(data.waTemplates||{}).forEach(([k,v])=>waRows.push([ts,k.replace('_erp_wt_',''),v||'']));
-    if (data.feeRcptTemplate) waRows.push([ts,'fee_receipt',data.feeRcptTemplate]);
-    if (data.admTemplate)     waRows.push([ts,'admission',  data.admTemplate]);
-    if (waRows.length>0)
-      overwriteSht(ss,'Templates',['Time','Template Name','Template Text'],waRows);
-
-    // ── AI / Reports / Diagnostic Data ────────────────────────
-    const aiRows = [];
-    Object.entries(data.aiData||{}).forEach(([k,v])=>{
-      const val = typeof v==='object'? JSON.stringify(v): String(v||'');
-      aiRows.push([ts, k, val.substring(0,50000)]);
+    Object.entries(data.waTemplates || {}).forEach(([k, v]) => {
+      waRows.push([ts, k.replace('_erp_wt_', ''), String(v || '').substring(0, 10000)]);
     });
-    if (aiRows.length>0)
-      overwriteSht(ss,'AI_Data',['Time','Key','Data'],aiRows);
+    if (data.feeRcptTemplate) waRows.push([ts, 'fee_receipt',  data.feeRcptTemplate]);
+    if (data.admTemplate)     waRows.push([ts, 'admission',    data.admTemplate]);
+    if (waRows.length > 0)
+      overwriteSht(ss, 'Templates',
+        ['Time','Template Name','Template Text'],
+        waRows);
+    counts.templates = waRows.length;
 
-    // ── Settings ──────────────────────────────────────────────
-    const center = data.center||{};
-    overwriteSht(ss,'Settings',
-      ['Time','Setting','Value'],[
-        [ts,'center_name',    center.name    ||''],
-        [ts,'center_phone',   center.phone   ||''],
-        [ts,'center_address', center.address ||''],
-        [ts,'center_email',   center.email   ||''],
-        [ts,'adm_lang',       data.admLang   ||''],
-        [ts,'fee_rcpt_lang',  data.feeRcptLang||''],
-        [ts,'dark_mode',      data.darkMode  ||''],
-        [ts,'lates_to_leave', data.latesToLeave||''],
-        [ts,'last_monthly_reset',data.lastMonthlyReset||''],
-        [ts,'backup_version', '3.3'],
-        [ts,'sync_time',      ts],
+    // ── 15. NOTIFICATIONS ─────────────────────────────────────────────────
+    const notifs = data.notifications || [];
+    overwriteSht(ss, 'Notifications',
+      ['Time','ID','Type','Message','Date','Read'],
+      notifs.map(n => [
+        ts,
+        n.id      || '',
+        n.type    || '',
+        n.message || n.msg || '',
+        n.date    || '',
+        n.read ? 'Yes' : 'No',
+      ]));
+    counts.notifications = notifs.length;
+
+    // ── 16. SETTINGS ──────────────────────────────────────────────────────
+    const center = data.center || {};
+    overwriteSht(ss, 'Settings',
+      ['Time','Setting','Value'], [
+        [ts, 'center_name',         center.name      || ''],
+        [ts, 'center_phone',        center.phone     || ''],
+        [ts, 'center_address',      center.address   || ''],
+        [ts, 'center_email',        center.email     || ''],
+        [ts, 'adm_lang',            data.admLang     || ''],
+        [ts, 'fee_rcpt_lang',       data.feeRcptLang || ''],
+        [ts, 'dark_mode',           data.darkMode    || ''],
+        [ts, 'lates_to_leave',      data.latesToLeave|| ''],
+        [ts, 'last_monthly_reset',  data.lastMonthlyReset || ''],
+        [ts, 'backup_version',      '4.0'],
+        [ts, 'sync_time',           ts],
+        [ts, 'total_students',      String(students.length)],
+        [ts, 'total_fees',          String(fees.length)],
+        [ts, 'total_staff',         String(staff.length)],
       ]);
 
-    // ── Log (append only — keeps history) ────────────────────
-    logEntry(ss, ts, data, attRows.length, salArr.length, sumRows.length);
+    // ── 17. LOG (append-only — keeps full sync history forever) ──────────
+    appendLog(ss, ts, data, counts);
 
-    return ContentService.createTextOutput(JSON.stringify({
-      status:'ok', ts,
-      counts:{
-        students   : (data.students||[]).length,
-        fees       : (data.fees||[]).length,
-        staff      : (data.staff||[]).length,
-        batches    : (data.batches||[]).length,
-        exams      : (data.exams||[]).length,
-        marks      : markRows.length,
-        attendance : attRows.length,
-        staffAttendance: staffAttRows.length,
-        dayOrder   : dayOrderRows.length,
-        timetables : ttRows.length,
-        salary     : salArr.length,
-        summary    : sumRows.length,
-        templates  : waRows.length,
-        ai         : aiRows.length,
-      }
-    })).setMimeType(ContentService.MimeType.JSON);
+    // ── Response — sent back to the app ───────────────────────────────────
+    return ContentService
+      .createTextOutput(JSON.stringify({
+        status: 'ok',
+        ts,
+        counts,
+        sheets: Object.keys(counts),
+        msg:    \`✅ Synced ${counts.students} students · ${counts.fees} fees · ${counts.marks} marks · ${counts.attendance} att rows\`,
+      }))
+      .setMimeType(ContentService.MimeType.JSON);
 
-  } catch(err) {
-    return ContentService.createTextOutput(
-      JSON.stringify({status:'error',msg:err.toString(),stack:err.stack||''})
-    ).setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService
+      .createTextOutput(JSON.stringify({
+        status: 'error',
+        msg:    err.toString(),
+        stack:  err.stack || '',
+      }))
+      .setMimeType(ContentService.MimeType.JSON);
   }
 }
 
-// Overwrite sheet data (keep header, replace all rows) — batched for large datasets
+// ─── Overwrite sheet: bold blue header + clear + batch-write rows ──────────
 function overwriteSht(ss, name, headers, rows) {
-  let s = ss.getSheetByName(name) || ss.insertSheet(name);
-  // Set / overwrite header
-  s.getRange(1, 1, 1, headers.length).setValues([headers])
-    .setFontWeight('bold').setBackground('#1a56db').setFontColor('#fff');
-  // Clear existing data rows
-  const last = s.getLastRow();
-  if (last > 1) s.deleteRows(2, last - 1);
-  if (!rows || rows.length === 0) return;
-  // Write in batches of 500 rows to avoid Apps Script timeout on large datasets
-  const BATCH = 500;
-  for (let i = 0; i < rows.length; i += BATCH) {
-    const chunk = rows.slice(i, i + BATCH).map(row =>
-      // Ensure row has exactly headers.length cells, stringify objects
-      headers.map((_, ci) => {
-        const cell = row[ci];
-        if (cell === null || cell === undefined) return '';
-        if (typeof cell === 'object') return JSON.stringify(cell);
-        return cell;
-      })
-    );
-    s.getRange(2 + i, 1, chunk.length, headers.length).setValues(chunk);
+  let sh = ss.getSheetByName(name);
+  if (!sh) {
+    sh = ss.insertSheet(name);
+    // Move new sheets to end so Log stays last
+    ss.setActiveSheet(sh);
+    ss.moveActiveSheet(ss.getNumSheets());
   }
+
+  // Header row — bold blue
+  sh.getRange(1, 1, 1, headers.length)
+    .setValues([headers])
+    .setFontWeight('bold')
+    .setBackground('#1a56db')
+    .setFontColor('#ffffff');
+  sh.setFrozenRows(1);
+
+  // Clear existing data rows
+  const lastRow = sh.getLastRow();
+  if (lastRow > 1) sh.deleteRows(2, lastRow - 1);
+
+  if (!rows || rows.length === 0) return;
+
+  // Sanitise cells: null→'', objects→JSON string, limit cell to 50 000 chars
+  const clean = rows.map(row =>
+    headers.map((_, ci) => {
+      const cell = row[ci];
+      if (cell === null || cell === undefined) return '';
+      if (typeof cell === 'object') return JSON.stringify(cell).substring(0, 50000);
+      if (typeof cell === 'string') return cell.substring(0, 50000);
+      return cell;
+    })
+  );
+
+  // Batch-write in chunks of 500 rows (avoids Apps Script timeout)
+  const BATCH = 500;
+  for (let i = 0; i < clean.length; i += BATCH) {
+    const chunk = clean.slice(i, i + BATCH);
+    sh.getRange(2 + i, 1, chunk.length, headers.length).setValues(chunk);
+  }
+
+  // Auto-resize first few columns for readability
+  try {
+    for (let c = 1; c <= Math.min(headers.length, 8); c++) {
+      sh.autoResizeColumn(c);
+    }
+  } catch (e) { /* non-fatal */ }
 }
 
-// Log — append only, keeps full sync history
-function logEntry(ss, ts, data, attCount, salCount, sumCount) {
-  let s = ss.getSheetByName('Log') || ss.insertSheet('Log');
-  if (s.getLastRow() === 0) {
-    s.appendRow(['Time','Center','Students','Fees','Staff','Batches','Exams','Attendance','Salary','Summary','Source']);
-    s.getRange(1,1,1,11).setFontWeight('bold').setBackground('#1a56db').setFontColor('#fff');
+// ─── Append-only log — keeps history of every sync ────────────────────────
+function appendLog(ss, ts, data, counts) {
+  let sh = ss.getSheetByName('Log');
+  if (!sh) {
+    sh = ss.insertSheet('Log');
+    sh.getRange(1, 1, 1, 14)
+      .setValues([['Time','Center','Source','Students','Fees','Staff','Batches',
+                   'Exams','Marks','Attendance','Staff Att','Salary','Summary','Version']])
+      .setFontWeight('bold')
+      .setBackground('#1a56db')
+      .setFontColor('#ffffff');
+    sh.setFrozenRows(1);
   }
-  s.appendRow([
+  sh.appendRow([
     ts,
-    (data.center&&data.center.name)||data.center||'KTC',
-    (data.students||[]).length,
-    (data.fees||[]).length,
-    (data.staff||[]).length,
-    (data.batches||[]).length,
-    (data.exams||[]).length,
-    attCount||0,
-    salCount||0,
-    sumCount||0,
-    data.source||'manual'
+    (data.center && data.center.name) || 'KTC',
+    data.source   || 'manual',
+    counts.students        || 0,
+    counts.fees            || 0,
+    counts.staff           || 0,
+    counts.batches         || 0,
+    counts.exams           || 0,
+    counts.marks           || 0,
+    counts.attendance      || 0,
+    counts.staffAttendance || 0,
+    counts.salary          || 0,
+    counts.studentSummary  || 0,
+    '4.0',
   ]);
-}`;
+}
+`;
 
 function getSnapshot() {
   // Helper: read a localStorage key safely
@@ -10894,12 +11056,19 @@ async function syncSheets(silent) {
         const now = new Date().toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'});
         if (result && result.status === 'ok') {
           const c = result.counts || {};
-          const summary = `✅ Synced at ${now} — ${c.students||0} students · ${c.fees||0} fees · ${c.marks||0} marks · ${c.attendance||0} att rows · ${sizeKB} KB`;
-          if (statusEl) statusEl.innerHTML = `<span style="color:#16a34a">${summary}</span>`;
-          if (!silent) showToast('✅ Google Sheets synced successfully!');
-          addBkLog(`[${now}] Sheets sync ✅ — ${c.students||0} students, ${c.fees||0} fees, ${c.marks||0} marks · ${sizeKB} KB`);
+          const lines = [
+            `✅ <b>Synced at ${now}</b> · ${sizeKB} KB sent`,
+            `👤 Students: <b>${c.students||0}</b>  &nbsp;💰 Fees: <b>${c.fees||0}</b>  &nbsp;👨‍🏫 Staff: <b>${c.staff||0}</b>`,
+            `📝 Exams: <b>${c.exams||0}</b>  &nbsp;🏆 Marks: <b>${c.marks||0}</b>  &nbsp;📅 Batches: <b>${c.batches||0}</b>`,
+            `🕐 Attendance: <b>${c.attendance||0}</b> rows  &nbsp;👔 Staff Att: <b>${c.staffAttendance||0}</b>`,
+            `💸 Salary: <b>${c.salary||0}</b>  &nbsp;⭐ Summary: <b>${c.studentSummary||0}</b>  &nbsp;📋 Templates: <b>${c.templates||0}</b>`,
+            `<span style="color:#6b7280;font-size:10px">All 17 sheets updated in Google Drive ✅</span>`,
+          ].join('<br>');
+          if (statusEl) { statusEl.style.display='block'; statusEl.innerHTML = `<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 12px;font-size:12px;line-height:1.8">${lines}</div>`; }
+          if (!silent) showToast('✅ Google Sheets synced — ' + (c.students||0) + ' students, ' + (c.fees||0) + ' fees!');
+          addBkLog(`[${now}] Sheets sync ✅ — ${c.students||0} students · ${c.fees||0} fees · ${c.marks||0} marks · ${c.attendance||0} att · ${sizeKB} KB`);
           bkHistory.unshift({ts:new Date().toISOString(),source:'sheets',size:sizeKB+' KB',status:'ok'});
-          renderBkHistory(); setBkStatus('ok','Google Sheets synced',summary);
+          renderBkHistory(); setBkStatus('ok','Google Sheets synced', `${c.students||0} students · ${c.fees||0} fees · ${sizeKB} KB`);
         } else if (result && result.status === 'error') {
           throw new Error('Apps Script error: ' + (result.msg || 'Unknown error'));
         } else {

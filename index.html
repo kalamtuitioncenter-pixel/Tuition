@@ -1335,7 +1335,7 @@ tbody tr:hover td{background:var(--bg)}
       <div class="card" style="padding:0">
         <div style="padding:12px 14px 8px;display:flex;align-items:center;justify-content:space-between">
           <div class="card-title" id="ct-exams">Exams</div>
-          <button class="btn btn-sm" onclick="showModal('addExam')" style="font-size:10px;padding:3px 9px">+ Add</button>
+          <button class="btn btn-sm" onclick="ewStep1Next()" style="font-size:10px;padding:3px 9px">+ Schedule</button>
         </div>
         <div id="exam-list" style="padding:0 8px 8px"></div>
         <div id="exam-list-empty" style="display:none;padding:20px;text-align:center;color:var(--tx3);font-size:12px">No exams yet.<br>Click "+ Add" to schedule one.</div>
@@ -4986,7 +4986,11 @@ function openSendResultsModal(examIdx) {
     if (raw) savedMarks = JSON.parse(raw).marks || {};
   } catch(e) {}
 
-  const activeStudents = students.filter(s => s && s.name && s.status === 'active');
+  let activeStudents = students.filter(s => s && s.name && s.status === 'active');
+  // Filter by exam batch/grade — same students who appeared in the marks panel
+  if (exam.batch && exam.batch !== 'All' && exam.batch.trim() !== '') {
+    activeStudents = filterStudentsByBatch(activeStudents, exam.batch);
+  }
   if (activeStudents.length === 0) { showToast('மாணவர்கள் இல்லை'); return; }
 
   // Build per-student data
@@ -6450,15 +6454,15 @@ function ewFilterExams() {
 
 function ewStep1Next() {
   const grade = document.getElementById('ex-filter-grade')?.value || 'All';
-  ewGoStep(2);
-  // Pre-fill step 2 batch field
-  const sub = document.getElementById('ew2-subtitle');
-  const batchSel = document.getElementById('ew2-batch');
   const selVal = grade !== 'all' ? grade : 'All';
+  // Store intended batch so ewInitStep2 can apply it AFTER rebuilding the dropdown
+  window._ewPrefillBatch = selVal;
+  ewGoStep(2);
+  // ewGoStep(2) calls ewInitStep2() which rebuilds the dropdown — re-apply batch after
+  const sub = document.getElementById('ew2-subtitle');
   if (sub) sub.textContent = 'For: ' + (selVal === 'All' ? 'All Students' : selVal);
-  if (batchSel) {
-    updateExamBatchDropdown('ew2-batch', selVal);
-  }
+  updateExamBatchDropdown('ew2-batch', selVal);
+  window._ewPrefillBatch = null;
 }
 
 /* ── Step 2: init ── */
@@ -6466,7 +6470,9 @@ function ewInitStep2() {
   const today = new Date().toISOString().split('T')[0];
   const dateEl = document.getElementById('ew2-date');
   if (dateEl && !dateEl.value) dateEl.value = today;
-  updateExamBatchDropdown('ew2-batch');
+  // Use prefill batch from filter if set, else preserve current value
+  const prefill = window._ewPrefillBatch;
+  updateExamBatchDropdown('ew2-batch', prefill !== undefined && prefill !== null ? prefill : undefined);
   ewSyncPass();
 }
 
@@ -6519,12 +6525,33 @@ function ewInitStep3() {
     </div>
     ${exam.syllabus?`<div style="font-size:10px;color:var(--tx3);margin-top:4px">📋 ${exam.syllabus}</div>`:''}`;
 
-  // Build WA preview
+  // Build WA preview — use custom exam_notice template
   const ctr = CFG.CENTER || {};
-  const active = students.filter(s => s && s.name && s.status === 'active');
+  let active = students.filter(s => s && s.name && s.status === 'active');
+  // Filter by exam batch/grade so only the right class gets notified
+  if (exam.batch && exam.batch !== 'All' && exam.batch.trim() !== '') {
+    active = filterStudentsByBatch(active, exam.batch);
+  }
   const sample = active[0] || { name: 'மாணவர்', parent: 'பெற்றோர்', grade: '10' };
-  const gradeLabel = sample.grade === 'KG' ? 'KG' : sample.grade + ' ஆம் வகுப்பு';
-  const waMsg = `அன்பான ${sample.parent||'பெற்றோர்'},\n\n📝 *தேர்வு அறிவிப்பு*\n🏫 ${ctr.name||''}\n\n👤 மாணவர்: *${sample.name}* (${gradeLabel})\n📚 பாடம்: *${exam.subject||'—'}*\n📋 தேர்வு: *${exam.name||'—'}*\n📅 தேதி: *${dateStr}*\n✏️ மொத்த மதிப்பெண்: *${exam.maxMarks||100}*\n✅ தேர்ச்சி: *${pass}*\n📖 பாடத்திட்டம்: ${exam.syllabus||'முழு பாடத்திட்டம்'}\n\n💪 நன்கு படிக்கட்டும்!\n\n📞 ${ctr.phone||''}\n${ctr.name||''}`;
+  const examNoticeTmpl = (typeof getWTSaved === 'function' ? getWTSaved('exam_notice','ta') : '')
+    || (WA_TEMPLATES.exam_notice?.ta?.[0]) || '';
+  function _buildExamNoticeMsg(s, tmpl) {
+    const gl = s.grade === 'KG' ? 'KG' : (s.grade||'') + ' ஆம் வகுப்பு';
+    if (!tmpl) return `அன்பான ${s.parent||'பெற்றோர்'},\n\n📝 *தேர்வு அறிவிப்பு*\n🏫 ${ctr.name||''}\n\n👤 மாணவர்: *${s.name}* (${gl})\n📚 பாடம்: *${exam.subject||'—'}*\n📋 தேர்வு: *${exam.name||'—'}*\n📅 தேதி: *${dateStr}*\n✏️ மொத்த மதிப்பெண்: *${exam.maxMarks||100}*\n✅ தேர்ச்சி: *${pass}*\n📖 பாடத்திட்டம்: ${exam.syllabus||'முழு பாடத்திட்டம்'}\n\n💪 நன்கு படிக்கட்டும்!\n\n📞 ${ctr.phone||''}\n${ctr.name||''}`;
+    return tmpl
+      .replace(/{parent_name}/g, s.parent||'பெற்றோர்')
+      .replace(/{student_name}/g, s.name||'')
+      .replace(/{grade}/g, s.grade||'—')
+      .replace(/{exam_name}/g, exam.name||'')
+      .replace(/{subject}/g, exam.subject||'')
+      .replace(/{exam_date}/g, dateStr)
+      .replace(/{max_marks}/g, String(exam.maxMarks||100))
+      .replace(/{pass_marks}/g, String(pass))
+      .replace(/{syllabus}/g, exam.syllabus||'முழு பாடத்திட்டம்')
+      .replace(/{center_name}/g, ctr.name||'')
+      .replace(/{center_phone}/g, ctr.phone||'');
+  }
+  const waMsg = _buildExamNoticeMsg(sample, examNoticeTmpl);
   const prev = document.getElementById('ew3-wa-preview');
   if (prev) prev.textContent = waMsg;
 
@@ -6557,10 +6584,7 @@ function ewInitStep3() {
       }).join('');
     }
     window._ewNotifStudents = withPhone;
-    window._ewNotifMsgs = withPhone.map(s => {
-      const gl = s.grade === 'KG' ? 'KG' : (s.grade||'') + ' ஆம் வகுப்பு';
-      return `அன்பான ${s.parent||'பெற்றோர்'},\n\n📝 *தேர்வு அறிவிப்பு*\n🏫 ${ctr.name||''}\n\n👤 மாணவர்: *${s.name}* (${gl})\n📚 பாடம்: *${exam.subject||'—'}*\n📋 தேர்வு: *${exam.name||'—'}*\n📅 தேதி: *${dateStr}*\n✏️ மொத்த மதிப்பெண்: *${exam.maxMarks||100}*\n✅ தேர்ச்சி: *${pass}*\n📖 பாடத்திட்டம்: ${exam.syllabus||'முழு பாடத்திட்டம்'}\n\n💪 நன்கு படிக்கட்டும்!\n\n📞 ${ctr.phone||''}\n${ctr.name||''}`;
-    });
+    window._ewNotifMsgs = withPhone.map(s => _buildExamNoticeMsg(s, examNoticeTmpl));
   }
 }
 
@@ -6617,16 +6641,18 @@ function ewInitStep4() {
     </div>`;
   }
 
-  // WA results preview (sample)
-  const ctr = CFG.CENTER || {};
-  const sample = students.filter(s=>s&&s.name&&s.status==='active')[0] || { name:'மாணவர்', parent:'பெற்றோர்', grade:'10' };
-  const sampleMark = Math.round(exam.maxMarks * 0.72);
-  const samplePct  = Math.round(sampleMark / exam.maxMarks * 100);
-  const samplePass = sampleMark >= pass;
-  const sampleGrade = samplePct>=91?'A+':samplePct>=81?'A':samplePct>=71?'B+':samplePct>=61?'B':samplePct>=51?'C':'D';
-  const waRes = `அன்பான ${sample.parent||'பெற்றோர்'},\n\n📊 *தேர்வு முடிவு*\n🏫 ${ctr.name||''}\n\n👤 மாணவர்: *${sample.name}*\n📚 பாடம்: *${exam.subject||'—'}*\n📋 தேர்வு: *${exam.name||'—'}*\n\n✏️ மதிப்பெண்: *${sampleMark} / ${exam.maxMarks}*\n📈 சதவீதம்: *${samplePct}%*\n🎖️ தரம்: *${sampleGrade}*\n${samplePass?'✅ தேர்ச்சி!':'❌ தேர்ச்சியடையவில்லை'}\n\n${samplePass?'🌟 சாதகமான முன்னேற்றம்! தொடர்ந்து படியுங்கள்!':'💪 கவலைப்பட வேண்டாம். இன்னும் கஷ்டப்பட்டால் நிச்சயம் முன்னேறலாம்!'}\n\n📞 ${ctr.phone||''}\n${ctr.name||''}`;
+  // WA results preview — always uses the custom marks template (same as openSendResultsModal)
   const prevEl = document.getElementById('ew4-wa-preview');
-  if (prevEl) prevEl.textContent = waRes;
+  if (prevEl) {
+    const activeStu = students.filter(s=>s&&s.name&&s.status==='active');
+    const sampleStu = activeStu[0] || { name:'மாணவர்', parent:'பெற்றோர்', grade:'10', id:'__sample' };
+    const sampleMark = Math.round(exam.maxMarks * 0.72);
+    const samplePct  = Math.round(sampleMark / exam.maxMarks * 100);
+    const sampleGrL  = samplePct>=91?'A+':samplePct>=81?'A':samplePct>=71?'B+':samplePct>=61?'B':samplePct>=51?'C':'D';
+    const sampleItem = { s: sampleStu, absent: false, marks: sampleMark, pct: samplePct, grade: sampleGrL };
+    const previewMsg = _buildOneResultMsg(sampleItem, exam, pass);
+    prevEl.textContent = previewMsg || '(Template empty — edit in WA Templates → Exam Marks)';
+  }
 
   // Select exam in marks panel
   const examIdx = exams.findIndex(e => e.id === exam.id);
@@ -6723,12 +6749,14 @@ function openSendResultsModalEW(examIdx) {
   const exam = exams[examIdx];
   if (!exam) return;
   _ewSelectedExam = exam;
-  const ctr = CFG.CENTER || {};
   const pass = exam.passMarks || Math.round((exam.maxMarks||100)*0.35);
-  const dateStr = exam.date ? new Date(exam.date+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) : '—';
 
-  // Build messages with real marks
-  const active = students.filter(s=>s&&s.name&&s.status==='active');
+  // Build messages using the custom marks WA template (same as openSendResultsModal)
+  let active = students.filter(s=>s&&s.name&&s.status==='active');
+  // Filter by exam batch/grade — only show students who were in the marks panel
+  if (exam.batch && exam.batch !== 'All' && exam.batch.trim() !== '') {
+    active = filterStudentsByBatch(active, exam.batch);
+  }
   const recipients = [];
   active.forEach(s => {
     const phone = s.phone || s.pphone || '';
@@ -6739,13 +6767,12 @@ function openSendResultsModalEW(examIdx) {
     const marksVal = mkEl ? mkEl.value : '';
     const markNum = parseFloat(marksVal);
     const pct = marksVal !== '' && !isAbsent ? Math.round(markNum / exam.maxMarks * 100) : 0;
-    const gradeL = isAbsent ? '' : (marksVal !== '' ? (pct>=91?'A+':pct>=81?'A':pct>=71?'B+':pct>=61?'B':pct>=51?'C':'D') : '—');
-    const gl = s.grade === 'KG' ? 'KG' : (s.grade||'') + ' ஆம் வகுப்பு';
-    const msg = isAbsent
-      ? `அன்பான ${s.parent||'பெற்றோர்'},\n\n📊 *தேர்வு முடிவு*\n🏫 ${ctr.name||''}\n\n👤 மாணவர்: *${s.name}* (${gl})\n📚 பாடம்: *${exam.subject||'—'}*\n📋 தேர்வு: *${exam.name||'—'}*\n\n⚪ நிலை: *வரவில்லை (Absent)*\n\n📞 ${ctr.phone||''}\n${ctr.name||''}`
-      : marksVal !== ''
-        ? `அன்பான ${s.parent||'பெற்றோர்'},\n\n📊 *தேர்வு முடிவு*\n🏫 ${ctr.name||''}\n\n👤 மாணவர்: *${s.name}* (${gl})\n📚 பாடம்: *${exam.subject||'—'}*\n📋 தேர்வு: *${exam.name||'—'}*\n\n✏️ மதிப்பெண்: *${marksVal} / ${exam.maxMarks}*\n📈 சதவீதம்: *${pct}%*\n🎖️ தரம்: *${gradeL}*\n${markNum>=pass?'✅ தேர்ச்சி!':'❌ தேர்ச்சியடையவில்லை'}\n\n${markNum>=pass?'🌟 சாதகமான முன்னேற்றம்!':'💪 இன்னும் கஷ்டப்படுங்கள்!'}\n\n📞 ${ctr.phone||''}\n${ctr.name||''}`
-        : null;
+    const gradeL = isAbsent ? 'AB' : (marksVal !== '' ? (pct>=91?'A+':pct>=81?'A':pct>=71?'B+':pct>=61?'B':pct>=51?'C':'D') : '—');
+    const item = { s, absent: isAbsent, marks: marksVal !== '' && !isAbsent ? markNum : (isAbsent ? null : null), pct, grade: gradeL };
+    if (isAbsent) item.marks = null;
+    else if (marksVal !== '') item.marks = markNum;
+    else return; // skip students with no marks and not absent
+    const msg = _buildOneResultMsg(item, exam, pass);
     if (msg) recipients.push({ name: s.name, phone, msg, sent: false });
   });
 
@@ -6975,7 +7002,10 @@ function selectExam(i) {
         <svg viewBox="0 0 14 14" fill="none" width="12" height="12"><path d="M2 7l4 4 6-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
         Save Marks
       </button>
-      <button class="btn btn-wa" onclick="openSendResultsModal(${i})" style="flex:1;justify-content:center">📱 Send Results</button>
+      <button class="btn btn-wa" onclick="openSendResultsModal(${i})" id="send-res-btn-${e.id}" style="flex:1;justify-content:center">
+        📱 Send Results
+        ${(()=>{try{const s=localStorage.getItem('_erp_marks_'+e.id);const m=s?JSON.parse(s).marks:{};const c=Object.keys(m||{}).length;return c>0?`<span style="background:#dcfce7;color:#166534;border-radius:8px;padding:1px 7px;font-size:10px;font-weight:700;margin-left:4px">${c} saved</span>`:'<span style="background:#fef9c3;color:#854d0e;border-radius:8px;padding:1px 7px;font-size:10px;font-weight:700;margin-left:4px">Save first</span>';}catch(e){return '';}})()} 
+      </button>
       <button class="btn btn-sm" onclick="showExamNoticeWAModal(${i})" style="font-size:11px">📢 Exam Notice WA</button>
     </div>
     <!-- AI Insights Panel -->
@@ -7190,6 +7220,14 @@ function saveMarksToStorage(examIdx) {
   const count = Object.keys(marksMap).length;
   showToast('✅ Marks saved for ' + e.name + ' (' + count + ' students)');
   runBackup('change');
+
+  // Update the Send Results button to show saved count and enable it visually
+  try {
+    const sendBtn = document.querySelector('#marks-panel .btn-wa');
+    if (sendBtn) {
+      sendBtn.innerHTML = `📱 Send Results <span style="background:#dcfce7;color:#166534;border-radius:8px;padding:1px 7px;font-size:10px;font-weight:700;margin-left:4px">${count} saved</span>`;
+    }
+  } catch(e2) {}
 }
 
 

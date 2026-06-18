@@ -1487,18 +1487,10 @@ tbody tr:hover td{background:var(--bg)}
           <div id="ew4-ai-output" style="display:none;margin-top:10px;background:#1e293b;border-radius:8px;padding:10px;font-size:11px;color:#93c5fd;line-height:1.7;max-height:200px;overflow-y:auto;white-space:pre-wrap"></div>
         </div>
 
-        <!-- WA Results template preview + Send button -->
+        <!-- WA Results template preview -->
         <div class="card" style="margin-top:10px;padding:12px 14px">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-            <div style="font-size:11px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.04em">📱 Results WA</div>
-            <button onclick="navTo('wa-templates');setTimeout(()=>typeof selectWTType==='function'&&selectWTType('marks'),300)"
-              style="font-size:10px;color:#7c3aed;background:none;border:none;cursor:pointer;font-family:inherit;padding:0;text-decoration:underline">✏️ Edit</button>
-          </div>
-          <div id="ew4-wa-preview" style="background:#dcfce7;border-radius:8px;padding:10px;font-size:11px;color:#166534;line-height:1.7;white-space:pre-wrap;max-height:110px;overflow-y:auto;border:.5px solid #bbf7d0;font-family:'Noto Sans Tamil',system-ui;margin-bottom:8px"></div>
-          <button class="btn btn-wa" id="ew4-send-btn" onclick="ewSendResults()"
-            style="width:100%;justify-content:center;font-size:12px;font-weight:700;padding:9px">
-            📱 Send Results to Parents
-          </button>
+          <div style="font-size:11px;font-weight:700;color:var(--tx2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em">📱 Results WA Template</div>
+          <div id="ew4-wa-preview" style="background:#dcfce7;border-radius:8px;padding:10px;font-size:11px;color:#166534;line-height:1.7;white-space:pre-wrap;max-height:140px;overflow-y:auto;border:.5px solid #bbf7d0;font-family:'Noto Sans Tamil',system-ui"></div>
         </div>
       </div>
 
@@ -4985,140 +4977,133 @@ function openSendResultsModal(examIdx) {
   if (!exam) { showToast('தேர்வு கிடைக்கவில்லை'); return; }
 
   const pass = exam.passMarks || Math.round((exam.maxMarks || 100) * 0.35);
+
+  // Load saved marks from localStorage
   const savedKey = '_erp_marks_' + exam.id;
   let savedMarks = {};
-  try { const raw = localStorage.getItem(savedKey); if (raw) savedMarks = JSON.parse(raw).marks || {}; } catch(e) {}
+  try {
+    const raw = localStorage.getItem(savedKey);
+    if (raw) savedMarks = JSON.parse(raw).marks || {};
+  } catch(e) {}
 
   const activeStudents = students.filter(s => s && s.name && s.status === 'active');
   if (activeStudents.length === 0) { showToast('மாணவர்கள் இல்லை'); return; }
 
+  // Build per-student data
   window._resultStudents = activeStudents.map(s => {
-    const saved  = savedMarks[s.id];
-    const absent = saved ? saved.absent === true : false;
-    const marks  = (!absent && saved && saved.marks !== undefined) ? saved.marks : null;
-    const pct    = (marks !== null && exam.maxMarks > 0) ? Math.round(marks / exam.maxMarks * 100) : 0;
-    const grade  = absent ? 'AB'
+    const saved   = savedMarks[s.id];
+    const absent  = saved ? saved.absent === true : false;
+    const marks   = (!absent && saved && saved.marks !== undefined) ? saved.marks : null;
+    const pct     = (marks !== null && exam.maxMarks > 0) ? Math.round(marks / exam.maxMarks * 100) : 0;
+    const grade   = absent ? 'AB'
       : marks === null ? '—'
       : marks < pass ? 'F'
       : pct>=91?'A+':pct>=81?'A':pct>=71?'B+':pct>=61?'B':pct>=51?'C':pct>=35?'D':'D';
-    const pass_  = (!absent && marks !== null && marks >= pass);
-    return { s, absent, marks, pct, grade, pass: pass_ };
+    return { s, absent, marks, pct, grade };
   });
   window._resultExam = exam;
   window._resultPass = pass;
-  window._resultFilter = 'all'; // 'all' | 'pass' | 'fail' | 'nophone'
 
-  _renderResultsModal();
-}
-
-function _renderResultsModal() {
-  const exam = window._resultExam;
-  const pass = window._resultPass;
-  const all  = window._resultStudents;
-  const filt = window._resultFilter || 'all';
-
-  const withMarks = all.filter(x => x.marks !== null || x.absent).length;
-  const passC     = all.filter(x => !x.absent && x.marks !== null && x.marks >= pass).length;
-  const failC     = all.filter(x => !x.absent && x.marks !== null && x.marks < pass).length;
-  const absentC   = all.filter(x => x.absent).length;
-  const noPhone   = all.filter(x => (x.s.phone||'').replace(/\D/g,'').length < 10).length;
-  const hasPhone  = all.filter(x => (x.s.phone||'').replace(/\D/g,'').length >= 10).length;
-
-  const list = filt === 'pass'    ? all.filter(x => x.pass)
-             : filt === 'fail'    ? all.filter(x => !x.absent && x.marks !== null && !x.pass)
-             : filt === 'absent'  ? all.filter(x => x.absent)
-             : filt === 'nophone' ? all.filter(x => (x.s.phone||'').replace(/\D/g,'').length < 10)
-             : all;
-
-  const dateStr = exam.date
-    ? new Date(exam.date+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})
-    : '—';
-
-  const filterBtn = (id, label, count, color) =>
-    `<button onclick="window._resultFilter='${id}';_renderResultsModal()"
-      style="flex:1;padding:7px 4px;border-radius:8px;border:1.5px solid ${filt===id?color:'var(--br)'};
-      background:${filt===id?color+'18':'var(--card)'};color:${filt===id?color:'var(--tx2)'};
-      font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;line-height:1.3;text-align:center">
-      ${count}<br><span style="font-size:9px;font-weight:500">${label}</span>
-    </button>`;
+  const withMarks  = window._resultStudents.filter(x => x.marks !== null || x.absent).length;
+  const withPhone  = window._resultStudents.filter(x => (x.s.phone||'').replace(/\D/g,'').length >= 10).length;
+  const dateStr    = exam.date ? new Date(exam.date+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) : '—';
 
   const root = document.getElementById('modal-root');
-  root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()" style="z-index:400">
-  <div class="modal" style="max-width:500px;padding:14px 14px 12px">
+  root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()">
+    <div class="modal" style="max-width:520px">
 
-    <!-- Header -->
-    <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px">
-      <div style="width:40px;height:40px;background:#ede9fe;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">🏆</div>
-      <div style="flex:1;min-width:0">
-        <div style="font-size:14px;font-weight:700;color:var(--tx)">${exam.name}</div>
-        <div style="font-size:11px;color:var(--tx3)">${exam.subject} · ${dateStr} · ${exam.maxMarks}M · Pass:${pass}</div>
+      <!-- Title -->
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+        <div style="width:38px;height:38px;background:#ede9fe;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">📝</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:14px;font-weight:700;color:var(--tx)">${exam.name}</div>
+          <div style="font-size:11px;color:var(--tx3)">${exam.subject} · ${dateStr} · Full: ${exam.maxMarks} · Pass: ${pass}</div>
+        </div>
+        <button onclick="closeModal()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--tx2);line-height:1">×</button>
       </div>
-      <div style="display:flex;gap:5px;flex-shrink:0">
+
+      <!-- Stats strip -->
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <div style="flex:1;background:#ede9fe;border:.5px solid #c4b5fd;border-radius:8px;padding:8px;text-align:center">
+          <div style="font-size:18px;font-weight:800;color:#7c3aed">${activeStudents.length}</div>
+          <div style="font-size:10px;color:#5b21b6">👥 Students</div>
+        </div>
+        <div style="flex:1;background:#dcfce7;border:.5px solid #bbf7d0;border-radius:8px;padding:8px;text-align:center">
+          <div style="font-size:18px;font-weight:800;color:#16a34a">${withMarks}</div>
+          <div style="font-size:10px;color:#166534">✅ With Marks</div>
+        </div>
+        <div style="flex:1;background:#dbeafe;border:.5px solid #bfdbfe;border-radius:8px;padding:8px;text-align:center">
+          <div style="font-size:18px;font-weight:800;color:#1d4ed8">${withPhone}</div>
+          <div style="font-size:10px;color:#1e40af">📱 With Phone</div>
+        </div>
+      </div>
+
+      ${withMarks === 0 ? `<div style="background:#fef9c3;border:.5px solid #fde047;border-radius:8px;padding:10px 12px;font-size:12px;color:#854d0e;font-weight:600;margin-bottom:10px">
+        ⚠️ No marks saved yet for this exam. Enter marks in the Marks panel and click "Save Marks" first.
+      </div>` : ''}
+
+      <!-- Message preview (first student) -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+        <div style="font-size:10px;font-weight:600;color:var(--tx3);text-transform:uppercase;letter-spacing:.04em">
+          Message Preview (${window._resultStudents[0]?.s.name || ''})
+        </div>
         <button onclick="closeModal();navTo('wa-templates');setTimeout(()=>typeof selectWTType==='function'&&selectWTType('marks'),300)"
-          style="font-size:10px;color:#7c3aed;background:none;border:.5px solid #c4b5fd;border-radius:6px;padding:3px 8px;cursor:pointer;font-family:inherit">✏️ Template</button>
-        <button onclick="closeModal()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--tx2);line-height:1;padding:0">×</button>
+          style="font-size:10px;color:#7c3aed;background:none;border:none;cursor:pointer;font-family:inherit;padding:0;text-decoration:underline;white-space:nowrap">
+          ✏️ Edit Template
+        </button>
       </div>
-    </div>
+      <div id="res-preview" style="background:#dcfce7;border:.5px solid #bbf7d0;border-radius:8px;padding:10px 12px;
+        font-size:11px;color:#166534;line-height:1.7;white-space:pre-wrap;max-height:130px;overflow-y:auto;
+        margin-bottom:10px;font-family:'Noto Sans Tamil',system-ui">
+        ${_buildOneResultMsg(window._resultStudents[0], exam, pass)}
+      </div>
 
-    ${withMarks === 0 ? `<div style="background:#fef9c3;border:.5px solid #fde047;border-radius:8px;padding:10px 12px;font-size:12px;color:#854d0e;font-weight:600;margin-bottom:10px">⚠️ No marks saved yet. Enter marks first using "Enter Marks".</div>` : ''}
-
-    <!-- Filter strip — tap to filter who to send -->
-    <div style="display:flex;gap:5px;margin-bottom:10px">
-      ${filterBtn('all',    '👥 All',    all.length,    '#6366f1')}
-      ${filterBtn('pass',   '✅ Pass',   passC,         '#16a34a')}
-      ${filterBtn('fail',   '❌ Fail',   failC,         '#dc2626')}
-      ${filterBtn('absent', '🚫 Absent', absentC,       '#f59e0b')}
-      ${filterBtn('nophone','📵 No Ph.', noPhone,       '#94a3b8')}
-    </div>
-
-    <!-- Send All button — prominent, at top -->
-    <button class="btn btn-wa" onclick="sendAllResultsWA()"
-      style="width:100%;justify-content:center;padding:11px;font-size:13px;font-weight:700;border-radius:9px;margin-bottom:10px">
-      📱 Send to ${list.filter(x=>(x.s.phone||'').replace(/\D/g,'').length>=10).length} ${filt==='all'?'Parents':filt==='pass'?'Pass Parents':filt==='fail'?'Fail Parents':filt==='absent'?'Absent Parents':'—'}
-    </button>
-
-    <!-- Student list -->
-    <div style="max-height:55vh;overflow-y:auto;border:.5px solid var(--br);border-radius:10px">
-      ${list.length === 0
-        ? `<div style="padding:20px;text-align:center;color:var(--tx3);font-size:12px">No students in this filter</div>`
-        : list.map(item => {
-          const phone    = (item.s.phone||'').replace(/\D/g,'');
+      <!-- Per-student list -->
+      <div style="font-size:11px;font-weight:600;color:var(--tx2);margin-bottom:6px">
+        Send to ${activeStudents.length} student${activeStudents.length!==1?'s':''}:
+      </div>
+      <div style="max-height:260px;overflow-y:auto;border:.5px solid var(--br);border-radius:10px">
+        ${window._resultStudents.map(item => {
+          const phone = (item.s.phone||'').replace(/\D/g,'');
           const hasPhone = phone.length >= 10;
-          const grColor  = item.absent ? '#f59e0b'
+          const grColor = item.absent ? '#6b7280'
             : item.marks === null ? '#94a3b8'
-            : item.pass ? '#16a34a' : '#dc2626';
-          const gradeBg  = item.absent ? '#fffbeb'
-            : item.marks === null ? '#f8fafc'
-            : item.pass ? '#dcfce7' : '#fee2e2';
-          const scoreLabel = item.absent ? 'AB'
-            : item.marks !== null ? item.marks+'/'+exam.maxMarks : '—';
-          return `<div id="rwq-${item.s.id}"
-            style="display:flex;align-items:center;gap:9px;padding:9px 12px;border-bottom:.5px solid var(--br)">
-            <div class="av" style="background:${item.s.color||'#185FA5'};width:30px;height:30px;font-size:12px;flex-shrink:0">${(item.s.name||'?')[0]}</div>
+            : item.marks >= pass ? '#16a34a' : '#dc2626';
+          const gradeBg = item.absent ? '#f3f4f6'
+            : item.marks === null ? '#f1f5f9'
+            : item.marks >= pass ? '#dcfce7' : '#fee2e2';
+          return `<div class="wa-queue-item" id="rwq-${item.s.id}" style="display:flex;align-items:center;gap:9px;padding:9px 12px;border-bottom:.5px solid var(--br);background:var(--card)">
+            <div class="av" style="background:${item.s.color};width:28px;height:28px;font-size:11px;flex-shrink:0">${(item.s.name||'?')[0]}</div>
             <div style="flex:1;min-width:0">
               <div style="font-size:12px;font-weight:600;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${item.s.name}</div>
-              <div style="font-size:10px;color:var(--tx3)">${item.s.parent||''} · ${hasPhone ? item.s.phone : '<span style="color:#dc2626">⚠️ No phone</span>'}</div>
+              <div style="font-size:10px;color:var(--tx3)">${item.s.parent} · ${hasPhone ? item.s.phone : '⚠️ No phone'}</div>
             </div>
             <div style="display:flex;align-items:center;gap:5px;flex-shrink:0">
               <span style="font-size:11px;font-weight:800;color:${grColor};background:${gradeBg};
-                padding:2px 8px;border-radius:8px;min-width:50px;text-align:center">${scoreLabel}</span>
+                padding:2px 8px;border-radius:8px;min-width:36px;text-align:center">
+                ${item.absent ? 'AB' : item.marks !== null ? item.marks+'/'+exam.maxMarks : '—'}
+              </span>
               <span style="font-size:10px;font-weight:700;color:${grColor};min-width:22px;text-align:center">${item.grade}</span>
               ${hasPhone
                 ? `<button class="btn btn-wa btn-sm" id="rbtn-${item.s.id}"
                     onclick="sendOneResultWA('${item.s.id}')"
-                    style="font-size:10px;padding:5px 10px;min-width:52px">📱 Send</button>`
-                : `<span style="font-size:10px;color:#94a3b8;min-width:52px;text-align:center">No phone</span>`}
+                    style="font-size:10px;padding:4px 10px">📱 Send</button>`
+                : `<span style="font-size:10px;color:#dc2626;min-width:56px;text-align:center">No phone</span>`}
             </div>
           </div>`;
         }).join('')}
-    </div>
+      </div>
 
-    <div style="text-align:center;font-size:10px;color:var(--tx3);margin-top:8px">
-      ${withMarks} marks saved · ${hasPhone} with phone · ${noPhone} without phone
+      <!-- Footer -->
+      <div class="modal-foot" style="margin-top:10px">
+        <button class="btn btn-wa" onclick="sendAllResultsWA()"
+          style="flex:1;justify-content:center;font-weight:700;padding:10px;font-size:12px">
+          📱 Send to All (${withPhone})
+        </button>
+        <button class="btn" onclick="closeModal()" style="padding:10px 16px">Close</button>
+      </div>
     </div>
-
-  </div>
-</div>`;
+  </div>`;
 }
 
 /* Build the WA message for one student result */
@@ -5138,9 +5123,7 @@ function _buildOneResultMsg(item, exam, pass) {
       : item.marks >= pass
         ? (item.pct >= 80 ? 'சிறப்பான செயல்திறன்! தொடர்ந்து உழைக்கவும்! 🌟' : 'நல்ல முயற்சி! தொடர்ந்து படிக்கவும்! 👍')
         : 'பலவீன பகுதிகளில் கவனம் செலுத்துங்கள். நாங்கள் உதவுவோம்! 💪';
-  const passStatus = item.absent ? '❌ வரவில்லை'
-    : item.marks === null ? '—'
-    : item.marks >= pass ? '✅ தேர்ச்சி' : '❌ தேர்ச்சியடையவில்லை';
+  const passStatus = item.absent ? '❌ வரவில்லை' : item.marks === null ? '—' : item.marks >= pass ? '✅ தேர்ச்சி' : '❌ தேர்ச்சியடையவில்லை';
   return tmpl
     .replace(/{parent_name}/g,  s.parent   || 'பெற்றோர்')
     .replace(/{student_name}/g, s.name     || '')
@@ -5157,7 +5140,7 @@ function _buildOneResultMsg(item, exam, pass) {
     .replace(/{center_phone}/g, ctr.phone  || '');
 }
 
-/* Send WA to one student and mark row as sent */
+/* Send WA to one student and mark as sent */
 function sendOneResultWA(studentId) {
   if (!window._resultStudents || !window._resultExam) return;
   const item = window._resultStudents.find(x => x.s.id === studentId);
@@ -5166,23 +5149,18 @@ function sendOneResultWA(studentId) {
   if (phone.length < 10) return showToast('⚠️ ' + item.s.name + ' — தொலைபேசி எண் இல்லை');
   const msg = _buildOneResultMsg(item, window._resultExam, window._resultPass);
   openWA(item.s.phone, msg);
-  // Mark row as sent
+  showToast('📱 ' + item.s.name + ' பெற்றோருக்கு WA திறக்கிறது…');
+  // Mark as sent
   const btn = document.getElementById('rbtn-' + studentId);
   if (btn) { btn.textContent = '✅ Sent'; btn.disabled = true; btn.style.background = '#16a34a'; btn.style.borderColor = '#16a34a'; }
   const row = document.getElementById('rwq-' + studentId);
-  if (row) row.style.opacity = '.55';
+  if (row) row.style.opacity = '.65';
 }
 
-/* Send to all students visible in current filter */
+/* Send to all students with phone numbers */
 function sendAllResultsWA() {
   if (!window._resultStudents || !window._resultExam) return;
-  const filt = window._resultFilter || 'all';
-  const pass = window._resultPass;
-  let list = filt === 'pass'   ? window._resultStudents.filter(x => x.pass)
-           : filt === 'fail'   ? window._resultStudents.filter(x => !x.absent && x.marks !== null && !x.pass)
-           : filt === 'absent' ? window._resultStudents.filter(x => x.absent)
-           : window._resultStudents;
-  const withPhone = list.filter(x => (x.s.phone||'').replace(/\D/g,'').length >= 10);
+  const withPhone = window._resultStudents.filter(x => (x.s.phone||'').replace(/\D/g,'').length >= 10);
   if (withPhone.length === 0) return showToast('⚠️ தொலைபேசி எண் உள்ள மாணவர்கள் இல்லை');
   let delay = 0;
   withPhone.forEach(item => {
@@ -6374,10 +6352,6 @@ function renderExams() {
               onclick="event.stopPropagation();_ewSelectedExam=exams[${i}];ewGoStep(4)">
               📋 Enter Marks
             </button>
-            <button class="btn btn-wa btn-sm" style="font-size:10px;flex:1;justify-content:center;padding:4px 8px"
-              onclick="event.stopPropagation();openSendResultsModal(${i})">
-              📱 Send Results
-            </button>
             <button class="btn btn-sm" style="font-size:10px;padding:4px 8px"
               onclick="event.stopPropagation();editExam(${i})" title="Edit">✏️</button>
             <button class="btn btn-sm" style="font-size:10px;padding:4px 8px;color:#dc2626;border-color:#fecdd3;background:#fff1f2"
@@ -6745,15 +6719,6 @@ async function ewRunAIMarksAnalysis() {
 }
 
 /* ── Open "Send Results" from marks panel → goes to step 4 WA ── */
-/* Quick-send from Step 4 — reads _ewSelectedExam */
-function ewSendResults() {
-  const exam = _ewSelectedExam;
-  if (!exam) { showToast('தேர்வு தேர்ந்தெடுக்கப்படவில்லை'); return; }
-  const idx = exams.findIndex(e => e.id === exam.id);
-  if (idx === -1) { showToast('தேர்வு கிடைக்கவில்லை'); return; }
-  openSendResultsModal(idx);
-}
-
 function openSendResultsModalEW(examIdx) {
   const exam = exams[examIdx];
   if (!exam) return;
@@ -10265,474 +10230,312 @@ function initAI(){initAIFilter();renderAICards();renderPredictCards();renderStud
 /* ═══════════════════════════════════════════════════════
    BACKUP
 ═══════════════════════════════════════════════════════ */
-const BK_GS_CODE = `// ═══════════════════════════════════════════════════════════════════════════
-//  KTC Kalam Tuition ERP — Google Apps Script  v4.0  (100% Backup)
-//  Sheets created automatically: Students, Fees, Staff, Batches, Exams,
-//  Marks, Attendance, StaffAttendance, Salary, FeeStructure, DayOrder,
-//  Timetables, StudentSummary, Templates, Notifications, Settings, Log
-// ───────────────────────────────────────────────────────────────────────────
-//  SETUP (one-time):
-//  1. Open your Google Sheet → Extensions → Apps Script
-//  2. Delete any existing code, paste THIS entire file
-//  3. Change YOUR_SPREADSHEET_ID_HERE below to your Sheet's ID
-//     (from the Sheet URL: docs.google.com/spreadsheets/d/<<ID>>/edit)
-//  4. Click 💾 Save  →  Deploy → New Deployment
-//     • Type            : Web App
-//     • Execute as      : Me
-//     • Who has access  : Anyone
-//  5. Click Deploy → copy the Web App URL  (ends with /exec)
-//  6. Paste that URL in KTC ERP → Settings → Backup & Sync → Sheet URL
-//  7. Click "Sync Now" — first sync creates all sheets automatically ✅
-// ═══════════════════════════════════════════════════════════════════════════
+const BK_GS_CODE = `// ═══ Kalam Tuition ERP — Google Apps Script v3.3 ════════════
+// 1. Open Google Sheet → Extensions → Apps Script
+// 2. Paste this entire code, replace SPREADSHEET_ID below
+// 3. Deploy → New Deployment → Web App → Execute as: Me → Who has access: Anyone → Deploy
+// 4. Copy the Web App URL → paste in ERP Settings → Backup & Sync
 
-const SPREADSHEET_ID = 'YOUR_SPREADSHEET_ID_HERE';   // ← CHANGE THIS
+const SPREADSHEET_ID = 'YOUR_SPREADSHEET_ID_HERE';
 
-// ─── CORS preflight — required so the browser can read the response ────────
-function doGet(e) {
-  return ContentService
-    .createTextOutput(JSON.stringify({ status: 'ok', msg: 'KTC ERP Backup Script is live ✅' }))
-    .setMimeType(ContentService.MimeType.JSON);
-}
-
+// ── CORS preflight support — required for direct browser fetch ──
 function doOptions(e) {
   return ContentService.createTextOutput('')
     .setMimeType(ContentService.MimeType.TEXT);
 }
 
-// ─── Main entry point ─────────────────────────────────────────────────────
 function doPost(e) {
   try {
-    const raw  = e.postData ? e.postData.contents : '{}';
-    const data = JSON.parse(raw);
+    const data = JSON.parse(e.postData.contents);
     const ss   = SpreadsheetApp.openById(SPREADSHEET_ID);
-    const ts   = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+    const ts   = new Date().toLocaleString('en-IN');
 
-    const counts = {};
-
-    // ── 1. STUDENTS ──────────────────────────────────────────────────────
-    const students = data.students || [];
+    // ── Students ──────────────────────────────────────────────
     overwriteSht(ss, 'Students',
-      ['Time','ID','Adm No','Name','Grade','Parent','Phone','Course',
-       'Subjects','Monthly Fee','Adm Date','Status','Color'],
-      students.map(s => [
-        ts,
-        s.id        || '',
-        s.admNo     || '',
-        s.name      || '',
-        s.grade     || '',
-        s.parent    || '',
-        s.phone     || '',
-        s.course    || '',
-        Array.isArray(s.subjects) ? s.subjects.join(', ') : (s.subjects || ''),
-        s.fee       || 0,
-        s.admDate   || '',
-        s.status    || 'active',
-        s.color     || '',
-      ]));
-    counts.students = students.length;
+      ['Time','ID','Adm No','Name','Grade','Parent','Phone','Course','Subjects','Fee','Adm Date','Status'],
+      (data.students||[]).map(s=>[ts,s.id||'',s.admNo||'',s.name||'',s.grade||'',
+        s.parent||'',s.phone||'',s.course||'',(s.subjects||[]).join?s.subjects.join(','):s.subjects||'',
+        s.fee||0,s.admDate||'',s.status||'active']));
 
-    // ── 2. FEES ──────────────────────────────────────────────────────────
-    const fees = data.fees || [];
+    // ── Fees ──────────────────────────────────────────────────
     overwriteSht(ss, 'Fees',
-      ['Time','Receipt No','Student','Student ID','Month','Total','Paid',
-       'Balance','Mode','Status','Type','Paid On','Notes'],
-      fees.map(f => [
-        ts,
-        f.rcpt      || f.receiptNo || '',
-        f.student   || f.studentName || '',
-        f.studentId || f.sid || '',
-        f.month     || '',
-        Number(f.total   || 0),
-        Number(f.paid    || 0),
-        Number(f.balance || 0),
-        f.mode      || 'Cash',
-        f.status    || 'pending',
-        f.type      || 'monthly',
-        f.paidOn    || f.date || '',
-        f.notes     || f.note || '',
-      ]));
-    counts.fees = fees.length;
+      ['Time','Receipt','Student','Month','Total','Paid','Balance','Mode','Status','Type','Paid On'],
+      (data.fees||[]).map(f=>[ts,f.rcpt||'',f.student||'',f.month||'',
+        f.total||0,f.paid||0,f.balance||0,f.mode||'Cash',
+        f.status||'pending',f.type||'monthly',f.paidOn||'']));
 
-    // ── 3. STAFF ─────────────────────────────────────────────────────────
-    const staff = data.staff || data.staffData || [];
+    // ── Staff ─────────────────────────────────────────────────
     overwriteSht(ss, 'Staff',
-      ['Time','ID','Name','Role','Phone','Base Salary','Consolidated Pay',
-       'PF Deduction','Extra Deduction','Status'],
-      staff.map(s => [
-        ts,
-        s.id              || '',
-        s.name            || '',
-        s.role            || '',
-        s.phone           || '',
-        Number(s.baseSalary        || 0),
-        Number(s.consolidatedPay   || s.baseSalary || 0),
-        Number(s.pfDeduction       || 0),
-        Number(s.extraDeduction    || 0),
-        s.status          || 'active',
-      ]));
-    counts.staff = staff.length;
+      ['Time','ID','Name','Role','Phone','Base Salary','Consolidated Pay','Status'],
+      (data.staff||[]).map(s=>[ts,s.id||'',s.name||'',s.role||'',
+        s.phone||'',s.baseSalary||0,s.consolidatedPay||s.baseSalary||0,s.status||'active']));
 
-    // ── 4. BATCHES ───────────────────────────────────────────────────────
-    const batches = data.batches || [];
+    // ── Batches ───────────────────────────────────────────────
     overwriteSht(ss, 'Batches',
-      ['Time','ID','Name','Grade','Session','Days','Fee','Teacher','Subjects'],
-      batches.map(b => [
-        ts,
-        b.id      || '',
-        b.name    || '',
-        b.grade   || '',
-        b.session || '',
-        Array.isArray(b.days) ? b.days.join(', ') : (b.days || ''),
-        Number(b.fee || 0),
-        b.teacher || '',
-        Array.isArray(b.subjects) ? b.subjects.join(', ') : (b.subjects || ''),
-      ]));
-    counts.batches = batches.length;
+      ['Time','ID','Name','Grade','Session','Days','Fee','Teacher'],
+      (data.batches||[]).map(b=>[ts,b.id||'',b.name||'',b.grade||'',
+        b.session||'',(b.days||[]).join(','),b.fee||0,b.teacher||'']));
 
-    // ── 5. EXAMS ─────────────────────────────────────────────────────────
-    const exams = data.exams || [];
+    // ── Exams ─────────────────────────────────────────────────
     overwriteSht(ss, 'Exams',
       ['Time','ID','Exam Name','Subject','Type','Date','Full Marks','Pass Marks','Batch'],
-      exams.map(ex => [
-        ts,
-        ex.id         || '',
-        ex.name       || '',
-        ex.subject    || '',
-        ex.type       || '',
-        ex.date       || '',
-        Number(ex.maxMarks  || 100),
-        Number(ex.passMarks || 35),
-        ex.batch      || 'All',
-      ]));
-    counts.exams = exams.length;
+      (data.exams||[]).map(ex=>[ts,ex.id||'',ex.name||'',ex.subject||'',
+        ex.type||'',ex.date||'',ex.maxMarks||100,ex.passMarks||35,ex.batch||'All']));
 
-    // ── 6. MARKS ─────────────────────────────────────────────────────────
+    // ── Marks ─────────────────────────────────────────────────
     const markRows = [];
-    const marksData = data.marks || {};
-    Object.entries(marksData).forEach(([examKey, val]) => {
+    Object.entries(data.marks||{}).forEach(([examKey, val])=>{
       if (!val || typeof val !== 'object') return;
-      const examName  = val.examName  || examKey;
-      const subject   = val.subject   || '';
-      const maxMarks  = Number(val.maxMarks  || 100);
-      const passMarks = Number(val.passMarks || 35);
+      const examName = val.examName||examKey;
+      const subject  = val.subject||'';
+      const maxMarks = val.maxMarks||100;
+      const passMarks= val.passMarks||35;
       if (val.marks && typeof val.marks === 'object') {
-        Object.entries(val.marks).forEach(([sid, m]) => {
-          const stu    = students.find(x => x.id === sid) || {};
-          const score  = typeof m === 'object' ? m.marks  : m;
-          const absent = typeof m === 'object' ? (m.absent ? 'Yes' : 'No') : 'No';
-          const result = typeof m === 'object' ? (m.pass   ? 'Pass' : 'Fail') : '';
-          const grade  = typeof m === 'object' ? (m.grade  || '') : '';
-          const pct    = (absent === 'No' && score !== null && score !== undefined)
-                         ? ((Number(score) / maxMarks) * 100).toFixed(1) : '';
-          markRows.push([ts, examKey, examName, subject, maxMarks, passMarks,
-                         sid, stu.name || '', score, absent, result, grade, pct]);
+        // Full exam record: { examId, examName, marks: { studentId: {marks, absent, pass} } }
+        const stu = data.students||[];
+        Object.entries(val.marks).forEach(([sid,m])=>{
+          const s = stu.find(x=>x.id===sid)||{};
+          const score = typeof m==='object'? m.marks : m;
+          const absent= typeof m==='object'? (m.absent?'Yes':'No') : 'No';
+          const pass  = typeof m==='object'? (m.pass?'Pass':'Fail') : '';
+          markRows.push([ts,examKey,examName,subject,maxMarks,passMarks,sid,s.name||'',score,absent,pass]);
         });
+      } else {
+        markRows.push([ts,examKey,examName,subject,maxMarks,passMarks,'','',val,'','']);
       }
     });
-    if (markRows.length > 0)
-      overwriteSht(ss, 'Marks',
-        ['Time','Exam Key','Exam Name','Subject','Max Marks','Pass Marks',
-         'Student ID','Student Name','Score','Absent','Result','Grade','Percentage %'],
+    if (markRows.length>0)
+      overwriteSht(ss,'Marks',
+        ['Time','Exam Key','Exam Name','Subject','Max Marks','Pass Marks','Student ID','Student Name','Score','Absent','Result'],
         markRows);
-    counts.marks = markRows.length;
 
-    // ── 7. STUDENT ATTENDANCE ─────────────────────────────────────────────
+    // ── Attendance ────────────────────────────────────────────
     const attRows = [];
-    const attData = data.attendanceFull || data.attendance || {};
-    Object.entries(attData).forEach(([key, val]) => {
+    // Use full attendance store (all _erp_att_* keys)
+    Object.entries(data.attendanceFull||data.attendance||{}).forEach(([key,val])=>{
       if (key === '_erp_att_index') return;
+      // Each value is an object like { "studentId|batchId|session": "P"/"A"/"L" }
       if (typeof val === 'object' && val !== null && !Array.isArray(val)) {
-        // Key format: _erp_att_YYYY-MM-DD_batchId_session
-        const stripped  = key.replace('_erp_att_', '');
-        const firstDash = stripped.indexOf('_', 11); // skip date part YYYY-MM-DD
-        const date      = stripped.substring(0, 10);
-        const rest      = stripped.substring(11);
-        const lastUnder = rest.lastIndexOf('_');
-        const batch     = lastUnder >= 0 ? rest.substring(0, lastUnder) : rest;
-        const session   = lastUnder >= 0 ? rest.substring(lastUnder + 1) : '';
-        Object.entries(val).forEach(([k, status]) => {
-          const stuId = k.split('|')[0] || k;
-          const stu   = students.find(s => s.id === stuId) || {};
-          attRows.push([ts, date, batch, session, stuId, stu.name || '', status || '']);
+        // Parse date/batch/session from key: _erp_att_{date}_{batchId}_{session}
+        const keyParts = key.replace('_erp_att_','').split('_');
+        const date     = keyParts[0]||'';
+        const batch    = keyParts.slice(1,-1).join('_')||'';
+        const session  = keyParts[keyParts.length-1]||'';
+        Object.entries(val).forEach(([k,status])=>{
+          const parts = k.split('|');
+          const stuId = parts[0]||'';
+          const stu   = (data.students||[]).find(s=>s.id===stuId)||{};
+          attRows.push([ts,date,batch,session,stuId,stu.name||'',status]);
         });
+      } else {
+        attRows.push([ts,key,'','','','',String(val||'')]);
       }
     });
-    if (attRows.length > 0)
-      overwriteSht(ss, 'Attendance',
+    if (attRows.length>0)
+      overwriteSht(ss,'Attendance',
         ['Time','Date','Batch','Session','Student ID','Student Name','Status'],
-        attRows.slice(0, 5000)); // cap at 5000 rows for sheet limits
-    counts.attendance = attRows.length;
+        attRows.slice(0,3000));
 
-    // ── 8. STAFF ATTENDANCE ───────────────────────────────────────────────
-    const staffAttRows = [];
-    Object.entries(data.staffAttendance || {}).forEach(([key, status]) => {
-      const parts   = String(key).split('|');
-      const staffId = parts[0] || '';
-      const date    = parts[1] || '';
-      const session = parts[2] || 'Full Day';
-      const stf     = staff.find(s => s.id === staffId) || {};
-      staffAttRows.push([ts, staffId, stf.name || '', date, session, status || '']);
-    });
-    if (staffAttRows.length > 0)
-      overwriteSht(ss, 'StaffAttendance',
-        ['Time','Staff ID','Staff Name','Date','Session','Status'],
-        staffAttRows.slice(0, 3000));
-    counts.staffAttendance = staffAttRows.length;
-
-    // ── 9. SALARY PAYMENTS ────────────────────────────────────────────────
-    const salRaw = data.salaryPayments || {};
-    const salArr = Array.isArray(salRaw)
-      ? salRaw
-      : Object.entries(salRaw).map(([k, v]) => ({
-          key: k,
-          ...(typeof v === 'object' ? v : { amount: v })
-        }));
-    overwriteSht(ss, 'Salary',
-      ['Time','Key','Staff ID','Staff Name','Month','Amount','Mode','Paid On',
-       'Working Days','Leave Days','LOP Days','Advance','PF','Extra Ded','Net Pay','Note'],
-      salArr.map(p => [
-        ts,
-        p.key         || '',
-        p.staffId     || '',
-        p.name        || (staff.find(s => s.id === p.staffId) || {}).name || '',
-        p.month       || '',
-        Number(p.amount      || p.netPay || 0),
-        p.mode        || 'Cash',
-        p.paidOn      || p.date || '',
-        Number(p.workingDays || 0),
-        Number(p.leaveDays   || 0),
-        Number(p.lopDays     || 0),
-        Number(p.advance     || 0),
-        Number(p.pf          || 0),
-        Number(p.extraDed    || 0),
-        Number(p.netPay      || p.amount || 0),
-        p.note        || '',
-      ]));
-    counts.salary = salArr.length;
-
-    // ── 10. FEE STRUCTURE ─────────────────────────────────────────────────
-    const fsRows = Object.entries(data.feeStructure || {}).map(([grade, cfg]) => [
-      ts, grade,
-      Number(cfg.monthlyFee  || 0),
-      Number(cfg.admFee      || 0),
-      Number(cfg.lateFee     || 0),
-      Number(cfg.subjectFee  || 0),
-      Number(cfg.examFee     || 0),
-    ]);
-    if (fsRows.length > 0)
-      overwriteSht(ss, 'FeeStructure',
-        ['Time','Grade','Monthly Fee','Adm Fee','Late Fee','Subject Fee','Exam Fee'],
-        fsRows);
-    counts.feeStructure = fsRows.length;
-
-    // ── 11. DAY ORDER ─────────────────────────────────────────────────────
+    // ── Day Order ─────────────────────────────────────────────
     const dayOrderRows = [];
-    Object.entries(data.dayOrder || {}).forEach(([dayNum, subjects]) => {
-      const list = Array.isArray(subjects) ? subjects : [subjects];
-      list.forEach((subj, i) => dayOrderRows.push([ts, dayNum, i + 1, subj || '']));
+    const dayOrderMap = data.dayOrder||{};
+    Object.entries(dayOrderMap).forEach(([dayNum, subjects])=>{
+      const subjList = Array.isArray(subjects) ? subjects : [subjects];
+      subjList.forEach((subj,i)=>{
+        dayOrderRows.push([ts, dayNum, i+1, subj||'']);
+      });
     });
-    overwriteSht(ss, 'DayOrder',
+    overwriteSht(ss,'DayOrder',
       ['Time','Day Number','Subject Order','Subject Name'],
       dayOrderRows);
-    counts.dayOrder = dayOrderRows.length;
 
-    // ── 12. TIMETABLES ───────────────────────────────────────────────────
+    // ── Timetables ────────────────────────────────────────────
     const ttRows = [];
-    Object.entries(data.timetables || {}).forEach(([key, val]) => {
-      if (!val || typeof val !== 'object') return;
-      const batchName = key.replace('_erp_tt_', '');
+    Object.entries(data.timetables||{}).forEach(([key,val])=>{
+      if (!val || typeof val!=='object') return;
+      const batchName = key.replace('_erp_tt_','');
+      // val.days is an array of { dayName, subjects: [] }
       if (Array.isArray(val.days)) {
-        val.days.forEach((day, di) => {
-          (day.subjects || []).forEach((subj, si) => {
-            ttRows.push([ts, batchName, di + 1, day.dayName || ('Day ' + (di + 1)), si + 1, subj || '']);
+        val.days.forEach((day,di)=>{
+          (day.subjects||[]).forEach((subj,si)=>{
+            ttRows.push([ts, batchName, di+1, day.dayName||('Day '+(di+1)), si+1, subj||'']);
           });
         });
       } else {
-        ttRows.push([ts, batchName, '', '', '', JSON.stringify(val).substring(0, 500)]);
+        ttRows.push([ts, batchName, '', '', '', JSON.stringify(val)]);
       }
     });
-    if (ttRows.length > 0)
-      overwriteSht(ss, 'Timetables',
+    if (ttRows.length>0)
+      overwriteSht(ss,'Timetables',
         ['Time','Batch','Day Number','Day Name','Subject Order','Subject'],
         ttRows);
-    counts.timetables = ttRows.length;
 
-    // ── 13. STUDENT SUMMARY (Stars / Activities / Notes) ─────────────────
-    const sumRows = [];
-    Object.entries(data.studentSummary || {}).forEach(([key, val]) => {
-      const clean  = key.replace('_erp_sum_', '');
-      const parts  = clean.split('_');
-      const month  = parts.pop() || '';
-      const year   = parts.pop() || '';
-      const stuId  = parts.join('_');
-      const stu    = students.find(s => s.id === stuId) || {};
-      const v      = typeof val === 'object' ? val : {};
-      sumRows.push([
-        ts, stuId, stu.name || '', year, month,
-        Number(v.stars || 0),
-        Array.isArray(v.activities) ? v.activities.join(', ') : (v.activities || ''),
-        v.note || '',
-      ]);
+    // ── Salary Payments ───────────────────────────────────────
+    const salArr = Array.isArray(data.salaryPayments)
+      ? data.salaryPayments
+      : Object.entries(data.salaryPayments||{}).map(([k,v])=>({key:k,...(typeof v==='object'?v:{amount:v})}));
+    overwriteSht(ss,'Salary',
+      ['Time','Key','Staff ID','Name','Month','Amount','Mode','Paid On','Note'],
+      salArr.map(p=>[ts,p.key||'',p.staffId||'',p.name||'',
+        p.month||'',p.amount||0,p.mode||'Cash',p.paidOn||p.date||'',p.note||'']));
+
+    // ── Staff Attendance ───────────────────────────────────────
+    const staffAttRows = [];
+    Object.entries(data.staffAttendance||{}).forEach(([key,status])=>{
+      const parts = String(key).split('|');
+      const staffId = parts[0]||'';
+      const date    = parts[1]||'';
+      const session = parts[2]||'Full Day';
+      const stf = (data.staff||[]).find(s=>s.id===staffId)||{};
+      staffAttRows.push([ts,staffId,stf.name||'',date,session,status||'']);
     });
-    if (sumRows.length > 0)
-      overwriteSht(ss, 'StudentSummary',
+    if (staffAttRows.length>0)
+      overwriteSht(ss,'StaffAttendance',
+        ['Time','Staff ID','Staff Name','Date','Session','Status'],
+        staffAttRows.slice(0,3000));
+
+    // ── Notifications ─────────────────────────────────────────
+    overwriteSht(ss,'Notifications',
+      ['Time','ID','Type','Message','Date','Read'],
+      (data.notifications||[]).map(n=>[ts,n.id||'',n.type||'',
+        n.message||n.msg||'',n.date||'',n.read?'Yes':'No']));
+
+    // ── Fee Structure ─────────────────────────────────────────
+    const fsRows = Object.entries(data.feeStructure||{}).map(([grade,cfg])=>[ts,grade,
+      cfg.monthlyFee||0,cfg.admFee||0,cfg.lateFee||0,cfg.subjectFee||0]);
+    if (fsRows.length>0)
+      overwriteSht(ss,'FeeStructure',
+        ['Time','Grade','Monthly Fee','Adm Fee','Late Fee','Subject Fee'],
+        fsRows);
+
+    // ── Student Summary ───────────────────────────────────────
+    const sumRows = [];
+    Object.entries(data.studentSummary||{}).forEach(([key,val])=>{
+      const clean  = key.replace('_erp_sum_','');
+      const parts  = clean.split('_');
+      const month  = parts.pop()||'';
+      const year   = parts.pop()||'';
+      const stuId  = parts.join('_');
+      const stu    = (data.students||[]).find(s=>s.id===stuId)||{};
+      sumRows.push([ts,stuId,stu.name||'',year,month,
+        val.stars||0,(val.activities||[]).join(', '),val.note||'']);
+    });
+    if (sumRows.length>0)
+      overwriteSht(ss,'StudentSummary',
         ['Time','Student ID','Student Name','Year','Month','Stars','Activities','Note'],
         sumRows);
-    counts.studentSummary = sumRows.length;
 
-    // ── 14. WA TEMPLATES ─────────────────────────────────────────────────
+    // ── WhatsApp Templates ────────────────────────────────────
     const waRows = [];
-    Object.entries(data.waTemplates || {}).forEach(([k, v]) => {
-      waRows.push([ts, k.replace('_erp_wt_', ''), String(v || '').substring(0, 10000)]);
+    Object.entries(data.waTemplates||{}).forEach(([k,v])=>waRows.push([ts,k.replace('_erp_wt_',''),v||'']));
+    if (data.feeRcptTemplate) waRows.push([ts,'fee_receipt',data.feeRcptTemplate]);
+    if (data.admTemplate)     waRows.push([ts,'admission',  data.admTemplate]);
+    if (waRows.length>0)
+      overwriteSht(ss,'Templates',['Time','Template Name','Template Text'],waRows);
+
+    // ── AI / Reports / Diagnostic Data ────────────────────────
+    const aiRows = [];
+    Object.entries(data.aiData||{}).forEach(([k,v])=>{
+      const val = typeof v==='object'? JSON.stringify(v): String(v||'');
+      aiRows.push([ts, k, val.substring(0,50000)]);
     });
-    if (data.feeRcptTemplate) waRows.push([ts, 'fee_receipt',  data.feeRcptTemplate]);
-    if (data.admTemplate)     waRows.push([ts, 'admission',    data.admTemplate]);
-    if (waRows.length > 0)
-      overwriteSht(ss, 'Templates',
-        ['Time','Template Name','Template Text'],
-        waRows);
-    counts.templates = waRows.length;
+    if (aiRows.length>0)
+      overwriteSht(ss,'AI_Data',['Time','Key','Data'],aiRows);
 
-    // ── 15. NOTIFICATIONS ─────────────────────────────────────────────────
-    const notifs = data.notifications || [];
-    overwriteSht(ss, 'Notifications',
-      ['Time','ID','Type','Message','Date','Read'],
-      notifs.map(n => [
-        ts,
-        n.id      || '',
-        n.type    || '',
-        n.message || n.msg || '',
-        n.date    || '',
-        n.read ? 'Yes' : 'No',
-      ]));
-    counts.notifications = notifs.length;
-
-    // ── 16. SETTINGS ──────────────────────────────────────────────────────
-    const center = data.center || {};
-    overwriteSht(ss, 'Settings',
-      ['Time','Setting','Value'], [
-        [ts, 'center_name',         center.name      || ''],
-        [ts, 'center_phone',        center.phone     || ''],
-        [ts, 'center_address',      center.address   || ''],
-        [ts, 'center_email',        center.email     || ''],
-        [ts, 'adm_lang',            data.admLang     || ''],
-        [ts, 'fee_rcpt_lang',       data.feeRcptLang || ''],
-        [ts, 'dark_mode',           data.darkMode    || ''],
-        [ts, 'lates_to_leave',      data.latesToLeave|| ''],
-        [ts, 'last_monthly_reset',  data.lastMonthlyReset || ''],
-        [ts, 'backup_version',      '4.0'],
-        [ts, 'sync_time',           ts],
-        [ts, 'total_students',      String(students.length)],
-        [ts, 'total_fees',          String(fees.length)],
-        [ts, 'total_staff',         String(staff.length)],
+    // ── Settings ──────────────────────────────────────────────
+    const center = data.center||{};
+    overwriteSht(ss,'Settings',
+      ['Time','Setting','Value'],[
+        [ts,'center_name',    center.name    ||''],
+        [ts,'center_phone',   center.phone   ||''],
+        [ts,'center_address', center.address ||''],
+        [ts,'center_email',   center.email   ||''],
+        [ts,'adm_lang',       data.admLang   ||''],
+        [ts,'fee_rcpt_lang',  data.feeRcptLang||''],
+        [ts,'dark_mode',      data.darkMode  ||''],
+        [ts,'lates_to_leave', data.latesToLeave||''],
+        [ts,'last_monthly_reset',data.lastMonthlyReset||''],
+        [ts,'backup_version', '3.3'],
+        [ts,'sync_time',      ts],
       ]);
 
-    // ── 17. LOG (append-only — keeps full sync history forever) ──────────
-    appendLog(ss, ts, data, counts);
+    // ── Log (append only — keeps history) ────────────────────
+    logEntry(ss, ts, data, attRows.length, salArr.length, sumRows.length);
 
-    // ── Response — sent back to the app ───────────────────────────────────
-    return ContentService
-      .createTextOutput(JSON.stringify({
-        status: 'ok',
-        ts,
-        counts,
-        sheets: Object.keys(counts),
-        msg:    \`✅ Synced ${counts.students} students · ${counts.fees} fees · ${counts.marks} marks · ${counts.attendance} att rows\`,
-      }))
-      .setMimeType(ContentService.MimeType.JSON);
+    return ContentService.createTextOutput(JSON.stringify({
+      status:'ok', ts,
+      counts:{
+        students   : (data.students||[]).length,
+        fees       : (data.fees||[]).length,
+        staff      : (data.staff||[]).length,
+        batches    : (data.batches||[]).length,
+        exams      : (data.exams||[]).length,
+        marks      : markRows.length,
+        attendance : attRows.length,
+        staffAttendance: staffAttRows.length,
+        dayOrder   : dayOrderRows.length,
+        timetables : ttRows.length,
+        salary     : salArr.length,
+        summary    : sumRows.length,
+        templates  : waRows.length,
+        ai         : aiRows.length,
+      }
+    })).setMimeType(ContentService.MimeType.JSON);
 
-  } catch (err) {
-    return ContentService
-      .createTextOutput(JSON.stringify({
-        status: 'error',
-        msg:    err.toString(),
-        stack:  err.stack || '',
-      }))
-      .setMimeType(ContentService.MimeType.JSON);
+  } catch(err) {
+    return ContentService.createTextOutput(
+      JSON.stringify({status:'error',msg:err.toString(),stack:err.stack||''})
+    ).setMimeType(ContentService.MimeType.JSON);
   }
 }
 
-// ─── Overwrite sheet: bold blue header + clear + batch-write rows ──────────
+// Overwrite sheet data (keep header, replace all rows) — batched for large datasets
 function overwriteSht(ss, name, headers, rows) {
-  let sh = ss.getSheetByName(name);
-  if (!sh) {
-    sh = ss.insertSheet(name);
-    // Move new sheets to end so Log stays last
-    ss.setActiveSheet(sh);
-    ss.moveActiveSheet(ss.getNumSheets());
-  }
-
-  // Header row — bold blue
-  sh.getRange(1, 1, 1, headers.length)
-    .setValues([headers])
-    .setFontWeight('bold')
-    .setBackground('#1a56db')
-    .setFontColor('#ffffff');
-  sh.setFrozenRows(1);
-
+  let s = ss.getSheetByName(name) || ss.insertSheet(name);
+  // Set / overwrite header
+  s.getRange(1, 1, 1, headers.length).setValues([headers])
+    .setFontWeight('bold').setBackground('#1a56db').setFontColor('#fff');
   // Clear existing data rows
-  const lastRow = sh.getLastRow();
-  if (lastRow > 1) sh.deleteRows(2, lastRow - 1);
-
+  const last = s.getLastRow();
+  if (last > 1) s.deleteRows(2, last - 1);
   if (!rows || rows.length === 0) return;
-
-  // Sanitise cells: null→'', objects→JSON string, limit cell to 50 000 chars
-  const clean = rows.map(row =>
-    headers.map((_, ci) => {
-      const cell = row[ci];
-      if (cell === null || cell === undefined) return '';
-      if (typeof cell === 'object') return JSON.stringify(cell).substring(0, 50000);
-      if (typeof cell === 'string') return cell.substring(0, 50000);
-      return cell;
-    })
-  );
-
-  // Batch-write in chunks of 500 rows (avoids Apps Script timeout)
+  // Write in batches of 500 rows to avoid Apps Script timeout on large datasets
   const BATCH = 500;
-  for (let i = 0; i < clean.length; i += BATCH) {
-    const chunk = clean.slice(i, i + BATCH);
-    sh.getRange(2 + i, 1, chunk.length, headers.length).setValues(chunk);
+  for (let i = 0; i < rows.length; i += BATCH) {
+    const chunk = rows.slice(i, i + BATCH).map(row =>
+      // Ensure row has exactly headers.length cells, stringify objects
+      headers.map((_, ci) => {
+        const cell = row[ci];
+        if (cell === null || cell === undefined) return '';
+        if (typeof cell === 'object') return JSON.stringify(cell);
+        return cell;
+      })
+    );
+    s.getRange(2 + i, 1, chunk.length, headers.length).setValues(chunk);
   }
-
-  // Auto-resize first few columns for readability
-  try {
-    for (let c = 1; c <= Math.min(headers.length, 8); c++) {
-      sh.autoResizeColumn(c);
-    }
-  } catch (e) { /* non-fatal */ }
 }
 
-// ─── Append-only log — keeps history of every sync ────────────────────────
-function appendLog(ss, ts, data, counts) {
-  let sh = ss.getSheetByName('Log');
-  if (!sh) {
-    sh = ss.insertSheet('Log');
-    sh.getRange(1, 1, 1, 14)
-      .setValues([['Time','Center','Source','Students','Fees','Staff','Batches',
-                   'Exams','Marks','Attendance','Staff Att','Salary','Summary','Version']])
-      .setFontWeight('bold')
-      .setBackground('#1a56db')
-      .setFontColor('#ffffff');
-    sh.setFrozenRows(1);
+// Log — append only, keeps full sync history
+function logEntry(ss, ts, data, attCount, salCount, sumCount) {
+  let s = ss.getSheetByName('Log') || ss.insertSheet('Log');
+  if (s.getLastRow() === 0) {
+    s.appendRow(['Time','Center','Students','Fees','Staff','Batches','Exams','Attendance','Salary','Summary','Source']);
+    s.getRange(1,1,1,11).setFontWeight('bold').setBackground('#1a56db').setFontColor('#fff');
   }
-  sh.appendRow([
+  s.appendRow([
     ts,
-    (data.center && data.center.name) || 'KTC',
-    data.source   || 'manual',
-    counts.students        || 0,
-    counts.fees            || 0,
-    counts.staff           || 0,
-    counts.batches         || 0,
-    counts.exams           || 0,
-    counts.marks           || 0,
-    counts.attendance      || 0,
-    counts.staffAttendance || 0,
-    counts.salary          || 0,
-    counts.studentSummary  || 0,
-    '4.0',
+    (data.center&&data.center.name)||data.center||'KTC',
+    (data.students||[]).length,
+    (data.fees||[]).length,
+    (data.staff||[]).length,
+    (data.batches||[]).length,
+    (data.exams||[]).length,
+    attCount||0,
+    salCount||0,
+    sumCount||0,
+    data.source||'manual'
   ]);
-}
-`;
+}`;
 
 function getSnapshot() {
   // Helper: read a localStorage key safely
@@ -11091,19 +10894,12 @@ async function syncSheets(silent) {
         const now = new Date().toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'});
         if (result && result.status === 'ok') {
           const c = result.counts || {};
-          const lines = [
-            `✅ <b>Synced at ${now}</b> · ${sizeKB} KB sent`,
-            `👤 Students: <b>${c.students||0}</b>  &nbsp;💰 Fees: <b>${c.fees||0}</b>  &nbsp;👨‍🏫 Staff: <b>${c.staff||0}</b>`,
-            `📝 Exams: <b>${c.exams||0}</b>  &nbsp;🏆 Marks: <b>${c.marks||0}</b>  &nbsp;📅 Batches: <b>${c.batches||0}</b>`,
-            `🕐 Attendance: <b>${c.attendance||0}</b> rows  &nbsp;👔 Staff Att: <b>${c.staffAttendance||0}</b>`,
-            `💸 Salary: <b>${c.salary||0}</b>  &nbsp;⭐ Summary: <b>${c.studentSummary||0}</b>  &nbsp;📋 Templates: <b>${c.templates||0}</b>`,
-            `<span style="color:#6b7280;font-size:10px">All 17 sheets updated in Google Drive ✅</span>`,
-          ].join('<br>');
-          if (statusEl) { statusEl.style.display='block'; statusEl.innerHTML = `<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 12px;font-size:12px;line-height:1.8">${lines}</div>`; }
-          if (!silent) showToast('✅ Google Sheets synced — ' + (c.students||0) + ' students, ' + (c.fees||0) + ' fees!');
-          addBkLog(`[${now}] Sheets sync ✅ — ${c.students||0} students · ${c.fees||0} fees · ${c.marks||0} marks · ${c.attendance||0} att · ${sizeKB} KB`);
+          const summary = `✅ Synced at ${now} — ${c.students||0} students · ${c.fees||0} fees · ${c.marks||0} marks · ${c.attendance||0} att rows · ${sizeKB} KB`;
+          if (statusEl) statusEl.innerHTML = `<span style="color:#16a34a">${summary}</span>`;
+          if (!silent) showToast('✅ Google Sheets synced successfully!');
+          addBkLog(`[${now}] Sheets sync ✅ — ${c.students||0} students, ${c.fees||0} fees, ${c.marks||0} marks · ${sizeKB} KB`);
           bkHistory.unshift({ts:new Date().toISOString(),source:'sheets',size:sizeKB+' KB',status:'ok'});
-          renderBkHistory(); setBkStatus('ok','Google Sheets synced', `${c.students||0} students · ${c.fees||0} fees · ${sizeKB} KB`);
+          renderBkHistory(); setBkStatus('ok','Google Sheets synced',summary);
         } else if (result && result.status === 'error') {
           throw new Error('Apps Script error: ' + (result.msg || 'Unknown error'));
         } else {

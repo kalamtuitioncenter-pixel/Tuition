@@ -1681,6 +1681,22 @@ tbody tr:hover td{background:var(--bg)}
   <!-- Today's Summary Cards -->
   <div id="adm-summary-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:12px"></div>
 
+  <!-- Staff Summary — Attendance + Salary overview -->
+  <div class="card" style="margin-bottom:12px" id="adm-staff-summary-card">
+    <div class="card-hd" style="flex-wrap:wrap;gap:8px;margin-bottom:10px">
+      <span class="card-title">🧑‍🏫 Staff Summary</span>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <input type="month" id="adm-staff-summary-month" class="fi" style="width:auto;font-size:12px;padding:5px 9px" onchange="renderAdminStaffSummary()">
+        <button class="btn btn-wa btn-sm" onclick="openStaffSummaryWAQueue()">📋📱 Send Monthly Summary — All Staff</button>
+        <button class="btn btn-sm" onclick="navTo('staff');setTimeout(()=>{const b=document.getElementById('sf-tab-pay');if(b)switchStaffTab('pay',b)},120)">Full Payroll →</button>
+      </div>
+    </div>
+    <!-- Mini totals row -->
+    <div id="adm-staff-summary-totals" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:14px"></div>
+    <!-- Per-staff cards -->
+    <div id="adm-staff-summary-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px"></div>
+  </div>
+
   <!-- Today's To-Do — Interactive Daily Task Checklist -->
   <div class="card" style="margin-bottom:12px">
     <div class="card-hd" style="display:flex;align-items:center;justify-content:space-between">
@@ -2758,83 +2774,16 @@ function _openWADirect(phone, msg) {
   }
 }
 
-/* ── openWA — always shows editable preview modal before sending ── */
+/* ── openWA — sends immediately using the customised template, no confirm/edit popup ── */
 function openWA(phone, msg) {
   const clean = cleanPhone(phone);
   if (!clean || clean.length < 10) {
     showToast('⚠️ தொலைபேசி எண் இல்லை / Invalid phone number');
     return;
   }
-  // Show editable WA modal
-  let modalRoot = document.getElementById('modal-root');
-  if (!modalRoot) { _openWADirect(phone, msg); return; }
-
-  modalRoot.innerHTML = `
-  <div class="modal-bg" onclick="if(event.target===this)closeModal()" style="z-index:400">
-    <div class="modal" style="max-width:460px;padding:18px 18px 16px">
-
-      <!-- Header -->
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
-        <div style="width:40px;height:40px;background:#25d366;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">📱</div>
-        <div style="flex:1">
-          <div style="font-size:14px;font-weight:700;color:var(--tx)">WhatsApp Message</div>
-          <div style="font-size:11px;color:var(--tx2);margin-top:1px">📞 ${phone} &nbsp;·&nbsp; Edit message below before sending</div>
-        </div>
-        <button onclick="closeModal()" style="background:none;border:none;font-size:20px;color:var(--tx3);cursor:pointer;line-height:1;padding:0">×</button>
-      </div>
-
-      <!-- Editable textarea -->
-      <div style="margin-bottom:10px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
-          <label style="font-size:10px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em">Message</label>
-          <button onclick="document.getElementById('wa-edit-ta').value=window._waEditOrigMsg;document.getElementById('wa-live-preview').textContent=window._waEditOrigMsg" style="font-size:10px;color:#6366f1;background:none;border:none;cursor:pointer;font-family:inherit;padding:0">↺ Reset</button>
-        </div>
-        <textarea id="wa-edit-ta" rows="8"
-          style="width:100%;padding:10px 12px;border-radius:9px;border:1.5px solid var(--br2);background:var(--card);color:var(--tx);font-size:12px;font-family:'Noto Sans Tamil',system-ui;line-height:1.7;resize:vertical;outline:none;box-sizing:border-box;transition:border-color .15s"
-          oninput="document.getElementById('wa-live-preview').textContent=this.value;this.style.borderColor='#25d366'"
-          onfocus="this.style.borderColor='#25d366'"
-          onblur="this.style.borderColor='var(--br2)'"
-        >${msg.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
-      </div>
-
-      <!-- Live WhatsApp-style preview -->
-      <div style="margin-bottom:14px">
-        <div style="font-size:10px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">Preview</div>
-        <div id="wa-live-preview"
-          style="background:#e9fbe9;border-radius:10px 10px 10px 2px;padding:11px 13px;font-size:12px;color:#166534;line-height:1.7;white-space:pre-wrap;max-height:160px;overflow-y:auto;font-family:'Noto Sans Tamil',system-ui;border:.5px solid #bbf7d0;position:relative">
-          ${msg.replace(/</g,'&lt;').replace(/>/g,'&gt;')}
-        </div>
-      </div>
-
-      <!-- Action buttons -->
-      <div style="display:flex;gap:8px">
-        <button onclick="_sendWAFromModal('${phone}')" class="btn btn-wa"
-          style="flex:1;justify-content:center;padding:11px;font-size:13px;font-weight:700;border-radius:9px">
-          <svg viewBox="0 0 20 20" fill="none" width="17" height="17" style="margin-right:4px"><circle cx="10" cy="10" r="9" fill="white" opacity=".25"/><path d="M14.5 12.3c-.3-.15-1.5-.75-1.75-.85-.25-.1-.43-.15-.61.15-.18.3-.7.85-.85 1.02-.15.18-.3.2-.55.07-.25-.13-1.05-.39-2-.97-.74-.52-1.24-1.16-1.38-1.36-.15-.2-.02-.3.11-.4l.37-.43c.12-.13.15-.23.22-.38.08-.15.04-.28 0-.4-.1-.13-.6-1.44-.83-1.97-.22-.52-.44-.45-.6-.46H6.2c-.18 0-.47.07-.72.32-.25.25-.95.93-.95 2.27 0 1.34.97 2.64 1.1 2.82.13.18 1.9 2.9 4.6 4.07.64.28 1.14.44 1.53.56.64.2 1.22.17 1.68-.1.5-.3 1-.98 1.16-1.88.08-.46.02-.74-.09-.88z" fill="white"/></svg>
-          Send on WhatsApp
-        </button>
-        <button onclick="closeModal()" class="btn" style="padding:11px 16px;border-radius:9px">Cancel</button>
-      </div>
-      <div style="text-align:center;font-size:10px;color:var(--tx3);margin-top:8px">WhatsApp will open with this message pre-filled</div>
-
-    </div>
-  </div>`;
-
-  // Store original message for reset
-  window._waEditOrigMsg = msg;
-  // Focus textarea
-  setTimeout(() => {
-    const ta = document.getElementById('wa-edit-ta');
-    if (ta) { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }
-  }, 80);
+  _openWADirect(phone, msg);
 }
 
-function _sendWAFromModal(phone) {
-  const ta  = document.getElementById('wa-edit-ta');
-  const msg = ta ? ta.value : (window._waEditOrigMsg || '');
-  closeModal();
-  setTimeout(() => _openWADirect(phone, msg), 100);
-}
 
 function openWAFallback(phone, msg) {
   // Web/desktop fallback
@@ -8767,6 +8716,278 @@ function renderAdminPanel() {
       <div class="stat-val" style="color:${c.color};font-size:13px;line-height:1.4">${c.val}</div>
       ${c.sub ? `<div style="font-size:9px;color:${c.color};opacity:.7;margin-top:1px">${c.sub}</div>` : ''}
     </div>`).join('');
+
+  renderAdminStaffSummary();
+}
+
+/* ═══════════════════════════════════════════════════════
+   STAFF SUMMARY (Admin Panel) — per-staff attendance + salary
+   Shows: Present / Absent / Late / CL / LOP / Holiday day counts
+   for the selected month, plus salary breakdown & paid status.
+   Reuses the same day-by-day logic as generatePayroll().
+═══════════════════════════════════════════════════════ */
+/* ── Compute one staff member's attendance + salary summary for a given month ──
+   Reused by renderAdminStaffSummary() and the monthly WA summary senders. */
+function computeStaffMonthSummary(s, monthVal) {
+  const [yrS, moS] = monthVal.split('-');
+  const yr = parseInt(yrS), mo = parseInt(moS);
+  const daysInMonthFull = new Date(yr, mo, 0).getDate();
+  const now = new Date();
+  const isCurrentMonth = (now.getFullYear() === yr && (now.getMonth()+1) === mo);
+  const daysInMonth = isCurrentMonth ? now.getDate() : daysInMonthFull;
+  const latesToLeave = CFG.ATTENDANCE?.latesToLeave || 10;
+
+  let presentDays=0, absentDays=0, lateDays=0, clDays=0, lopDays=0, hDays=0, countedDays=0;
+  const joinDate = s.joinDate ? new Date(s.joinDate+'T00:00:00') : null;
+  for (let d=1; d<=daysInMonth; d++) {
+    const dt = yr+'-'+String(mo).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    const dObj = new Date(dt+'T00:00:00');
+    if (joinDate && dObj < joinDate) continue; // not yet joined
+    countedDays++;
+    const v = staffAtt[s.id+'|'+dt] || '';
+    if (v==='A') absentDays++;
+    else if (v==='L') lateDays++;
+    else if (v==='CL') clDays++;
+    else if (v==='LOP') lopDays++;
+    else if (v==='H') hDays++;
+    else presentDays++; // default / unmarked = present
+  }
+  const lateAsLop  = latesToLeave > 0 ? Math.floor(lateDays / latesToLeave) : 0;
+  const pay         = s.consolidatedPay || s.baseSalary || 0;
+  const dailyRate    = pay / 26;
+  const effectiveLop = lopDays + lateAsLop;
+  const lopDed        = Math.round(effectiveLop * dailyRate);
+  const extraDed      = s.extraDed || 0;
+  const net            = Math.max(0, pay - lopDed - extraDed);
+  const salKey  = getSalaryPayKey(s.id, monthVal);
+  const salPaid = salaryPayments[salKey];
+  return { s, presentDays, absentDays, lateDays, clDays, lopDays, hDays, countedDays,
+            lateAsLop, pay, dailyRate, lopDed, extraDed, net, salPaid };
+}
+
+function renderAdminStaffSummary() {
+  const totalsEl = document.getElementById('adm-staff-summary-totals');
+  const gridEl   = document.getElementById('adm-staff-summary-grid');
+  if (!totalsEl || !gridEl) return;
+
+  const monthEl = document.getElementById('adm-staff-summary-month');
+  if (monthEl && !monthEl.value) {
+    const n = new Date();
+    monthEl.value = n.getFullYear() + '-' + String(n.getMonth()+1).padStart(2,'0');
+  }
+  const monthVal = monthEl ? monthEl.value : new Date().toISOString().slice(0,7);
+  const [yrS, moS] = monthVal.split('-');
+  const yr = parseInt(yrS), mo = parseInt(moS);
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const monthLabel = MONTHS[mo-1] + ' ' + yr;
+
+  if (!staffData.length) {
+    totalsEl.innerHTML = '';
+    gridEl.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:24px;color:var(--tx3);font-size:12px">No staff added yet. <button class="btn btn-sm" onclick="navTo(\'staff\')">Add Staff →</button></div>';
+    return;
+  }
+
+  const summary = staffData.map(s => computeStaffMonthSummary(s, monthVal));
+
+  // ── Mini totals row ──
+  const totalNet     = summary.reduce((a,b)=>a+b.net,0);
+  const totalLopDays = summary.reduce((a,b)=>a+b.lopDays+b.lateAsLop,0);
+  const totalClDays  = summary.reduce((a,b)=>a+b.clDays,0);
+  const paidCount    = summary.filter(x=>x.salPaid && x.salPaid.paid).length;
+  totalsEl.innerHTML = [
+    {l:'Total Staff',     v: staffData.length,                            c:'#185FA5', icon:'👥'},
+    {l:'Total Net Pay',   v: '₹'+totalNet.toLocaleString('en-IN'),         c:'#16a34a', icon:'💰'},
+    {l:'CL Days (all)',   v: totalClDays,                                  c:'#92400e', icon:'🌿'},
+    {l:'LOP Days (all)',  v: totalLopDays,                                 c:'#5b21b6', icon:'💸'},
+    {l:'Salaries Paid',   v: paidCount+' / '+staffData.length,             c:'#16a34a', icon:'✅'},
+  ].map(b => `
+    <div class="stat" style="cursor:default;padding:10px 12px">
+      <div style="font-size:16px;margin-bottom:4px">${b.icon}</div>
+      <div class="stat-val" style="font-size:15px;color:${b.c}">${b.v}</div>
+      <div class="stat-lbl" style="font-size:10px">${b.l}</div>
+    </div>`).join('');
+
+  // ── Per-staff cards ──
+  gridEl.innerHTML = summary.map(item => {
+    const s = item.s;
+    const sessLabel = s.session==='morning' ? '☀️ Morning' : s.session==='evening' ? '🌙 Evening' : '☀️🌙 Both';
+    const payFmt    = item.pay.toLocaleString('en-IN');
+    const lopDedFmt = item.lopDed.toLocaleString('en-IN');
+    const netFmt    = item.net.toLocaleString('en-IN');
+    const extraNote = s.extraDedNote ? ' ('+s.extraDedNote+')' : '';
+    const paidBadge = item.salPaid && item.salPaid.paid
+      ? `<span style="font-size:10px;background:#dcfce7;color:#166534;padding:2px 9px;border-radius:20px;font-weight:700">✓ Paid · ${item.salPaid.date||''}</span>`
+      : `<span style="font-size:10px;background:#fef3c7;color:#92400e;padding:2px 9px;border-radius:20px;font-weight:700">⏳ Pending</span>`;
+
+    return `<div class="sum-card">
+      <div class="sum-card-header">
+        <div class="av" style="background:${s.color||'#185FA5'}">${(s.name||'?')[0]}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:700;font-size:13px;color:var(--tx)">${s.name}</div>
+          <div style="font-size:10px;color:var(--tx3)">${s.desg||'Staff'} · ${sessLabel}</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-size:16px;font-weight:800;color:#16a34a">₹${netFmt}</div>
+          <div style="font-size:9px;color:var(--tx3)">Net · ${monthLabel}</div>
+        </div>
+      </div>
+
+      <div class="sum-section">
+        <div class="sum-section-title">📅 Attendance — ${monthLabel}</div>
+        <div class="sum-metric-row"><span>✅ Present</span><span class="sum-metric-val" style="color:#16a34a">${item.presentDays} / ${item.countedDays} days</span></div>
+        <div class="sum-metric-row"><span>❌ Absent</span><span class="sum-metric-val" style="color:#dc2626">${item.absentDays} days</span></div>
+        <div class="sum-metric-row"><span>⏰ Late</span><span class="sum-metric-val" style="color:#ca8a04">${item.lateDays} days${item.lateAsLop>0?' ('+item.lateAsLop+'d→LOP)':''}</span></div>
+        <div class="sum-metric-row"><span>🌿 CL (Casual Leave)</span><span class="sum-metric-val" style="color:#92400e">${item.clDays} days</span></div>
+        <div class="sum-metric-row"><span>💸 LOP</span><span class="sum-metric-val" style="color:#5b21b6">${item.lopDays} days</span></div>
+        <div class="sum-metric-row"><span>🏖 Holiday</span><span class="sum-metric-val" style="color:#1e40af">${item.hDays} days</span></div>
+      </div>
+
+      <div class="sum-section">
+        <div class="sum-section-title">💰 Salary Details</div>
+        <div class="sum-metric-row"><span>Consolidated Pay</span><span class="sum-metric-val">₹${payFmt}</span></div>
+        <div class="sum-metric-row"><span>LOP Deduction</span><span class="sum-metric-val" style="color:#dc2626">−₹${lopDedFmt}</span></div>
+        ${item.extraDed>0?`<div class="sum-metric-row"><span>Extra Deduction${extraNote}</span><span class="sum-metric-val" style="color:#7c3aed">−₹${item.extraDed.toLocaleString('en-IN')}</span></div>`:''}
+        <div class="sum-metric-row" style="border-top:.5px dashed var(--br);padding-top:6px;margin-top:2px"><span style="font-weight:700;color:var(--tx)">Net Pay</span><span class="sum-metric-val" style="color:#16a34a;font-size:13px">₹${netFmt}</span></div>
+      </div>
+
+      <div class="sum-section">
+        <div class="sum-section-title">ℹ️ Staff Details</div>
+        <div class="sum-metric-row"><span>Subjects</span><span class="sum-metric-val" style="font-weight:500">${s.subjects||'—'}</span></div>
+        <div class="sum-metric-row"><span>Experience</span><span class="sum-metric-val" style="font-weight:500">${s.exp||'—'}</span></div>
+        <div class="sum-metric-row"><span>Joined</span><span class="sum-metric-val" style="font-weight:500">${s.joinDate||'—'}</span></div>
+        <div class="sum-metric-row"><span>Phone</span><span class="sum-metric-val" style="font-weight:500">${s.phone||'—'}</span></div>
+      </div>
+
+      <div class="sum-card-foot">
+        ${paidBadge}
+        <button class="btn btn-sm" style="margin-left:auto" onclick="navTo('staff');setTimeout(()=>{const b=document.getElementById('sf-tab-pay');if(b)switchStaffTab('pay',b);const me=document.getElementById('sf-pay-month');if(me){me.value='${monthVal}';generatePayroll();}},120)">View Payroll</button>
+        ${s.phone?`<button class="btn btn-wa btn-sm" onclick="sendStaffMonthlySummaryWA('${s.id}','${monthVal}')" title="Send monthly attendance & salary summary on WhatsApp">📋📱 Send Summary</button>`:`<span style="font-size:10px;color:var(--tx3)">No phone</span>`}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ── Build the Monthly Staff Summary WhatsApp message (attendance + salary) ── */
+function buildStaffMonthlySummaryWA(s, item, monthLabel) {
+  const ctr = CFG.CENTER;
+  const payFmt    = item.pay.toLocaleString('en-IN');
+  const lopDedFmt = item.lopDed.toLocaleString('en-IN');
+  const netFmt    = item.net.toLocaleString('en-IN');
+  const paidLine  = item.salPaid && item.salPaid.paid
+    ? `✅ Paid — ₹${(item.salPaid.amount||item.net).toLocaleString('en-IN')} on ${item.salPaid.date||'—'} via ${item.salPaid.mode||'Cash'}`
+    : '⏳ Pending disbursement';
+
+  return `Dear *${s.name}*,
+
+🏫 *${ctr.name}*
+━━━━━━━━━━━━━━━━━━━━
+📋 *Monthly Staff Summary — ${monthLabel}*
+━━━━━━━━━━━━━━━━━━━━
+
+👤 Name   : ${s.name}
+💼 Role   : ${s.desg||'Staff'}
+📚 Subjects: ${s.subjects||'—'}
+
+━━━━━━━━━━━━━━━━━━━━
+📅 *Attendance*
+━━━━━━━━━━━━━━━━━━━━
+✅ Present : ${item.presentDays} / ${item.countedDays} days
+❌ Absent  : ${item.absentDays} days
+⏰ Late    : ${item.lateDays} days${item.lateAsLop>0?' ('+item.lateAsLop+'d → LOP)':''}
+🌿 CL      : ${item.clDays} days
+💸 LOP     : ${item.lopDays} days
+🏖 Holiday : ${item.hDays} days
+
+━━━━━━━━━━━━━━━━━━━━
+💰 *Salary Details*
+━━━━━━━━━━━━━━━━━━━━
+Consolidated Pay : ₹${payFmt}
+LOP Deduction    : − ₹${lopDedFmt}
+${item.extraDed>0?`Extra Deduction${s.extraDedNote?' ('+s.extraDedNote+')':''} : − ₹${item.extraDed.toLocaleString('en-IN')}\n`:''}━━━━━━━━━━━━━━━━━━━━
+*Net Pay : ₹${netFmt}*
+${paidLine}
+
+Thank you for your dedication! 🙏
+
+📞 ${ctr.phone}
+_${ctr.name}_`;
+}
+
+/* ── Send one staff member's monthly summary directly on WhatsApp (no popup, uses template above) ── */
+function sendStaffMonthlySummaryWA(staffId, monthVal) {
+  const s = staffData.find(x => x.id === staffId);
+  if (!s) return;
+  if (!s.phone || s.phone.replace(/\D/g,'').length < 10) {
+    showToast('⚠️ No phone number saved for ' + (s.name||'this staff member'));
+    return;
+  }
+  const mv = monthVal || document.getElementById('adm-staff-summary-month')?.value || new Date().toISOString().slice(0,7);
+  const [yr, mo] = mv.split('-').map(Number);
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const monthLabel = MONTHS[mo-1] + ' ' + yr;
+  const item = computeStaffMonthSummary(s, mv);
+  const msg  = buildStaffMonthlySummaryWA(s, item, monthLabel);
+  openWA(s.phone, msg);
+}
+
+/* ── Bulk: queue + send Monthly Summary to all staff (sequential, like other bulk WA sends) ── */
+function openStaffSummaryWAQueue() {
+  const monthVal = document.getElementById('adm-staff-summary-month')?.value || new Date().toISOString().slice(0,7);
+  const [yr, mo] = monthVal.split('-').map(Number);
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const monthLabel = MONTHS[mo-1] + ' ' + yr;
+
+  if (!staffData.length) { showToast('No staff added yet'); return; }
+  const withPhone = staffData.filter(s => s.phone && s.phone.replace(/\D/g,'').length >= 10);
+
+  const root = document.getElementById('modal-root');
+  root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()">
+    <div class="modal" style="max-width:500px">
+      <div class="modal-title">📋📱 Send Monthly Summary — All Staff</div>
+      <div style="font-size:12px;color:var(--tx2);margin-bottom:12px">
+        ${monthLabel} — ${withPhone.length} of ${staffData.length} staff have a phone number on file
+      </div>
+      <div style="max-height:340px;overflow-y:auto;border:.5px solid var(--br);border-radius:10px;margin-bottom:14px">
+        ${staffData.map(s => {
+          const hasPhone = s.phone && s.phone.replace(/\D/g,'').length >= 10;
+          return `<div class="wa-queue-item">
+            <div class="av" style="background:${s.color||'#185FA5'};width:28px;height:28px;font-size:11px;flex-shrink:0">${(s.name||'?')[0]}</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-weight:600;font-size:12px">${s.name}</div>
+              <div style="font-size:10px;color:var(--tx3)">${s.phone || 'No phone number'} · ${s.desg||'Staff'}</div>
+            </div>
+            ${hasPhone
+              ? `<button class="btn btn-wa btn-sm" onclick="sendStaffMonthlySummaryWA('${s.id}','${monthVal}')" style="font-size:10px">📱</button>`
+              : `<span style="font-size:9px;color:#dc2626">No phone</span>`}
+          </div>`;
+        }).join('')}
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-wa" style="flex:2;justify-content:center" onclick="sendAllStaffMonthlySummaryWA('${monthVal}')" ${withPhone.length===0?'disabled':''}>
+          📤 Send to All (${withPhone.length})
+        </button>
+        <button class="btn" onclick="closeModal()">Close</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function sendAllStaffMonthlySummaryWA(monthVal) {
+  const mv = monthVal || document.getElementById('adm-staff-summary-month')?.value || new Date().toISOString().slice(0,7);
+  const withPhone = staffData.filter(s => s.phone && s.phone.replace(/\D/g,'').length >= 10);
+  if (withPhone.length === 0) { showToast('No staff have a phone number on file'); return; }
+  closeModal();
+  const [yr, mo] = mv.split('-').map(Number);
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const monthLabel = MONTHS[mo-1] + ' ' + yr;
+  withPhone.forEach((s, i) => {
+    setTimeout(() => {
+      const item = computeStaffMonthSummary(s, mv);
+      const msg  = buildStaffMonthlySummaryWA(s, item, monthLabel);
+      openWA(s.phone, msg);
+    }, i * 1500);
+  });
+  showToast('📱 Sending monthly summary to ' + withPhone.length + ' staff — WhatsApp will open sequentially');
 }
 
 /* ═══════════════════════════════════════════════════════

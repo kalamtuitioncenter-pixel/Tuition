@@ -6605,7 +6605,10 @@ function ewSendOnePNot(i) {
   if (!s || !msg) return;
   const phone = (s.phone||s.pphone||'').replace(/\D/g,'');
   const ph = phone.startsWith('91') ? phone : '91'+phone;
-  openWA(ph, msg);
+  // Send straight to WhatsApp with the template as-is — no edit/preview popup —
+  // same behavior as "Send to All Parents", so tapping Send for 20+ parents
+  // one-by-one doesn't require an extra confirm tap each time.
+  _openWADirect(ph, msg);
   const btn = document.getElementById('ew3-btn-'+i);
   if (btn) { btn.textContent = '✅ Sent'; btn.style.background = '#dcfce7'; btn.style.color = '#166534'; btn.disabled = true; }
 }

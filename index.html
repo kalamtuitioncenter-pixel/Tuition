@@ -893,8 +893,51 @@ tbody tr:hover td{background:var(--bg)}
         </div>
       </div>
       <div class="frow">
-        <div class="fg"><label class="fl">Monthly Fee ₹ <span style="color:#7c3aed;font-size:10px">(auto-filled)</span></label><input class="fi" id="adm-fee" type="number" placeholder="0" oninput="recalcAdmFees()"></div>
+        <div class="fg"><label class="fl">Monthly Fee ₹ <span style="color:#7c3aed;font-size:10px">(auto-filled)</span></label><input class="fi" id="adm-fee" type="number" placeholder="0" oninput="_admDwOverridden=false;recalcAdmFees()"></div>
         <div class="fg"><label class="fl">Admission Fee ₹</label><input class="fi" id="adm-admfee" type="number" placeholder="500" oninput="recalcAdmFees()"></div>
+      </div>
+
+      <!-- Day-wise fee checkbox -->
+      <div id="adm-daywise-box" style="border:.5px solid #bae6fd;border-radius:10px;padding:11px 13px;background:#f0f9ff;margin-bottom:10px">
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none">
+          <input type="checkbox" id="adm-daywise-chk" onchange="toggleAdmDaywise()"
+            style="width:17px;height:17px;accent-color:#0891b2;cursor:pointer;flex-shrink:0">
+          <div>
+            <div style="font-size:12px;font-weight:700;color:#0c4a6e">📅 Charge day-wise (joined after 10th)</div>
+            <div style="font-size:10px;color:#0369a1;margin-top:1px">Fee will be calculated for remaining days of this month only</div>
+          </div>
+        </label>
+        <div id="adm-daywise-detail" style="display:none;margin-top:10px;padding-top:10px;border-top:.5px dashed #bae6fd">
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
+            <div style="background:#fff;border:.5px solid #bae6fd;border-radius:8px;padding:8px;text-align:center">
+              <div style="font-size:10px;color:#0369a1;font-weight:600;margin-bottom:4px">Total Days in Month</div>
+              <div style="font-size:18px;font-weight:800;color:#0c4a6e" id="adm-dw-totaldays">30</div>
+            </div>
+            <div style="background:#fff;border:.5px solid #bae6fd;border-radius:8px;padding:8px;text-align:center">
+              <div style="font-size:10px;color:#0369a1;font-weight:600;margin-bottom:4px">Joining Day <span style="color:#0891b2">(edit)</span></div>
+              <input type="number" id="adm-dw-joinday" min="1" max="31"
+                style="width:60px;font-size:18px;font-weight:800;color:#0c4a6e;border:1.5px solid #bae6fd;border-radius:6px;text-align:center;padding:2px 4px;background:var(--bg);font-family:inherit"
+                oninput="onDwJoinDayEdit()">
+            </div>
+            <div style="background:#fff;border:.5px solid #bae6fd;border-radius:8px;padding:8px;text-align:center">
+              <div style="font-size:10px;color:#0369a1;font-weight:600;margin-bottom:4px">Remaining Days</div>
+              <div style="font-size:18px;font-weight:800;color:#16a34a" id="adm-dw-remdays">—</div>
+            </div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;background:#fff;border:.5px solid #bae6fd;border-radius:8px;padding:9px 12px;gap:10px">
+            <div style="min-width:0">
+              <div style="font-size:11px;color:#0369a1;font-weight:600">Prorated Monthly Fee <span style="color:#0891b2;font-weight:500">(editable)</span></div>
+              <div style="font-size:10px;color:#64748b;margin-top:1px" id="adm-dw-formula">₹0 ÷ 30 × 0 days</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:3px;flex-shrink:0">
+              <span style="font-size:16px;font-weight:800;color:#0891b2">₹</span>
+              <input type="number" id="adm-dw-prorated"
+                style="width:90px;font-size:20px;font-weight:800;color:#0891b2;border:1.5px solid #bae6fd;border-radius:6px;text-align:right;padding:3px 6px;background:var(--bg);font-family:inherit"
+                oninput="onDwProratedEdit()" onclick="this.select()" placeholder="0">
+            </div>
+          </div>
+          <div id="adm-dw-override-note" style="display:none;font-size:10px;color:#0891b2;margin-top:5px;padding:0 2px"></div>
+        </div>
       </div>
 
       <!-- Submit -->
@@ -5533,7 +5576,75 @@ function _renderFeesFiltered(tabVal, month) {
     });
   });
 
+  // ── Show active students with NO fee record for the selected month ──
+  // Only shown in "All" tab when a specific month is selected, so admin can spot missing students
+  if ((tabVal === 'all' || tabVal === 'pending') && month) {
+    const studentsWithRecord = new Set(source.map(f => f.studentId || f.student));
+    const missing = students.filter(s =>
+      s && s.status === 'active' &&
+      !studentsWithRecord.has(s.id) &&
+      !studentsWithRecord.has(s.name)
+    );
+    if (missing.length > 0) {
+      html += `<tr style="background:var(--bg);border-top:2px solid var(--br)">
+        <td colspan="5" style="padding:8px 12px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:11px;font-weight:700;color:#b45309;background:#fef9c3;padding:3px 10px;border-radius:8px">
+              ⚠️ ${missing.length} student${missing.length!==1?'s':''} have no fee record for ${month}
+            </span>
+            <button onclick="openGenerateFees()"
+              style="background:#7c3aed;color:#fff;border:none;padding:3px 10px;border-radius:6px;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit">
+              📋 Generate Fees
+            </button>
+          </div>
+        </td>
+      </tr>`;
+      missing.forEach(s => {
+        const av = s.color || '#6366f1';
+        const grade = s.grade === 'KG' ? 'KG' : 'Gr.' + s.grade;
+        html += `<tr style="background:#fefce8;border-left:3px solid #fcd34d;opacity:.85">
+          <td style="padding:7px 12px 7px 20px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="width:26px;height:26px;border-radius:7px;background:${av};color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">${(s.name||'?')[0]}</div>
+              <div>
+                <span style="font-size:12px;font-weight:600;color:var(--tx)">${s.name}</span>
+                <span style="font-size:10px;color:var(--tx3);margin-left:6px">${grade}</span>
+                ${s.course ? `<span style="font-size:10px;background:var(--prl);color:var(--pr);padding:0 6px;border-radius:8px;margin-left:6px">${s.course}</span>` : ''}
+              </div>
+              <span style="margin-left:auto;font-size:10px;color:#b45309;font-weight:600">No record for ${month}</span>
+            </div>
+          </td>
+          <td style="padding:7px 8px;text-align:right">
+            <button onclick="openAddFeeForStudent('${(s.id||'').replace(/'/g,"\\'")}','${s.name.replace(/'/g,"\\'")}','${month}')"
+              style="background:#7c3aed;color:#fff;border:none;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">
+              ➕ Add Fee
+            </button>
+          </td>
+        </tr>`;
+      });
+    }
+  }
+
   document.getElementById('fee-body').innerHTML = html;
+}
+
+/* Quick helper — opens the Add Fee modal pre-filled for a specific student & month */
+function openAddFeeForStudent(studentId, studentName, month) {
+  showModal('addFee');
+  // Pre-fill student
+  setTimeout(() => {
+    const stSel = document.getElementById('m-fee-st');
+    if (stSel) {
+      // find option by value (id) or text (name)
+      for (let i = 0; i < stSel.options.length; i++) {
+        if (stSel.options[i].value === studentId || stSel.options[i].text.startsWith(studentName)) {
+          stSel.selectedIndex = i;
+          stSel.dispatchEvent(new Event('change'));
+          break;
+        }
+      }
+    }
+  }, 80);
 }
 
 /* Wrapper so existing calls to renderFees() still work */
@@ -8078,7 +8189,8 @@ function renderStaffAttGrid() {
     var worst   = allVals.includes('LOP')?'LOP':allVals.includes('A')?'A':allVals.includes('CL')?'CL':allVals.includes('L')?'L':allVals.includes('H')?'H':'';
     var rowBdr  = worst==='A'?'#fecdd3':worst==='LOP'?'#c4b5fd':worst==='L'?'#fde047':worst==='H'?'#bfdbfe':'var(--br)';
 
-    rows += '<div style="padding:12px 16px;border-bottom:.5px solid '+rowBdr+';background:var(--card)">';
+    var isLOP = worst === 'LOP';
+    rows += '<div style="padding:12px 16px;border-bottom:.5px solid '+rowBdr+';background:'+(isLOP?'#faf5ff':'var(--card)')+'" id="sf-att-row-'+s.id+'">';
     rows += '  <div style="display:flex;align-items:center;gap:10px;margin-bottom:'+(sess==='both'?'10px':'0')+'">';
     rows += '    <div class="av" style="background:'+s.color+';width:36px;height:36px;font-size:15px;font-weight:700;flex-shrink:0">'+(s.name||'?')[0]+'</div>';
     rows += '    <div style="flex:1;min-width:0">';
@@ -8087,6 +8199,11 @@ function renderStaffAttGrid() {
               +' &nbsp;·&nbsp; <span style="background:'+(sess==='morning'?'#fef9c3':sess==='evening'?'#ede9fe':'#dbeafe')+';color:'+(sess==='morning'?'#92400e':sess==='evening'?'#5b21b6':'#1e40af')+';padding:1px 6px;border-radius:6px;font-weight:600">'
               +(sess==='morning'?'☀️ Morning':sess==='evening'?'🌙 Evening':'☀️🌙 Both')+'</span></div>';
     rows += '    </div>';
+    // LOP quick-checkbox (right side of name row)
+    rows += '    <label style="display:flex;align-items:center;gap:5px;cursor:pointer;background:'+(isLOP?'#ede9fe':'var(--bg)')+';border:.5px solid '+(isLOP?'#c4b5fd':'var(--br)')+';border-radius:7px;padding:5px 9px;flex-shrink:0;user-select:none" title="Mark as Loss of Pay for today">';
+    rows += '      <input type="checkbox" '+(isLOP?'checked':'')+' onchange="toggleLOP(\''+s.id+'\',\''+date+'\',\''+sess+'\',this.checked)" style="width:14px;height:14px;accent-color:#7c3aed;cursor:pointer">';
+    rows += '      <span style="font-size:10px;font-weight:700;color:'+(isLOP?'#5b21b6':'var(--tx3)')+'">💸 LOP</span>';
+    rows += '    </label>';
     if (sess !== 'both') {
       // Single session — show one dropdown inline
       rows += makeSelect(s.id, sess === 'morning' ? 'morning' : 'evening', sess === 'morning' ? morVal : eveVal);
@@ -8148,6 +8265,25 @@ function setStaffAtt(staffId, date, session, val) {
   else delete staffAtt[staffId+'|'+date];
   // Auto-save
   try { localStorage.setItem('_erp_staff_att', JSON.stringify(staffAtt)); } catch(e){}
+}
+
+/* LOP quick-checkbox handler — marks/unmarks both sessions as LOP */
+function toggleLOP(staffId, date, sess, isChecked) {
+  const sessions = sess === 'both' ? ['morning', 'evening'] : [sess];
+  sessions.forEach(function(s) {
+    const key = staffId + '|' + date + '|' + s;
+    if (isChecked) {
+      staffAtt[key] = 'LOP';
+    } else {
+      // Restore to Present (blank)
+      delete staffAtt[key];
+    }
+    // Keep legacy key in sync
+    setStaffAtt(staffId, date, s, isChecked ? 'LOP' : '');
+  });
+  // Re-render to reflect updated dropdowns and row colour
+  renderStaffAttGrid();
+  showToast(isChecked ? '💸 LOP marked for ' + staffId : '✅ LOP removed for ' + staffId);
 }
 
 function saveStaffAtt() {
@@ -12905,11 +13041,24 @@ function initAdmissions() {
   refreshAdmPreview();
   renderAdmRecent();
   updateAdmCounter();
+  // Auto-check day-wise checkbox if today is after the 10th
+  const _dwChk    = document.getElementById('adm-daywise-chk');
+  const _dwDetail = document.getElementById('adm-daywise-detail');
+  const _jdInput  = document.getElementById('adm-dw-joinday');
+  _admDwOverridden = false;
+  if (_dwChk) {
+    const _today       = new Date().getDate();
+    const _todayIsLate = _today > 10;
+    _dwChk.checked = _todayIsLate;
+    if (_dwDetail) _dwDetail.style.display = _todayIsLate ? 'block' : 'none';
+    if (_jdInput)  _jdInput.value = _today;
+  }
   recalcAdmFees();
 }
 
 function selectAdmClass(grade) {
   document.getElementById('adm-grade').value = grade;
+  _admDwOverridden = false; // class changed — fee base changes, drop manual override
   document.querySelectorAll('#adm-class-chips button').forEach(b => {
     const sel = b.id === 'adm-chip-' + grade;
     b.style.background  = sel ? 'var(--pr)' : 'var(--card)';
@@ -13156,15 +13305,82 @@ function recalc10thFees() {
 }
 
 /* ── Recalculate admission fee summary ───────────────────── */
+let _admDwOverridden = false; // true once admin manually edits the prorated fee box
+
 function recalcAdmFees() {
-  const fee = parseFloat(document.getElementById('adm-fee')?.value) || 0;
+  const fee    = parseFloat(document.getElementById('adm-fee')?.value) || 0;
   const admFee = parseFloat(document.getElementById('adm-admfee')?.value) || 0;
   const dEl = document.getElementById('adm-fee-display');
   const aEl = document.getElementById('adm-admfee-display');
   const gEl = document.getElementById('adm-grand-total');
-  if (dEl) dEl.textContent = '₹'+fee.toLocaleString('en-IN');
-  if (aEl) aEl.textContent = '₹'+admFee.toLocaleString('en-IN');
-  if (gEl) gEl.textContent = '₹'+(fee+admFee).toLocaleString('en-IN');
+
+  const dwChk    = document.getElementById('adm-daywise-chk');
+  const isDaywise = dwChk && dwChk.checked;
+  let effectiveFee = fee;
+
+  if (isDaywise && fee > 0) {
+    const now         = new Date();
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    // Read join day from editable input — fallback to today
+    const jdInput  = document.getElementById('adm-dw-joinday');
+    let   joinDay  = parseInt(jdInput?.value) || now.getDate();
+    // Clamp to valid range
+    joinDay = Math.max(1, Math.min(joinDay, daysInMonth));
+    if (jdInput && !jdInput.value) jdInput.value = joinDay; // fill if blank
+    const remaining  = daysInMonth - joinDay + 1;
+    const calcFee    = Math.round((fee / daysInMonth) * remaining);
+
+    const tdEl = document.getElementById('adm-dw-totaldays'); if(tdEl) tdEl.textContent = daysInMonth;
+    const rdEl = document.getElementById('adm-dw-remdays');   if(rdEl) rdEl.textContent = remaining;
+    const fmEl = document.getElementById('adm-dw-formula');
+    if(fmEl) fmEl.textContent = '₹' + fee + ' ÷ ' + daysInMonth + ' × ' + remaining + ' days';
+
+    const prEl = document.getElementById('adm-dw-prorated');
+    const noteEl = document.getElementById('adm-dw-override-note');
+    if (prEl) {
+      if (_admDwOverridden) {
+        // Parent/admin has manually typed a custom fee — keep their value, use it as effective fee
+        effectiveFee = parseFloat(prEl.value) || 0;
+        if (noteEl) { noteEl.style.display = 'block'; noteEl.textContent = '✎ Custom fee set manually (as per parent request) — calculated value was ₹' + calcFee.toLocaleString('en-IN'); }
+      } else {
+        prEl.value = calcFee;
+        effectiveFee = calcFee;
+        if (noteEl) { noteEl.style.display = 'none'; noteEl.textContent = ''; }
+      }
+    }
+  }
+
+  if (dEl) dEl.textContent = '₹' + effectiveFee.toLocaleString('en-IN');
+  if (aEl) aEl.textContent = '₹' + admFee.toLocaleString('en-IN');
+  if (gEl) gEl.textContent = '₹' + (effectiveFee + admFee).toLocaleString('en-IN');
+}
+
+/* Called when admin manually edits the prorated-fee box — e.g. parent negotiated a different amount */
+function onDwProratedEdit() {
+  _admDwOverridden = true;
+  recalcAdmFees();
+}
+
+/* Called when the joining-day input is edited manually */
+function onDwJoinDayEdit() {
+  _admDwOverridden = false; // join day changed — recalc fresh, drop any manual fee override
+  recalcAdmFees();
+}
+
+function toggleAdmDaywise() {
+  const chk      = document.getElementById('adm-daywise-chk');
+  const detail   = document.getElementById('adm-daywise-detail');
+  const isDaywise = chk && chk.checked;
+  _admDwOverridden = false; // reset override whenever checkbox is toggled
+  const noteEl = document.getElementById('adm-dw-override-note');
+  if (noteEl) { noteEl.style.display = 'none'; noteEl.textContent = ''; }
+  if (detail) detail.style.display = isDaywise ? 'block' : 'none';
+  if (isDaywise) {
+    // Pre-fill join day input with today if empty
+    const jdInput = document.getElementById('adm-dw-joinday');
+    if (jdInput && !jdInput.value) jdInput.value = new Date().getDate();
+  }
+  recalcAdmFees();
 }
 
 /* ── Get selected subjects from admission form ──────────── */
@@ -13330,9 +13546,29 @@ function submitAdmission() {
   (function() {
     const fs        = getFeeForClass(grade);
     const curMonth  = _feeMonthLabel(new Date());
-    const now       = new Date().toLocaleDateString('en-IN');
-    const monthlyAmt = parseFloat(fee) || fs.monthlyFee || 0;
+    const now2      = new Date();
+    const fullMonthlyAmt = parseFloat(fee) || fs.monthlyFee || 0;
     const admAmt     = parseFloat(admFee) || fs.admFee || 0;
+
+    // Day-wise prorated fee if checkbox was ticked
+    const dwChk    = document.getElementById('adm-daywise-chk');
+    const isDaywise = dwChk && dwChk.checked;
+    let monthlyAmt = fullMonthlyAmt;
+    let daywiseNote = '';
+    if (isDaywise && fullMonthlyAmt > 0) {
+      const daysInMonth = new Date(now2.getFullYear(), now2.getMonth() + 1, 0).getDate();
+      // Read editable join day input; fallback to today
+      const jdInp    = document.getElementById('adm-dw-joinday');
+      let   joinDay  = parseInt(jdInp?.value) || now2.getDate();
+      joinDay = Math.max(1, Math.min(joinDay, daysInMonth));
+      const remaining   = daysInMonth - joinDay + 1;
+      const calcAmt     = Math.round((fullMonthlyAmt / daysInMonth) * remaining);
+      // Use the prorated-fee input value — respects manual edits (e.g. parent-requested adjustment)
+      const prEl     = document.getElementById('adm-dw-prorated');
+      monthlyAmt      = (prEl && prEl.value !== '') ? (parseFloat(prEl.value) || 0) : calcAmt;
+      daywiseNote     = 'Day-wise: ' + remaining + '/' + daysInMonth + ' days (joined ' + joinDay + ')'
+                        + (monthlyAmt !== calcAmt ? ' — fee adjusted as per parent request' : '');
+    }
 
     // Monthly fee record (pending)
     if (monthlyAmt > 0) {
@@ -13348,6 +13584,7 @@ function submitAdmission() {
         status    : 'pending',
         type      : 'monthly',
         paidOn    : '',
+        ...(daywiseNote ? { discountNote: daywiseNote } : {}),
       });
     }
     // Admission fee record (pending)
@@ -13539,6 +13776,17 @@ function resetAdmForm() {
   });
   const subjRow = document.getElementById('adm-subj-row');
   if (subjRow) subjRow.style.display = 'none';
+  // Reset day-wise checkbox — auto-check if today is after 10th
+  const dwChk    = document.getElementById('adm-daywise-chk');
+  const dwDetail = document.getElementById('adm-daywise-detail');
+  const jdInput2 = document.getElementById('adm-dw-joinday');
+  if (dwChk) {
+    const _today2      = new Date().getDate();
+    const todayIsLate  = _today2 > 10;
+    dwChk.checked = todayIsLate;
+    if (dwDetail)  dwDetail.style.display = todayIsLate ? 'block' : 'none';
+    if (jdInput2)  jdInput2.value = _today2;
+  }
   // Generate next admission number
   const yr = new Date().getFullYear();
   const admEl = document.getElementById('adm-no');

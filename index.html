@@ -1477,6 +1477,15 @@ tbody tr:hover td{background:var(--bg)}
           <div id="ew4-exam-info" style="background:#eff6ff;border-radius:8px;padding:10px 12px;border:.5px solid #bfdbfe;font-size:12px"></div>
         </div>
 
+        <!-- Filter by Class — same as Attendance page filter -->
+        <div class="card" style="margin-bottom:10px;padding:12px 14px">
+          <div style="font-size:11px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px">🎓 Filter by Class</div>
+          <select class="fi" id="ew4-grade-filter" onchange="ewApplyGradeFilter()" style="font-size:12px">
+            <option value="all">🌐 All Students (exam batch)</option>
+          </select>
+          <div style="font-size:10px;color:var(--tx3);margin-top:6px">Pick a class to show only those students here — overrides the exam's saved batch.</div>
+        </div>
+
         <!-- AI Marks Analysis -->
         <div class="card" style="padding:12px 14px;background:linear-gradient(135deg,#0f172a,#1e293b)">
           <div style="font-size:11px;font-weight:700;color:#93c5fd;margin-bottom:8px;text-transform:uppercase;letter-spacing:.04em">🤖 AI Marks Analysis</div>
@@ -6628,6 +6637,7 @@ function ewSendAllNotices() {
 function ewInitStep4() {
   const exam = _ewSelectedExam;
   if (!exam) { ewGoStep(1); return; }
+  _populateEwGradeFilter();
   const pass    = exam.passMarks || Math.round((exam.maxMarks||100)*0.35);
   const dateStr = exam.date ? new Date(exam.date+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) : '—';
 
@@ -6752,11 +6762,8 @@ function openSendResultsModalEW(examIdx) {
   const pass = exam.passMarks || Math.round((exam.maxMarks||100)*0.35);
 
   // Build messages using the custom marks WA template (same as openSendResultsModal)
-  let active = students.filter(s=>s&&s.name&&s.status==='active');
-  // Filter by exam batch/grade — only show students who were in the marks panel
-  if (exam.batch && exam.batch !== 'All' && exam.batch.trim() !== '') {
-    active = filterStudentsByBatch(active, exam.batch);
-  }
+  // Same student list as selectExam() — live class filter wins, else exam batch
+  let active = getStudentsForExam(exam);
   const recipients = [];
   active.forEach(s => {
     const phone = s.phone || s.pphone || '';
@@ -6847,30 +6854,37 @@ function ewSendAllResults() {
  *     ("X", "XI", "XII") or other formats.  Now we normalise both sides to a
  *     canonical integer string before comparing.
  */
+// ── Grade-format normalisation map ──────────────────────────────────────
+// Maps every known grade representation → canonical digit string.
+// Module-level (not just inside filterStudentsByBatch) so other code —
+// e.g. the Marks & Exams "Filter by Class" dropdown — can reuse the exact
+// same normalisation and stay in sync with Attendance's class matching.
+const GRADE_NORM = {
+  'kg':'kg', 'lkg':'kg', 'ukg':'kg',
+  'i':'1','ii':'2','iii':'3','iv':'4','v':'5',
+  'vi':'6','vii':'7','viii':'8','ix':'9','x':'10',
+  'xi':'11','xii':'12',
+  '1':'1','2':'2','3':'3','4':'4','5':'5',
+  '6':'6','7':'7','8':'8','9':'9','10':'10',
+  '11':'11','12':'12'
+};
+
+function normaliseGrade(raw) {
+  if (!raw) return '';
+  const s = String(raw).trim().toLowerCase();
+  // Direct lookup (handles Roman + digit formats)
+  if (GRADE_NORM[s]) return GRADE_NORM[s];
+  // Strip non-alphanumeric suffixes (e.g. "10th", "10 a") → try digits only
+  const digitsOnly = s.replace(/[^0-9]/g, '');
+  if (digitsOnly && GRADE_NORM[digitsOnly]) return GRADE_NORM[digitsOnly];
+  // FIX: unknown words (e.g. "grade", "class", "section") must return ''
+  // — not the raw word — otherwise the gradeHint scan below locks onto
+  // the first word in "Grade 10" ("grade") instead of skipping past it
+  // to find "10", and class-based filtering silently returns 0 students.
+  return '';
+}
+
 function filterStudentsByBatch(studentList, batchStr) {
-  // ── Grade-format normalisation map ──────────────────────────────────────
-  // Maps every known grade representation → canonical digit string
-  const GRADE_NORM = {
-    'kg':'kg', 'lkg':'kg', 'ukg':'kg',
-    'i':'1','ii':'2','iii':'3','iv':'4','v':'5',
-    'vi':'6','vii':'7','viii':'8','ix':'9','x':'10',
-    'xi':'11','xii':'12',
-    '1':'1','2':'2','3':'3','4':'4','5':'5',
-    '6':'6','7':'7','8':'8','9':'9','10':'10',
-    '11':'11','12':'12'
-  };
-
-  function normaliseGrade(raw) {
-    if (!raw) return '';
-    const s = String(raw).trim().toLowerCase();
-    // Direct lookup (handles Roman + digit formats)
-    if (GRADE_NORM[s]) return GRADE_NORM[s];
-    // Strip non-alphanumeric suffixes (e.g. "10th", "10 a") → try digits only
-    const digitsOnly = s.replace(/[^0-9]/g, '');
-    if (digitsOnly && GRADE_NORM[digitsOnly]) return GRADE_NORM[digitsOnly];
-    return s; // return as-is for unknown formats
-  }
-
   const batchLower  = batchStr.trim().toLowerCase();
 
   // Extract digit-only hint from batch string: "Grade 10" / "10th" / "X" / "10"
@@ -6901,17 +6915,58 @@ function filterStudentsByBatch(studentList, batchStr) {
   });
 }
 
+/**
+ * getStudentsForExam(exam)
+ *
+ * Decides which students show up in the Marks panel for a given exam.
+ * Priority — same UX pattern as Attendance's class filter:
+ *   1. The live "🎓 Filter by Class" dropdown on Step 4 (ew4-grade-filter),
+ *      if the admin has picked a specific class — this ALWAYS wins, letting
+ *      the admin browse any class regardless of which batch the exam was
+ *      originally scheduled for.
+ *   2. Otherwise, fall back to the exam's own saved batch/grade (e.batch).
+ */
+function getStudentsForExam(exam) {
+  let activeStudents = students.filter(s => s && s.name && s.status === 'active');
+  const liveFilter = (document.getElementById('ew4-grade-filter')?.value || 'all').trim();
+  if (liveFilter !== 'all') {
+    const wanted = normaliseGrade(liveFilter);
+    return activeStudents.filter(s => wanted && normaliseGrade(s.grade) === wanted);
+  }
+  if (exam && exam.batch && exam.batch !== 'All' && exam.batch.trim() !== '') {
+    activeStudents = filterStudentsByBatch(activeStudents, exam.batch);
+  }
+  return activeStudents;
+}
+
+/* Populate the Step-4 "Filter by Class" dropdown from active students —
+   same source list/order as Attendance's att-grade-filter. */
+function _populateEwGradeFilter() {
+  const sel = document.getElementById('ew4-grade-filter');
+  if (!sel) return;
+  const prev = sel.value;
+  const grades = [...new Set(students.filter(s=>s&&s.grade&&s.status==='active').map(s=>String(s.grade).trim()))]
+    .sort((a,b)=>{const o=['KG','1','2','3','4','5','6','7','8','9','10','11','12'];const ai=o.indexOf(a),bi=o.indexOf(b);return(ai<0?99:ai)-(bi<0?99:bi);});
+  sel.innerHTML = '<option value="all">🌐 All Students (exam batch)</option>' +
+    grades.map(g=>`<option value="${g}">${g==='KG'?'KG':'Class '+g}</option>`).join('');
+  if (prev && grades.includes(prev)) sel.value = prev;
+}
+
+/* Called when the Step-4 class filter changes — just re-renders the
+   currently selected exam's marks panel with the new filter applied. */
+function ewApplyGradeFilter() {
+  if (selExam == null || selExam < 0 || !exams[selExam]) return;
+  selectExam(selExam);
+}
+
 function selectExam(i) {
   selExam = i; renderExams();
   const e    = exams[i];
   const pass = e.passMarks || Math.round((e.maxMarks||100)*0.35);
   const dateStr = e.date ? new Date(e.date+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) : e.date;
   const typeLabel = {unit_test:'Unit Test',monthly:'Monthly Test',quarterly:'Quarterly',halfyearly:'Half-Yearly',annual:'Annual',model:'Model Exam',public:'Public Exam'}[e.type] || e.type;
-  // Filter students: only those matching the exam's batch/grade
-  let activeStudents = students.filter(s => s && s.name && s.status === 'active');
-  if (e.batch && e.batch !== 'All' && e.batch.trim() !== '') {
-    activeStudents = filterStudentsByBatch(activeStudents, e.batch);
-  }
+  // Filter students: live class filter (if set) wins, else exam's batch/grade
+  let activeStudents = getStudentsForExam(e);
 
   // Load existing saved marks for this exam
   const savedKey = '_erp_marks_' + e.id;
@@ -7188,11 +7243,8 @@ function saveMarksToStorage(examIdx) {
   const key  = '_erp_marks_' + e.id;
   const pass = e.passMarks || Math.round((e.maxMarks||100) * 0.35);
   const marksMap = {};
-  let activeStudents = students.filter(s => s && s.name && s.status === 'active');
-  // Filter by exam batch/grade (same logic as selectExam)
-  if (e.batch && e.batch !== 'All' && e.batch.trim() !== '') {
-    activeStudents = filterStudentsByBatch(activeStudents, e.batch);
-  }
+  // Same student list as selectExam() — live class filter wins, else exam batch
+  let activeStudents = getStudentsForExam(e);
 
   activeStudents.forEach(s => {
     // New per-student IDs (from upgraded marks panel)

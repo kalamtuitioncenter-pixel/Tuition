@@ -538,7 +538,7 @@ tbody tr:hover td{background:var(--bg)}
     <button class="nav-item" data-page="notifications"><svg viewBox="0 0 16 16" fill="none"><path d="M8 2a4 4 0 014 4v3l1.5 2h-11L4 9V6a4 4 0 014-4z" stroke="currentColor" stroke-width="1.3"/><path d="M6.5 12.5a1.5 1.5 0 003 0" stroke="currentColor" stroke-width="1.3"/></svg><span id="nl-notifications">Notifications</span></button>
     <button class="nav-item" data-page="ai"><svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="5" stroke="currentColor" stroke-width="1.3"/><path d="M6 6.5c.5-1.5 3.5-1.5 3 .5-.5 1.5-3 1-3 2.5M8 12v.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg><span id="nl-ai">AI Features</span></button>
     <button class="nav-item" data-page="backup"><svg viewBox="0 0 16 16" fill="none"><path d="M8 2v7M5 6l3 3 3-3M2 11v2a1 1 0 001 1h10a1 1 0 001-1v-2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg><span id="nl-backup">Backup & Sync</span></button>
-    <button class="nav-item" data-page="wa-templates"><svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" fill="#25d366"/><path d="M11.5 9.8c-.2-.1-1.2-.6-1.4-.7-.2-.1-.3-.1-.5.1-.1.2-.5.7-.6.8-.1.1-.2.1-.4 0-.2-.1-.9-.3-1.7-1-.6-.6-1-1.3-1.1-1.5-.1-.2 0-.3.1-.4l.3-.4c.1-.1.1-.2.2-.4 0-.1 0-.3 0-.4-.1-.1-.5-1.1-.6-1.5-.2-.4-.3-.3-.5-.3h-.4c-.1 0-.4.1-.6.3-.2.2-.8.8-.8 1.9s.8 2.2.9 2.4c.1.1 1.6 2.4 3.8 3.4.5.2.9.4 1.2.5.5.2 1 .1 1.3-.1.4-.2.8-.8.9-1.5.1-.4 0-.6-.1-.7z" fill="#fff"/></svg><span>WA Templates</span></button>
+    <button class="nav-item" data-page="teaching"><svg viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="10" rx="1.5" stroke="#0369a1" stroke-width="1.3"/><path d="M5 6h6M5 8.5h4" stroke="#0369a1" stroke-width="1.2" stroke-linecap="round"/><path d="M5 13l3-1.5 3 1.5" stroke="#0369a1" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Teaching Log</span></button>
     <button class="nav-item" data-page="summary"><svg viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="#f59e0b" stroke-width="1.3"/><path d="M5 8l2 2 4-4" stroke="#f59e0b" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 5h2M5 11h6" stroke="#f59e0b" stroke-width="1.1" stroke-linecap="round"/></svg><span>Student Summary</span></button>
     <button class="nav-item" data-page="timetable"><svg viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="1.5" stroke="#0ea5e9" stroke-width="1.3"/><path d="M5 2v2M11 2v2M2 7h12" stroke="#0ea5e9" stroke-width="1.3" stroke-linecap="round"/><path d="M5 10h2M9 10h2M5 12.5h2M9 12.5h2" stroke="#0ea5e9" stroke-width="1.2" stroke-linecap="round"/></svg><span>Time Table</span></button>
     <button class="nav-item" data-page="settings"><svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.3"/><path d="M8 2v1.5M8 12.5V14M14 8h-1.5M3.5 8H2M12.2 3.8l-1.06 1.06M4.86 11.14L3.8 12.2M12.2 12.2l-1.06-1.06M4.86 4.86L3.8 3.8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg><span id="nl-settings">Settings</span></button>
@@ -1597,10 +1597,17 @@ tbody tr:hover td{background:var(--bg)}
 
 <!-- ═══════════════ WHATSAPP ═══════════════ -->
 <div class="page" id="pg-whatsapp">
-  <div style="background:linear-gradient(135deg,#25d366,#128c7e);border-radius:12px;padding:16px 20px;margin-bottom:16px;display:flex;align-items:center;gap:14px">
+  <div style="background:linear-gradient(135deg,#25d366,#128c7e);border-radius:12px;padding:16px 20px;margin-bottom:12px;display:flex;align-items:center;gap:14px">
     <svg viewBox="0 0 24 24" fill="currentColor" width="36" height="36" style="color:#fff;flex-shrink:0"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
     <div><div style="font-size:16px;font-weight:700;color:#fff" id="wa-title">WhatsApp Parent Messenger</div><div style="font-size:12px;color:rgba(255,255,255,.8)" id="wa-sub">Send customized messages — no API key needed. Opens WhatsApp with pre-filled messages.</div></div>
   </div>
+  <!-- Tab bar: Messenger | Templates -->
+  <div style="display:flex;gap:0;margin-bottom:14px;background:var(--card);border-radius:10px;padding:4px;border:.5px solid var(--br)">
+    <button id="wa-tab-messenger" onclick="switchWATab('messenger')" style="flex:1;padding:8px 12px;border-radius:8px;border:none;background:#25d366;color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:.15s">📨 Messenger</button>
+    <button id="wa-tab-templates" onclick="switchWATab('templates')" style="flex:1;padding:8px 12px;border-radius:8px;border:none;background:transparent;color:var(--tx2);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:.15s">✏️ Templates</button>
+  </div>
+  <!-- Messenger panel -->
+  <div id="wa-panel-messenger">
 
   <!-- Message type selector -->
   <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-bottom:14px" id="wa-type-grid"></div>
@@ -1668,7 +1675,44 @@ tbody tr:hover td{background:var(--bg)}
     </div>
     <div id="wa-queue-list"><div style="color:var(--tx3);text-align:center;padding:20px;font-size:12px">Build queue first — select message type, language, and recipients above</div></div>
   </div>
-</div>
+  </div><!-- end wa-panel-messenger -->
+
+  <!-- Templates panel (hidden by default) -->
+  <div id="wa-panel-templates" style="display:none">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div style="font-size:12px;color:rgba(255,255,255,.0)"></div>
+      <button class="btn btn-sm" onclick="resetAllWATemplates()" style="font-size:11px">↺ Reset All</button>
+    </div>
+    <!-- Type tabs -->
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px" id="wt-type-tabs"></div>
+    <!-- Editor card -->
+    <div class="card" id="wt-editor-card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div style="font-size:14px;font-weight:700;color:var(--tx)" id="wt-editor-title">Select a type above</div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-sm" onclick="resetWATypeTemplate()" id="wt-reset-btn" style="display:none">↺ Reset</button>
+          <button class="btn btn-sm btn-p" onclick="saveWATypeTemplate()" id="wt-save-btn" style="display:none">💾 Save</button>
+        </div>
+      </div>
+      <div id="wt-vars" style="display:none;margin-bottom:10px;padding:8px 10px;background:var(--bg);border-radius:8px;font-size:11px;color:var(--tx2);line-height:2"></div>
+      <div style="display:none" id="wt-lang-tabs">
+        <button id="wt-lt-en" onclick="switchWTLang('ta')" style="display:none">EN</button>
+        <button id="wt-lt-ta" onclick="switchWTLang('ta')" style="padding:5px 14px;border-radius:8px;border:1.5px solid #185FA5;background:#185FA5;color:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">🌐 தமிழ் மட்டும்</button>
+      </div>
+      <div id="wt-pane-en" style="display:none">
+        <textarea class="fi" id="wt-tmpl-en" rows="10" style="font-size:12px;font-family:'Noto Sans Tamil',system-ui;line-height:1.7;resize:vertical;width:100%;box-sizing:border-box" oninput="refreshWTPreview();autoSaveWTTemplate()"></textarea>
+      </div>
+      <div id="wt-pane-ta">
+        <textarea class="fi" id="wt-tmpl-ta" rows="10" placeholder="நேரடியாக இங்கே தட்டச்சு செய்யவும்… / Type your message here…" style="font-size:12px;font-family:'Noto Sans Tamil',system-ui;line-height:1.7;resize:vertical;width:100%;box-sizing:border-box;border:2px solid #25d366;transition:border-color .2s" onfocus="this.style.borderColor='#128c7e'" onblur="this.style.borderColor='#25d366'" oninput="refreshWTPreview();autoSaveWTTemplate()"></textarea>
+        <div style="font-size:10px;color:#16a34a;margin-top:4px">✏️ Tap / click the box above to edit • Changes auto-save as you type</div>
+      </div>
+      <div style="margin-top:12px">
+        <div style="font-size:10px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Live Preview</div>
+        <div id="wt-preview" style="background:#dcfce7;border-radius:8px;padding:11px 13px;font-size:11px;color:#166534;line-height:1.7;white-space:pre-wrap;max-height:200px;overflow-y:auto;font-family:'Noto Sans Tamil',system-ui;border:.5px solid #bbf7d0">Select a message type to preview…</div>
+      </div>
+    </div>
+  </div><!-- end wa-panel-templates -->
+</div><!-- end pg-whatsapp -->
 
 <!-- ═══════════════ NOTIFICATIONS / ADMIN PANEL ═══════════════ -->
 <div class="page" id="pg-notifications">
@@ -1953,57 +1997,70 @@ tbody tr:hover td{background:var(--bg)}
   </div>
 </div>
 
-<!-- ═══════════ WA TEMPLATES SETTINGS (full page) ═══════════ -->
-<div class="page" id="pg-wa-templates">
+<!-- pg-wa-templates is now merged into pg-whatsapp as a tab -->
+
+<!-- ═══════════════ TEACHING LOG ═══════════════ -->
+<div class="page" id="pg-teaching">
   <!-- Header -->
-  <div style="background:linear-gradient(135deg,#25d366,#128c7e);border-radius:12px;padding:16px 20px;margin-bottom:16px;display:flex;align-items:center;gap:14px">
-    <div style="width:44px;height:44px;background:rgba(255,255,255,.15);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">✏️</div>
+  <div style="background:linear-gradient(135deg,#0369a1,#0ea5e9);border-radius:12px;padding:16px 20px;margin-bottom:12px;display:flex;align-items:center;gap:14px">
+    <div style="width:44px;height:44px;background:rgba(255,255,255,.15);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">📖</div>
     <div style="flex:1">
-      <div style="font-size:16px;font-weight:700;color:#fff">WhatsApp Message Templates</div>
-      <div style="font-size:12px;color:rgba(255,255,255,.8);margin-top:2px">Customise every message type in English &amp; Tamil. Changes save automatically.</div>
+      <div style="font-size:16px;font-weight:700;color:#fff">Teaching Log</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.8);margin-top:2px">Log daily lessons · Track absent students · AI Growth Factor analysis</div>
     </div>
-    <button class="btn btn-sm" onclick="resetAllWATemplates()" style="background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.3);white-space:nowrap;flex-shrink:0">↺ Reset All</button>
+    <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end;flex-shrink:0">
+      <button class="btn btn-sm" onclick="openAddTeachingLog()" style="background:rgba(255,255,255,.18);color:#fff;border-color:rgba(255,255,255,.4);white-space:nowrap">+ Add Entry</button>
+      <button class="btn btn-sm" onclick="navTo('whatsapp');setTimeout(()=>{switchWATab('templates');selectWTType('teaching_absent');},150)" style="background:rgba(255,255,255,.12);color:rgba(255,255,255,.85);border-color:rgba(255,255,255,.3);white-space:nowrap;font-size:10px">✏️ WA Template</button>
+    </div>
   </div>
 
-  <!-- Type tabs -->
-  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px" id="wt-type-tabs"></div>
+  <!-- Filter bar (attendance-style) -->
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+    <div class="seg" style="background:var(--card);border-radius:8px;padding:3px;border:.5px solid var(--br);display:flex;gap:2px">
+      <button class="seg-b on" id="tl-tab-all"    onclick="tlSetTab('all',this)"    style="font-size:11px;padding:5px 11px">All</button>
+      <button class="seg-b"    id="tl-tab-today"  onclick="tlSetTab('today',this)"  style="font-size:11px;padding:5px 11px">Today</button>
+      <button class="seg-b"    id="tl-tab-week"   onclick="tlSetTab('week',this)"   style="font-size:11px;padding:5px 11px">This Week</button>
+      <button class="seg-b"    id="tl-tab-month"  onclick="tlSetTab('month',this)"  style="font-size:11px;padding:5px 11px">This Month</button>
+    </div>
+    <select class="fi" id="tl-grade-sel" style="width:auto;font-size:11px;padding:5px 10px" onchange="renderTeachingLog()">
+      <option value="all">All Classes</option>
+    </select>
+    <select class="fi" id="tl-batch-sel" style="width:auto;font-size:11px;padding:5px 10px" onchange="renderTeachingLog()">
+      <option value="all">All Batches</option>
+    </select>
+    <div style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap">
+      <button class="btn btn-sm" onclick="tlShowAbsentSummary()" style="font-size:11px;background:#fff3cd;color:#92400e;border-color:#fbbf24">🔴 Absent Summary</button>
+      <button class="btn btn-sm" onclick="tlRunAIStudyPlanner()" style="font-size:11px;background:#dbeafe;color:#1d4ed8;border-color:#93c5fd">📚 AI Study Planner</button>
+      <button class="btn btn-sm" onclick="tlRunAIGrowth()" style="font-size:11px;background:#d1fae5;color:#065f46;border-color:#6ee7b7">✨ AI Growth</button>
+    </div>
+  </div>
 
-  <!-- Editor card -->
-  <div class="card" id="wt-editor-card">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-      <div style="font-size:14px;font-weight:700;color:var(--tx)" id="wt-editor-title">Select a type above</div>
+  <!-- Stats row -->
+  <div id="tl-stats-row" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px"></div>
+
+  <!-- Log entries list -->
+  <div id="tl-entries-list"></div>
+
+  <!-- AI Growth Panel (hidden until run) -->
+  <div id="tl-ai-panel" style="display:none;margin-top:12px">
+    <div style="display:flex;align-items:center;justify-content:space-between;background:linear-gradient(135deg,#065f46,#059669);border-radius:12px 12px 0 0;padding:12px 16px">
+      <div id="tl-ai-panel-title" style="font-size:13px;font-weight:700;color:#fff">✨ AI Growth Factor Analysis</div>
       <div style="display:flex;gap:6px">
-        <button class="btn btn-sm" onclick="resetWATypeTemplate()" id="wt-reset-btn" style="display:none">↺ Reset</button>
-        <button class="btn btn-sm btn-p" onclick="saveWATypeTemplate()" id="wt-save-btn" style="display:none">💾 Save</button>
+        <button class="btn btn-sm" onclick="copyTLAI()" style="background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.3);font-size:10px">📋 Copy</button>
+        <button onclick="document.getElementById('tl-ai-panel').style.display='none'" style="background:none;border:none;color:#fff;cursor:pointer;font-size:16px;line-height:1">×</button>
       </div>
     </div>
-
-    <!-- Variables reference -->
-    <div id="wt-vars" style="display:none;margin-bottom:10px;padding:8px 10px;background:var(--bg);border-radius:8px;font-size:11px;color:var(--tx2);line-height:2"></div>
-
-    <!-- Language tabs -->
-    <div style="display:none" id="wt-lang-tabs">
-      <button id="wt-lt-en" onclick="switchWTLang('ta')" style="display:none">EN</button>
-      <button id="wt-lt-ta" onclick="switchWTLang('ta')" style="padding:5px 14px;border-radius:8px;border:1.5px solid #185FA5;background:#185FA5;color:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">🌐 தமிழ் மட்டும்</button>
+    <div id="tl-ai-loading" style="display:none;background:var(--card);padding:24px;text-align:center;border:.5px solid var(--br);border-top:none">
+      <div style="display:flex;justify-content:center;gap:6px;margin-bottom:8px">
+        <div style="width:8px;height:8px;border-radius:50%;background:#059669;animation:aidot 1s infinite 0s"></div>
+        <div style="width:8px;height:8px;border-radius:50%;background:#059669;animation:aidot 1s infinite .2s"></div>
+        <div style="width:8px;height:8px;border-radius:50%;background:#059669;animation:aidot 1s infinite .4s"></div>
+      </div>
+      <div style="font-size:12px;color:var(--tx2)">Analysing growth factors…</div>
     </div>
-
-    <!-- EN editor -->
-    <div id="wt-pane-en" style="display:none">
-      <textarea class="fi" id="wt-tmpl-en" rows="10" style="font-size:12px;font-family:'Noto Sans Tamil',system-ui;line-height:1.7;resize:vertical;width:100%;box-sizing:border-box" oninput="refreshWTPreview();autoSaveWTTemplate()"></textarea>
-    </div>
-    <!-- TA editor -->
-    <div id="wt-pane-ta">
-      <textarea class="fi" id="wt-tmpl-ta" rows="10" placeholder="நேரடியாக இங்கே தட்டச்சு செய்யவும்… / Type your message here…" style="font-size:12px;font-family:'Noto Sans Tamil',system-ui;line-height:1.7;resize:vertical;width:100%;box-sizing:border-box;border:2px solid #25d366;transition:border-color .2s" onfocus="this.style.borderColor='#128c7e'" onblur="this.style.borderColor='#25d366'" oninput="refreshWTPreview();autoSaveWTTemplate()"></textarea>
-      <div style="font-size:10px;color:#16a34a;margin-top:4px">✏️ Tap / click the box above to edit • Changes auto-save as you type</div>
-    </div>
-
-    <!-- Live preview -->
-    <div style="margin-top:12px">
-      <div style="font-size:10px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Live Preview</div>
-      <div id="wt-preview" style="background:#dcfce7;border-radius:8px;padding:11px 13px;font-size:11px;color:#166534;line-height:1.7;white-space:pre-wrap;max-height:200px;overflow-y:auto;font-family:'Noto Sans Tamil',system-ui;border:.5px solid #bbf7d0">Select a message type to preview…</div>
-    </div>
+    <div id="tl-ai-output" style="background:var(--card);border:.5px solid var(--br);border-top:none;border-radius:0 0 12px 12px;padding:16px;font-size:13px;color:var(--tx);line-height:1.8;white-space:pre-wrap;max-height:480px;overflow-y:auto"></div>
   </div>
-</div>
+</div><!-- end pg-teaching -->
 
 
 <!-- ═══════════════ STUDENT SUMMARY (மாணவர் அட்டவணை) ═══════════════ -->
@@ -2468,7 +2525,7 @@ const notifData = [
 const T = {
   en:{
     dashboard:'Dashboard',students:'Students',attendance:'Attendance',fees:'Fees',
-    marks:'Marks & Exams',staff:'Staff',shop:'Shop',whatsapp:'WhatsApp',
+    marks:'Marks & Exams',staff:'Staff',shop:'Shop',whatsapp:'WhatsApp',teaching:'Teaching Log',
     notifications:'Admin Panel',ai:'AI Features',backup:'Backup & Sync',settings:'Settings',
     main:'Main',mgmt:'Management',totalStudents:'Total Students',monthlyIncome:'Monthly Income',
     pendingFees:'Pending Fees',attToday:'Attendance Today',incomeTrend:'Income Trend (6 months)',
@@ -2496,7 +2553,7 @@ const T = {
   },
   ta:{
     dashboard:'டாஷ்போர்டு',students:'மாணவர்கள்',attendance:'வருகை பதிவு',fees:'கட்டணம்',
-    marks:'மதிப்பெண்கள்',staff:'ஊழியர்கள்',shop:'கடை',whatsapp:'WhatsApp',
+    marks:'மதிப்பெண்கள்',staff:'ஊழியர்கள்',shop:'கடை',whatsapp:'WhatsApp',teaching:'கற்பித்தல் பதிவு',
     notifications:'நிர்வாகி பேனல்',ai:'AI அம்சங்கள்',backup:'காப்புப் பிரதி',settings:'அமைப்புகள்',
     main:'முதன்மை',mgmt:'மேலாண்மை',totalStudents:'மொத்த மாணவர்கள்',monthlyIncome:'மாதாந்திர வருமானம்',
     pendingFees:'நிலுவை கட்டணம்',attToday:'இன்றைய வருகை',incomeTrend:'வருமான போக்கு',
@@ -2806,6 +2863,8 @@ const pageConfig = {
 };
 
 function navTo(id) {
+  // Redirect wa-templates → whatsapp with Templates tab
+  if (id === 'wa-templates') { navTo('whatsapp'); setTimeout(()=>switchWATab('templates'),80); return; }
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   const pg = document.getElementById('pg-'+id);
@@ -2825,7 +2884,6 @@ function navTo(id) {
   if (window.innerWidth < 860) closeSb();
   if (id === 'backup') { renderBkHistory(); updateBkCount(); }
   if (id === 'ai') { renderAICards(); initAI(); }
-  if (id === 'whatsapp') { renderWATypes(); }
   if (id === 'admissions') { initAdmissions(); }
   if (id === 'settings') { updateLatesDisplay(); initFeeReceiptTemplate(); }
   if (id === 'dashboard') {
@@ -2853,7 +2911,8 @@ function navTo(id) {
       pendBtn.classList.add('on');
     }
   }
-  if (id === 'wa-templates') { initWATemplatesPage(); }
+  if (id === 'whatsapp') { renderWATypes(); setTimeout(()=>{ if(!window._waCurTab) switchWATab('messenger'); },50); }
+  if (id === 'teaching') { initTeachingLogPage(); }
   if (id === 'summary') { if (typeof renderSummaryCards === 'function') renderSummaryCards(); }
   if (id === 'marks') { if (typeof ewInit === 'function') ewInit(); }
   if (id === 'timetable') { if (typeof initTimetablePage === 'function') initTimetablePage(); }
@@ -15589,6 +15648,778 @@ function saveReminder() {
 document.addEventListener('DOMContentLoaded', () => {
   updateBellBadge(_loadReminders());
 });
+
+/* ═══════════════════════════════════════════════════════
+   WHATSAPP TAB SWITCHER (Messenger ↔ Templates merged)
+═══════════════════════════════════════════════════════ */
+window._waCurTab = null;
+function switchWATab(tab) {
+  window._waCurTab = tab;
+  const mPanel = document.getElementById('wa-panel-messenger');
+  const tPanel = document.getElementById('wa-panel-templates');
+  const mBtn   = document.getElementById('wa-tab-messenger');
+  const tBtn   = document.getElementById('wa-tab-templates');
+  if (!mPanel || !tPanel) return;
+  if (tab === 'messenger') {
+    mPanel.style.display = ''; tPanel.style.display = 'none';
+    if (mBtn) { mBtn.style.background='#25d366'; mBtn.style.color='#fff'; mBtn.style.fontWeight='700'; }
+    if (tBtn) { tBtn.style.background='transparent'; tBtn.style.color='var(--tx2)'; tBtn.style.fontWeight='600'; }
+    renderWATypes();
+  } else {
+    mPanel.style.display = 'none'; tPanel.style.display = '';
+    if (tBtn) { tBtn.style.background='#25d366'; tBtn.style.color='#fff'; tBtn.style.fontWeight='700'; }
+    if (mBtn) { mBtn.style.background='transparent'; mBtn.style.color='var(--tx2)'; mBtn.style.fontWeight='600'; }
+    initWATemplatesPage();
+  }
+}
+
+/* ═══════════════════════════════════════════════════════
+   TEACHING LOG  (Enhanced v2)
+   Storage: _erp_teaching_log → [{id,date,grade,batch,subject,topic,dayOrder,session,
+             periodIndex,periodTime,lessonNotes,homeworkGiven,absentStudentIds,createdAt}]
+   • Absent students → auto-pulled from Attendance (attState + _erp_att_index)
+   • Day Order & Session → auto-pulled from Timetable (_erp_tt_* + _erp_tt_today)
+   • AI Study Planner  → per-student catch-up plan for missed lessons
+   • AI Growth Factor  → curriculum + growth analysis
+   • WA Messages       → direct wa.me links, no popups
+═══════════════════════════════════════════════════════ */
+function _tlLoad() {
+  try { return JSON.parse(localStorage.getItem('_erp_teaching_log') || '[]'); } catch(e) { return []; }
+}
+function _tlSave(logs) {
+  try { localStorage.setItem('_erp_teaching_log', JSON.stringify(logs)); } catch(e) {}
+}
+
+var _tlCurrentTab = 'all';
+
+function initTeachingLogPage() {
+  _tlPopulateFilters();
+  renderTeachingLog();
+}
+
+function _tlPopulateFilters() {
+  const stus  = (typeof students !== 'undefined' ? students : []);
+  const grades = [...new Set(stus.map(s=>s.grade||s.class).filter(Boolean))].sort();
+  const batchs = [...new Set(stus.map(s=>s.batch).filter(Boolean))].sort();
+  const gSel = document.getElementById('tl-grade-sel');
+  const bSel = document.getElementById('tl-batch-sel');
+  if (gSel) gSel.innerHTML = '<option value="all">All Classes</option>' + grades.map(g=>`<option value="${g}">${g}</option>`).join('');
+  if (bSel) bSel.innerHTML = '<option value="all">All Batches</option>' + batchs.map(b=>`<option value="${b}">${b}</option>`).join('');
+}
+
+function tlSetTab(tab, btn) {
+  _tlCurrentTab = tab;
+  document.querySelectorAll('#pg-teaching .seg-b').forEach(b => b.classList.remove('on'));
+  if (btn) btn.classList.add('on');
+  renderTeachingLog();
+}
+
+function _tlFilteredLogs() {
+  const logs = _tlLoad();
+  const grade = (document.getElementById('tl-grade-sel')||{}).value || 'all';
+  const batch = (document.getElementById('tl-batch-sel')||{}).value || 'all';
+  const now = new Date();
+  const todayStr = now.toISOString().slice(0,10);
+  const weekStart = new Date(now); weekStart.setDate(now.getDate() - now.getDay());
+  return logs.filter(l => {
+    if (grade !== 'all' && l.grade !== grade) return false;
+    if (batch !== 'all' && l.batch !== batch) return false;
+    if (_tlCurrentTab === 'today') return l.date === todayStr;
+    if (_tlCurrentTab === 'week')  return l.date >= weekStart.toISOString().slice(0,10);
+    if (_tlCurrentTab === 'month') return l.date && l.date.slice(0,7) === todayStr.slice(0,7);
+    return true;
+  }).sort((a,b) => b.date.localeCompare(a.date));
+}
+
+/* ── Timetable helpers ── */
+function _tlGetTodayTTInfo(batchName) {
+  // Returns { dayOrder, dayName, periods:[{label,start,end,subject}], session }
+  const key = '_erp_tt_' + (batchName || 'all');
+  try {
+    const data = JSON.parse(localStorage.getItem(key) || 'null');
+    if (!data || !data.days || !data.days.length) return null;
+    const todayIdx = parseInt(localStorage.getItem('_erp_tt_today') || '0') % data.days.length;
+    const day = data.days[todayIdx];
+    const periods = (data.periods || []).map((p, i) => ({
+      label: p.label || ('Period ' + (i+1)),
+      start: p.start || '',
+      end:   p.end   || '',
+      subject: (day.subjects || [])[i] || ''
+    }));
+    // Infer session from first period start time
+    let session = 'morning';
+    if (periods[0] && periods[0].start) {
+      const h = parseInt(periods[0].start.split(':')[0] || '0');
+      if (h >= 12) session = 'evening';
+    }
+    return { dayOrder: todayIdx + 1, dayName: day.name || ('Day ' + (todayIdx+1)), periods, session };
+  } catch(e) { return null; }
+}
+
+function _tlPeriodOptions(ttInfo) {
+  if (!ttInfo || !ttInfo.periods) return '<option value="">Select period…</option>';
+  return '<option value="">Select period…</option>' +
+    ttInfo.periods.map((p,i) =>
+      `<option value="${i}" data-subject="${escHtml(p.subject)}">${p.label} (${p.start}–${p.end})${p.subject?' — '+p.subject:''}</option>`
+    ).join('');
+}
+
+/* ── Attendance helpers ── */
+function _tlGetAbsentIdsForDate(dateStr, batchId) {
+  const absentIds = new Set();
+  // 1. Live attState (current session in memory)
+  if (typeof attState === 'object' && dateStr === new Date().toISOString().slice(0,10)) {
+    Object.keys(attState).forEach(k => {
+      if (attState[k] === 'A') { const sid = k.split('|')[0]; if (sid) absentIds.add(sid); }
+    });
+  }
+  // 2. Saved sessions from _erp_att_index
+  try {
+    const idx = JSON.parse(localStorage.getItem('_erp_att_index') || '[]');
+    idx.forEach(sk => {
+      if (!sk.includes('_erp_att_' + dateStr)) return;
+      // If batchId filter provided, honour it
+      if (batchId && batchId !== 'all' && !sk.includes(batchId)) return;
+      try {
+        const saved = JSON.parse(localStorage.getItem(sk) || '{}');
+        Object.keys(saved).forEach(k => {
+          if (saved[k] === 'A') { const sid = k.split('|')[0]; if (sid) absentIds.add(sid); }
+        });
+      } catch(e2) {}
+    });
+  } catch(e) {}
+  return [...absentIds];
+}
+
+/* ── Render ── */
+function renderTeachingLog() {
+  const logs = _tlFilteredLogs();
+  const stus = (typeof students !== 'undefined' ? students : []);
+  _tlRenderStats(logs, stus);
+  const el = document.getElementById('tl-entries-list');
+  if (!el) return;
+  if (!logs.length) {
+    el.innerHTML = `<div style="text-align:center;padding:48px 20px;color:var(--tx3)">
+      <div style="font-size:32px;margin-bottom:8px">📖</div>
+      <div style="font-size:13px;font-weight:600">No teaching log entries yet</div>
+      <div style="font-size:11px;margin-top:4px">Click <b>+ Add Entry</b> to log today's lesson</div>
+    </div>`;
+    return;
+  }
+  el.innerHTML = logs.map(log => {
+    const absent = (log.absentStudentIds||[]).map(id => {
+      const s = stus.find(x=>x.id===id);
+      return s ? s.name : id;
+    });
+    const absentHtml = absent.length
+      ? `<div style="margin-top:8px;padding:7px 10px;background:#fef3c7;border-radius:7px;border:.5px solid #fbbf24">
+           <div style="font-size:10px;font-weight:700;color:#92400e;margin-bottom:3px">🔴 Absent (${absent.length}) — Missed this lesson:</div>
+           <div style="font-size:11px;color:#78350f">${absent.join(', ')}</div>
+         </div>` : '';
+    const hwHtml  = log.homeworkGiven ? `<div style="font-size:11px;color:var(--tx2);margin-top:4px">📝 HW: ${escHtml(log.homeworkGiven)}</div>` : '';
+    const doHtml  = log.dayOrder ? `<span style="font-size:10px;background:#f0fdf4;color:#15803d;border-radius:5px;padding:2px 7px;font-weight:600">D-${log.dayOrder} · ${escHtml(log.session||'')}</span>` : '';
+    const perHtml = log.periodTime ? `<span style="font-size:10px;color:var(--tx3)">⏰ ${escHtml(log.periodTime)}</span>` : '';
+    return `<div class="card" style="margin-bottom:10px;padding:12px 14px">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px">
+            <span style="font-size:13px;font-weight:700;color:var(--tx)">${escHtml(log.subject||'—')}${log.topic?' — '+escHtml(log.topic):''}</span>
+            <span style="font-size:10px;background:#dbeafe;color:#1d4ed8;border-radius:5px;padding:2px 7px;font-weight:600">${escHtml(log.grade||'')}</span>
+            ${log.batch?`<span style="font-size:10px;background:#ede9fe;color:#7c3aed;border-radius:5px;padding:2px 7px;font-weight:600">${escHtml(log.batch)}</span>`:''}
+            ${doHtml}${perHtml}
+          </div>
+          <div style="font-size:11px;color:var(--tx2)">${escHtml(log.lessonNotes||'')}</div>
+          ${hwHtml}${absentHtml}
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-size:11px;font-weight:700;color:var(--tx2)">${log.date||''}</div>
+          <div style="display:flex;gap:4px;margin-top:6px;flex-wrap:wrap;justify-content:flex-end">
+            <button onclick="tlSendAbsentWA('${log.id}')" title="Send WA to absent parents" style="font-size:10px;padding:3px 8px;border-radius:6px;background:#dcfce7;border:.5px solid #4ade80;cursor:pointer;color:#15803d;font-family:inherit">📱 WA</button>
+            <button onclick="openEditTeachingLog('${log.id}')" style="font-size:10px;padding:3px 8px;border-radius:6px;background:none;border:.5px solid var(--br);cursor:pointer;color:var(--tx2);font-family:inherit">✏️</button>
+            <button onclick="deleteTeachingLog('${log.id}')" style="font-size:10px;padding:3px 8px;border-radius:6px;background:none;border:.5px solid #fca5a5;cursor:pointer;color:#dc2626;font-family:inherit">🗑</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function _tlRenderStats(logs, stus) {
+  const el = document.getElementById('tl-stats-row');
+  if (!el) return;
+  const totalLogs    = logs.length;
+  const uniqueSub    = new Set(logs.map(l=>l.subject)).size;
+  const totalAbsent  = logs.reduce((s,l)=>s+(l.absentStudentIds||[]).length, 0);
+  const uniqueMissed = new Set(logs.flatMap(l=>l.absentStudentIds||[])).size;
+  const stats = [
+    {label:'Log Entries',    val:totalLogs,    bg:'#dbeafe', c:'#1d4ed8', icon:'📖'},
+    {label:'Subjects',       val:uniqueSub,    bg:'#ede9fe', c:'#7c3aed', icon:'📚'},
+    {label:'Absent Snaps',   val:totalAbsent,  bg:'#fef3c7', c:'#92400e', icon:'🔴'},
+    {label:'Students Missed',val:uniqueMissed, bg:'#fce7f3', c:'#9d174d', icon:'👤'},
+  ];
+  el.innerHTML = stats.map(s=>`
+    <div style="background:${s.bg};border-radius:10px;padding:10px 12px;text-align:center">
+      <div style="font-size:18px;margin-bottom:2px">${s.icon}</div>
+      <div style="font-size:20px;font-weight:800;color:${s.c}">${s.val}</div>
+      <div style="font-size:10px;color:${s.c};font-weight:600;margin-top:1px">${s.label}</div>
+    </div>`).join('');
+}
+
+function _tlStudentOptions(selectedIds) {
+  const stus = (typeof students !== 'undefined' ? students : []);
+  return stus.map(s=>`<option value="${s.id}" ${(selectedIds||[]).includes(s.id)?'selected':''}>${s.name} (${s.grade||s.class||''}${s.batch?' · '+s.batch:''})</option>`).join('');
+}
+
+function _tlShowModal(html) {
+  const root = document.getElementById('modal-root');
+  if (!root) return;
+  root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal"><div id="modal-body">${html}</div></div></div>`;
+}
+
+/* ── Add Entry — auto-populates absent from attendance, day order & session from timetable ── */
+function openAddTeachingLog() {
+  const today   = new Date().toISOString().slice(0,10);
+  // Auto-populate batch from attendance page or first batch
+  const attBatchEl = document.getElementById('att-batch');
+  const guessBatch = attBatchEl ? attBatchEl.value : ((typeof batches !== 'undefined' && batches.length) ? batches[0].name : 'all');
+  // Get timetable info for today
+  const ttInfo   = _tlGetTodayTTInfo(guessBatch) || _tlGetTodayTTInfo('all');
+  // Get absent IDs from attendance for today
+  const absentIds = _tlGetAbsentIdsForDate(today, guessBatch);
+  // Session from timetable
+  const sessionVal = ttInfo ? ttInfo.session : 'morning';
+  const dayOrderVal = ttInfo ? String(ttInfo.dayOrder) : '';
+
+  _tlShowModal(`
+    <div class="modal-title">📖 New Teaching Log Entry</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="fg"><label class="fl">Date *</label><input class="fi" id="tl-f-date" type="date" value="${today}" onchange="tlRefreshAbsentOnDateChange()"></div>
+      <div class="fg"><label class="fl">Session</label>
+        <select class="fi" id="tl-f-session">
+          <option value="morning" ${sessionVal==='morning'?'selected':''}>☀️ Morning</option>
+          <option value="evening" ${sessionVal==='evening'?'selected':''}>🌙 Evening</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="fg"><label class="fl">Grade *</label><select class="fi" id="tl-f-grade"><option value="">Select…</option>${_tlGradeOptions()}</select></div>
+      <div class="fg"><label class="fl">Batch</label>
+        <select class="fi" id="tl-f-batch" onchange="tlRefreshAbsentOnDateChange()">
+          <option value="">All / Any</option>${_tlBatchOptions(guessBatch)}
+        </select>
+      </div>
+    </div>
+    <div style="background:var(--bg2);border:.5px solid var(--br);border-radius:8px;padding:10px 12px;margin-bottom:10px">
+      <div style="font-size:10px;font-weight:700;color:#0369a1;margin-bottom:6px">📅 Day Order & Period — from Timetable</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div class="fg" style="margin:0">
+          <label class="fl" style="font-size:10px">Day Order</label>
+          <input class="fi" id="tl-f-dayorder" value="${dayOrderVal}" placeholder="e.g. 1" style="font-size:11px">
+        </div>
+        <div class="fg" style="margin:0">
+          <label class="fl" style="font-size:10px">Period</label>
+          <select class="fi" id="tl-f-period" style="font-size:11px" onchange="tlAutoFillSubjectFromPeriod()">${_tlPeriodOptions(ttInfo)}</select>
+        </div>
+      </div>
+      ${ttInfo ? `<div style="font-size:10px;color:#0369a1;margin-top:5px">✅ Auto-filled from Timetable — ${escHtml(ttInfo.dayName)}</div>` : `<div style="font-size:10px;color:var(--tx3);margin-top:5px">⚠️ Set up Timetable page to auto-fill periods</div>`}
+    </div>
+    <div class="fg"><label class="fl">Subject *</label><input class="fi" id="tl-f-subject" placeholder="e.g. Mathematics"></div>
+    <div class="fg"><label class="fl">Topic / Chapter</label><input class="fi" id="tl-f-topic" placeholder="e.g. Quadratic Equations – introduction"></div>
+    <div class="fg"><label class="fl">Lesson Notes</label><textarea class="fi" id="tl-f-notes" rows="3" placeholder="What was covered, teaching method, key points…"></textarea></div>
+    <div class="fg"><label class="fl">Homework Given</label><input class="fi" id="tl-f-hw" placeholder="Page numbers, exercises…"></div>
+    <div class="fg">
+      <label class="fl" style="display:flex;align-items:center;gap:6px">🔴 Absent Students
+        <span style="font-size:10px;color:var(--tx3);font-weight:400">(auto-pulled from Attendance)</span>
+        <span id="tl-f-absent-count" style="font-size:10px;background:#fef3c7;color:#92400e;border-radius:5px;padding:1px 6px;font-weight:600">${absentIds.length} absent today</span>
+      </label>
+      <select class="fi" id="tl-f-absent" multiple style="height:90px;font-size:11px">${_tlStudentOptions(absentIds)}</select>
+      <div style="font-size:10px;color:var(--tx3);margin-top:3px">Hold Ctrl/Cmd to select multiple · These students missed this lesson</div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px">
+      <button class="btn btn-sm" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-p" onclick="saveTeachingLog()">💾 Save Entry</button>
+    </div>`);
+}
+
+/* Auto-fill subject when period is selected */
+function tlAutoFillSubjectFromPeriod() {
+  const sel = document.getElementById('tl-f-period');
+  if (!sel) return;
+  const opt = sel.options[sel.selectedIndex];
+  const subj = opt ? opt.getAttribute('data-subject') : '';
+  const subjEl = document.getElementById('tl-f-subject');
+  if (subjEl && subj) subjEl.value = subj;
+}
+
+/* Refresh absent list when date or batch changes in the modal */
+function tlRefreshAbsentOnDateChange() {
+  const dateEl  = document.getElementById('tl-f-date');
+  const batchEl = document.getElementById('tl-f-batch');
+  const absSel  = document.getElementById('tl-f-absent');
+  const cntEl   = document.getElementById('tl-f-absent-count');
+  if (!dateEl || !absSel) return;
+  const date  = dateEl.value;
+  const batch = batchEl ? batchEl.value : 'all';
+  const ids   = _tlGetAbsentIdsForDate(date, batch);
+  absSel.innerHTML = _tlStudentOptions(ids);
+  if (cntEl) cntEl.textContent = ids.length + ' absent';
+}
+
+function openEditTeachingLog(id) {
+  const logs = _tlLoad();
+  const log  = logs.find(l=>l.id===id);
+  if (!log) return;
+  const ttInfo = _tlGetTodayTTInfo(log.batch || 'all');
+  _tlShowModal(`
+    <div class="modal-title">✏️ Edit Teaching Log</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="fg"><label class="fl">Date *</label><input class="fi" id="tl-f-date" type="date" value="${log.date||''}"></div>
+      <div class="fg"><label class="fl">Session</label>
+        <select class="fi" id="tl-f-session">
+          <option value="morning" ${(log.session||'morning')==='morning'?'selected':''}>☀️ Morning</option>
+          <option value="evening" ${log.session==='evening'?'selected':''}>🌙 Evening</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="fg"><label class="fl">Grade *</label><select class="fi" id="tl-f-grade"><option value="">Select…</option>${_tlGradeOptions(log.grade)}</select></div>
+      <div class="fg"><label class="fl">Batch</label><select class="fi" id="tl-f-batch"><option value="">All / Any</option>${_tlBatchOptions(log.batch)}</select></div>
+    </div>
+    <div style="background:var(--bg2);border:.5px solid var(--br);border-radius:8px;padding:10px 12px;margin-bottom:10px">
+      <div style="font-size:10px;font-weight:700;color:#0369a1;margin-bottom:6px">📅 Day Order & Period</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div class="fg" style="margin:0"><label class="fl" style="font-size:10px">Day Order</label>
+          <input class="fi" id="tl-f-dayorder" value="${log.dayOrder||''}" placeholder="e.g. 1" style="font-size:11px"></div>
+        <div class="fg" style="margin:0"><label class="fl" style="font-size:10px">Period</label>
+          <select class="fi" id="tl-f-period" style="font-size:11px" onchange="tlAutoFillSubjectFromPeriod()">${_tlPeriodOptions(ttInfo)}</select></div>
+      </div>
+    </div>
+    <div class="fg"><label class="fl">Subject *</label><input class="fi" id="tl-f-subject" value="${escHtml(log.subject||'')}" placeholder="e.g. Mathematics"></div>
+    <div class="fg"><label class="fl">Topic / Chapter</label><input class="fi" id="tl-f-topic" value="${escHtml(log.topic||'')}" placeholder="e.g. Quadratic Equations"></div>
+    <div class="fg"><label class="fl">Lesson Notes</label><textarea class="fi" id="tl-f-notes" rows="3">${escHtml(log.lessonNotes||'')}</textarea></div>
+    <div class="fg"><label class="fl">Homework Given</label><input class="fi" id="tl-f-hw" value="${escHtml(log.homeworkGiven||'')}"></div>
+    <div class="fg">
+      <label class="fl">🔴 Absent Students (missed this lesson)</label>
+      <select class="fi" id="tl-f-absent" multiple style="height:90px;font-size:11px">${_tlStudentOptions(log.absentStudentIds||[])}</select>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px">
+      <button class="btn btn-sm" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-p" onclick="saveTeachingLog('${id}')">💾 Update</button>
+    </div>`);
+}
+
+function saveTeachingLog(editId) {
+  const date     = (document.getElementById('tl-f-date')||{}).value    || '';
+  const grade    = (document.getElementById('tl-f-grade')||{}).value   || '';
+  const batch    = (document.getElementById('tl-f-batch')||{}).value   || '';
+  const subject  = (document.getElementById('tl-f-subject')||{}).value?.trim() || '';
+  const topic    = (document.getElementById('tl-f-topic')||{}).value?.trim()   || '';
+  const notes    = (document.getElementById('tl-f-notes')||{}).value?.trim()   || '';
+  const hw       = (document.getElementById('tl-f-hw')||{}).value?.trim()      || '';
+  const session  = (document.getElementById('tl-f-session')||{}).value || 'morning';
+  const dayOrder = (document.getElementById('tl-f-dayorder')||{}).value?.trim() || '';
+  const perSel   = document.getElementById('tl-f-period');
+  const perIdx   = perSel ? perSel.value : '';
+  // Build periodTime label
+  let periodTime = '';
+  if (perSel && perIdx !== '') {
+    const opt = perSel.options[perSel.selectedIndex];
+    periodTime = opt ? opt.textContent : '';
+  }
+  const absSel    = document.getElementById('tl-f-absent');
+  const absentIds = absSel ? [...absSel.selectedOptions].map(o=>o.value) : [];
+  if (!date || !grade || !subject) { showToast('⚠️ Date, Grade & Subject are required'); return; }
+  const logs = _tlLoad();
+  const entry = { date, grade, batch, subject, topic, lessonNotes:notes, homeworkGiven:hw,
+                  session, dayOrder, periodIndex:perIdx, periodTime, absentStudentIds:absentIds };
+  if (editId) {
+    const idx = logs.findIndex(l=>l.id===editId);
+    if (idx>-1) logs[idx] = {...logs[idx], ...entry};
+  } else {
+    logs.push({ id:'tl_'+Date.now(), ...entry, createdAt:new Date().toISOString() });
+  }
+  _tlSave(logs);
+  closeModal();
+  renderTeachingLog();
+  showToast('✅ Teaching log saved!');
+}
+
+function deleteTeachingLog(id) {
+  if (!confirm('Delete this teaching log entry?')) return;
+  const logs = _tlLoad().filter(l=>l.id!==id);
+  _tlSave(logs);
+  renderTeachingLog();
+  showToast('Deleted');
+}
+
+/* ── Legacy shim ── */
+function _tlGetTodayAbsentIds() {
+  return _tlGetAbsentIdsForDate(new Date().toISOString().slice(0,10), 'all');
+}
+
+function _tlGradeOptions(sel) {
+  const stus = (typeof students !== 'undefined' ? students : []);
+  const grades = [...new Set(stus.map(s=>s.grade||s.class).filter(Boolean))].sort();
+  return grades.map(g=>`<option value="${g}" ${sel===g?'selected':''}>${g}</option>`).join('');
+}
+function _tlBatchOptions(sel) {
+  const stus = (typeof students !== 'undefined' ? students : []);
+  const batchs = [...new Set(stus.map(s=>s.batch).filter(Boolean))].sort();
+  return batchs.map(b=>`<option value="${b}" ${sel===b?'selected':''}>${b}</option>`).join('');
+}
+
+/* ══════════════════════════════════════════════════════
+   ABSENT SUMMARY  — inline inline panel, WA links (no popup)
+══════════════════════════════════════════════════════ */
+function tlShowAbsentSummary() {
+  const logs  = _tlFilteredLogs();
+  const stus  = (typeof students !== 'undefined' ? students : []);
+  const missed = {};
+  logs.forEach(l => {
+    (l.absentStudentIds||[]).forEach(id => {
+      if (!missed[id]) missed[id] = [];
+      missed[id].push({ date:l.date, subject:l.subject, topic:l.topic, grade:l.grade,
+                        dayOrder:l.dayOrder, session:l.session, periodTime:l.periodTime });
+    });
+  });
+  const entries = Object.entries(missed).sort((a,b)=>b[1].length-a[1].length);
+  if (!entries.length) { showToast('No absent records in this filter'); return; }
+
+  // Get saved WA template for teaching-absent or fall back to default
+  const savedTpl = (function(){
+    try { return localStorage.getItem('_erp_wt_teaching_absent_ta') || ''; } catch(e) { return ''; }
+  })();
+
+  _tlShowModal(`
+    <div class="modal-title">🔴 Absent Students — Missed Lessons</div>
+    <div style="font-size:11px;color:var(--tx3);margin-bottom:10px">
+      WA message links open WhatsApp directly — no popup. Tap 📱 to send.
+    </div>
+    <div style="max-height:400px;overflow-y:auto">
+    ${entries.map(([id, lessons]) => {
+      const s     = stus.find(x=>x.id===id);
+      const name  = s ? s.name : id;
+      const phone = s ? (s.phone||s.parentPhone||s.whatsapp||'') : '';
+      const grade = s ? (s.grade||s.class||'') : (lessons[0]?.grade||'');
+      // Build WA message
+      const lessonLines = lessons.map(l =>
+        `• ${l.date}${l.dayOrder?' (D-'+l.dayOrder+(l.session?'/'+l.session:'')+')':''}${l.periodTime?' ['+l.periodTime+']':''} — ${l.subject||''}${l.topic?' ('+l.topic+')':''}`
+      ).join('\n');
+      let waMsg;
+      if (savedTpl) {
+        waMsg = savedTpl
+          .replace(/{student_name}/g, name)
+          .replace(/{grade}/g, grade)
+          .replace(/{missed_count}/g, lessons.length)
+          .replace(/{missed_lessons}/g, lessonLines)
+          .replace(/{parent_name}/g, s?.parent||'பெற்றோர்');
+      } else {
+        waMsg = `அன்பான பெற்றோர்,\n${name} (${grade}) கீழ்காணும் வகுப்புகளில் கலந்துகொள்ளவில்லை:\n\n${lessonLines}\n\nதயவுசெய்து இந்த பாடங்களை வீட்டில் படிக்க உதவுங்கள்.\n\nநன்றி 🙏`;
+      }
+      const waEnc = encodeURIComponent(waMsg);
+      const waHref = phone ? `https://wa.me/91${phone.replace(/\D/g,'')}?text=${waEnc}` : '';
+      return `<div class="card" style="margin-bottom:8px;padding:10px 12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;gap:8px">
+          <div>
+            <span style="font-size:13px;font-weight:700;color:var(--tx)">${escHtml(name)}</span>
+            <span style="font-size:10px;background:#fef3c7;color:#92400e;border-radius:5px;padding:2px 7px;margin-left:6px;font-weight:600">${lessons.length} lessons missed</span>
+            ${grade?`<span style="font-size:10px;color:var(--tx3);margin-left:4px">${escHtml(grade)}</span>`:''}
+          </div>
+          ${waHref
+            ? `<a href="${waHref}" target="_blank" style="text-decoration:none">
+                <span style="background:#25d366;color:#fff;font-size:10px;padding:4px 10px;border-radius:6px;font-weight:600;white-space:nowrap">📱 WA Parent</span>
+               </a>`
+            : `<span style="font-size:10px;color:var(--tx3)">No phone</span>`}
+        </div>
+        <div style="font-size:11px;color:var(--tx2)">
+          ${lessons.map(l=>`<div style="padding:3px 0;border-bottom:.5px solid var(--br)">
+            • ${l.date}
+            ${l.dayOrder?`<span style="background:#f0fdf4;color:#15803d;border-radius:4px;padding:1px 5px;font-size:10px;font-weight:600">D-${l.dayOrder}</span>`:''}
+            ${l.session?`<span style="background:#eff6ff;color:#1d4ed8;border-radius:4px;padding:1px 5px;font-size:10px">${l.session==='morning'?'☀️':'🌙'}</span>`:''}
+            ${l.periodTime?`<span style="font-size:10px;color:var(--tx3)">${escHtml(l.periodTime)}</span>`:''}
+            — <b>${escHtml(l.subject||'')}</b>${l.topic?' — '+escHtml(l.topic):''}
+          </div>`).join('')}
+        </div>
+      </div>`;
+    }).join('')}
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
+      <button class="btn btn-sm" onclick="tlSendAllAbsentWA()" style="background:#25d366;color:#fff;border-color:#25d366">📱 Send All WA</button>
+      <button class="btn btn-sm" onclick="closeModal()">Close</button>
+    </div>`);
+}
+
+/* Send WA for a single log entry's absent students (no popup) */
+function tlSendAbsentWA(logId) {
+  const logs = _tlLoad();
+  const log  = logs.find(l=>l.id===logId);
+  if (!log) return;
+  const stus = (typeof students !== 'undefined' ? students : []);
+  const savedTpl = (function(){ try { return localStorage.getItem('_erp_wt_teaching_absent_ta')||''; } catch(e){ return ''; } })();
+  const absent = (log.absentStudentIds||[]);
+  if (!absent.length) { showToast('No absent students in this entry'); return; }
+  absent.forEach((id, i) => {
+    const s    = stus.find(x=>x.id===id);
+    if (!s) return;
+    const phone = (s.phone||s.parentPhone||s.whatsapp||'').replace(/\D/g,'');
+    if (!phone) return;
+    const name  = s.name;
+    const grade = s.grade||s.class||'';
+    const lessonLine = `• ${log.date}${log.dayOrder?' (D-'+log.dayOrder+(log.session?'/'+log.session:'')+')':''}${log.periodTime?' ['+log.periodTime+']':''} — ${log.subject||''}${log.topic?' ('+log.topic+')':''}`;
+    let msg;
+    if (savedTpl) {
+      msg = savedTpl.replace(/{student_name}/g,name).replace(/{grade}/g,grade)
+        .replace(/{missed_count}/g,'1').replace(/{missed_lessons}/g,lessonLine)
+        .replace(/{parent_name}/g,s.parent||'பெற்றோர்');
+    } else {
+      msg = `அன்பான பெற்றோர்,\n${name} (${grade}) இன்று வகுப்பில் கலந்துகொள்ளவில்லை:\n\n${lessonLine}\n\nதயவுசெய்து இந்த பாடங்களை வீட்டில் படிக்க உதவுங்கள்.\n\nநன்றி 🙏`;
+    }
+    setTimeout(() => window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`, '_blank'), i * 600);
+  });
+  showToast(`📱 Opening WA for ${absent.length} parent(s)…`);
+}
+
+/* Send WA to all absent students across filtered logs */
+function tlSendAllAbsentWA() {
+  const logs = _tlFilteredLogs();
+  const stus = (typeof students !== 'undefined' ? students : []);
+  const missed = {};
+  logs.forEach(l => {
+    (l.absentStudentIds||[]).forEach(id => {
+      if (!missed[id]) missed[id] = [];
+      missed[id].push(l);
+    });
+  });
+  const savedTpl = (function(){ try { return localStorage.getItem('_erp_wt_teaching_absent_ta')||''; } catch(e){ return ''; } })();
+  let count = 0;
+  Object.entries(missed).forEach(([id, ls], i) => {
+    const s = stus.find(x=>x.id===id);
+    if (!s) return;
+    const phone = (s.phone||s.parentPhone||s.whatsapp||'').replace(/\D/g,'');
+    if (!phone) return;
+    const name  = s.name;
+    const grade = s.grade||s.class||'';
+    const lessonLines = ls.map(l =>
+      `• ${l.date}${l.dayOrder?' (D-'+l.dayOrder+(l.session?'/'+l.session:'')+')':''}${l.periodTime?' ['+l.periodTime+']':''} — ${l.subject||''}${l.topic?' ('+l.topic+')':''}`
+    ).join('\n');
+    let msg;
+    if (savedTpl) {
+      msg = savedTpl.replace(/{student_name}/g,name).replace(/{grade}/g,grade)
+        .replace(/{missed_count}/g,ls.length).replace(/{missed_lessons}/g,lessonLines)
+        .replace(/{parent_name}/g,s.parent||'பெற்றோர்');
+    } else {
+      msg = `அன்பான பெற்றோர்,\n${name} (${grade}) கீழ்காணும் ${ls.length} வகுப்புகளில் கலந்துகொள்ளவில்லை:\n\n${lessonLines}\n\nதயவுசெய்து இந்த பாடங்களை வீட்டில் படிக்க உதவுங்கள்.\n\nநன்றி 🙏`;
+    }
+    count++;
+    setTimeout(() => window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`, '_blank'), i * 700);
+  });
+  showToast(`📱 Opening WA for ${count} parents…`);
+  closeModal();
+}
+
+/* ══════════════════════════════════════════════════════
+   AI STUDY PLANNER  — per-student catch-up plan
+══════════════════════════════════════════════════════ */
+async function tlRunAIStudyPlanner() {
+  const logs  = _tlFilteredLogs();
+  const stus  = (typeof students !== 'undefined' ? students : []);
+  if (!logs.length) { showToast('No teaching log entries in this filter'); return; }
+
+  // Build per-student missed lessons
+  const missed = {};
+  logs.forEach(l => {
+    (l.absentStudentIds||[]).forEach(id => {
+      if (!missed[id]) missed[id] = [];
+      missed[id].push({
+        date:l.date, subject:l.subject, topic:l.topic,
+        notes:l.lessonNotes, hw:l.homeworkGiven,
+        dayOrder:l.dayOrder, session:l.session
+      });
+    });
+  });
+  if (!Object.keys(missed).length) { showToast('No absent students to plan for'); return; }
+
+  const studentSummaries = Object.entries(missed).map(([id, ls]) => {
+    const s = stus.find(x=>x.id===id);
+    return `Student: ${s?s.name:id} (${s?.grade||''})\nMissed ${ls.length} lesson(s):\n${ls.map(l=>`  - ${l.date} | D-${l.dayOrder||'?'} | ${l.subject||''}${l.topic?' — '+l.topic:''} | Notes: ${(l.notes||'').slice(0,60)}`).join('\n')}`;
+  }).join('\n\n');
+
+  const prompt = `You are an expert Tamil Nadu tuition center teacher. Create a personalized AI Study Planner (catch-up plan) for students who missed classes.
+
+ABSENT STUDENTS & MISSED LESSONS:
+${studentSummaries}
+
+For EACH student, provide:
+1. 📚 WHAT THEY MISSED — brief summary of each missed topic
+2. 🗓️ CATCH-UP SCHEDULE — day-by-day plan (3–5 days) to cover missed content
+3. 📝 KEY CONCEPTS TO REVIEW — most important points from missed lessons
+4. 🏠 HOME STUDY TIPS — practical tips for self-study at home
+5. ✅ READINESS CHECK — 2–3 quick questions to verify understanding
+
+Format clearly per student. Use Tamil where helpful. Keep practical for Class 6-12 tuition context.`;
+
+  const panel   = document.getElementById('tl-ai-panel');
+  const loading = document.getElementById('tl-ai-loading');
+  const output  = document.getElementById('tl-ai-output');
+  const titleEl = document.getElementById('tl-ai-panel-title');
+  if (!panel || !output) return;
+  if (titleEl) titleEl.textContent = '📚 AI Study Planner';
+  panel.style.display = '';
+  if (loading) loading.style.display = '';
+  output.style.display = 'none';
+  output.textContent = '';
+  panel.scrollIntoView({behavior:'smooth', block:'start'});
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ model:'claude-sonnet-4-6', max_tokens:1500,
+        messages:[{role:'user', content:prompt}] })
+    });
+    const data = await resp.json();
+    const text = (data.content||[]).map(c=>c.text||'').join('');
+    if (loading) loading.style.display = 'none';
+    output.style.display = '';
+    output.textContent = text || 'No response received.';
+  } catch(err) {
+    if (loading) loading.style.display = 'none';
+    output.style.display = '';
+    output.textContent = 'AI Study Planner failed: ' + (err.message||'Network error');
+  }
+}
+
+/* ══════════════════════════════════════════════════════
+   AI GROWTH FACTOR  — curriculum & growth analysis
+══════════════════════════════════════════════════════ */
+async function tlRunAIGrowth() {
+  const logs  = _tlFilteredLogs();
+  const stus  = (typeof students !== 'undefined' ? students : []);
+  if (!logs.length) { showToast('No teaching log entries in this filter'); return; }
+
+  // Build context
+  const missed = {};
+  logs.forEach(l => {
+    (l.absentStudentIds||[]).forEach(id => {
+      if (!missed[id]) missed[id] = [];
+      missed[id].push(`${l.date} D-${l.dayOrder||'?'} ${l.session||''}: ${l.subject||''}${l.topic?' ('+l.topic+')':''}`);
+    });
+  });
+  const absentSummary = Object.entries(missed).map(([id, ls]) => {
+    const s = stus.find(x=>x.id===id);
+    return `${s?s.name:id} (${s?.grade||''}): missed ${ls.length} — ${ls.slice(0,4).join(', ')}`;
+  }).join('\n');
+
+  const subjectCoverage = {};
+  const sessionCoverage = { morning:0, evening:0 };
+  const dayOrderCoverage = {};
+  logs.forEach(l => {
+    if (!subjectCoverage[l.subject]) subjectCoverage[l.subject] = 0;
+    subjectCoverage[l.subject]++;
+    if (l.session) sessionCoverage[l.session] = (sessionCoverage[l.session]||0)+1;
+    if (l.dayOrder) dayOrderCoverage['D-'+l.dayOrder] = (dayOrderCoverage['D-'+l.dayOrder]||0)+1;
+  });
+
+  const prompt = `You are an expert Tamil Nadu tuition center teaching analyst. Analyze this Teaching Log and provide an AI Growth Factor report.
+
+TEACHING LOG SUMMARY (${logs.length} entries):
+Date range: ${logs[logs.length-1]?.date||''} to ${logs[0]?.date||''}
+Subjects: ${Object.entries(subjectCoverage).map(([s,n])=>`${s}(${n})`).join(', ')}
+Day Orders covered: ${Object.entries(dayOrderCoverage).map(([d,n])=>`${d}:${n}`).join(', ')}
+Sessions: Morning=${sessionCoverage.morning||0}, Evening=${sessionCoverage.evening||0}
+
+ABSENT STUDENTS:
+${absentSummary || 'No absences recorded'}
+
+SAMPLE LESSONS:
+${logs.slice(0,8).map(l=>`• ${l.date} D-${l.dayOrder||'?'} ${l.session||''} | ${l.subject||''} | ${l.topic||'—'} | ${(l.lessonNotes||'').slice(0,60)}`).join('\n')}
+
+Provide:
+1. 📊 CURRICULUM COVERAGE — Subject balance? Day Order coverage gaps?
+2. 🔴 AT-RISK STUDENTS — Who missed most? Which subjects most affected?
+3. 📈 GROWTH FACTORS — Top 3 factors to boost student performance
+4. ⏰ SESSION PATTERN ANALYSIS — Morning vs Evening session balance
+5. 💡 CATCH-UP RECOMMENDATIONS — Priority actions for next 2 weeks
+6. 🎯 TEACHER FOCUS AREAS — What to emphasise based on attendance patterns
+
+Keep practical for Tamil Nadu Class 6-12 tuition. Use Tamil labels where helpful.`;
+
+  const panel   = document.getElementById('tl-ai-panel');
+  const loading = document.getElementById('tl-ai-loading');
+  const output  = document.getElementById('tl-ai-output');
+  const titleEl = document.getElementById('tl-ai-panel-title');
+  if (!panel || !output) return;
+  if (titleEl) titleEl.textContent = '✨ AI Growth Factor';
+  panel.style.display = '';
+  if (loading) loading.style.display = '';
+  output.style.display = 'none';
+  output.textContent = '';
+  panel.scrollIntoView({behavior:'smooth', block:'start'});
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ model:'claude-sonnet-4-6', max_tokens:1200,
+        messages:[{role:'user', content:prompt}] })
+    });
+    const data = await resp.json();
+    const text = (data.content||[]).map(c=>c.text||'').join('');
+    if (loading) loading.style.display = 'none';
+    output.style.display = '';
+    output.textContent = text || 'No response received.';
+  } catch(err) {
+    if (loading) loading.style.display = 'none';
+    output.style.display = '';
+    output.textContent = 'AI analysis failed: ' + (err.message||'Network error');
+  }
+}
+
+function copyTLAI() {
+  const txt = document.getElementById('tl-ai-output')?.textContent || '';
+  navigator.clipboard.writeText(txt).then(()=>showToast('📋 Copied!')).catch(()=>showToast('Copy failed'));
+}
+
+/* ── Register Teaching Absent WA template type ── */
+(function(){
+  if (typeof WT_ALL_TYPES !== 'undefined') {
+    const exists = WT_ALL_TYPES.some(t=>t.id==='teaching_absent');
+    if (!exists) {
+      WT_ALL_TYPES.push({id:'teaching_absent', label:'Teaching Absent Alert', emoji:'📖', color:'#0369a1'});
+    }
+  }
+  if (typeof WA_TEMPLATES !== 'undefined' && !WA_TEMPLATES.teaching_absent) {
+    WA_TEMPLATES.teaching_absent = { ta: [
+      `அன்பான {parent_name},\n{student_name} ({grade}) கீழ்காணும் {missed_count} வகுப்பு(களில்) கலந்துகொள்ளவில்லை:\n\n{missed_lessons}\n\nதயவுசெய்து இந்த பாடங்களை வீட்டில் படிக்க உதவுங்கள்.\n\nநன்றி 🙏`
+    ]};
+  }
+  if (typeof WT_VARS !== 'undefined') {
+    WT_VARS.teaching_absent = '{student_name} · {parent_name} · {grade} · {missed_count} · {missed_lessons}';
+  }
+  if (typeof WT_SAMPLE !== 'undefined') {
+    WT_SAMPLE.teaching_absent = {
+      student_name:'Karthik', parent_name:'அன்பான பெற்றோர்', grade:'10th',
+      missed_count:'2', missed_lessons:'• 2024-01-15 (D-1/morning) — Maths (Quadratic Equations)\n• 2024-01-17 (D-3/evening) — Physics (Laws of Motion)'
+    };
+  }
+})();
+
+function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// Also support navTo('wa-templates') from any deep links — already handled in navTo above
+// For buttons that call navTo('wa-templates') + selectWTType, ensure the tab switches
+var _origSelectWTType = typeof selectWTType === 'function' ? selectWTType : null;
+// Wrap selectWTType to ensure templates tab is visible when called
+(function(){
+  var _orig = window.selectWTType;
+  if (typeof _orig === 'function') {
+    window.selectWTType = function(type) {
+      // Make sure we're on whatsapp page with templates tab
+      const pg = document.getElementById('pg-whatsapp');
+      if (pg && !pg.classList.contains('active')) navTo('whatsapp');
+      switchWATab('templates');
+      setTimeout(()=>_orig(type), 100);
+    };
+  }
+})();
 </script>
 
 </body>

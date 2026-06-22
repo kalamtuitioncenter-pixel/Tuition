@@ -145,7 +145,7 @@ tbody tr:hover td{background:var(--bg)}
 .toast{position:fixed;bottom:20px;right:20px;background:#0f172a;color:#f1f5f9;padding:11px 16px;border-radius:10px;font-size:13px;font-weight:500;z-index:999;box-shadow:0 4px 12px rgba(0,0,0,.2);pointer-events:none;opacity:0;transform:translateY(10px);transition:.25s}
 .toast.show{opacity:1;transform:translateY(0)}
 /* License banner */
-.lic-banner{background:#854f0b;color:#fff;text-align:center;padding:8px 16px;font-size:12px;font-weight:500;position:fixed;top:0;left:0;right:0;z-index:9999;display:none}
+.lic-banner{background:#854f0b;color:#fff;text-align:center;padding:8px 16px;font-size:12px;font-weight:500;position:relative;z-index:200;display:none}
 .lic-banner a{color:#fde68a;text-decoration:underline;cursor:pointer}
 /* Upgrade modal */
 .plan-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:14px 0}
@@ -531,7 +531,6 @@ tbody tr:hover td{background:var(--bg)}
     <button class="nav-item" data-page="attendance"><svg viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5 2v2M11 2v2M2 7h12M5.5 10.5l1.5 1.5 3-3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg><span id="nl-attendance">Attendance</span></button>
     <button class="nav-item" data-page="fees"><svg viewBox="0 0 16 16" fill="none"><rect x="2" y="4" width="12" height="9" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M2 7h12M6 10h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg><span id="nl-fees">Fees</span></button>
     <button class="nav-item" data-page="marks"><svg viewBox="0 0 16 16" fill="none"><path d="M3 12V4l5-2 5 2v8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M6 8h4M6 10.5h2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg><span id="nl-marks">Marks & Exams</span></button>
-    <button class="nav-item" data-page="teaching"><svg viewBox="0 0 16 16" fill="none"><rect x="1" y="3" width="14" height="10" rx="1.5" stroke="#0ea5e9" stroke-width="1.3"/><path d="M5 7h6M5 9.5h4" stroke="#0ea5e9" stroke-width="1.2" stroke-linecap="round"/><path d="M8 3V1M5 3V1M11 3V1" stroke="#0ea5e9" stroke-width="1.1" stroke-linecap="round"/></svg><span>Teaching Log</span></button>
     <div class="nav-sec" id="ns-mgmt">Management</div>
     <button class="nav-item" data-page="staff"><svg viewBox="0 0 16 16" fill="none"><circle cx="6" cy="5" r="2.5" stroke="currentColor" stroke-width="1.3"/><path d="M1 14c0-2.8 2.2-4 5-4M13 14v-4m0 4l-2-2m2 2l2-2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="13" cy="7" r="2.5" stroke="currentColor" stroke-width="1.3"/></svg><span id="nl-staff">Staff</span></button>
     <button class="nav-item" data-page="shop"><svg viewBox="0 0 16 16" fill="none"><path d="M2 3h12l-1.5 6H3.5L2 3z" stroke="currentColor" stroke-width="1.3"/><circle cx="5.5" cy="13" r="1" stroke="currentColor" stroke-width="1.3"/><circle cx="11.5" cy="13" r="1" stroke="currentColor" stroke-width="1.3"/></svg><span id="nl-shop">Shop</span></button>
@@ -539,7 +538,7 @@ tbody tr:hover td{background:var(--bg)}
     <button class="nav-item" data-page="notifications"><svg viewBox="0 0 16 16" fill="none"><path d="M8 2a4 4 0 014 4v3l1.5 2h-11L4 9V6a4 4 0 014-4z" stroke="currentColor" stroke-width="1.3"/><path d="M6.5 12.5a1.5 1.5 0 003 0" stroke="currentColor" stroke-width="1.3"/></svg><span id="nl-notifications">Notifications</span></button>
     <button class="nav-item" data-page="ai"><svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="5" stroke="currentColor" stroke-width="1.3"/><path d="M6 6.5c.5-1.5 3.5-1.5 3 .5-.5 1.5-3 1-3 2.5M8 12v.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg><span id="nl-ai">AI Features</span></button>
     <button class="nav-item" data-page="backup"><svg viewBox="0 0 16 16" fill="none"><path d="M8 2v7M5 6l3 3 3-3M2 11v2a1 1 0 001 1h10a1 1 0 001-1v-2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg><span id="nl-backup">Backup & Sync</span></button>
-
+    <button class="nav-item" data-page="wa-templates"><svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" fill="#25d366"/><path d="M11.5 9.8c-.2-.1-1.2-.6-1.4-.7-.2-.1-.3-.1-.5.1-.1.2-.5.7-.6.8-.1.1-.2.1-.4 0-.2-.1-.9-.3-1.7-1-.6-.6-1-1.3-1.1-1.5-.1-.2 0-.3.1-.4l.3-.4c.1-.1.1-.2.2-.4 0-.1 0-.3 0-.4-.1-.1-.5-1.1-.6-1.5-.2-.4-.3-.3-.5-.3h-.4c-.1 0-.4.1-.6.3-.2.2-.8.8-.8 1.9s.8 2.2.9 2.4c.1.1 1.6 2.4 3.8 3.4.5.2.9.4 1.2.5.5.2 1 .1 1.3-.1.4-.2.8-.8.9-1.5.1-.4 0-.6-.1-.7z" fill="#fff"/></svg><span>WA Templates</span></button>
     <button class="nav-item" data-page="summary"><svg viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="#f59e0b" stroke-width="1.3"/><path d="M5 8l2 2 4-4" stroke="#f59e0b" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 5h2M5 11h6" stroke="#f59e0b" stroke-width="1.1" stroke-linecap="round"/></svg><span>Student Summary</span></button>
     <button class="nav-item" data-page="timetable"><svg viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="1.5" stroke="#0ea5e9" stroke-width="1.3"/><path d="M5 2v2M11 2v2M2 7h12" stroke="#0ea5e9" stroke-width="1.3" stroke-linecap="round"/><path d="M5 10h2M9 10h2M5 12.5h2M9 12.5h2" stroke="#0ea5e9" stroke-width="1.2" stroke-linecap="round"/></svg><span>Time Table</span></button>
     <button class="nav-item" data-page="settings"><svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.3"/><path d="M8 2v1.5M8 12.5V14M14 8h-1.5M3.5 8H2M12.2 3.8l-1.06 1.06M4.86 11.14L3.8 12.2M12.2 12.2l-1.06-1.06M4.86 4.86L3.8 3.8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg><span id="nl-settings">Settings</span></button>
@@ -894,51 +893,8 @@ tbody tr:hover td{background:var(--bg)}
         </div>
       </div>
       <div class="frow">
-        <div class="fg"><label class="fl">Monthly Fee ₹ <span style="color:#7c3aed;font-size:10px">(auto-filled)</span></label><input class="fi" id="adm-fee" type="number" placeholder="0" oninput="_admDwOverridden=false;recalcAdmFees()"></div>
+        <div class="fg"><label class="fl">Monthly Fee ₹ <span style="color:#7c3aed;font-size:10px">(auto-filled)</span></label><input class="fi" id="adm-fee" type="number" placeholder="0" oninput="recalcAdmFees()"></div>
         <div class="fg"><label class="fl">Admission Fee ₹</label><input class="fi" id="adm-admfee" type="number" placeholder="500" oninput="recalcAdmFees()"></div>
-      </div>
-
-      <!-- Day-wise fee checkbox -->
-      <div id="adm-daywise-box" style="border:.5px solid #bae6fd;border-radius:10px;padding:11px 13px;background:#f0f9ff;margin-bottom:10px">
-        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none">
-          <input type="checkbox" id="adm-daywise-chk" onchange="toggleAdmDaywise()"
-            style="width:17px;height:17px;accent-color:#0891b2;cursor:pointer;flex-shrink:0">
-          <div>
-            <div style="font-size:12px;font-weight:700;color:#0c4a6e">📅 Charge day-wise (joined after 10th)</div>
-            <div style="font-size:10px;color:#0369a1;margin-top:1px">Fee will be calculated for remaining days of this month only</div>
-          </div>
-        </label>
-        <div id="adm-daywise-detail" style="display:none;margin-top:10px;padding-top:10px;border-top:.5px dashed #bae6fd">
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
-            <div style="background:#fff;border:.5px solid #bae6fd;border-radius:8px;padding:8px;text-align:center">
-              <div style="font-size:10px;color:#0369a1;font-weight:600;margin-bottom:4px">Total Days in Month</div>
-              <div style="font-size:18px;font-weight:800;color:#0c4a6e" id="adm-dw-totaldays">30</div>
-            </div>
-            <div style="background:#fff;border:.5px solid #bae6fd;border-radius:8px;padding:8px;text-align:center">
-              <div style="font-size:10px;color:#0369a1;font-weight:600;margin-bottom:4px">Joining Day <span style="color:#0891b2">(edit)</span></div>
-              <input type="number" id="adm-dw-joinday" min="1" max="31"
-                style="width:60px;font-size:18px;font-weight:800;color:#0c4a6e;border:1.5px solid #bae6fd;border-radius:6px;text-align:center;padding:2px 4px;background:var(--bg);font-family:inherit"
-                oninput="onDwJoinDayEdit()">
-            </div>
-            <div style="background:#fff;border:.5px solid #bae6fd;border-radius:8px;padding:8px;text-align:center">
-              <div style="font-size:10px;color:#0369a1;font-weight:600;margin-bottom:4px">Remaining Days</div>
-              <div style="font-size:18px;font-weight:800;color:#16a34a" id="adm-dw-remdays">—</div>
-            </div>
-          </div>
-          <div style="display:flex;justify-content:space-between;align-items:center;background:#fff;border:.5px solid #bae6fd;border-radius:8px;padding:9px 12px;gap:10px">
-            <div style="min-width:0">
-              <div style="font-size:11px;color:#0369a1;font-weight:600">Prorated Monthly Fee <span style="color:#0891b2;font-weight:500">(editable)</span></div>
-              <div style="font-size:10px;color:#64748b;margin-top:1px" id="adm-dw-formula">₹0 ÷ 30 × 0 days</div>
-            </div>
-            <div style="display:flex;align-items:center;gap:3px;flex-shrink:0">
-              <span style="font-size:16px;font-weight:800;color:#0891b2">₹</span>
-              <input type="number" id="adm-dw-prorated"
-                style="width:90px;font-size:20px;font-weight:800;color:#0891b2;border:1.5px solid #bae6fd;border-radius:6px;text-align:right;padding:3px 6px;background:var(--bg);font-family:inherit"
-                oninput="onDwProratedEdit()" onclick="this.select()" placeholder="0">
-            </div>
-          </div>
-          <div id="adm-dw-override-note" style="display:none;font-size:10px;color:#0891b2;margin-top:5px;padding:0 2px"></div>
-        </div>
       </div>
 
       <!-- Submit -->
@@ -1493,7 +1449,7 @@ tbody tr:hover td{background:var(--bg)}
       <div style="display:flex;align-items:center;gap:10px;background:var(--bg);border-radius:8px;padding:10px 13px;margin-bottom:12px">
         <svg viewBox="0 0 16 16" fill="none" width="16" height="16"><circle cx="6" cy="5" r="3" stroke="#25d366" stroke-width="1.3"/><path d="M1 14c0-2.8 2.2-4 5-4M15 12l-3-3m0 3l3-3" stroke="#25d366" stroke-width="1.3" stroke-linecap="round"/></svg>
         <span style="font-size:12px;color:var(--tx2);flex:1">Recipients: <strong id="ew3-recipient-count" style="color:var(--tx)">0 parents</strong> with phone numbers</span>
-        <button onclick="navTo('whatsapp');setTimeout(()=>switchWATab('templates'),50);setTimeout(()=>typeof selectWTType==='function'&&selectWTType('exam_notice'),300)" style="background:none;border:.5px solid var(--br);border-radius:6px;padding:3px 8px;font-size:10px;color:var(--tx2);cursor:pointer;font-family:inherit">✏️ Edit Template</button>
+        <button onclick="navTo('wa-templates');setTimeout(()=>typeof selectWTType==='function'&&selectWTType('exam_notice'),300)" style="background:none;border:.5px solid var(--br);border-radius:6px;padding:3px 8px;font-size:10px;color:var(--tx2);cursor:pointer;font-family:inherit">✏️ Edit Template</button>
       </div>
 
       <!-- Student List -->
@@ -1641,19 +1597,10 @@ tbody tr:hover td{background:var(--bg)}
 
 <!-- ═══════════════ WHATSAPP ═══════════════ -->
 <div class="page" id="pg-whatsapp">
-  <div style="background:linear-gradient(135deg,#25d366,#128c7e);border-radius:12px;padding:16px 20px;margin-bottom:14px;display:flex;align-items:center;gap:14px">
+  <div style="background:linear-gradient(135deg,#25d366,#128c7e);border-radius:12px;padding:16px 20px;margin-bottom:16px;display:flex;align-items:center;gap:14px">
     <svg viewBox="0 0 24 24" fill="currentColor" width="36" height="36" style="color:#fff;flex-shrink:0"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-    <div style="flex:1"><div style="font-size:16px;font-weight:700;color:#fff" id="wa-title">WhatsApp</div><div style="font-size:12px;color:rgba(255,255,255,.8)" id="wa-sub">Send messages & manage templates — no API key needed</div></div>
+    <div><div style="font-size:16px;font-weight:700;color:#fff" id="wa-title">WhatsApp Parent Messenger</div><div style="font-size:12px;color:rgba(255,255,255,.8)" id="wa-sub">Send customized messages — no API key needed. Opens WhatsApp with pre-filled messages.</div></div>
   </div>
-
-  <!-- Tab switcher -->
-  <div style="display:flex;gap:0;background:var(--card);border:.5px solid var(--br);border-radius:10px;padding:3px;margin-bottom:14px">
-    <button id="wa-tab-messenger" onclick="switchWATab('messenger')" style="flex:1;padding:7px;border-radius:7px;border:none;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;background:#25d366;color:#fff;transition:.15s">📤 Messenger</button>
-    <button id="wa-tab-templates" onclick="switchWATab('templates')" style="flex:1;padding:7px;border-radius:7px;border:none;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;background:transparent;color:var(--tx2);transition:.15s">✏️ Templates</button>
-  </div>
-
-  <!-- ── MESSENGER PANEL ── -->
-  <div id="wa-panel-messenger">
 
   <!-- Message type selector -->
   <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-bottom:14px" id="wa-type-grid"></div>
@@ -1720,43 +1667,6 @@ tbody tr:hover td{background:var(--bg)}
       </div>
     </div>
     <div id="wa-queue-list"><div style="color:var(--tx3);text-align:center;padding:20px;font-size:12px">Build queue first — select message type, language, and recipients above</div></div>
-  </div>
-</div><!-- /wa-panel-messenger -->
-
-  <!-- ── TEMPLATES PANEL ── -->
-  <div id="wa-panel-templates" style="display:none">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-      <div style="font-size:12px;color:var(--tx2)">Customise every message type in Tamil. Changes save automatically.</div>
-      <button class="btn btn-sm" onclick="resetAllWATemplates()" style="white-space:nowrap;flex-shrink:0">↺ Reset All</button>
-    </div>
-    <!-- Type tabs -->
-    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px" id="wt-type-tabs"></div>
-    <!-- Editor card -->
-    <div class="card" id="wt-editor-card">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-        <div style="font-size:14px;font-weight:700;color:var(--tx)" id="wt-editor-title">Select a type above</div>
-        <div style="display:flex;gap:6px">
-          <button class="btn btn-sm" onclick="resetWATypeTemplate()" id="wt-reset-btn" style="display:none">↺ Reset</button>
-          <button class="btn btn-sm btn-p" onclick="saveWATypeTemplate()" id="wt-save-btn" style="display:none">💾 Save</button>
-        </div>
-      </div>
-      <div id="wt-vars" style="display:none;margin-bottom:10px;padding:8px 10px;background:var(--bg);border-radius:8px;font-size:11px;color:var(--tx2);line-height:2"></div>
-      <div style="display:none" id="wt-lang-tabs">
-        <button id="wt-lt-en" onclick="switchWTLang('ta')" style="display:none">EN</button>
-        <button id="wt-lt-ta" onclick="switchWTLang('ta')" style="padding:5px 14px;border-radius:8px;border:1.5px solid #185FA5;background:#185FA5;color:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">🌐 தமிழ் மட்டும்</button>
-      </div>
-      <div id="wt-pane-en" style="display:none">
-        <textarea class="fi" id="wt-tmpl-en" rows="10" style="font-size:12px;font-family:'Noto Sans Tamil',system-ui;line-height:1.7;resize:vertical;width:100%;box-sizing:border-box" oninput="refreshWTPreview();autoSaveWTTemplate()"></textarea>
-      </div>
-      <div id="wt-pane-ta">
-        <textarea class="fi" id="wt-tmpl-ta" rows="10" placeholder="நேரடியாக இங்கே தட்டச்சு செய்யவும்… / Type your message here…" style="font-size:12px;font-family:'Noto Sans Tamil',system-ui;line-height:1.7;resize:vertical;width:100%;box-sizing:border-box;border:2px solid #25d366;transition:border-color .2s" onfocus="this.style.borderColor='#128c7e'" onblur="this.style.borderColor='#25d366'" oninput="refreshWTPreview();autoSaveWTTemplate()"></textarea>
-        <div style="font-size:10px;color:#16a34a;margin-top:4px">✏️ Tap / click the box above to edit • Changes auto-save as you type</div>
-      </div>
-      <div style="margin-top:12px">
-        <div style="font-size:10px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Live Preview</div>
-        <div id="wt-preview" style="background:#dcfce7;border-radius:8px;padding:11px 13px;font-size:11px;color:#166534;line-height:1.7;white-space:pre-wrap;max-height:200px;overflow-y:auto;font-family:'Noto Sans Tamil',system-ui;border:.5px solid #bbf7d0">Select a message type to preview…</div>
-      </div>
-    </div>
   </div>
 </div>
 
@@ -1954,7 +1864,7 @@ tbody tr:hover td{background:var(--bg)}
       <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0"><div><div style="font-size:13px;font-weight:500;color:var(--tx)">Restore from backup</div><div style="font-size:11px;color:var(--tx2);margin-top:2px">Upload a previously downloaded .json file</div></div><label class="btn btn-sm" style="cursor:pointer"><svg viewBox="0 0 14 14" fill="none" width="12" height="12"><path d="M7 10V2M4 5l3-3 3 3M2 11h10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Restore<input type="file" accept=".json" style="display:none" onchange="restoreBackup(this)"></label></div>
     </div>
     <div class="card" style="margin-bottom:12px">
-      <div class="card-title" style="margin-bottom:12px;color:#16a34a">Google Sheets Backup</div>
+      <div class="card-title" style="margin-bottom:12px" style="color:#16a34a">Google Sheets Backup</div>
       <div style="background:#f0fdf4;border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:12px;color:#15803d;line-height:1.8">
         <div style="font-weight:700;margin-bottom:4px">📋 Setup (one time only):</div>
         <div>1️⃣ Click <b>View Script</b> → Copy the code</div>
@@ -2044,6 +1954,56 @@ tbody tr:hover td{background:var(--bg)}
 </div>
 
 <!-- ═══════════ WA TEMPLATES SETTINGS (full page) ═══════════ -->
+<div class="page" id="pg-wa-templates">
+  <!-- Header -->
+  <div style="background:linear-gradient(135deg,#25d366,#128c7e);border-radius:12px;padding:16px 20px;margin-bottom:16px;display:flex;align-items:center;gap:14px">
+    <div style="width:44px;height:44px;background:rgba(255,255,255,.15);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">✏️</div>
+    <div style="flex:1">
+      <div style="font-size:16px;font-weight:700;color:#fff">WhatsApp Message Templates</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.8);margin-top:2px">Customise every message type in English &amp; Tamil. Changes save automatically.</div>
+    </div>
+    <button class="btn btn-sm" onclick="resetAllWATemplates()" style="background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.3);white-space:nowrap;flex-shrink:0">↺ Reset All</button>
+  </div>
+
+  <!-- Type tabs -->
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px" id="wt-type-tabs"></div>
+
+  <!-- Editor card -->
+  <div class="card" id="wt-editor-card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div style="font-size:14px;font-weight:700;color:var(--tx)" id="wt-editor-title">Select a type above</div>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-sm" onclick="resetWATypeTemplate()" id="wt-reset-btn" style="display:none">↺ Reset</button>
+        <button class="btn btn-sm btn-p" onclick="saveWATypeTemplate()" id="wt-save-btn" style="display:none">💾 Save</button>
+      </div>
+    </div>
+
+    <!-- Variables reference -->
+    <div id="wt-vars" style="display:none;margin-bottom:10px;padding:8px 10px;background:var(--bg);border-radius:8px;font-size:11px;color:var(--tx2);line-height:2"></div>
+
+    <!-- Language tabs -->
+    <div style="display:none" id="wt-lang-tabs">
+      <button id="wt-lt-en" onclick="switchWTLang('ta')" style="display:none">EN</button>
+      <button id="wt-lt-ta" onclick="switchWTLang('ta')" style="padding:5px 14px;border-radius:8px;border:1.5px solid #185FA5;background:#185FA5;color:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">🌐 தமிழ் மட்டும்</button>
+    </div>
+
+    <!-- EN editor -->
+    <div id="wt-pane-en" style="display:none">
+      <textarea class="fi" id="wt-tmpl-en" rows="10" style="font-size:12px;font-family:'Noto Sans Tamil',system-ui;line-height:1.7;resize:vertical;width:100%;box-sizing:border-box" oninput="refreshWTPreview();autoSaveWTTemplate()"></textarea>
+    </div>
+    <!-- TA editor -->
+    <div id="wt-pane-ta">
+      <textarea class="fi" id="wt-tmpl-ta" rows="10" placeholder="நேரடியாக இங்கே தட்டச்சு செய்யவும்… / Type your message here…" style="font-size:12px;font-family:'Noto Sans Tamil',system-ui;line-height:1.7;resize:vertical;width:100%;box-sizing:border-box;border:2px solid #25d366;transition:border-color .2s" onfocus="this.style.borderColor='#128c7e'" onblur="this.style.borderColor='#25d366'" oninput="refreshWTPreview();autoSaveWTTemplate()"></textarea>
+      <div style="font-size:10px;color:#16a34a;margin-top:4px">✏️ Tap / click the box above to edit • Changes auto-save as you type</div>
+    </div>
+
+    <!-- Live preview -->
+    <div style="margin-top:12px">
+      <div style="font-size:10px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Live Preview</div>
+      <div id="wt-preview" style="background:#dcfce7;border-radius:8px;padding:11px 13px;font-size:11px;color:#166534;line-height:1.7;white-space:pre-wrap;max-height:200px;overflow-y:auto;font-family:'Noto Sans Tamil',system-ui;border:.5px solid #bbf7d0">Select a message type to preview…</div>
+    </div>
+  </div>
+</div>
 
 
 <!-- ═══════════════ STUDENT SUMMARY (மாணவர் அட்டவணை) ═══════════════ -->
@@ -2059,7 +2019,7 @@ tbody tr:hover td{background:var(--bg)}
     <div style="text-align:right;flex-shrink:0">
       <div style="font-size:10px;color:rgba(255,255,255,.7)">Total Students</div>
       <div style="font-size:22px;font-weight:800;color:#fff" id="sum-total-count">0</div>
-      <button class="btn btn-sm" onclick="navTo('whatsapp');setTimeout(()=>switchWATab('templates'),50);setTimeout(()=>selectWTType('monthly_summary'),300)"
+      <button class="btn btn-sm" onclick="navTo('wa-templates');setTimeout(()=>selectWTType('monthly_summary'),300)"
         style="margin-top:6px;background:rgba(255,255,255,.18);color:#fff;border-color:rgba(255,255,255,.4);font-size:10px;white-space:nowrap;width:100%">
         ✏️ Customise WA Template
       </button>
@@ -2156,6 +2116,10 @@ tbody tr:hover td{background:var(--bg)}
 </div>
 <!-- END TIME TABLE -->
 
+  </div><!-- /content -->
+</div><!-- /main -->
+</div><!-- /app -->
+
 <!-- Apps Script panel (hidden) -->
 <div id="apps-script-panel" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:300;align-items:center;justify-content:center;padding:16px">
   <div style="background:var(--card);border-radius:12px;padding:20px;max-width:700px;width:100%;max-height:90vh;overflow-y:auto">
@@ -2191,65 +2155,6 @@ tbody tr:hover td{background:var(--bg)}
     </div>
   </div>
 </div>
-
-<!-- ═══════════════ TEACHING LOG ═══════════════ -->
-<div class="page" id="pg-teaching">
-
-  <!-- Stats row -->
-  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px" id="tl-stats">
-    <div class="stat"><div class="stat-lbl">Total Entries</div><div class="stat-val">0</div><div class="stat-sub">lessons logged</div></div>
-    <div class="stat"><div class="stat-lbl">Days Covered</div><div class="stat-val">0</div><div class="stat-sub">teaching days</div></div>
-    <div class="stat"><div class="stat-lbl">Subjects</div><div class="stat-val">0</div><div class="stat-sub">unique subjects</div></div>
-  </div>
-
-  <!-- Filters row -->
-  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px">
-    <div style="display:flex;align-items:center;gap:7px;background:var(--card);border:.5px solid var(--br);border-radius:8px;padding:6px 10px;flex:1;min-width:130px;max-width:210px">
-      <svg viewBox="0 0 14 14" fill="none" width="13" height="13" style="flex-shrink:0"><circle cx="6" cy="6" r="4" stroke="var(--tx3)" stroke-width="1.3"/><path d="M10 10l2 2" stroke="var(--tx3)" stroke-width="1.3" stroke-linecap="round"/></svg>
-      <input type="text" id="tl-search" placeholder="Search topic…" style="border:none;background:transparent;outline:none;font-size:12px;color:var(--tx);width:100%;font-family:inherit" oninput="renderTeachingLog()">
-    </div>
-    <input type="date" id="tl-date-filter" class="fi" style="width:138px;font-size:12px;padding:6px 10px" onchange="renderTeachingLog()">
-    <select id="tl-batch-filter" class="fi" style="width:118px;font-size:12px;padding:6px 10px" onchange="renderTeachingLog()">
-      <option value="">All Batches</option>
-    </select>
-    <select id="tl-subject-filter" class="fi" style="width:128px;font-size:12px;padding:6px 10px" onchange="renderTeachingLog()">
-      <option value="">All Subjects</option>
-    </select>
-    <button class="btn btn-sm" onclick="tlClearFilters()">✕ Clear</button>
-  </div>
-
-  <!-- Absent-day analysis banner -->
-  <div id="tl-absent-banner" style="display:none;background:#fff7ed;border:.5px solid #fed7aa;border-radius:10px;padding:12px 14px;margin-bottom:12px">
-    <div style="font-size:12px;font-weight:700;color:#c2410c;margin-bottom:8px">⚠️ Missed Topics for Absent Students on this day</div>
-    <div id="tl-absent-list" style="font-size:11px;color:#9a3412;line-height:1.9"></div>
-    <button class="btn btn-wa btn-sm" style="margin-top:10px" onclick="sendMissedTopicsWA()">📱 Notify Parents via WhatsApp</button>
-  </div>
-
-  <!-- Log table -->
-  <div class="tbl-wrap">
-    <table style="table-layout:fixed">
-      <thead>
-        <tr>
-          <th style="width:92px">Date</th>
-          <th style="width:82px">Batch</th>
-          <th style="width:90px">Subject</th>
-          <th>Topic / Chapter</th>
-          <th style="width:72px">Period</th>
-          <th style="width:72px">Staff</th>
-          <th style="width:80px">Absent</th>
-          <th style="width:40px"></th>
-        </tr>
-      </thead>
-      <tbody id="tl-tbody">
-        <tr><td colspan="8" style="text-align:center;color:var(--tx3);padding:32px;font-size:12px">No entries yet — tap <b>+ Add Entry</b> to log today's class</td></tr>
-      </tbody>
-    </table>
-  </div>
-</div>
-
-  </div><!-- /content -->
-</div><!-- /main -->
-</div><!-- /app -->
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js" onload="if(window.initCharts && document.getElementById('pg-dashboard').classList.contains('active'))initCharts()"></script>
 
@@ -2316,7 +2221,7 @@ if (isPWA) {
    CONFIG
 ═══════════════════════════════════════════════════════ */
 const CFG = {
-  LICENSE_KEY: 'PRO-2026-0001-2330C68E',
+  LICENSE_KEY: 'TRIAL',
   CENTER: { name:'Sri Kalam Tuition', ownerName:'S. Rajendran', phone:'+91 98765 43210', city:'Chidambaram', state:'Tamil Nadu', email:'info@kalamtuition.com' },
   BRAND: { primaryColor:'#1a56db', logoText:'KT' },
   APP: { defaultLanguage:'en', defaultTheme:'light', studentIdPrefix:'KLM', academicYear:'2024-25' },
@@ -2588,7 +2493,6 @@ const T = {
     cancel:'Cancel',
     admissions:'Admissions',
     batches:'Batch Management',
-    teaching:'Teaching Log',
   },
   ta:{
     dashboard:'டாஷ்போர்டு',students:'மாணவர்கள்',attendance:'வருகை பதிவு',fees:'கட்டணம்',
@@ -2617,8 +2521,6 @@ const T = {
     pref_dark:'இருண்ட பயன்முறை',dark_off:'தற்போது அணைவு',dark_on:'தற்போது இயக்கம்',
     cancel:'ரத்து',
     admissions:'சேர்க்கை',
-    batches:'குழு மேலாண்மை',
-    teaching:'கற்பிப்பு பதிவு',
   }
 };
 const t = k => T[lang][k] || T.en[k] || k;
@@ -2901,7 +2803,6 @@ const pageConfig = {
   fees:     { addLabel: ()=>t('newFee'),     addFn: ()=>showModal('addFee') },
   notifications: { addLabel: ()=>t('sendNotif'), addFn: ()=>showModal('sendNotif') },
   staff:    { addLabel: ()=>t('addStaff'),   addFn: ()=>showModal('addStaff') },
-  teaching: { addLabel: ()=>'+ Add Entry',   addFn: ()=>openAddTeachingLog() },
 };
 
 function navTo(id) {
@@ -2924,7 +2825,7 @@ function navTo(id) {
   if (window.innerWidth < 860) closeSb();
   if (id === 'backup') { renderBkHistory(); updateBkCount(); }
   if (id === 'ai') { renderAICards(); initAI(); }
-  if (id === 'whatsapp') { renderWATypes(); switchWATab('messenger'); }
+  if (id === 'whatsapp') { renderWATypes(); }
   if (id === 'admissions') { initAdmissions(); }
   if (id === 'settings') { updateLatesDisplay(); initFeeReceiptTemplate(); }
   if (id === 'dashboard') {
@@ -2956,8 +2857,7 @@ function navTo(id) {
   if (id === 'summary') { if (typeof renderSummaryCards === 'function') renderSummaryCards(); }
   if (id === 'marks') { if (typeof ewInit === 'function') ewInit(); }
   if (id === 'timetable') { if (typeof initTimetablePage === 'function') initTimetablePage(); }
-  if (id === 'notifications') { if (typeof renderAdminPanel === 'function') renderAdminPanel(); }
-  if (id === 'teaching') { if (typeof initTeachingPage === 'function') initTeachingPage(); }}
+  if (id === 'notifications') { if (typeof renderAdminPanel === 'function') renderAdminPanel(); }}
 
 function tbAddAction() {
   const active = document.querySelector('.page.active');
@@ -3372,12 +3272,8 @@ const MODALS = {
     <div class="modal-foot"><button class="btn btn-wa" style="flex:2;justify-content:center" onclick="buildMarksQueue()">📋 Build Queue & Send</button><button class="btn" onclick="closeModal()">${t('cancel')}</button></div>`,
 };
 
-function showModal(type, customHTML) {
+function showModal(type) {
   const root = document.getElementById('modal-root');
-  if (customHTML) {
-    root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal">${customHTML}</div></div>`;
-    return;
-  }
   if (!MODALS[type]) return;
   root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal">${MODALS[type]()}</div></div>`;
   if (type==='marksWA') renderMarksWAEntry();
@@ -4823,7 +4719,7 @@ function renderWATypes() {
   const grid = document.getElementById('wa-type-grid');
   if (!grid) return;
   const lic = window.__LIC__ || {};
-  const maxTypes = lic.features ? (lic.features.waTypes || 2) : 2;
+  const maxTypes = lic.features ? (lic.waTypes || 2) : 2;
   grid.innerHTML = WA_TYPES.map((wt, i) => {
     const isActive = waType === wt.id;
     const locked = i >= maxTypes;
@@ -5113,7 +5009,7 @@ function openSendResultsModal(examIdx) {
         <div style="font-size:10px;font-weight:600;color:var(--tx3);text-transform:uppercase;letter-spacing:.04em">
           Message Preview (${window._resultStudents[0]?.s.name || ''})
         </div>
-        <button onclick="closeModal();navTo('whatsapp');setTimeout(()=>switchWATab('templates'),50);setTimeout(()=>typeof selectWTType==='function'&&selectWTType('marks'),300)"
+        <button onclick="closeModal();navTo('wa-templates');setTimeout(()=>typeof selectWTType==='function'&&selectWTType('marks'),300)"
           style="font-size:10px;color:#7c3aed;background:none;border:none;cursor:pointer;font-family:inherit;padding:0;text-decoration:underline;white-space:nowrap">
           ✏️ Edit Template
         </button>
@@ -5298,7 +5194,7 @@ function sendLateWA() {
           <option value="0">Template 1 (Formal)</option>
           <option value="1">Template 2 (Friendly)</option>
         </select>
-        <button class="btn btn-sm" style="font-size:10px" onclick="navTo('whatsapp');setTimeout(()=>switchWATab('templates'),50);closeModal();showToast('Edit Late templates in WA Templates page')">✏️ Customise</button>
+        <button class="btn btn-sm" style="font-size:10px" onclick="navTo('wa-templates');closeModal();showToast('Edit Late templates in WA Templates page')">✏️ Customise</button>
       </div>
 
       <!-- Message Preview -->
@@ -5637,75 +5533,7 @@ function _renderFeesFiltered(tabVal, month) {
     });
   });
 
-  // ── Show active students with NO fee record for the selected month ──
-  // Only shown in "All" tab when a specific month is selected, so admin can spot missing students
-  if ((tabVal === 'all' || tabVal === 'pending') && month) {
-    const studentsWithRecord = new Set(source.map(f => f.studentId || f.student));
-    const missing = students.filter(s =>
-      s && s.status === 'active' &&
-      !studentsWithRecord.has(s.id) &&
-      !studentsWithRecord.has(s.name)
-    );
-    if (missing.length > 0) {
-      html += `<tr style="background:var(--bg);border-top:2px solid var(--br)">
-        <td colspan="5" style="padding:8px 12px">
-          <div style="display:flex;align-items:center;gap:8px">
-            <span style="font-size:11px;font-weight:700;color:#b45309;background:#fef9c3;padding:3px 10px;border-radius:8px">
-              ⚠️ ${missing.length} student${missing.length!==1?'s':''} have no fee record for ${month}
-            </span>
-            <button onclick="openGenerateFees()"
-              style="background:#7c3aed;color:#fff;border:none;padding:3px 10px;border-radius:6px;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit">
-              📋 Generate Fees
-            </button>
-          </div>
-        </td>
-      </tr>`;
-      missing.forEach(s => {
-        const av = s.color || '#6366f1';
-        const grade = s.grade === 'KG' ? 'KG' : 'Gr.' + s.grade;
-        html += `<tr style="background:#fefce8;border-left:3px solid #fcd34d;opacity:.85">
-          <td style="padding:7px 12px 7px 20px">
-            <div style="display:flex;align-items:center;gap:8px">
-              <div style="width:26px;height:26px;border-radius:7px;background:${av};color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">${(s.name||'?')[0]}</div>
-              <div>
-                <span style="font-size:12px;font-weight:600;color:var(--tx)">${s.name}</span>
-                <span style="font-size:10px;color:var(--tx3);margin-left:6px">${grade}</span>
-                ${s.course ? `<span style="font-size:10px;background:var(--prl);color:var(--pr);padding:0 6px;border-radius:8px;margin-left:6px">${s.course}</span>` : ''}
-              </div>
-              <span style="margin-left:auto;font-size:10px;color:#b45309;font-weight:600">No record for ${month}</span>
-            </div>
-          </td>
-          <td style="padding:7px 8px;text-align:right">
-            <button onclick="openAddFeeForStudent('${(s.id||'').replace(/'/g,"\\'")}','${s.name.replace(/'/g,"\\'")}','${month}')"
-              style="background:#7c3aed;color:#fff;border:none;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">
-              ➕ Add Fee
-            </button>
-          </td>
-        </tr>`;
-      });
-    }
-  }
-
   document.getElementById('fee-body').innerHTML = html;
-}
-
-/* Quick helper — opens the Add Fee modal pre-filled for a specific student & month */
-function openAddFeeForStudent(studentId, studentName, month) {
-  showModal('addFee');
-  // Pre-fill student
-  setTimeout(() => {
-    const stSel = document.getElementById('m-fee-st');
-    if (stSel) {
-      // find option by value (id) or text (name)
-      for (let i = 0; i < stSel.options.length; i++) {
-        if (stSel.options[i].value === studentId || stSel.options[i].text.startsWith(studentName)) {
-          stSel.selectedIndex = i;
-          stSel.dispatchEvent(new Event('change'));
-          break;
-        }
-      }
-    }
-  }, 80);
 }
 
 /* Wrapper so existing calls to renderFees() still work */
@@ -6399,7 +6227,7 @@ function showFeeReceiptModal(phone, waMsg, studentName, collected, balance, date
     <!-- WA message preview -->
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
       <div style="font-size:10px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em">WhatsApp Receipt Preview</div>
-      <button onclick="closeModal();navTo('whatsapp');setTimeout(()=>switchWATab('templates'),50)" style="font-size:10px;color:#7c3aed;background:none;border:none;cursor:pointer;font-family:inherit;padding:0;text-decoration:underline">✏️ Customize Template</button>
+      <button onclick="closeModal();navTo('wa-templates')" style="font-size:10px;color:#7c3aed;background:none;border:none;cursor:pointer;font-family:inherit;padding:0;text-decoration:underline">✏️ Customize Template</button>
     </div>
     <div style="background:#dcfce7;border-radius:10px;padding:12px 14px;font-size:11px;color:#166534;line-height:1.7;white-space:pre-wrap;max-height:220px;overflow-y:auto;font-family:'Noto Sans Tamil',system-ui;margin-bottom:12px;border:.5px solid #bbf7d0" id="fee-wa-preview">${waMsg}</div>
 
@@ -7797,7 +7625,7 @@ function showExamNoticeWAModal(examIdx) {
     <div id="en-preview" style="background:#dcfce7;border-radius:10px;padding:12px;font-size:11px;line-height:1.8;white-space:pre-wrap;font-family:'Noto Sans Tamil',system-ui;color:#166534;max-height:220px;overflow-y:auto;border:.5px solid #bbf7d0;margin-bottom:12px">${buildMsg(active[0])}</div>
     <div style="font-size:11px;color:var(--tx2);margin-bottom:10px">
       📤 அனுப்பவேண்டியவர்கள்: <b>${active.filter(s=>s.phone||s.pphone).length} பெற்றோர்</b>
-      <button onclick="navTo('whatsapp');setTimeout(()=>switchWATab('templates'),50);setTimeout(()=>typeof selectWTType==='function'&&selectWTType('exam_notice'),300);closeModal()" style="margin-left:8px;background:none;border:.5px solid var(--br);border-radius:6px;padding:2px 8px;font-size:10px;color:var(--tx2);cursor:pointer;font-family:inherit">✏️ Template மாற்ற</button>
+      <button onclick="navTo('wa-templates');setTimeout(()=>typeof selectWTType==='function'&&selectWTType('exam_notice'),300);closeModal()" style="margin-left:8px;background:none;border:.5px solid var(--br);border-radius:6px;padding:2px 8px;font-size:10px;color:var(--tx2);cursor:pointer;font-family:inherit">✏️ Template மாற்ற</button>
     </div>
     <div class="modal-foot">
       <button class="btn btn-wa" style="flex:1;justify-content:center;padding:10px;font-size:12px;font-weight:700"
@@ -8250,8 +8078,7 @@ function renderStaffAttGrid() {
     var worst   = allVals.includes('LOP')?'LOP':allVals.includes('A')?'A':allVals.includes('CL')?'CL':allVals.includes('L')?'L':allVals.includes('H')?'H':'';
     var rowBdr  = worst==='A'?'#fecdd3':worst==='LOP'?'#c4b5fd':worst==='L'?'#fde047':worst==='H'?'#bfdbfe':'var(--br)';
 
-    var isLOP = worst === 'LOP';
-    rows += '<div style="padding:12px 16px;border-bottom:.5px solid '+rowBdr+';background:'+(isLOP?'#faf5ff':'var(--card)')+'" id="sf-att-row-'+s.id+'">';
+    rows += '<div style="padding:12px 16px;border-bottom:.5px solid '+rowBdr+';background:var(--card)">';
     rows += '  <div style="display:flex;align-items:center;gap:10px;margin-bottom:'+(sess==='both'?'10px':'0')+'">';
     rows += '    <div class="av" style="background:'+s.color+';width:36px;height:36px;font-size:15px;font-weight:700;flex-shrink:0">'+(s.name||'?')[0]+'</div>';
     rows += '    <div style="flex:1;min-width:0">';
@@ -8260,11 +8087,6 @@ function renderStaffAttGrid() {
               +' &nbsp;·&nbsp; <span style="background:'+(sess==='morning'?'#fef9c3':sess==='evening'?'#ede9fe':'#dbeafe')+';color:'+(sess==='morning'?'#92400e':sess==='evening'?'#5b21b6':'#1e40af')+';padding:1px 6px;border-radius:6px;font-weight:600">'
               +(sess==='morning'?'☀️ Morning':sess==='evening'?'🌙 Evening':'☀️🌙 Both')+'</span></div>';
     rows += '    </div>';
-    // LOP quick-checkbox (right side of name row)
-    rows += '    <label style="display:flex;align-items:center;gap:5px;cursor:pointer;background:'+(isLOP?'#ede9fe':'var(--bg)')+';border:.5px solid '+(isLOP?'#c4b5fd':'var(--br)')+';border-radius:7px;padding:5px 9px;flex-shrink:0;user-select:none" title="Mark as Loss of Pay for today">';
-    rows += '      <input type="checkbox" '+(isLOP?'checked':'')+' onchange="toggleLOP(\''+s.id+'\',\''+date+'\',\''+sess+'\',this.checked)" style="width:14px;height:14px;accent-color:#7c3aed;cursor:pointer">';
-    rows += '      <span style="font-size:10px;font-weight:700;color:'+(isLOP?'#5b21b6':'var(--tx3)')+'">💸 LOP</span>';
-    rows += '    </label>';
     if (sess !== 'both') {
       // Single session — show one dropdown inline
       rows += makeSelect(s.id, sess === 'morning' ? 'morning' : 'evening', sess === 'morning' ? morVal : eveVal);
@@ -8326,25 +8148,6 @@ function setStaffAtt(staffId, date, session, val) {
   else delete staffAtt[staffId+'|'+date];
   // Auto-save
   try { localStorage.setItem('_erp_staff_att', JSON.stringify(staffAtt)); } catch(e){}
-}
-
-/* LOP quick-checkbox handler — marks/unmarks both sessions as LOP */
-function toggleLOP(staffId, date, sess, isChecked) {
-  const sessions = sess === 'both' ? ['morning', 'evening'] : [sess];
-  sessions.forEach(function(s) {
-    const key = staffId + '|' + date + '|' + s;
-    if (isChecked) {
-      staffAtt[key] = 'LOP';
-    } else {
-      // Restore to Present (blank)
-      delete staffAtt[key];
-    }
-    // Keep legacy key in sync
-    setStaffAtt(staffId, date, s, isChecked ? 'LOP' : '');
-  });
-  // Re-render to reflect updated dropdowns and row colour
-  renderStaffAttGrid();
-  showToast(isChecked ? '💸 LOP marked for ' + staffId : '✅ LOP removed for ' + staffId);
 }
 
 function saveStaffAtt() {
@@ -12389,7 +12192,7 @@ function openPendingFeesWAModal(filterMonth) {
           `<option value="${m}" ${m===selMonth?'selected':''}>${m}</option>`
         ).join('')}
       </select>
-      <button onclick="navTo('whatsapp');setTimeout(()=>switchWATab('templates'),50);setTimeout(()=>typeof selectWTType==='function'&&selectWTType('fees'),300);closeModal()" style="margin-left:auto;background:none;border:.5px solid var(--br);border-radius:6px;padding:3px 10px;font-size:10px;color:var(--tx2);cursor:pointer;font-family:inherit">✏️ Edit Template</button>
+      <button onclick="navTo('wa-templates');setTimeout(()=>typeof selectWTType==='function'&&selectWTType('fees'),300);closeModal()" style="margin-left:auto;background:none;border:.5px solid var(--br);border-radius:6px;padding:3px 10px;font-size:10px;color:var(--tx2);cursor:pointer;font-family:inherit">✏️ Edit Template</button>
     </div>
 
     <!-- Message preview -->
@@ -13102,24 +12905,11 @@ function initAdmissions() {
   refreshAdmPreview();
   renderAdmRecent();
   updateAdmCounter();
-  // Auto-check day-wise checkbox if today is after the 10th
-  const _dwChk    = document.getElementById('adm-daywise-chk');
-  const _dwDetail = document.getElementById('adm-daywise-detail');
-  const _jdInput  = document.getElementById('adm-dw-joinday');
-  _admDwOverridden = false;
-  if (_dwChk) {
-    const _today       = new Date().getDate();
-    const _todayIsLate = _today > 10;
-    _dwChk.checked = _todayIsLate;
-    if (_dwDetail) _dwDetail.style.display = _todayIsLate ? 'block' : 'none';
-    if (_jdInput)  _jdInput.value = _today;
-  }
   recalcAdmFees();
 }
 
 function selectAdmClass(grade) {
   document.getElementById('adm-grade').value = grade;
-  _admDwOverridden = false; // class changed — fee base changes, drop manual override
   document.querySelectorAll('#adm-class-chips button').forEach(b => {
     const sel = b.id === 'adm-chip-' + grade;
     b.style.background  = sel ? 'var(--pr)' : 'var(--card)';
@@ -13366,82 +13156,15 @@ function recalc10thFees() {
 }
 
 /* ── Recalculate admission fee summary ───────────────────── */
-let _admDwOverridden = false; // true once admin manually edits the prorated fee box
-
 function recalcAdmFees() {
-  const fee    = parseFloat(document.getElementById('adm-fee')?.value) || 0;
+  const fee = parseFloat(document.getElementById('adm-fee')?.value) || 0;
   const admFee = parseFloat(document.getElementById('adm-admfee')?.value) || 0;
   const dEl = document.getElementById('adm-fee-display');
   const aEl = document.getElementById('adm-admfee-display');
   const gEl = document.getElementById('adm-grand-total');
-
-  const dwChk    = document.getElementById('adm-daywise-chk');
-  const isDaywise = dwChk && dwChk.checked;
-  let effectiveFee = fee;
-
-  if (isDaywise && fee > 0) {
-    const now         = new Date();
-    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-    // Read join day from editable input — fallback to today
-    const jdInput  = document.getElementById('adm-dw-joinday');
-    let   joinDay  = parseInt(jdInput?.value) || now.getDate();
-    // Clamp to valid range
-    joinDay = Math.max(1, Math.min(joinDay, daysInMonth));
-    if (jdInput && !jdInput.value) jdInput.value = joinDay; // fill if blank
-    const remaining  = daysInMonth - joinDay + 1;
-    const calcFee    = Math.round((fee / daysInMonth) * remaining);
-
-    const tdEl = document.getElementById('adm-dw-totaldays'); if(tdEl) tdEl.textContent = daysInMonth;
-    const rdEl = document.getElementById('adm-dw-remdays');   if(rdEl) rdEl.textContent = remaining;
-    const fmEl = document.getElementById('adm-dw-formula');
-    if(fmEl) fmEl.textContent = '₹' + fee + ' ÷ ' + daysInMonth + ' × ' + remaining + ' days';
-
-    const prEl = document.getElementById('adm-dw-prorated');
-    const noteEl = document.getElementById('adm-dw-override-note');
-    if (prEl) {
-      if (_admDwOverridden) {
-        // Parent/admin has manually typed a custom fee — keep their value, use it as effective fee
-        effectiveFee = parseFloat(prEl.value) || 0;
-        if (noteEl) { noteEl.style.display = 'block'; noteEl.textContent = '✎ Custom fee set manually (as per parent request) — calculated value was ₹' + calcFee.toLocaleString('en-IN'); }
-      } else {
-        prEl.value = calcFee;
-        effectiveFee = calcFee;
-        if (noteEl) { noteEl.style.display = 'none'; noteEl.textContent = ''; }
-      }
-    }
-  }
-
-  if (dEl) dEl.textContent = '₹' + effectiveFee.toLocaleString('en-IN');
-  if (aEl) aEl.textContent = '₹' + admFee.toLocaleString('en-IN');
-  if (gEl) gEl.textContent = '₹' + (effectiveFee + admFee).toLocaleString('en-IN');
-}
-
-/* Called when admin manually edits the prorated-fee box — e.g. parent negotiated a different amount */
-function onDwProratedEdit() {
-  _admDwOverridden = true;
-  recalcAdmFees();
-}
-
-/* Called when the joining-day input is edited manually */
-function onDwJoinDayEdit() {
-  _admDwOverridden = false; // join day changed — recalc fresh, drop any manual fee override
-  recalcAdmFees();
-}
-
-function toggleAdmDaywise() {
-  const chk      = document.getElementById('adm-daywise-chk');
-  const detail   = document.getElementById('adm-daywise-detail');
-  const isDaywise = chk && chk.checked;
-  _admDwOverridden = false; // reset override whenever checkbox is toggled
-  const noteEl = document.getElementById('adm-dw-override-note');
-  if (noteEl) { noteEl.style.display = 'none'; noteEl.textContent = ''; }
-  if (detail) detail.style.display = isDaywise ? 'block' : 'none';
-  if (isDaywise) {
-    // Pre-fill join day input with today if empty
-    const jdInput = document.getElementById('adm-dw-joinday');
-    if (jdInput && !jdInput.value) jdInput.value = new Date().getDate();
-  }
-  recalcAdmFees();
+  if (dEl) dEl.textContent = '₹'+fee.toLocaleString('en-IN');
+  if (aEl) aEl.textContent = '₹'+admFee.toLocaleString('en-IN');
+  if (gEl) gEl.textContent = '₹'+(fee+admFee).toLocaleString('en-IN');
 }
 
 /* ── Get selected subjects from admission form ──────────── */
@@ -13607,29 +13330,9 @@ function submitAdmission() {
   (function() {
     const fs        = getFeeForClass(grade);
     const curMonth  = _feeMonthLabel(new Date());
-    const now2      = new Date();
-    const fullMonthlyAmt = parseFloat(fee) || fs.monthlyFee || 0;
+    const now       = new Date().toLocaleDateString('en-IN');
+    const monthlyAmt = parseFloat(fee) || fs.monthlyFee || 0;
     const admAmt     = parseFloat(admFee) || fs.admFee || 0;
-
-    // Day-wise prorated fee if checkbox was ticked
-    const dwChk    = document.getElementById('adm-daywise-chk');
-    const isDaywise = dwChk && dwChk.checked;
-    let monthlyAmt = fullMonthlyAmt;
-    let daywiseNote = '';
-    if (isDaywise && fullMonthlyAmt > 0) {
-      const daysInMonth = new Date(now2.getFullYear(), now2.getMonth() + 1, 0).getDate();
-      // Read editable join day input; fallback to today
-      const jdInp    = document.getElementById('adm-dw-joinday');
-      let   joinDay  = parseInt(jdInp?.value) || now2.getDate();
-      joinDay = Math.max(1, Math.min(joinDay, daysInMonth));
-      const remaining   = daysInMonth - joinDay + 1;
-      const calcAmt     = Math.round((fullMonthlyAmt / daysInMonth) * remaining);
-      // Use the prorated-fee input value — respects manual edits (e.g. parent-requested adjustment)
-      const prEl     = document.getElementById('adm-dw-prorated');
-      monthlyAmt      = (prEl && prEl.value !== '') ? (parseFloat(prEl.value) || 0) : calcAmt;
-      daywiseNote     = 'Day-wise: ' + remaining + '/' + daysInMonth + ' days (joined ' + joinDay + ')'
-                        + (monthlyAmt !== calcAmt ? ' — fee adjusted as per parent request' : '');
-    }
 
     // Monthly fee record (pending)
     if (monthlyAmt > 0) {
@@ -13645,7 +13348,6 @@ function submitAdmission() {
         status    : 'pending',
         type      : 'monthly',
         paidOn    : '',
-        ...(daywiseNote ? { discountNote: daywiseNote } : {}),
       });
     }
     // Admission fee record (pending)
@@ -13837,17 +13539,6 @@ function resetAdmForm() {
   });
   const subjRow = document.getElementById('adm-subj-row');
   if (subjRow) subjRow.style.display = 'none';
-  // Reset day-wise checkbox — auto-check if today is after 10th
-  const dwChk    = document.getElementById('adm-daywise-chk');
-  const dwDetail = document.getElementById('adm-daywise-detail');
-  const jdInput2 = document.getElementById('adm-dw-joinday');
-  if (dwChk) {
-    const _today2      = new Date().getDate();
-    const todayIsLate  = _today2 > 10;
-    dwChk.checked = todayIsLate;
-    if (dwDetail)  dwDetail.style.display = todayIsLate ? 'block' : 'none';
-    if (jdInput2)  jdInput2.value = _today2;
-  }
   // Generate next admission number
   const yr = new Date().getFullYear();
   const admEl = document.getElementById('adm-no');
@@ -14463,16 +14154,9 @@ function _safeInit() {
     }
   } catch(e) {}
   // Restore license key from localStorage (persists across app restarts)
-  // BUT: if CFG already has a non-TRIAL key hardcoded, always use that and update localStorage
   try {
-    if (CFG.LICENSE_KEY && CFG.LICENSE_KEY !== 'TRIAL') {
-      // Hardcoded key takes priority — update localStorage to match
-      localStorage.setItem('_erp_lic_key', CFG.LICENSE_KEY);
-      sessionStorage.setItem('_erp_lic_key', CFG.LICENSE_KEY);
-    } else {
-      const savedKey = localStorage.getItem('_erp_lic_key') || sessionStorage.getItem('_erp_lic_key');
-      if (savedKey && savedKey !== 'TRIAL') { CFG.LICENSE_KEY = savedKey; }
-    }
+    const savedKey = localStorage.getItem('_erp_lic_key') || sessionStorage.getItem('_erp_lic_key');
+    if (savedKey && savedKey !== 'TRIAL') { CFG.LICENSE_KEY = savedKey; }
   } catch(e) {}
   // Restore center details edited by admin
   try {
@@ -15295,7 +14979,7 @@ function previewSumWA(studentId, year, month) {
     <div class="modal" style="max-width:480px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
         <div class="modal-title" style="margin:0">📋 WhatsApp முன்னோட்டம் — ${s.name}</div>
-        <button class="btn btn-sm" onclick="closeModal();navTo('whatsapp');setTimeout(()=>switchWATab('templates'),50);setTimeout(()=>selectWTType('monthly_summary'),300)"
+        <button class="btn btn-sm" onclick="closeModal();navTo('wa-templates');setTimeout(()=>selectWTType('monthly_summary'),300)"
           style="font-size:10px;background:#f59e0b;color:#fff;border-color:#f59e0b;white-space:nowrap">
           ✏️ ${hasSavedTmpl?'Edit Template':'Customise'}
         </button>
@@ -15905,229 +15589,6 @@ function saveReminder() {
 document.addEventListener('DOMContentLoaded', () => {
   updateBellBadge(_loadReminders());
 });
-
-/* ═══════════════════════════════════════════════════════
-   WhatsApp Page — Tab Switcher
-═══════════════════════════════════════════════════════ */
-function switchWATab(tab) {
-  const messenger = document.getElementById('wa-panel-messenger');
-  const templates = document.getElementById('wa-panel-templates');
-  const btnM = document.getElementById('wa-tab-messenger');
-  const btnT = document.getElementById('wa-tab-templates');
-  if (!messenger || !templates) return;
-  if (tab === 'templates') {
-    messenger.style.display = 'none';
-    templates.style.display = 'block';
-    btnM.style.background = 'transparent'; btnM.style.color = 'var(--tx2)';
-    btnT.style.background = '#25d366';     btnT.style.color = '#fff';
-    initWATemplatesPage();
-  } else {
-    templates.style.display = 'none';
-    messenger.style.display = 'block';
-    btnM.style.background = '#25d366'; btnM.style.color = '#fff';
-    btnT.style.background = 'transparent'; btnT.style.color = 'var(--tx2)';
-    renderWATypes();
-  }
-}
-
-/* ═══════════════════════════════════════════════════════
-   Teaching Log
-═══════════════════════════════════════════════════════ */
-function _tlLoad() { try { return JSON.parse(localStorage.getItem('_erp_teaching_log') || '[]'); } catch(e) { return []; } }
-function _tlSave(d) { try { localStorage.setItem('_erp_teaching_log', JSON.stringify(d)); } catch(e) {} }
-
-function tlClearFilters() {
-  document.getElementById('tl-date-filter').value = '';
-  document.getElementById('tl-batch-filter').value = '';
-  document.getElementById('tl-subject-filter').value = '';
-  document.getElementById('tl-search').value = '';
-  renderTeachingLog();
-}
-
-function initTeachingPage() {
-  // Pre-fill today's date
-  const todayISO = new Date().toISOString().split('T')[0];
-  const dateEl = document.getElementById('tl-date-filter');
-  if (dateEl && !dateEl.value) dateEl.value = todayISO;
-
-  // Populate batch filter from students
-  const bSel = document.getElementById('tl-batch-filter');
-  if (bSel) {
-    const batches = [...new Set((window.students||[]).map(s=>s.batch||s.grade).filter(Boolean))].sort();
-    bSel.innerHTML = '<option value="">All Batches</option>' + batches.map(b=>`<option>${b}</option>`).join('');
-  }
-  // Populate subject filter from existing log entries
-  const sSel = document.getElementById('tl-subject-filter');
-  if (sSel) {
-    const logs = _tlLoad();
-    const subjects = [...new Set(logs.map(l=>l.subject).filter(Boolean))].sort();
-    sSel.innerHTML = '<option value="">All Subjects</option>' + subjects.map(s=>`<option>${s}</option>`).join('');
-  }
-  renderTeachingLog();
-}
-
-function renderTeachingLog() {
-  const logs = _tlLoad();
-  const search  = (document.getElementById('tl-search')?.value||'').toLowerCase();
-  const dateF   = document.getElementById('tl-date-filter')?.value||'';
-  const batchF  = document.getElementById('tl-batch-filter')?.value||'';
-  const subjectF= document.getElementById('tl-subject-filter')?.value||'';
-
-  let filtered = logs.filter(l => {
-    if (search   && !(l.topic||'').toLowerCase().includes(search) && !(l.subject||'').toLowerCase().includes(search)) return false;
-    if (dateF    && l.date !== dateF) return false;
-    if (batchF   && l.batch !== batchF) return false;
-    if (subjectF && l.subject !== subjectF) return false;
-    return true;
-  }).sort((a,b) => (b.date+b.period).localeCompare(a.date+a.period));
-
-  // Stats — update the 3 pre-rendered stat cards
-  const statsEl = document.getElementById('tl-stats');
-  if (statsEl) {
-    const totalEntries = logs.length;
-    const uniqueDays = new Set(logs.map(l=>l.date)).size;
-    const subjects = new Set(logs.map(l=>l.subject)).size;
-    statsEl.innerHTML = `
-      <div class="stat"><div class="stat-lbl">Total Entries</div><div class="stat-val">${totalEntries}</div><div class="stat-sub">lessons logged</div></div>
-      <div class="stat"><div class="stat-lbl">Days Covered</div><div class="stat-val">${uniqueDays}</div><div class="stat-sub">teaching days</div></div>
-      <div class="stat"><div class="stat-lbl">Subjects</div><div class="stat-val">${subjects}</div><div class="stat-sub">unique subjects</div></div>`;
-  }
-
-  // Absent analysis banner — show if date filter set
-  const banner = document.getElementById('tl-absent-banner');
-  const absentList = document.getElementById('tl-absent-list');
-  if (banner && absentList && dateF) {
-    const dayLogs = logs.filter(l => l.date === dateF);
-    if (dayLogs.length > 0) {
-      // Get absent students on that day from attendance
-      const attKey = '_erp_att_' + dateF.replace(/-/g,'');
-      let att = {};
-      try { att = JSON.parse(localStorage.getItem(attKey)||'{}'); } catch(e) {}
-      const absentIds = Object.keys(att).filter(id => att[id] === 'A' || att[id] === 'absent');
-      const absentStudents = (window.students||[]).filter(s => absentIds.includes(s.id));
-      if (absentStudents.length > 0 && dayLogs.length > 0) {
-        banner.style.display = 'block';
-        const topicsSummary = dayLogs.map(l => `${l.subject}: ${l.topic}`).join(' | ');
-        absentList.innerHTML = absentStudents.map(s =>
-          `<div>👤 <b>${s.name}</b> (${s.batch||s.grade||''}) — Missed: <span style="color:#b45309">${topicsSummary}</span></div>`
-        ).join('');
-        // Store for WA sending
-        window._tlAbsentData = { date: dateF, students: absentStudents, topics: dayLogs };
-      } else {
-        banner.style.display = 'none';
-      }
-    } else {
-      banner.style.display = 'none';
-    }
-  } else if (banner) {
-    banner.style.display = 'none';
-  }
-
-  // Table
-  const tbody = document.getElementById('tl-tbody');
-  if (!tbody) return;
-  if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--tx3);padding:28px;font-size:12px">${logs.length===0?'No entries yet — tap <b>+ Add Entry</b> to log today\'s class':'No entries match the filter'}</td></tr>`;
-    return;
-  }
-  tbody.innerHTML = filtered.map((l,i) => {
-    const absentCount = l.absentStudents ? l.absentStudents.length : 0;
-    return `<tr>
-      <td style="white-space:nowrap">${l.date||''}</td>
-      <td><span class="badge bb">${l.batch||'—'}</span></td>
-      <td style="font-weight:600;color:var(--pr)">${l.subject||'—'}</td>
-      <td>${l.topic||'—'}${l.notes?`<div style="font-size:10px;color:var(--tx3);margin-top:2px">${l.notes}</div>`:''}</td>
-      <td style="text-align:center">${l.period||'—'}</td>
-      <td style="font-size:11px;color:var(--tx2)">${l.staff||'—'}</td>
-      <td>${absentCount>0?`<span class="badge br2">${absentCount} absent</span>`:'<span style="color:var(--tx3);font-size:11px">—</span>'}</td>
-      <td><button onclick="deleteTLEntry(${logs.indexOf(l)})" class="btn btn-sm" style="color:#dc2626;border-color:#fecaca;padding:3px 8px">×</button></td>
-    </tr>`;
-  }).join('');
-}
-
-function openAddTeachingLog() {
-  const today = new Date().toISOString().split('T')[0];
-  const batches = [...new Set((window.students||[]).map(s=>s.batch||s.grade).filter(Boolean))];
-  const batchOpts = batches.map(b=>`<option>${b}</option>`).join('');
-  const subjects = ['Maths','Science','English','Tamil','Social Science','Physics','Chemistry','Biology','History','Geography','Computer Science','Other'];
-  const subjectOpts = subjects.map(s=>`<option>${s}</option>`).join('');
-
-  showModal('custom', `<div class="modal-title">📖 Add Teaching Log Entry</div>
-    <div class="frow">
-      <div class="fg"><label class="fl">Date *</label><input class="fi" type="date" id="tl-m-date" value="${today}"></div>
-      <div class="fg"><label class="fl">Period / Time</label><input class="fi" id="tl-m-period" placeholder="e.g. 1st / 9am"></div>
-    </div>
-    <div class="frow">
-      <div class="fg"><label class="fl">Batch / Class *</label><select class="fi" id="tl-m-batch"><option value="">Select…</option>${batchOpts}</select></div>
-      <div class="fg"><label class="fl">Subject *</label><select class="fi" id="tl-m-subject"><option value="">Select…</option>${subjectOpts}</select></div>
-    </div>
-    <div class="fg"><label class="fl">Topic / Chapter *</label><input class="fi" id="tl-m-topic" placeholder="e.g. Chapter 3 — Linear Equations, pg 45–52"></div>
-    <div class="fg"><label class="fl">Staff / Teacher</label><input class="fi" id="tl-m-staff" placeholder="Teacher name"></div>
-    <div class="fg"><label class="fl">Notes (homework, references)</label><textarea class="fi fi-ta" id="tl-m-notes" rows="2" placeholder="e.g. HW: Ex 3.2 Q1–5"></textarea></div>
-    <div class="modal-foot">
-      <button class="btn btn-p" onclick="saveTLEntry()">Save Entry</button>
-      <button class="btn" onclick="closeModal()">Cancel</button>
-    </div>`);
-  setTimeout(()=>document.getElementById('tl-m-topic')?.focus(), 150);
-}
-
-function saveTLEntry() {
-  const date    = document.getElementById('tl-m-date')?.value;
-  const batch   = document.getElementById('tl-m-batch')?.value;
-  const subject = document.getElementById('tl-m-subject')?.value;
-  const topic   = document.getElementById('tl-m-topic')?.value.trim();
-  if (!date || !batch || !subject || !topic) { showToast('Fill Date, Batch, Subject and Topic'); return; }
-
-  // Snap absent students on that date
-  const attKey = '_erp_att_' + date.replace(/-/g,'');
-  let att = {};
-  try { att = JSON.parse(localStorage.getItem(attKey)||'{}'); } catch(e) {}
-  const absentIds = Object.keys(att).filter(id => att[id]==='A'||att[id]==='absent');
-  const absentStudents = (window.students||[]).filter(s=>absentIds.includes(s.id)&&(s.batch===batch||s.grade===batch)).map(s=>({id:s.id,name:s.name,phone:s.phone||s.parentPhone}));
-
-  const logs = _tlLoad();
-  logs.push({
-    date, batch, subject, topic,
-    period:  document.getElementById('tl-m-period')?.value.trim()||'',
-    staff:   document.getElementById('tl-m-staff')?.value.trim()||'',
-    notes:   document.getElementById('tl-m-notes')?.value.trim()||'',
-    absentStudents,
-    createdAt: new Date().toISOString()
-  });
-  _tlSave(logs);
-  closeModal();
-  renderTeachingLog();
-  // Refresh subject filter
-  const sSel = document.getElementById('tl-subject-filter');
-  if (sSel) {
-    const allSubjects = [...new Set(logs.map(l=>l.subject).filter(Boolean))];
-    sSel.innerHTML = '<option value="">All Subjects</option>' + allSubjects.map(s=>`<option>${s}</option>`).join('');
-  }
-  showToast(absentStudents.length>0?`Entry saved — ${absentStudents.length} absent student(s) logged`:'Teaching entry saved!');
-}
-
-function deleteTLEntry(i) {
-  if (!confirm('Delete this entry?')) return;
-  const logs = _tlLoad();
-  logs.splice(i,1);
-  _tlSave(logs);
-  renderTeachingLog();
-}
-
-function sendMissedTopicsWA() {
-  const data = window._tlAbsentData;
-  if (!data || !data.students.length) return;
-  const topics = data.topics.map(l=>`${l.subject}: ${l.topic}`).join('\n');
-  const dateStr = data.date;
-  data.students.forEach(s => {
-    const phone = s.phone||s.parentPhone||'';
-    if (!phone) return;
-    const msg = `Dear Parent,\n${s.name} was absent on ${dateStr}.\nMissed topics:\n${topics}\nPlease ensure your child catches up.\n— ${CFG.CENTER.name}`;
-    const url = `https://wa.me/91${phone.replace(/\D/g,'')}?text=${encodeURIComponent(msg)}`;
-    setTimeout(()=>window.open(url,'_blank'), 300);
-  });
-  showToast('Opening WhatsApp for each absent student…');
-}
 </script>
 
 </body>

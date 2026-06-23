@@ -2802,7 +2802,9 @@ function fillTemplate(template, student, extra={}) {
     .replace(/{missed_subjects}/g, extra.missed_subjects||'—')
     .replace(/{study_tip}/g, extra.study_tip||'தொடர்ந்து படிக்கவும்! 💪')
     .replace(/{teacher_note}/g, extra.teacher_note||'சிறப்பாக செய்யட்டும்.')
-    .replace(/{activities}/g, extra.activities||'📚 வீட்டுப்பாடம்');
+    .replace(/{activities}/g, extra.activities||'📚 வீட்டுப்பாடம்')
+    .replace(/{missed_count}/g, extra.missed_count||'2')
+    .replace(/{missed_lessons}/g, extra.missed_lessons||'• 2024-01-15 (D-1/morning) — Maths\n• 2024-01-17 (D-3/evening) — Physics');
 }
 
 // Build WA message URL
@@ -4778,7 +4780,7 @@ function renderWATypes() {
   const grid = document.getElementById('wa-type-grid');
   if (!grid) return;
   const lic = window.__LIC__ || {};
-  const maxTypes = lic.features ? (lic.waTypes || 2) : 2;
+  const maxTypes = lic.features ? (lic.features.waTypes || 2) : 2;
   grid.innerHTML = WA_TYPES.map((wt, i) => {
     const isActive = waType === wt.id;
     const locked = i >= maxTypes;
@@ -12688,7 +12690,8 @@ function refreshWTPreview() {
       grade: sample.grade, phone: sample.center_phone,
       id: 'ST001', color: '#185FA5',
     };
-    preview = fillTemplate(template, fakeStu, sample);
+    // Pass all sample keys as extra so custom-type vars (missed_count, missed_lessons, etc.) fill in
+    preview = fillTemplate(template, fakeStu, { ...sample });
   }
   prevEl.textContent = preview;
 }
@@ -15722,7 +15725,7 @@ function _tlFilteredLogs() {
   const todayStr = now.toISOString().slice(0,10);
   const weekStart = new Date(now); weekStart.setDate(now.getDate() - now.getDay());
   return logs.filter(l => {
-    if (grade !== 'all' && l.grade !== grade) return false;
+    if (grade !== 'all' && (l.grade || l.class) !== grade) return false;
     if (batch !== 'all' && l.batch !== batch) return false;
     if (_tlCurrentTab === 'today') return l.date === todayStr;
     if (_tlCurrentTab === 'week')  return l.date >= weekStart.toISOString().slice(0,10);

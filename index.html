@@ -2008,10 +2008,7 @@ tbody tr:hover td{background:var(--bg)}
       <div style="font-size:16px;font-weight:700;color:#fff">Teaching Log</div>
       <div style="font-size:12px;color:rgba(255,255,255,.8);margin-top:2px">Log daily lessons · Track absent students · AI Growth Factor analysis</div>
     </div>
-    <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end;flex-shrink:0">
-      <button class="btn btn-sm" onclick="openAddTeachingLog()" style="background:rgba(255,255,255,.18);color:#fff;border-color:rgba(255,255,255,.4);white-space:nowrap">+ Add Entry</button>
-      <button class="btn btn-sm" onclick="navTo('whatsapp');setTimeout(()=>{switchWATab('templates');selectWTType('teaching_absent');},150)" style="background:rgba(255,255,255,.12);color:rgba(255,255,255,.85);border-color:rgba(255,255,255,.3);white-space:nowrap;font-size:10px">✏️ WA Template</button>
-    </div>
+    <button class="btn btn-sm" onclick="openAddTeachingLog()" style="background:rgba(255,255,255,.18);color:#fff;border-color:rgba(255,255,255,.4);white-space:nowrap;flex-shrink:0">+ Add Entry</button>
   </div>
 
   <!-- Filter bar (attendance-style) -->
@@ -2030,8 +2027,8 @@ tbody tr:hover td{background:var(--bg)}
     </select>
     <div style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap">
       <button class="btn btn-sm" onclick="tlShowAbsentSummary()" style="font-size:11px;background:#fff3cd;color:#92400e;border-color:#fbbf24">🔴 Absent Summary</button>
-      <button class="btn btn-sm" onclick="tlRunAIStudyPlanner()" style="font-size:11px;background:#dbeafe;color:#1d4ed8;border-color:#93c5fd">📚 AI Study Planner</button>
-      <button class="btn btn-sm" onclick="tlRunAIGrowth()" style="font-size:11px;background:#d1fae5;color:#065f46;border-color:#6ee7b7">✨ AI Growth</button>
+      <button class="btn btn-sm" onclick="tlRunAIGrowth()" style="font-size:11px;background:#d1fae5;color:#065f46;border-color:#6ee7b7">✨ AI Growth (Class)</button>
+      <button class="btn btn-p btn-sm" onclick="tlRunMonthlyGrowthWA()" id="tl-monthly-wa-btn" style="font-size:11px;background:linear-gradient(135deg,#7c3aed,#0369a1);border:none">📱 Monthly Growth WA</button>
     </div>
   </div>
 
@@ -2044,7 +2041,7 @@ tbody tr:hover td{background:var(--bg)}
   <!-- AI Growth Panel (hidden until run) -->
   <div id="tl-ai-panel" style="display:none;margin-top:12px">
     <div style="display:flex;align-items:center;justify-content:space-between;background:linear-gradient(135deg,#065f46,#059669);border-radius:12px 12px 0 0;padding:12px 16px">
-      <div id="tl-ai-panel-title" style="font-size:13px;font-weight:700;color:#fff">✨ AI Growth Factor Analysis</div>
+      <div style="font-size:13px;font-weight:700;color:#fff">✨ AI Growth Factor Analysis</div>
       <div style="display:flex;gap:6px">
         <button class="btn btn-sm" onclick="copyTLAI()" style="background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.3);font-size:10px">📋 Copy</button>
         <button onclick="document.getElementById('tl-ai-panel').style.display='none'" style="background:none;border:none;color:#fff;cursor:pointer;font-size:16px;line-height:1">×</button>
@@ -2059,6 +2056,23 @@ tbody tr:hover td{background:var(--bg)}
       <div style="font-size:12px;color:var(--tx2)">Analysing growth factors…</div>
     </div>
     <div id="tl-ai-output" style="background:var(--card);border:.5px solid var(--br);border-top:none;border-radius:0 0 12px 12px;padding:16px;font-size:13px;color:var(--tx);line-height:1.8;white-space:pre-wrap;max-height:480px;overflow-y:auto"></div>
+  </div>
+  <!-- Monthly Growth WA Queue Panel -->
+  <div id="tl-monthly-panel" style="display:none;margin-top:12px">
+    <div style="background:linear-gradient(135deg,#7c3aed,#0369a1);border-radius:12px 12px 0 0;padding:12px 16px;display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <div style="font-size:13px;font-weight:700;color:#fff">📱 Monthly Growth Reports — WA Queue</div>
+        <div style="font-size:11px;color:rgba(255,255,255,.8);margin-top:2px" id="tl-monthly-subtitle">Generating personalised reports…</div>
+      </div>
+      <div style="display:flex;gap:6px">
+        <button onclick="tlSendNextMonthlyWA()" id="tl-send-next-btn" style="display:none;padding:6px 14px;border-radius:8px;background:#25d366;color:#fff;border:none;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">📲 Send Next</button>
+        <button onclick="document.getElementById('tl-monthly-panel').style.display='none'" style="background:none;border:none;color:#fff;cursor:pointer;font-size:18px;line-height:1">×</button>
+      </div>
+    </div>
+    <div id="tl-monthly-progress" style="height:4px;background:#e0e7ff;display:none">
+      <div id="tl-monthly-progress-bar" style="height:100%;background:#7c3aed;width:0%;transition:width .4s"></div>
+    </div>
+    <div id="tl-monthly-queue-list" style="background:var(--card);border:.5px solid var(--br);border-top:none;border-radius:0 0 12px 12px;max-height:420px;overflow-y:auto;padding:8px"></div>
   </div>
 </div><!-- end pg-teaching -->
 
@@ -2802,9 +2816,7 @@ function fillTemplate(template, student, extra={}) {
     .replace(/{missed_subjects}/g, extra.missed_subjects||'—')
     .replace(/{study_tip}/g, extra.study_tip||'தொடர்ந்து படிக்கவும்! 💪')
     .replace(/{teacher_note}/g, extra.teacher_note||'சிறப்பாக செய்யட்டும்.')
-    .replace(/{activities}/g, extra.activities||'📚 வீட்டுப்பாடம்')
-    .replace(/{missed_count}/g, extra.missed_count||'2')
-    .replace(/{missed_lessons}/g, extra.missed_lessons||'• 2024-01-15 (D-1/morning) — Maths\n• 2024-01-17 (D-3/evening) — Physics');
+    .replace(/{activities}/g, extra.activities||'📚 வீட்டுப்பாடம்');
 }
 
 // Build WA message URL
@@ -12690,8 +12702,7 @@ function refreshWTPreview() {
       grade: sample.grade, phone: sample.center_phone,
       id: 'ST001', color: '#185FA5',
     };
-    // Pass all sample keys as extra so custom-type vars (missed_count, missed_lessons, etc.) fill in
-    preview = fillTemplate(template, fakeStu, { ...sample });
+    preview = fillTemplate(template, fakeStu, sample);
   }
   prevEl.textContent = preview;
 }
@@ -15672,19 +15683,14 @@ function switchWATab(tab) {
     mPanel.style.display = 'none'; tPanel.style.display = '';
     if (tBtn) { tBtn.style.background='#25d366'; tBtn.style.color='#fff'; tBtn.style.fontWeight='700'; }
     if (mBtn) { mBtn.style.background='transparent'; mBtn.style.color='var(--tx2)'; mBtn.style.fontWeight='600'; }
-    initWATemplatesPage();
+    // initWATemplatesPage reads all _erp_wt_* keys from localStorage and shows saved templates
+    if (typeof initWATemplatesPage === 'function') initWATemplatesPage();
   }
 }
 
 /* ═══════════════════════════════════════════════════════
-   TEACHING LOG  (Enhanced v2)
-   Storage: _erp_teaching_log → [{id,date,grade,batch,subject,topic,dayOrder,session,
-             periodIndex,periodTime,lessonNotes,homeworkGiven,absentStudentIds,createdAt}]
-   • Absent students → auto-pulled from Attendance (attState + _erp_att_index)
-   • Day Order & Session → auto-pulled from Timetable (_erp_tt_* + _erp_tt_today)
-   • AI Study Planner  → per-student catch-up plan for missed lessons
-   • AI Growth Factor  → curriculum + growth analysis
-   • WA Messages       → direct wa.me links, no popups
+   TEACHING LOG
+   Storage key: _erp_teaching_log → [{id,date,grade,batch,subject,topic,lessonNotes,homeworkGiven,absentStudentIds,createdAt}]
 ═══════════════════════════════════════════════════════ */
 function _tlLoad() {
   try { return JSON.parse(localStorage.getItem('_erp_teaching_log') || '[]'); } catch(e) { return []; }
@@ -15698,16 +15704,24 @@ var _tlCurrentTab = 'all';
 function initTeachingLogPage() {
   _tlPopulateFilters();
   renderTeachingLog();
+  setTimeout(_tlCheckLastWorkingDay, 400);
 }
 
 function _tlPopulateFilters() {
-  const stus  = (typeof students !== 'undefined' ? students : []);
-  const grades = [...new Set(stus.map(s=>s.grade||s.class).filter(Boolean))].sort();
-  const batchs = [...new Set(stus.map(s=>s.batch).filter(Boolean))].sort();
+  const stArr = (typeof students !== 'undefined' && Array.isArray(students)) ? students : [];
+  const grades  = [...new Set(stArr.map(s=>s.grade).filter(Boolean))].sort((a,b)=>{
+    const o=['KG','1','2','3','4','5','6','7','8','9','10','11','12'];
+    return (o.indexOf(a)<0?99:o.indexOf(a))-(o.indexOf(b)<0?99:o.indexOf(b));
+  });
+  const batches = [...new Set(stArr.map(s=>s.batch||s.course).filter(Boolean))].sort();
   const gSel = document.getElementById('tl-grade-sel');
   const bSel = document.getElementById('tl-batch-sel');
-  if (gSel) gSel.innerHTML = '<option value="all">All Classes</option>' + grades.map(g=>`<option value="${g}">${g}</option>`).join('');
-  if (bSel) bSel.innerHTML = '<option value="all">All Batches</option>' + batchs.map(b=>`<option value="${b}">${b}</option>`).join('');
+  if (gSel) {
+    gSel.innerHTML = '<option value="all">All Classes</option>' + grades.map(g=>`<option value="${g}">${g==='KG'?'KG':'Class '+g}</option>`).join('');
+  }
+  if (bSel) {
+    bSel.innerHTML = '<option value="all">All Batches</option>' + batches.map(b=>`<option value="${b}">${b}</option>`).join('');
+  }
 }
 
 function tlSetTab(tab, btn) {
@@ -15718,14 +15732,14 @@ function tlSetTab(tab, btn) {
 }
 
 function _tlFilteredLogs() {
-  const logs = _tlLoad();
-  const grade = (document.getElementById('tl-grade-sel')||{}).value || 'all';
-  const batch = (document.getElementById('tl-batch-sel')||{}).value || 'all';
-  const now = new Date();
+  const logs    = _tlLoad();
+  const grade   = (document.getElementById('tl-grade-sel')||{}).value || 'all';
+  const batch   = (document.getElementById('tl-batch-sel')||{}).value || 'all';
+  const now     = new Date();
   const todayStr = now.toISOString().slice(0,10);
   const weekStart = new Date(now); weekStart.setDate(now.getDate() - now.getDay());
   return logs.filter(l => {
-    if (grade !== 'all' && (l.grade || l.class) !== grade) return false;
+    if (grade !== 'all' && l.grade !== grade) return false;
     if (batch !== 'all' && l.batch !== batch) return false;
     if (_tlCurrentTab === 'today') return l.date === todayStr;
     if (_tlCurrentTab === 'week')  return l.date >= weekStart.toISOString().slice(0,10);
@@ -15734,71 +15748,10 @@ function _tlFilteredLogs() {
   }).sort((a,b) => b.date.localeCompare(a.date));
 }
 
-/* ── Timetable helpers ── */
-function _tlGetTodayTTInfo(batchName) {
-  // Returns { dayOrder, dayName, periods:[{label,start,end,subject}], session }
-  const key = '_erp_tt_' + (batchName || 'all');
-  try {
-    const data = JSON.parse(localStorage.getItem(key) || 'null');
-    if (!data || !data.days || !data.days.length) return null;
-    const todayIdx = parseInt(localStorage.getItem('_erp_tt_today') || '0') % data.days.length;
-    const day = data.days[todayIdx];
-    const periods = (data.periods || []).map((p, i) => ({
-      label: p.label || ('Period ' + (i+1)),
-      start: p.start || '',
-      end:   p.end   || '',
-      subject: (day.subjects || [])[i] || ''
-    }));
-    // Infer session from first period start time
-    let session = 'morning';
-    if (periods[0] && periods[0].start) {
-      const h = parseInt(periods[0].start.split(':')[0] || '0');
-      if (h >= 12) session = 'evening';
-    }
-    return { dayOrder: todayIdx + 1, dayName: day.name || ('Day ' + (todayIdx+1)), periods, session };
-  } catch(e) { return null; }
-}
-
-function _tlPeriodOptions(ttInfo) {
-  if (!ttInfo || !ttInfo.periods) return '<option value="">Select period…</option>';
-  return '<option value="">Select period…</option>' +
-    ttInfo.periods.map((p,i) =>
-      `<option value="${i}" data-subject="${escHtml(p.subject)}">${p.label} (${p.start}–${p.end})${p.subject?' — '+p.subject:''}</option>`
-    ).join('');
-}
-
-/* ── Attendance helpers ── */
-function _tlGetAbsentIdsForDate(dateStr, batchId) {
-  const absentIds = new Set();
-  // 1. Live attState (current session in memory)
-  if (typeof attState === 'object' && dateStr === new Date().toISOString().slice(0,10)) {
-    Object.keys(attState).forEach(k => {
-      if (attState[k] === 'A') { const sid = k.split('|')[0]; if (sid) absentIds.add(sid); }
-    });
-  }
-  // 2. Saved sessions from _erp_att_index
-  try {
-    const idx = JSON.parse(localStorage.getItem('_erp_att_index') || '[]');
-    idx.forEach(sk => {
-      if (!sk.includes('_erp_att_' + dateStr)) return;
-      // If batchId filter provided, honour it
-      if (batchId && batchId !== 'all' && !sk.includes(batchId)) return;
-      try {
-        const saved = JSON.parse(localStorage.getItem(sk) || '{}');
-        Object.keys(saved).forEach(k => {
-          if (saved[k] === 'A') { const sid = k.split('|')[0]; if (sid) absentIds.add(sid); }
-        });
-      } catch(e2) {}
-    });
-  } catch(e) {}
-  return [...absentIds];
-}
-
-/* ── Render ── */
 function renderTeachingLog() {
-  const logs = _tlFilteredLogs();
-  const stus = (typeof students !== 'undefined' ? students : []);
-  _tlRenderStats(logs, stus);
+  const logs  = _tlFilteredLogs();
+  const stArr = (typeof students !== 'undefined' && Array.isArray(students)) ? students : [];
+  _tlRenderStats(logs, stArr);
   const el = document.getElementById('tl-entries-list');
   if (!el) return;
   if (!logs.length) {
@@ -15811,7 +15764,7 @@ function renderTeachingLog() {
   }
   el.innerHTML = logs.map(log => {
     const absent = (log.absentStudentIds||[]).map(id => {
-      const s = stus.find(x=>x.id===id);
+      const s = stArr.find(x=>x.id===id);
       return s ? s.name : id;
     });
     const absentHtml = absent.length
@@ -15819,25 +15772,23 @@ function renderTeachingLog() {
            <div style="font-size:10px;font-weight:700;color:#92400e;margin-bottom:3px">🔴 Absent (${absent.length}) — Missed this lesson:</div>
            <div style="font-size:11px;color:#78350f">${absent.join(', ')}</div>
          </div>` : '';
-    const hwHtml  = log.homeworkGiven ? `<div style="font-size:11px;color:var(--tx2);margin-top:4px">📝 HW: ${escHtml(log.homeworkGiven)}</div>` : '';
-    const doHtml  = log.dayOrder ? `<span style="font-size:10px;background:#f0fdf4;color:#15803d;border-radius:5px;padding:2px 7px;font-weight:600">D-${log.dayOrder} · ${escHtml(log.session||'')}</span>` : '';
-    const perHtml = log.periodTime ? `<span style="font-size:10px;color:var(--tx3)">⏰ ${escHtml(log.periodTime)}</span>` : '';
+    const hwHtml = log.homeworkGiven
+      ? `<div style="font-size:11px;color:var(--tx2);margin-top:4px">📝 HW: ${escHtml(log.homeworkGiven)}</div>` : '';
     return `<div class="card" style="margin-bottom:10px;padding:12px 14px">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
         <div style="flex:1;min-width:0">
-          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px">
-            <span style="font-size:13px;font-weight:700;color:var(--tx)">${escHtml(log.subject||'—')}${log.topic?' — '+escHtml(log.topic):''}</span>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">
+            <span style="font-size:13px;font-weight:700;color:var(--tx)">${escHtml(log.subject||'—')} — ${escHtml(log.topic||'')}</span>
             <span style="font-size:10px;background:#dbeafe;color:#1d4ed8;border-radius:5px;padding:2px 7px;font-weight:600">${escHtml(log.grade||'')}</span>
             ${log.batch?`<span style="font-size:10px;background:#ede9fe;color:#7c3aed;border-radius:5px;padding:2px 7px;font-weight:600">${escHtml(log.batch)}</span>`:''}
-            ${doHtml}${perHtml}
           </div>
           <div style="font-size:11px;color:var(--tx2)">${escHtml(log.lessonNotes||'')}</div>
-          ${hwHtml}${absentHtml}
+          ${hwHtml}
+          ${absentHtml}
         </div>
         <div style="text-align:right;flex-shrink:0">
           <div style="font-size:11px;font-weight:700;color:var(--tx2)">${log.date||''}</div>
-          <div style="display:flex;gap:4px;margin-top:6px;flex-wrap:wrap;justify-content:flex-end">
-            <button onclick="tlSendAbsentWA('${log.id}')" title="Send WA to absent parents" style="font-size:10px;padding:3px 8px;border-radius:6px;background:#dcfce7;border:.5px solid #4ade80;cursor:pointer;color:#15803d;font-family:inherit">📱 WA</button>
+          <div style="display:flex;gap:4px;margin-top:6px">
             <button onclick="openEditTeachingLog('${log.id}')" style="font-size:10px;padding:3px 8px;border-radius:6px;background:none;border:.5px solid var(--br);cursor:pointer;color:var(--tx2);font-family:inherit">✏️</button>
             <button onclick="deleteTeachingLog('${log.id}')" style="font-size:10px;padding:3px 8px;border-radius:6px;background:none;border:.5px solid #fca5a5;cursor:pointer;color:#dc2626;font-family:inherit">🗑</button>
           </div>
@@ -15847,18 +15798,18 @@ function renderTeachingLog() {
   }).join('');
 }
 
-function _tlRenderStats(logs, stus) {
+function _tlRenderStats(logs, students) {
   const el = document.getElementById('tl-stats-row');
   if (!el) return;
-  const totalLogs    = logs.length;
-  const uniqueSub    = new Set(logs.map(l=>l.subject)).size;
-  const totalAbsent  = logs.reduce((s,l)=>s+(l.absentStudentIds||[]).length, 0);
-  const uniqueMissed = new Set(logs.flatMap(l=>l.absentStudentIds||[])).size;
+  const totalLogs   = logs.length;
+  const uniqueSub   = new Set(logs.map(l=>l.subject)).size;
+  const totalAbsent = logs.reduce((s,l)=>s+(l.absentStudentIds||[]).length,0);
+  const uniqueMissed= new Set(logs.flatMap(l=>l.absentStudentIds||[])).size;
   const stats = [
-    {label:'Log Entries',    val:totalLogs,    bg:'#dbeafe', c:'#1d4ed8', icon:'📖'},
-    {label:'Subjects',       val:uniqueSub,    bg:'#ede9fe', c:'#7c3aed', icon:'📚'},
-    {label:'Absent Snaps',   val:totalAbsent,  bg:'#fef3c7', c:'#92400e', icon:'🔴'},
-    {label:'Students Missed',val:uniqueMissed, bg:'#fce7f3', c:'#9d174d', icon:'👤'},
+    {label:'Log Entries', val:totalLogs,    bg:'#dbeafe',c:'#1d4ed8', icon:'📖'},
+    {label:'Subjects',    val:uniqueSub,    bg:'#ede9fe',c:'#7c3aed', icon:'📚'},
+    {label:'Absent Snaps',val:totalAbsent,  bg:'#fef3c7',c:'#92400e', icon:'🔴'},
+    {label:'Students Missed',val:uniqueMissed,bg:'#fce7f3',c:'#9d174d',icon:'👤'},
   ];
   el.innerHTML = stats.map(s=>`
     <div style="background:${s.bg};border-radius:10px;padding:10px 12px;text-align:center">
@@ -15869,133 +15820,80 @@ function _tlRenderStats(logs, stus) {
 }
 
 function _tlStudentOptions(selectedIds) {
-  const stus = (typeof students !== 'undefined' ? students : []);
-  return stus.map(s=>`<option value="${s.id}" ${(selectedIds||[]).includes(s.id)?'selected':''}>${s.name} (${s.grade||s.class||''}${s.batch?' · '+s.batch:''})</option>`).join('');
+  const stArr = (typeof students !== 'undefined' && Array.isArray(students)) ? students : [];
+  return stArr
+    .filter(s => s && s.name && s.status !== 'inactive')
+    .sort((a,b) => (a.name||'').localeCompare(b.name||''))
+    .map(s => `<option value="${s.id}" ${(selectedIds||[]).includes(s.id)?'selected':''}>${s.name} (${s.grade||''}${s.batch?' · '+s.batch:''})</option>`).join('');
 }
 
 function _tlShowModal(html) {
   const root = document.getElementById('modal-root');
   if (!root) return;
-  root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal"><div id="modal-body">${html}</div></div></div>`;
+  root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal" style="max-height:90vh;overflow-y:auto;padding-bottom:8px"><div id="modal-body">${html}</div></div></div>`;
 }
 
-/* ── Add Entry — auto-populates absent from attendance, day order & session from timetable ── */
 function openAddTeachingLog() {
-  const today   = new Date().toISOString().slice(0,10);
-  // Auto-populate batch from attendance page or first batch
-  const attBatchEl = document.getElementById('att-batch');
-  const guessBatch = attBatchEl ? attBatchEl.value : ((typeof batches !== 'undefined' && batches.length) ? batches[0].name : 'all');
-  // Get timetable info for today
-  const ttInfo   = _tlGetTodayTTInfo(guessBatch) || _tlGetTodayTTInfo('all');
-  // Get absent IDs from attendance for today
-  const absentIds = _tlGetAbsentIdsForDate(today, guessBatch);
-  // Session from timetable
-  const sessionVal = ttInfo ? ttInfo.session : 'morning';
-  const dayOrderVal = ttInfo ? String(ttInfo.dayOrder) : '';
-
+  const today = new Date().toISOString().slice(0,10);
+  // Snapshot today's absent students from attendance
+  const absentIds = _tlGetTodayAbsentIds();
   _tlShowModal(`
     <div class="modal-title">📖 New Teaching Log Entry</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-      <div class="fg"><label class="fl">Date *</label><input class="fi" id="tl-f-date" type="date" value="${today}" onchange="tlRefreshAbsentOnDateChange()"></div>
-      <div class="fg"><label class="fl">Session</label>
-        <select class="fi" id="tl-f-session">
-          <option value="morning" ${sessionVal==='morning'?'selected':''}>☀️ Morning</option>
-          <option value="evening" ${sessionVal==='evening'?'selected':''}>🌙 Evening</option>
-        </select>
-      </div>
-    </div>
+    <div class="fg"><label class="fl">Date *</label><input class="fi" id="tl-f-date" type="date" value="${today}" onchange="tlFormSyncDayOrder()"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
       <div class="fg"><label class="fl">Grade *</label><select class="fi" id="tl-f-grade"><option value="">Select…</option>${_tlGradeOptions()}</select></div>
-      <div class="fg"><label class="fl">Batch</label>
-        <select class="fi" id="tl-f-batch" onchange="tlRefreshAbsentOnDateChange()">
-          <option value="">All / Any</option>${_tlBatchOptions(guessBatch)}
+      <div class="fg"><label class="fl">Batch</label><select class="fi" id="tl-f-batch"><option value="">All / Any</option>${_tlBatchOptions()}</select></div>
+    </div>
+    <!-- Day Order row — auto fills subject -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="fg">
+        <label class="fl" style="display:flex;align-items:center;gap:5px">Day Order <span style="font-size:10px;color:var(--tx3);font-weight:400">(auto-fills subject)</span></label>
+        <select class="fi" id="tl-f-dayorder" onchange="tlFormOnDayOrderChange()">
+          <option value="">Select Day Order…</option>
+          ${_tlDayOrderOptions()}
         </select>
       </div>
-    </div>
-    <div style="background:var(--bg2);border:.5px solid var(--br);border-radius:8px;padding:10px 12px;margin-bottom:10px">
-      <div style="font-size:10px;font-weight:700;color:#0369a1;margin-bottom:6px">📅 Day Order & Period — from Timetable</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        <div class="fg" style="margin:0">
-          <label class="fl" style="font-size:10px">Day Order</label>
-          <input class="fi" id="tl-f-dayorder" value="${dayOrderVal}" placeholder="e.g. 1" style="font-size:11px">
-        </div>
-        <div class="fg" style="margin:0">
-          <label class="fl" style="font-size:10px">Period</label>
-          <select class="fi" id="tl-f-period" style="font-size:11px" onchange="tlAutoFillSubjectFromPeriod()">${_tlPeriodOptions(ttInfo)}</select>
-        </div>
+      <div class="fg"><label class="fl">Subject *</label>
+        <select class="fi" id="tl-f-subject-sel" onchange="document.getElementById('tl-f-subject').value=this.value" style="display:none"></select>
+        <input class="fi" id="tl-f-subject" placeholder="e.g. Mathematics">
       </div>
-      ${ttInfo ? `<div style="font-size:10px;color:#0369a1;margin-top:5px">✅ Auto-filled from Timetable — ${escHtml(ttInfo.dayName)}</div>` : `<div style="font-size:10px;color:var(--tx3);margin-top:5px">⚠️ Set up Timetable page to auto-fill periods</div>`}
     </div>
-    <div class="fg"><label class="fl">Subject *</label><input class="fi" id="tl-f-subject" placeholder="e.g. Mathematics"></div>
+    <!-- Subject chips: tap to select -->
+    <div id="tl-f-do-chips" style="display:none;flex-wrap:wrap;gap:6px;margin-top:-4px;margin-bottom:4px"></div>
     <div class="fg"><label class="fl">Topic / Chapter</label><input class="fi" id="tl-f-topic" placeholder="e.g. Quadratic Equations – introduction"></div>
     <div class="fg"><label class="fl">Lesson Notes</label><textarea class="fi" id="tl-f-notes" rows="3" placeholder="What was covered, teaching method, key points…"></textarea></div>
     <div class="fg"><label class="fl">Homework Given</label><input class="fi" id="tl-f-hw" placeholder="Page numbers, exercises…"></div>
     <div class="fg">
-      <label class="fl" style="display:flex;align-items:center;gap:6px">🔴 Absent Students
-        <span style="font-size:10px;color:var(--tx3);font-weight:400">(auto-pulled from Attendance)</span>
-        <span id="tl-f-absent-count" style="font-size:10px;background:#fef3c7;color:#92400e;border-radius:5px;padding:1px 6px;font-weight:600">${absentIds.length} absent today</span>
-      </label>
+      <label class="fl" style="display:flex;align-items:center;gap:6px">🔴 Absent Students <span style="font-size:10px;color:var(--tx3);font-weight:400">(auto-snapped from today's attendance)</span></label>
       <select class="fi" id="tl-f-absent" multiple style="height:90px;font-size:11px">${_tlStudentOptions(absentIds)}</select>
-      <div style="font-size:10px;color:var(--tx3);margin-top:3px">Hold Ctrl/Cmd to select multiple · These students missed this lesson</div>
+      <div style="font-size:10px;color:var(--tx3);margin-top:3px">Hold Ctrl/Cmd to select multiple • These students missed this lesson</div>
     </div>
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px">
       <button class="btn btn-sm" onclick="closeModal()">Cancel</button>
       <button class="btn btn-p" onclick="saveTeachingLog()">💾 Save Entry</button>
     </div>`);
-}
-
-/* Auto-fill subject when period is selected */
-function tlAutoFillSubjectFromPeriod() {
-  const sel = document.getElementById('tl-f-period');
-  if (!sel) return;
-  const opt = sel.options[sel.selectedIndex];
-  const subj = opt ? opt.getAttribute('data-subject') : '';
-  const subjEl = document.getElementById('tl-f-subject');
-  if (subjEl && subj) subjEl.value = subj;
-}
-
-/* Refresh absent list when date or batch changes in the modal */
-function tlRefreshAbsentOnDateChange() {
-  const dateEl  = document.getElementById('tl-f-date');
-  const batchEl = document.getElementById('tl-f-batch');
-  const absSel  = document.getElementById('tl-f-absent');
-  const cntEl   = document.getElementById('tl-f-absent-count');
-  if (!dateEl || !absSel) return;
-  const date  = dateEl.value;
-  const batch = batchEl ? batchEl.value : 'all';
-  const ids   = _tlGetAbsentIdsForDate(date, batch);
-  absSel.innerHTML = _tlStudentOptions(ids);
-  if (cntEl) cntEl.textContent = ids.length + ' absent';
+  // Auto-fill Day Order from today's attendance session
+  setTimeout(() => {
+    const doSel = document.getElementById('tl-f-dayorder');
+    if (!doSel) return;
+    // Try currentDayOrder global first (live session), then localStorage
+    const activeDO = (typeof currentDayOrder !== 'undefined' && currentDayOrder)
+      ? currentDayOrder
+      : (() => { try { return localStorage.getItem('_erp_last_dayorder_' + today) || ''; } catch(e){ return ''; } })();
+    if (activeDO) { doSel.value = activeDO; tlFormOnDayOrderChange(); }
+  }, 80);
 }
 
 function openEditTeachingLog(id) {
   const logs = _tlLoad();
   const log  = logs.find(l=>l.id===id);
   if (!log) return;
-  const ttInfo = _tlGetTodayTTInfo(log.batch || 'all');
   _tlShowModal(`
     <div class="modal-title">✏️ Edit Teaching Log</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-      <div class="fg"><label class="fl">Date *</label><input class="fi" id="tl-f-date" type="date" value="${log.date||''}"></div>
-      <div class="fg"><label class="fl">Session</label>
-        <select class="fi" id="tl-f-session">
-          <option value="morning" ${(log.session||'morning')==='morning'?'selected':''}>☀️ Morning</option>
-          <option value="evening" ${log.session==='evening'?'selected':''}>🌙 Evening</option>
-        </select>
-      </div>
-    </div>
+    <div class="fg"><label class="fl">Date *</label><input class="fi" id="tl-f-date" type="date" value="${log.date||''}"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
       <div class="fg"><label class="fl">Grade *</label><select class="fi" id="tl-f-grade"><option value="">Select…</option>${_tlGradeOptions(log.grade)}</select></div>
       <div class="fg"><label class="fl">Batch</label><select class="fi" id="tl-f-batch"><option value="">All / Any</option>${_tlBatchOptions(log.batch)}</select></div>
-    </div>
-    <div style="background:var(--bg2);border:.5px solid var(--br);border-radius:8px;padding:10px 12px;margin-bottom:10px">
-      <div style="font-size:10px;font-weight:700;color:#0369a1;margin-bottom:6px">📅 Day Order & Period</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        <div class="fg" style="margin:0"><label class="fl" style="font-size:10px">Day Order</label>
-          <input class="fi" id="tl-f-dayorder" value="${log.dayOrder||''}" placeholder="e.g. 1" style="font-size:11px"></div>
-        <div class="fg" style="margin:0"><label class="fl" style="font-size:10px">Period</label>
-          <select class="fi" id="tl-f-period" style="font-size:11px" onchange="tlAutoFillSubjectFromPeriod()">${_tlPeriodOptions(ttInfo)}</select></div>
-      </div>
     </div>
     <div class="fg"><label class="fl">Subject *</label><input class="fi" id="tl-f-subject" value="${escHtml(log.subject||'')}" placeholder="e.g. Mathematics"></div>
     <div class="fg"><label class="fl">Topic / Chapter</label><input class="fi" id="tl-f-topic" value="${escHtml(log.topic||'')}" placeholder="e.g. Quadratic Equations"></div>
@@ -16012,34 +15910,22 @@ function openEditTeachingLog(id) {
 }
 
 function saveTeachingLog(editId) {
-  const date     = (document.getElementById('tl-f-date')||{}).value    || '';
-  const grade    = (document.getElementById('tl-f-grade')||{}).value   || '';
-  const batch    = (document.getElementById('tl-f-batch')||{}).value   || '';
-  const subject  = (document.getElementById('tl-f-subject')||{}).value?.trim() || '';
-  const topic    = (document.getElementById('tl-f-topic')||{}).value?.trim()   || '';
-  const notes    = (document.getElementById('tl-f-notes')||{}).value?.trim()   || '';
-  const hw       = (document.getElementById('tl-f-hw')||{}).value?.trim()      || '';
-  const session  = (document.getElementById('tl-f-session')||{}).value || 'morning';
-  const dayOrder = (document.getElementById('tl-f-dayorder')||{}).value?.trim() || '';
-  const perSel   = document.getElementById('tl-f-period');
-  const perIdx   = perSel ? perSel.value : '';
-  // Build periodTime label
-  let periodTime = '';
-  if (perSel && perIdx !== '') {
-    const opt = perSel.options[perSel.selectedIndex];
-    periodTime = opt ? opt.textContent : '';
-  }
-  const absSel    = document.getElementById('tl-f-absent');
+  const date    = (document.getElementById('tl-f-date')||{}).value || '';
+  const grade   = (document.getElementById('tl-f-grade')||{}).value || '';
+  const batch   = (document.getElementById('tl-f-batch')||{}).value || '';
+  const subject = (document.getElementById('tl-f-subject')||{}).value?.trim() || '';
+  const topic   = (document.getElementById('tl-f-topic')||{}).value?.trim() || '';
+  const notes   = (document.getElementById('tl-f-notes')||{}).value?.trim() || '';
+  const hw      = (document.getElementById('tl-f-hw')||{}).value?.trim() || '';
+  const absSel  = document.getElementById('tl-f-absent');
   const absentIds = absSel ? [...absSel.selectedOptions].map(o=>o.value) : [];
   if (!date || !grade || !subject) { showToast('⚠️ Date, Grade & Subject are required'); return; }
   const logs = _tlLoad();
-  const entry = { date, grade, batch, subject, topic, lessonNotes:notes, homeworkGiven:hw,
-                  session, dayOrder, periodIndex:perIdx, periodTime, absentStudentIds:absentIds };
   if (editId) {
     const idx = logs.findIndex(l=>l.id===editId);
-    if (idx>-1) logs[idx] = {...logs[idx], ...entry};
+    if (idx>-1) logs[idx] = {...logs[idx], date, grade, batch, subject, topic, lessonNotes:notes, homeworkGiven:hw, absentStudentIds:absentIds};
   } else {
-    logs.push({ id:'tl_'+Date.now(), ...entry, createdAt:new Date().toISOString() });
+    logs.push({ id:'tl_'+Date.now(), date, grade, batch, subject, topic, lessonNotes:notes, homeworkGiven:hw, absentStudentIds:absentIds, createdAt:new Date().toISOString() });
   }
   _tlSave(logs);
   closeModal();
@@ -16055,314 +15941,201 @@ function deleteTeachingLog(id) {
   showToast('Deleted');
 }
 
-/* ── Legacy shim ── */
 function _tlGetTodayAbsentIds() {
-  return _tlGetAbsentIdsForDate(new Date().toISOString().slice(0,10), 'all');
+  // Read from attState (global) or scan localStorage keys for today
+  try {
+    const today = new Date().toISOString().slice(0,10);
+    const absentIds = new Set();
+    // First try attState (live session)
+    if (typeof attState === 'object') {
+      Object.keys(attState).forEach(k => {
+        if (attState[k] === 'A') {
+          const sid = k.split('|')[0];
+          if (sid) absentIds.add(sid);
+        }
+      });
+    }
+    // Also scan localStorage for today's saved sessions
+    const idx = JSON.parse(localStorage.getItem('_erp_att_index') || '[]');
+    idx.forEach(sk => {
+      if (sk.includes('_erp_att_' + today)) {
+        try {
+          const saved = JSON.parse(localStorage.getItem(sk) || '{}');
+          Object.keys(saved).forEach(k => {
+            if (saved[k] === 'A') { const sid = k.split('|')[0]; if (sid) absentIds.add(sid); }
+          });
+        } catch(e2) {}
+      }
+    });
+    return [...absentIds];
+  } catch(e) { return []; }
+}
+
+function _tlDayOrderOptions(sel) {
+  const opts = [];
+  if (typeof dayOrderMap === 'object') {
+    const nums = Object.keys(dayOrderMap).sort((a,b)=>parseInt(a)-parseInt(b));
+    nums.forEach(num => {
+      const subjs = dayOrderMap[num] || [];
+      opts.push(`<option value="${num}" ${sel==num?'selected':''}>Day Order ${num}${subjs.length ? ' — ' + subjs.slice(0,3).join(', ')+(subjs.length>3?'…':'') : ''}</option>`);
+    });
+  }
+  if (!opts.length) {
+    const attSel = document.getElementById('att-day-order');
+    if (attSel) {
+      [...attSel.options].forEach(o => {
+        if (o.value) opts.push(`<option value="${o.value}" ${sel==o.value?'selected':''}>${o.text}</option>`);
+      });
+    }
+  }
+  return opts.join('');
+}
+
+function tlFormOnDayOrderChange() {
+  const dayOrderNum = (document.getElementById('tl-f-dayorder')||{}).value || '';
+  if (!dayOrderNum) return;
+  const subjs = typeof getSubjectsForDayOrder === 'function'
+    ? getSubjectsForDayOrder(dayOrderNum)
+    : (typeof dayOrderMap === 'object' ? (dayOrderMap[dayOrderNum] || []) : []);
+  const subjectInput = document.getElementById('tl-f-subject');
+  const subjectSel   = document.getElementById('tl-f-subject-sel');
+  if (!subjectInput) return;
+  if (subjs.length === 0) {
+    if (subjectSel) subjectSel.style.display = 'none';
+    subjectInput.style.display = '';
+    subjectInput.placeholder = 'No subjects set for Day Order ' + dayOrderNum;
+    return;
+  }
+  if (subjectSel) {
+    subjectSel.style.display = subjs.length > 1 ? '' : 'none';
+    subjectSel.innerHTML = '<option value="">— Pick subject —</option>' + subjs.map(s=>`<option value="${s}">${s}</option>`).join('');
+    subjectSel.onchange = () => { if (subjectSel.value) subjectInput.value = subjectSel.value; };
+  }
+  subjectInput.value = subjs[0];
+  const chipRow = document.getElementById('tl-f-do-chips');
+  if (chipRow) {
+    chipRow.style.display = 'flex';
+    chipRow.innerHTML = subjs.map((s,i)=>`<span style="font-size:10px;padding:2px 9px;border-radius:10px;background:${i===0?'#7c3aed22':'var(--bg)'};color:${i===0?'#5b21b6':'var(--tx2)'};border:.5px solid ${i===0?'#a78bfa':'var(--br)'};cursor:pointer" onclick="document.getElementById('tl-f-subject').value='${s.replace(/'/g,"\\'")}'${subjectSel?`;document.getElementById('tl-f-subject-sel').value='${s.replace(/'/g,"\\'")}';`:''}title='Tap to select'">${s}</span>`).join('');
+  }
+}
+
+function tlFormSyncDayOrder() {
+  const date = (document.getElementById('tl-f-date')||{}).value || '';
+  if (!date) return;
+  try {
+    const saved = localStorage.getItem('_erp_last_dayorder_' + date) || '';
+    const sel = document.getElementById('tl-f-dayorder');
+    if (sel && saved) { sel.value = saved; tlFormOnDayOrderChange(); }
+  } catch(e) {}
 }
 
 function _tlGradeOptions(sel) {
-  const stus = (typeof students !== 'undefined' ? students : []);
-  const grades = [...new Set(stus.map(s=>s.grade||s.class).filter(Boolean))].sort();
-  return grades.map(g=>`<option value="${g}" ${sel===g?'selected':''}>${g}</option>`).join('');
+  const stArr = (typeof students !== 'undefined' && Array.isArray(students)) ? students : [];
+  const grades = [...new Set(stArr.map(s=>s.grade).filter(Boolean))].sort((a,b)=>{
+    const order=['KG','1','2','3','4','5','6','7','8','9','10','11','12'];
+    const ai=order.indexOf(a), bi=order.indexOf(b);
+    return (ai<0?99:ai)-(bi<0?99:bi);
+  });
+  return grades.map(g=>`<option value="${g}" ${sel===g?'selected':''}>${g==='KG'?'KG':'Class '+g}</option>`).join('');
 }
 function _tlBatchOptions(sel) {
-  const stus = (typeof students !== 'undefined' ? students : []);
-  const batchs = [...new Set(stus.map(s=>s.batch).filter(Boolean))].sort();
-  return batchs.map(b=>`<option value="${b}" ${sel===b?'selected':''}>${b}</option>`).join('');
+  const stArr = (typeof students !== 'undefined' && Array.isArray(students)) ? students : [];
+  const batches = [...new Set(stArr.map(s=>s.batch||s.course).filter(Boolean))].sort();
+  return batches.map(b=>`<option value="${b}" ${sel===b?'selected':''}>${b}</option>`).join('');
 }
 
-/* ══════════════════════════════════════════════════════
-   ABSENT SUMMARY  — inline inline panel, WA links (no popup)
-══════════════════════════════════════════════════════ */
 function tlShowAbsentSummary() {
-  const logs  = _tlFilteredLogs();
-  const stus  = (typeof students !== 'undefined' ? students : []);
+  const logs     = _tlFilteredLogs();
+  const stArr    = (typeof students !== 'undefined' && Array.isArray(students)) ? students : [];
+  // Build per-student missed lessons map
   const missed = {};
   logs.forEach(l => {
     (l.absentStudentIds||[]).forEach(id => {
       if (!missed[id]) missed[id] = [];
-      missed[id].push({ date:l.date, subject:l.subject, topic:l.topic, grade:l.grade,
-                        dayOrder:l.dayOrder, session:l.session, periodTime:l.periodTime });
+      missed[id].push({ date:l.date, subject:l.subject, topic:l.topic, grade:l.grade });
     });
   });
   const entries = Object.entries(missed).sort((a,b)=>b[1].length-a[1].length);
   if (!entries.length) { showToast('No absent records in this filter'); return; }
-
-  // Get saved WA template for teaching-absent or fall back to default
-  const savedTpl = (function(){
-    try { return localStorage.getItem('_erp_wt_teaching_absent_ta') || ''; } catch(e) { return ''; }
-  })();
-
-  _tlShowModal(`
-    <div class="modal-title">🔴 Absent Students — Missed Lessons</div>
-    <div style="font-size:11px;color:var(--tx3);margin-bottom:10px">
-      WA message links open WhatsApp directly — no popup. Tap 📱 to send.
-    </div>
+  _tlShowModal(`<div class="modal-title">🔴 Absent Student — Missed Lessons</div>
+    <div style="font-size:11px;color:var(--tx3);margin-bottom:10px">What each absent student missed during their leave</div>
     <div style="max-height:400px;overflow-y:auto">
-    ${entries.map(([id, lessons]) => {
-      const s     = stus.find(x=>x.id===id);
-      const name  = s ? s.name : id;
-      const phone = s ? (s.phone||s.parentPhone||s.whatsapp||'') : '';
-      const grade = s ? (s.grade||s.class||'') : (lessons[0]?.grade||'');
-      // Build WA message
-      const lessonLines = lessons.map(l =>
-        `• ${l.date}${l.dayOrder?' (D-'+l.dayOrder+(l.session?'/'+l.session:'')+')':''}${l.periodTime?' ['+l.periodTime+']':''} — ${l.subject||''}${l.topic?' ('+l.topic+')':''}`
-      ).join('\n');
-      let waMsg;
-      if (savedTpl) {
-        waMsg = savedTpl
-          .replace(/{student_name}/g, name)
-          .replace(/{grade}/g, grade)
-          .replace(/{missed_count}/g, lessons.length)
-          .replace(/{missed_lessons}/g, lessonLines)
-          .replace(/{parent_name}/g, s?.parent||'பெற்றோர்');
-      } else {
-        waMsg = `அன்பான பெற்றோர்,\n${name} (${grade}) கீழ்காணும் வகுப்புகளில் கலந்துகொள்ளவில்லை:\n\n${lessonLines}\n\nதயவுசெய்து இந்த பாடங்களை வீட்டில் படிக்க உதவுங்கள்.\n\nநன்றி 🙏`;
-      }
-      const waEnc = encodeURIComponent(waMsg);
-      const waHref = phone ? `https://wa.me/91${phone.replace(/\D/g,'')}?text=${waEnc}` : '';
+    ${entries.map(([id, lessons])=>{
+      const s = stArr.find(x=>x.id===id);
+      const name = s ? s.name : id;
+      const phone = s ? (s.phone||s.parentPhone||'') : '';
+      const waMsg = encodeURIComponent(`அன்பான பெற்றோர், ${name} வகுப்பில் கலந்துகொள்ளாத நாட்களில் பின்வரும் பாடங்கள் நடந்தன:\n${lessons.map(l=>`• ${l.date} — ${l.subject}${l.topic?' ('+l.topic+')':''}`).join('\n')}\nதயவுசெய்து இந்த பாடங்களை வீட்டில் படிக்க உதவுங்கள்.`);
       return `<div class="card" style="margin-bottom:8px;padding:10px 12px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;gap:8px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
           <div>
             <span style="font-size:13px;font-weight:700;color:var(--tx)">${escHtml(name)}</span>
             <span style="font-size:10px;background:#fef3c7;color:#92400e;border-radius:5px;padding:2px 7px;margin-left:6px;font-weight:600">${lessons.length} lessons missed</span>
-            ${grade?`<span style="font-size:10px;color:var(--tx3);margin-left:4px">${escHtml(grade)}</span>`:''}
           </div>
-          ${waHref
-            ? `<a href="${waHref}" target="_blank" style="text-decoration:none">
-                <span style="background:#25d366;color:#fff;font-size:10px;padding:4px 10px;border-radius:6px;font-weight:600;white-space:nowrap">📱 WA Parent</span>
-               </a>`
-            : `<span style="font-size:10px;color:var(--tx3)">No phone</span>`}
+          ${phone?`<a href="https://wa.me/91${phone}?text=${waMsg}" target="_blank" class="btn btn-wa btn-sm" style="font-size:10px;text-decoration:none">📱 WA Parent</a>`:''}
         </div>
         <div style="font-size:11px;color:var(--tx2)">
-          ${lessons.map(l=>`<div style="padding:3px 0;border-bottom:.5px solid var(--br)">
-            • ${l.date}
-            ${l.dayOrder?`<span style="background:#f0fdf4;color:#15803d;border-radius:4px;padding:1px 5px;font-size:10px;font-weight:600">D-${l.dayOrder}</span>`:''}
-            ${l.session?`<span style="background:#eff6ff;color:#1d4ed8;border-radius:4px;padding:1px 5px;font-size:10px">${l.session==='morning'?'☀️':'🌙'}</span>`:''}
-            ${l.periodTime?`<span style="font-size:10px;color:var(--tx3)">${escHtml(l.periodTime)}</span>`:''}
-            — <b>${escHtml(l.subject||'')}</b>${l.topic?' — '+escHtml(l.topic):''}
-          </div>`).join('')}
+          ${lessons.map(l=>`<div style="padding:3px 0;border-bottom:.5px solid var(--br)">• ${l.date} — <b>${escHtml(l.subject)}</b>${l.topic?' — '+escHtml(l.topic):''}</div>`).join('')}
         </div>
       </div>`;
     }).join('')}
     </div>
-    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
-      <button class="btn btn-sm" onclick="tlSendAllAbsentWA()" style="background:#25d366;color:#fff;border-color:#25d366">📱 Send All WA</button>
-      <button class="btn btn-sm" onclick="closeModal()">Close</button>
-    </div>`);
+    <div style="text-align:right;margin-top:8px"><button class="btn btn-sm" onclick="closeModal()">Close</button></div>`);
 }
 
-/* Send WA for a single log entry's absent students (no popup) */
-function tlSendAbsentWA(logId) {
-  const logs = _tlLoad();
-  const log  = logs.find(l=>l.id===logId);
-  if (!log) return;
-  const stus = (typeof students !== 'undefined' ? students : []);
-  const savedTpl = (function(){ try { return localStorage.getItem('_erp_wt_teaching_absent_ta')||''; } catch(e){ return ''; } })();
-  const absent = (log.absentStudentIds||[]);
-  if (!absent.length) { showToast('No absent students in this entry'); return; }
-  absent.forEach((id, i) => {
-    const s    = stus.find(x=>x.id===id);
-    if (!s) return;
-    const phone = (s.phone||s.parentPhone||s.whatsapp||'').replace(/\D/g,'');
-    if (!phone) return;
-    const name  = s.name;
-    const grade = s.grade||s.class||'';
-    const lessonLine = `• ${log.date}${log.dayOrder?' (D-'+log.dayOrder+(log.session?'/'+log.session:'')+')':''}${log.periodTime?' ['+log.periodTime+']':''} — ${log.subject||''}${log.topic?' ('+log.topic+')':''}`;
-    let msg;
-    if (savedTpl) {
-      msg = savedTpl.replace(/{student_name}/g,name).replace(/{grade}/g,grade)
-        .replace(/{missed_count}/g,'1').replace(/{missed_lessons}/g,lessonLine)
-        .replace(/{parent_name}/g,s.parent||'பெற்றோர்');
-    } else {
-      msg = `அன்பான பெற்றோர்,\n${name} (${grade}) இன்று வகுப்பில் கலந்துகொள்ளவில்லை:\n\n${lessonLine}\n\nதயவுசெய்து இந்த பாடங்களை வீட்டில் படிக்க உதவுங்கள்.\n\nநன்றி 🙏`;
-    }
-    setTimeout(() => window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`, '_blank'), i * 600);
-  });
-  showToast(`📱 Opening WA for ${absent.length} parent(s)…`);
-}
-
-/* Send WA to all absent students across filtered logs */
-function tlSendAllAbsentWA() {
-  const logs = _tlFilteredLogs();
-  const stus = (typeof students !== 'undefined' ? students : []);
-  const missed = {};
-  logs.forEach(l => {
-    (l.absentStudentIds||[]).forEach(id => {
-      if (!missed[id]) missed[id] = [];
-      missed[id].push(l);
-    });
-  });
-  const savedTpl = (function(){ try { return localStorage.getItem('_erp_wt_teaching_absent_ta')||''; } catch(e){ return ''; } })();
-  let count = 0;
-  Object.entries(missed).forEach(([id, ls], i) => {
-    const s = stus.find(x=>x.id===id);
-    if (!s) return;
-    const phone = (s.phone||s.parentPhone||s.whatsapp||'').replace(/\D/g,'');
-    if (!phone) return;
-    const name  = s.name;
-    const grade = s.grade||s.class||'';
-    const lessonLines = ls.map(l =>
-      `• ${l.date}${l.dayOrder?' (D-'+l.dayOrder+(l.session?'/'+l.session:'')+')':''}${l.periodTime?' ['+l.periodTime+']':''} — ${l.subject||''}${l.topic?' ('+l.topic+')':''}`
-    ).join('\n');
-    let msg;
-    if (savedTpl) {
-      msg = savedTpl.replace(/{student_name}/g,name).replace(/{grade}/g,grade)
-        .replace(/{missed_count}/g,ls.length).replace(/{missed_lessons}/g,lessonLines)
-        .replace(/{parent_name}/g,s.parent||'பெற்றோர்');
-    } else {
-      msg = `அன்பான பெற்றோர்,\n${name} (${grade}) கீழ்காணும் ${ls.length} வகுப்புகளில் கலந்துகொள்ளவில்லை:\n\n${lessonLines}\n\nதயவுசெய்து இந்த பாடங்களை வீட்டில் படிக்க உதவுங்கள்.\n\nநன்றி 🙏`;
-    }
-    count++;
-    setTimeout(() => window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`, '_blank'), i * 700);
-  });
-  showToast(`📱 Opening WA for ${count} parents…`);
-  closeModal();
-}
-
-/* ══════════════════════════════════════════════════════
-   AI STUDY PLANNER  — per-student catch-up plan
-══════════════════════════════════════════════════════ */
-async function tlRunAIStudyPlanner() {
-  const logs  = _tlFilteredLogs();
-  const stus  = (typeof students !== 'undefined' ? students : []);
-  if (!logs.length) { showToast('No teaching log entries in this filter'); return; }
-
-  // Build per-student missed lessons
-  const missed = {};
-  logs.forEach(l => {
-    (l.absentStudentIds||[]).forEach(id => {
-      if (!missed[id]) missed[id] = [];
-      missed[id].push({
-        date:l.date, subject:l.subject, topic:l.topic,
-        notes:l.lessonNotes, hw:l.homeworkGiven,
-        dayOrder:l.dayOrder, session:l.session
-      });
-    });
-  });
-  if (!Object.keys(missed).length) { showToast('No absent students to plan for'); return; }
-
-  const studentSummaries = Object.entries(missed).map(([id, ls]) => {
-    const s = stus.find(x=>x.id===id);
-    return `Student: ${s?s.name:id} (${s?.grade||''})\nMissed ${ls.length} lesson(s):\n${ls.map(l=>`  - ${l.date} | D-${l.dayOrder||'?'} | ${l.subject||''}${l.topic?' — '+l.topic:''} | Notes: ${(l.notes||'').slice(0,60)}`).join('\n')}`;
-  }).join('\n\n');
-
-  const prompt = `You are an expert Tamil Nadu tuition center teacher. Create a personalized AI Study Planner (catch-up plan) for students who missed classes.
-
-ABSENT STUDENTS & MISSED LESSONS:
-${studentSummaries}
-
-For EACH student, provide:
-1. 📚 WHAT THEY MISSED — brief summary of each missed topic
-2. 🗓️ CATCH-UP SCHEDULE — day-by-day plan (3–5 days) to cover missed content
-3. 📝 KEY CONCEPTS TO REVIEW — most important points from missed lessons
-4. 🏠 HOME STUDY TIPS — practical tips for self-study at home
-5. ✅ READINESS CHECK — 2–3 quick questions to verify understanding
-
-Format clearly per student. Use Tamil where helpful. Keep practical for Class 6-12 tuition context.`;
-
-  const panel   = document.getElementById('tl-ai-panel');
-  const loading = document.getElementById('tl-ai-loading');
-  const output  = document.getElementById('tl-ai-output');
-  const titleEl = document.getElementById('tl-ai-panel-title');
-  if (!panel || !output) return;
-  if (titleEl) titleEl.textContent = '📚 AI Study Planner';
-  panel.style.display = '';
-  if (loading) loading.style.display = '';
-  output.style.display = 'none';
-  output.textContent = '';
-  panel.scrollIntoView({behavior:'smooth', block:'start'});
-  try {
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ model:'claude-sonnet-4-6', max_tokens:1500,
-        messages:[{role:'user', content:prompt}] })
-    });
-    const data = await resp.json();
-    const text = (data.content||[]).map(c=>c.text||'').join('');
-    if (loading) loading.style.display = 'none';
-    output.style.display = '';
-    output.textContent = text || 'No response received.';
-  } catch(err) {
-    if (loading) loading.style.display = 'none';
-    output.style.display = '';
-    output.textContent = 'AI Study Planner failed: ' + (err.message||'Network error');
-  }
-}
-
-/* ══════════════════════════════════════════════════════
-   AI GROWTH FACTOR  — curriculum & growth analysis
-══════════════════════════════════════════════════════ */
 async function tlRunAIGrowth() {
-  const logs  = _tlFilteredLogs();
-  const stus  = (typeof students !== 'undefined' ? students : []);
+  const logs     = _tlFilteredLogs();
+  const stArr = (typeof students !== 'undefined' && Array.isArray(students)) ? students : [];
   if (!logs.length) { showToast('No teaching log entries in this filter'); return; }
-
-  // Build context
+  // Build absent summary
   const missed = {};
   logs.forEach(l => {
     (l.absentStudentIds||[]).forEach(id => {
       if (!missed[id]) missed[id] = [];
-      missed[id].push(`${l.date} D-${l.dayOrder||'?'} ${l.session||''}: ${l.subject||''}${l.topic?' ('+l.topic+')':''}`);
+      missed[id].push(`${l.date}: ${l.subject}${l.topic?' ('+l.topic+')':''}`);
     });
   });
-  const absentSummary = Object.entries(missed).map(([id, ls]) => {
-    const s = stus.find(x=>x.id===id);
-    return `${s?s.name:id} (${s?.grade||''}): missed ${ls.length} — ${ls.slice(0,4).join(', ')}`;
+  const absentSummary = Object.entries(missed).map(([id, ls])=>{
+    const s = stArr.find(x=>x.id===id);
+    return `${s?s.name:id} (${s?.grade||''}): missed ${ls.length} lessons — ${ls.slice(0,5).join(', ')}`;
   }).join('\n');
-
   const subjectCoverage = {};
-  const sessionCoverage = { morning:0, evening:0 };
-  const dayOrderCoverage = {};
-  logs.forEach(l => {
-    if (!subjectCoverage[l.subject]) subjectCoverage[l.subject] = 0;
-    subjectCoverage[l.subject]++;
-    if (l.session) sessionCoverage[l.session] = (sessionCoverage[l.session]||0)+1;
-    if (l.dayOrder) dayOrderCoverage['D-'+l.dayOrder] = (dayOrderCoverage['D-'+l.dayOrder]||0)+1;
-  });
+  logs.forEach(l=>{ if(!subjectCoverage[l.subject]) subjectCoverage[l.subject]=0; subjectCoverage[l.subject]++; });
+  const prompt = `You are an expert Tamil Nadu tuition center teaching analyst. Analyze this Teaching Log data and provide an AI Growth Factor report.
 
-  const prompt = `You are an expert Tamil Nadu tuition center teaching analyst. Analyze this Teaching Log and provide an AI Growth Factor report.
-
-TEACHING LOG SUMMARY (${logs.length} entries):
+Teaching Log Summary (${logs.length} entries):
+Subjects covered: ${Object.entries(subjectCoverage).map(([s,n])=>`${s}: ${n} sessions`).join(', ')}
 Date range: ${logs[logs.length-1]?.date||''} to ${logs[0]?.date||''}
-Subjects: ${Object.entries(subjectCoverage).map(([s,n])=>`${s}(${n})`).join(', ')}
-Day Orders covered: ${Object.entries(dayOrderCoverage).map(([d,n])=>`${d}:${n}`).join(', ')}
-Sessions: Morning=${sessionCoverage.morning||0}, Evening=${sessionCoverage.evening||0}
 
-ABSENT STUDENTS:
+Absent Students — Missed Lessons:
 ${absentSummary || 'No absences recorded'}
 
-SAMPLE LESSONS:
-${logs.slice(0,8).map(l=>`• ${l.date} D-${l.dayOrder||'?'} ${l.session||''} | ${l.subject||''} | ${l.topic||'—'} | ${(l.lessonNotes||'').slice(0,60)}`).join('\n')}
+Sample lessons:
+${logs.slice(0,6).map(l=>`• ${l.date} | ${l.subject} | ${l.topic||'—'} | ${l.lessonNotes?.slice(0,80)||''}`).join('\n')}
 
-Provide:
-1. 📊 CURRICULUM COVERAGE — Subject balance? Day Order coverage gaps?
-2. 🔴 AT-RISK STUDENTS — Who missed most? Which subjects most affected?
-3. 📈 GROWTH FACTORS — Top 3 factors to boost student performance
-4. ⏰ SESSION PATTERN ANALYSIS — Morning vs Evening session balance
-5. 💡 CATCH-UP RECOMMENDATIONS — Priority actions for next 2 weeks
-6. 🎯 TEACHER FOCUS AREAS — What to emphasise based on attendance patterns
+Please provide:
+1. 📊 CURRICULUM COVERAGE ANALYSIS — Which subjects are getting enough sessions? Any gaps?
+2. 🔴 AT-RISK STUDENTS (missed lessons) — Who needs catch-up? What topics?
+3. 📈 AI GROWTH FACTORS — Key factors that will accelerate student growth based on this log
+4. 💡 CATCH-UP PLAN — Specific recommendations for students who were absent
+5. 🎯 NEXT WEEK PRIORITIES — What topics to prioritize based on coverage gaps
+6. 📱 PARENT WA MESSAGE TEMPLATE — For notifying parents of absent students what was missed
 
-Keep practical for Tamil Nadu Class 6-12 tuition. Use Tamil labels where helpful.`;
+Keep it practical and focused on Tamil Nadu tuition center context. Use both English and Tamil where helpful.`;
 
-  const panel   = document.getElementById('tl-ai-panel');
+  const panel = document.getElementById('tl-ai-panel');
   const loading = document.getElementById('tl-ai-loading');
   const output  = document.getElementById('tl-ai-output');
-  const titleEl = document.getElementById('tl-ai-panel-title');
   if (!panel || !output) return;
-  if (titleEl) titleEl.textContent = '✨ AI Growth Factor';
   panel.style.display = '';
   if (loading) loading.style.display = '';
   output.style.display = 'none';
   output.textContent = '';
-  panel.scrollIntoView({behavior:'smooth', block:'start'});
+  panel.scrollIntoView({behavior:'smooth',block:'start'});
   try {
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    const resp = await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ model:'claude-sonnet-4-6', max_tokens:1200,
-        messages:[{role:'user', content:prompt}] })
+      body:JSON.stringify({ model:'claude-sonnet-4-6', max_tokens:1000, messages:[{role:'user',content:prompt}] })
     });
     const data = await resp.json();
     const text = (data.content||[]).map(c=>c.text||'').join('');
@@ -16381,46 +16154,371 @@ function copyTLAI() {
   navigator.clipboard.writeText(txt).then(()=>showToast('📋 Copied!')).catch(()=>showToast('Copy failed'));
 }
 
-/* ── Register Teaching Absent WA template type ── */
-(function(){
-  if (typeof WT_ALL_TYPES !== 'undefined') {
-    const exists = WT_ALL_TYPES.some(t=>t.id==='teaching_absent');
-    if (!exists) {
-      WT_ALL_TYPES.push({id:'teaching_absent', label:'Teaching Absent Alert', emoji:'📖', color:'#0369a1'});
-    }
-  }
-  if (typeof WA_TEMPLATES !== 'undefined' && !WA_TEMPLATES.teaching_absent) {
-    WA_TEMPLATES.teaching_absent = { ta: [
-      `அன்பான {parent_name},\n{student_name} ({grade}) கீழ்காணும் {missed_count} வகுப்பு(களில்) கலந்துகொள்ளவில்லை:\n\n{missed_lessons}\n\nதயவுசெய்து இந்த பாடங்களை வீட்டில் படிக்க உதவுங்கள்.\n\nநன்றி 🙏`
-    ]};
-  }
-  if (typeof WT_VARS !== 'undefined') {
-    WT_VARS.teaching_absent = '{student_name} · {parent_name} · {grade} · {missed_count} · {missed_lessons}';
-  }
-  if (typeof WT_SAMPLE !== 'undefined') {
-    WT_SAMPLE.teaching_absent = {
-      student_name:'Karthik', parent_name:'அன்பான பெற்றோர்', grade:'10th',
-      missed_count:'2', missed_lessons:'• 2024-01-15 (D-1/morning) — Maths (Quadratic Equations)\n• 2024-01-17 (D-3/evening) — Physics (Laws of Motion)'
-    };
-  }
-})();
-
 function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
-// Also support navTo('wa-templates') from any deep links — already handled in navTo above
-// For buttons that call navTo('wa-templates') + selectWTType, ensure the tab switches
-var _origSelectWTType = typeof selectWTType === 'function' ? selectWTType : null;
-// Wrap selectWTType to ensure templates tab is visible when called
-(function(){
-  var _orig = window.selectWTType;
-  if (typeof _orig === 'function') {
-    window.selectWTType = function(type) {
-      // Make sure we're on whatsapp page with templates tab
-      const pg = document.getElementById('pg-whatsapp');
-      if (pg && !pg.classList.contains('active')) navTo('whatsapp');
-      switchWATab('templates');
-      setTimeout(()=>_orig(type), 100);
-    };
+/* ═══════════════════════════════════════════════════════
+   TEACHING LOG — MONTHLY GROWTH REPORT + WA QUEUE
+   Combines: attendance (absent/sessions), marks (this month),
+   teaching log topics, growth per subject, study timetable.
+   Sends personalised Tamil WA on last working day of month.
+═══════════════════════════════════════════════════════ */
+
+/* ── Utility: get last calendar day of a month ── */
+function _tlLastDayOfMonth(yr, mo) { return new Date(yr, mo + 1, 0).getDate(); }
+
+/* ── Detect if today is the last working day of the current month ──
+   Working day = not Saturday(6)/Sunday(0). If last calendar day is
+   Sat/Sun, work back to the preceding Friday. ── */
+function _tlIsLastWorkingDay() {
+  const now  = new Date();
+  const yr   = now.getFullYear();
+  const mo   = now.getMonth();
+  const today = now.getDate();
+  let lastWD = _tlLastDayOfMonth(yr, mo);
+  while (true) {
+    const d = new Date(yr, mo, lastWD).getDay();
+    if (d !== 0 && d !== 6) break; // Mon–Fri
+    lastWD--;
+  }
+  return today === lastWD;
+}
+
+/* ── Gather one month's attendance for a student ──
+   Returns { present, absent, late, sessionDates:[...], totalWorking } */
+function _tlMonthAttendance(studentId, yr, mo) {
+  const monthStr = yr + '-' + String(mo + 1).padStart(2, '0');
+  let present = 0, absent = 0, late = 0;
+  const sessionDates = new Set();
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (!k || !k.startsWith('_erp_att_')) continue;
+    const datePart = k.slice(9, 19); // YYYY-MM-DD
+    if (!datePart.startsWith(monthStr)) continue;
+    try {
+      const rec = JSON.parse(localStorage.getItem(k));
+      const sid = studentId;
+      Object.keys(rec).forEach(rk => {
+        if (!rk.startsWith(sid + '|')) return;
+        sessionDates.add(datePart);
+        const v = rec[rk];
+        if (v === 'P') present++;
+        else if (v === 'A') absent++;
+        else if (v === 'L') late++;
+      });
+    } catch(e) {}
+  }
+  const totalWorking = present + absent + late;
+  return { present, absent, late, totalWorking, sessionDates: [...sessionDates].sort() };
+}
+
+/* ── Gather marks for this month from all exams ── */
+function _tlMonthMarks(studentId, yr, mo) {
+  const monthStr = yr + '-' + String(mo + 1).padStart(2, '0');
+  const results = [];
+  try {
+    const idx = JSON.parse(localStorage.getItem('_erp_marks_index') || '[]');
+    idx.forEach(key => {
+      try {
+        const rec = JSON.parse(localStorage.getItem(key));
+        if (!rec) return;
+        // Match by date or fall back to any exam
+        const recDate = (rec.date || '').slice(0, 7);
+        if (recDate && recDate !== monthStr) return;
+        const entry = rec.marks?.[studentId];
+        if (!entry) return;
+        results.push({
+          examName: rec.examName || 'Test',
+          subject:  rec.subject  || '—',
+          marks:    entry.absent ? null : (entry.marks ?? null),
+          maxMarks: rec.maxMarks || 100,
+          absent:   !!entry.absent,
+          date:     rec.date || '',
+        });
+      } catch(e2) {}
+    });
+  } catch(e) {}
+  return results;
+}
+
+/* ── Gather Teaching Log sessions for a student's grade/batch in this month ── */
+function _tlMonthTeachingLog(grade, batch, yr, mo) {
+  const monthStr = yr + '-' + String(mo + 1).padStart(2, '0');
+  return _tlLoad().filter(l => {
+    if (!l.date || !l.date.startsWith(monthStr)) return false;
+    if (grade && l.grade && l.grade !== grade) return false;
+    if (batch && l.batch && batch !== 'all' && l.batch !== batch) return false;
+    return true;
+  });
+}
+
+/* ── Build the per-student data object ── */
+function _tlBuildStudentGrowthData(student, yr, mo) {
+  const att      = _tlMonthAttendance(student.id, yr, mo);
+  const marks    = _tlMonthMarks(student.id, yr, mo);
+  const tlLogs   = _tlMonthTeachingLog(student.grade, student.batch || student.course, yr, mo);
+  const missedData = getMissedSubjects ? getMissedSubjects(student.id) : {};
+  const subjectAvg = getSubjectAvgMarks ? getSubjectAvgMarks(student.id) : {};
+
+  // Teaching log subjects covered this month
+  const subjectSessions = {};
+  tlLogs.forEach(l => {
+    if (!l.subject) return;
+    if (!subjectSessions[l.subject]) subjectSessions[l.subject] = { count: 0, topics: [] };
+    subjectSessions[l.subject].count++;
+    if (l.topic) subjectSessions[l.subject].topics.push(l.topic);
+  });
+
+  // Subjects where student was absent (from teaching log absent list)
+  const subjectsStudentMissed = {};
+  tlLogs.forEach(l => {
+    if (!(l.absentStudentIds || []).includes(student.id)) return;
+    if (!l.subject) return;
+    if (!subjectsStudentMissed[l.subject]) subjectsStudentMissed[l.subject] = { count: 0, topics: [] };
+    subjectsStudentMissed[l.subject].count++;
+    if (l.topic) subjectsStudentMissed[l.subject].topics.push(l.topic);
+  });
+
+  // Marks section text
+  const marksLines = marks.map(m => {
+    if (m.absent) return `  • ${m.examName} (${m.subject}): Absent`;
+    if (m.marks === null) return `  • ${m.examName} (${m.subject}): Not recorded`;
+    const pct = Math.round((m.marks / m.maxMarks) * 100);
+    const grade = pct >= 90 ? 'S' : pct >= 75 ? 'A' : pct >= 60 ? 'B' : pct >= 50 ? 'C' : 'F';
+    return `  • ${m.examName} (${m.subject}): ${m.marks}/${m.maxMarks} — ${grade} (${pct}%)`;
+  });
+
+  const attPct = att.totalWorking > 0 ? Math.round((att.present / att.totalWorking) * 100) : 0;
+
+  return {
+    student,
+    att, attPct,
+    marks, marksLines,
+    tlLogs,
+    subjectSessions,
+    subjectsStudentMissed,
+    missedData,
+    subjectAvg,
+    totalSessions: tlLogs.length,
+  };
+}
+
+/* ── Build the AI prompt for one student ── */
+function _tlBuildGrowthPrompt(data, monthLabel) {
+  const { student, att, attPct, marksLines, subjectSessions, subjectsStudentMissed, subjectAvg, tlLogs } = data;
+
+  const subjectLines = Object.entries(subjectSessions).map(([s, d]) => {
+    const avg = subjectAvg[s];
+    const missed = subjectsStudentMissed[s];
+    const topicsStr = d.topics.slice(0, 4).join(', ');
+    return `  • ${s}: ${d.count} sessions covered (${topicsStr || 'general'})` +
+           (avg !== undefined ? ` | Overall avg: ${avg}%` : '') +
+           (missed ? ` | Student MISSED ${missed.count} sessions (${missed.topics.slice(0,2).join(', ')})` : '');
+  }).join('\n');
+
+  const allSubjectsForTimetable = [...new Set(tlLogs.map(l => l.subject).filter(Boolean))];
+  const weakSubjects = allSubjectsForTimetable.filter(s => (subjectAvg[s] || 100) < 70 || subjectsStudentMissed[s]);
+
+  return `You are an expert tuition teacher at a Tamil Nadu tuition center. Generate a personalized monthly growth report + study timetable in TAMIL for a student.
+
+STUDENT: ${student.name} | Grade: ${student.grade || '—'} | Batch: ${student.batch || student.course || '—'}
+MONTH: ${monthLabel}
+
+ATTENDANCE (${monthLabel}):
+  • Present: ${att.present} days | Absent: ${att.absent} days | Late: ${att.late} times
+  • Attendance %: ${attPct}% | Total sessions: ${att.totalWorking}
+
+TEACHING LOG — SUBJECTS COVERED THIS MONTH:
+${subjectLines || '  (No teaching log data for this month)'}
+
+THIS MONTH'S TEST RESULTS:
+${marksLines.length ? marksLines.join('\n') : '  (No tests recorded this month)'}
+
+Subjects needing attention: ${weakSubjects.join(', ') || 'None identified'}
+
+Generate a WhatsApp message (in Tamil) with these sections. Use emojis. Keep warm and encouraging:
+
+1. 📊 மாதாந்திர வளர்ச்சி சுருக்கம் (2-3 sentences on overall progress)
+2. 📅 வருகை நிலை (attendance with specific feedback)
+3. 📝 தேர்வு செயல்திறன் (marks subject-by-subject with grade)
+4. 📚 இந்த மாதம் படித்தது (key topics covered — list 3-5)
+5. ⚠️ கவனிக்க வேண்டியவை (missed topics to catch up — be specific)
+6. 🗓️ அடுத்த வாரம் படிப்பு அட்டவணை (7-day study timetable with specific subjects and topics for each day based on gaps — Monday to Sunday, each day 1-2 subjects, 1 hour each)
+7. 💪 ஆசிரியர் ஊக்கமளிக்கும் வார்த்தை (1 encouraging sentence)
+
+Format the timetable as:
+திங்கள்: [subject] — [specific topic]
+செவ்வாய்: [subject] — [specific topic]
+...etc.
+
+End with: 📞 ${CFG.CENTER.phone} | ${CFG.CENTER.name}
+
+IMPORTANT: Write ONLY the WhatsApp message. No preamble. Start with: அன்பான ${student.parent || 'பெற்றோர்'},`;
+}
+
+/* ── Main: run monthly growth WA generation ── */
+var _tlMonthlyWAQueue = [];
+var _tlMonthlyWASentIdx = 0;
+
+async function tlRunMonthlyGrowthWA() {
+  const now  = new Date();
+  const yr   = now.getFullYear();
+  const mo   = now.getMonth();
+  const MONTHS_TA = ['ஜனவரி','பிப்ரவரி','மார்ச்','ஏப்ரல்','மே','ஜூன்','ஜூலை','ஆகஸ்ட்','செப்டம்பர்','அக்டோபர்','நவம்பர்','டிசம்பர்'];
+  const monthLabel = MONTHS_TA[mo] + ' ' + yr;
+  const isLastWD   = _tlIsLastWorkingDay();
+
+  const stArr = (typeof students !== 'undefined' && Array.isArray(students)) ? students : [];
+  const activeStudents = stArr.filter(s => s && s.name && s.status === 'active' && (s.phone || s.pphone));
+
+  if (activeStudents.length === 0) { showToast('⚠️ No active students with phone numbers found'); return; }
+
+  // Show the panel
+  const panel    = document.getElementById('tl-monthly-panel');
+  const subtitle = document.getElementById('tl-monthly-subtitle');
+  const qList    = document.getElementById('tl-monthly-queue-list');
+  const progWrap = document.getElementById('tl-monthly-progress');
+  const progBar  = document.getElementById('tl-monthly-progress-bar');
+  if (!panel) return;
+  panel.style.display = '';
+  if (progWrap) progWrap.style.display = '';
+  if (subtitle) subtitle.textContent = `${isLastWD ? '🔔 Last Working Day! ' : ''}Generating ${activeStudents.length} reports for ${monthLabel}…`;
+  if (qList) qList.innerHTML = activeStudents.map(s =>
+    `<div id="tlmq-${s.id}" style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-bottom:.5px solid var(--br)">
+      <div class="av" style="background:${s.color||'#7c3aed'};width:28px;height:28px;font-size:11px;flex-shrink:0">${(s.name||'?')[0]}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;font-weight:600;color:var(--tx)">${s.name}</div>
+        <div style="font-size:10px;color:var(--tx3)">Class ${s.grade||'—'} · ${s.batch||s.course||'—'}</div>
+      </div>
+      <div id="tlmq-status-${s.id}" style="font-size:11px;color:var(--tx3)">⏳ Queued</div>
+    </div>`).join('');
+  panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  _tlMonthlyWAQueue = [];
+  _tlMonthlyWASentIdx = 0;
+
+  // Generate AI reports sequentially (to avoid rate limits)
+  for (let i = 0; i < activeStudents.length; i++) {
+    const student = activeStudents[i];
+    const statusEl = document.getElementById('tlmq-status-' + student.id);
+    if (statusEl) statusEl.innerHTML = '<span style="color:#7c3aed">⚙️ Generating…</span>';
+
+    let message = '';
+    try {
+      const data   = _tlBuildStudentGrowthData(student, yr, mo);
+      const prompt = _tlBuildGrowthPrompt(data, monthLabel);
+
+      const res  = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 1000,
+          messages: [{ role: 'user', content: prompt }]
+        })
+      });
+      const json = await res.json();
+      message = (json.content || []).filter(c => c.type === 'text').map(c => c.text).join('').trim();
+    } catch(err) {
+      // Fallback: build a basic message without AI
+      const data  = _tlBuildStudentGrowthData(student, yr, mo);
+      const attPct = data.attPct;
+      message = `அன்பான ${student.parent || 'பெற்றோர்'},\n\n📋 ${monthLabel} — மாதாந்திர அறிக்கை\n👤 ${student.name} | வகுப்பு ${student.grade || '—'}\n\n📅 வருகை: ${data.att.present} நாட்கள் (${attPct}%)\n❌ வரவில்லை: ${data.att.absent} நாட்கள்\n\n${data.marksLines.length ? '📝 தேர்வு:\n' + data.marksLines.join('\n') : ''}\n\n📞 ${CFG.CENTER.phone}\n${CFG.CENTER.name}`;
+    }
+
+    const phone = student.phone || student.pphone || '';
+    _tlMonthlyWAQueue.push({ student, message, phone, sent: false });
+
+    if (statusEl) statusEl.innerHTML = '<span style="color:#16a34a;font-weight:700">✅ Ready</span>';
+    if (progBar) progBar.style.width = Math.round(((i + 1) / activeStudents.length) * 100) + '%';
+  }
+
+  // Update UI
+  if (subtitle) subtitle.textContent = `✅ ${_tlMonthlyWAQueue.length} reports ready for ${monthLabel} — tap Send Next to send one-by-one`;
+  const sendBtn = document.getElementById('tl-send-next-btn');
+  if (sendBtn) sendBtn.style.display = '';
+
+  // Refresh queue list to show send buttons
+  _tlRenderMonthlyQueueList();
+  showToast(`✅ ${_tlMonthlyWAQueue.length} growth reports generated! Tap 📲 Send Next to start sending.`);
+
+  // Auto-save report key to prevent duplicate generation this month
+  try { localStorage.setItem('_erp_tl_monthly_report_' + yr + '_' + String(mo+1).padStart(2,'0'), '1'); } catch(e) {}
+}
+
+function _tlRenderMonthlyQueueList() {
+  const qList = document.getElementById('tl-monthly-queue-list');
+  if (!qList) return;
+  qList.innerHTML = _tlMonthlyWAQueue.map((item, idx) => {
+    const s = item.student;
+    const waUrl = 'https://wa.me/91' + (item.phone||'').replace(/\D/g,'').replace(/^91/,'') + '?text=' + encodeURIComponent(item.message);
+    return `<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-bottom:.5px solid var(--br);${item.sent?'opacity:.5':''}">
+      <div class="av" style="background:${s.color||'#7c3aed'};width:28px;height:28px;font-size:11px;flex-shrink:0">${(s.name||'?')[0]}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;font-weight:600;color:var(--tx)">${s.name}</div>
+        <div style="font-size:10px;color:var(--tx3)">Class ${s.grade||'—'} · ${s.batch||s.course||'—'} · ${item.phone||'No phone'}</div>
+      </div>
+      <div style="display:flex;gap:5px;flex-shrink:0">
+        <button onclick="tlPreviewMonthlyMsg(${idx})" style="font-size:10px;padding:3px 8px;border-radius:6px;background:var(--bg);border:.5px solid var(--br);cursor:pointer;color:var(--tx2);font-family:inherit">👁</button>
+        ${item.phone
+          ? `<a href="${waUrl}" target="_blank" onclick="tlMarkMonthlySent(${idx})" class="btn btn-wa btn-sm" style="font-size:10px;text-decoration:none;padding:3px 9px">${item.sent?'✅ Sent':'📱 Send'}</a>`
+          : `<span style="font-size:10px;color:#dc2626;padding:3px 8px">No phone</span>`}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function tlSendNextMonthlyWA() {
+  const pending = _tlMonthlyWAQueue.filter(i => !i.sent && i.phone);
+  if (!pending.length) { showToast('✅ All reports sent!'); return; }
+  const item = pending[0];
+  const idx  = _tlMonthlyWAQueue.indexOf(item);
+  const waUrl = 'https://wa.me/91' + (item.phone||'').replace(/\D/g,'').replace(/^91/,'') + '?text=' + encodeURIComponent(item.message);
+  window.open(waUrl, '_blank');
+  tlMarkMonthlySent(idx);
+}
+
+function tlMarkMonthlySent(idx) {
+  if (_tlMonthlyWAQueue[idx]) _tlMonthlyWAQueue[idx].sent = true;
+  _tlRenderMonthlyQueueList();
+  const remaining = _tlMonthlyWAQueue.filter(i => !i.sent && i.phone).length;
+  const subtitle  = document.getElementById('tl-monthly-subtitle');
+  if (subtitle) subtitle.textContent = `${remaining} remaining to send`;
+}
+
+function tlPreviewMonthlyMsg(idx) {
+  const item = _tlMonthlyWAQueue[idx];
+  if (!item) return;
+  _tlShowModal(`<div class="modal-title">👁 Preview — ${item.student.name}</div>
+    <div style="background:#dcfce7;border-radius:8px;padding:12px;font-size:12px;color:#166534;line-height:1.7;white-space:pre-wrap;max-height:400px;overflow-y:auto;font-family:'Noto Sans Tamil',system-ui">${escHtml(item.message)}</div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
+      <button class="btn btn-sm" onclick="closeModal()">Close</button>
+      ${item.phone ? `<a href="https://wa.me/91${(item.phone||'').replace(/\\D/g,'').replace(/^91/,'')}?text=${encodeURIComponent(item.message)}" target="_blank" onclick="tlMarkMonthlySent(${idx});closeModal()" class="btn btn-wa btn-sm" style="text-decoration:none">📱 Open WA</a>` : ''}
+    </div>`);
+}
+
+/* ── Check on Teaching Log page load: if last working day, suggest sending ── */
+function _tlCheckLastWorkingDay() {
+  if (!_tlIsLastWorkingDay()) return;
+  const now = new Date();
+  const yr  = now.getFullYear();
+  const mo  = String(now.getMonth() + 1).padStart(2, '0');
+  const alreadySent = localStorage.getItem('_erp_tl_monthly_report_' + yr + '_' + mo);
+  if (alreadySent) return;
+  const btn = document.getElementById('tl-monthly-wa-btn');
+  if (btn) {
+    btn.style.animation = 'pulse 1.5s infinite';
+    btn.textContent = '🔔 Monthly Growth WA (Today!)';
+  }
+  showToast('🔔 Last working day of month! Tap "Monthly Growth WA" to send reports.');
+}
+
+// Add pulse animation if not already in CSS
+(function() {
+  if (!document.getElementById('_tl_pulse_css')) {
+    const s = document.createElement('style');
+    s.id = '_tl_pulse_css';
+    s.textContent = '@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(124,58,237,.4)}50%{box-shadow:0 0 0 6px rgba(124,58,237,0)}}';
+    document.head.appendChild(s);
   }
 })();
 </script>

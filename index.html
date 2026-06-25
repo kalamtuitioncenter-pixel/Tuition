@@ -1929,6 +1929,11 @@ tbody tr:hover td{background:var(--bg)}
         <button class="btn btn-sm" onclick="testSheetConnection()" style="background:#0369a1;color:#fff;border-color:#0369a1">🔗 Test</button>
         <button class="btn btn-sm" onclick="showAppsScript()">View Script</button>
       </div>
+      <div style="margin-top:10px;padding:10px 12px;background:#fffbeb;border:.5px solid #fcd34d;border-radius:8px">
+        <div style="font-size:12px;font-weight:600;color:#92400e;margin-bottom:6px">📥 Restore All Data from Google Sheets</div>
+        <div style="font-size:11px;color:#78350f;margin-bottom:8px">Pulls every sheet (Students, Fees, Staff, Attendance, Teaching Log, Marks, etc.) back into this ERP. Use when local data is lost.</div>
+        <button class="btn btn-sm" onclick="restoreFromSheets()" id="btn-restore-sheets" style="background:#d97706;color:#fff;border-color:#d97706">☁️ Restore from Google Sheets</button>
+      </div>
       <div id="sheets-sync-status" style="margin-top:8px;font-size:12px"></div>
     </div>
     <div class="card" style="margin-bottom:12px">
@@ -10631,6 +10636,213 @@ function doOptions(e) {
     .setMimeType(ContentService.MimeType.TEXT);
 }
 
+// ── GET — restore: returns all data from the Sheet back to ERP ──
+function doGet(e) {
+  try {
+    const action = (e && e.parameter && e.parameter.action) || '';
+    if (action !== 'getBackup') {
+      return ContentService.createTextOutput(JSON.stringify({status:'ok',msg:'Kalam ERP Apps Script running'}))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    function readSht(name) {
+      const s = ss.getSheetByName(name);
+      if (!s || s.getLastRow() < 2) return [];
+      const rows = s.getRange(2, 1, s.getLastRow()-1, s.getLastColumn()).getValues();
+      const hdrs = s.getRange(1, 1, 1, s.getLastColumn()).getValues()[0];
+      return rows.map(r => {
+        const obj = {};
+        hdrs.forEach((h,i) => { obj[h] = r[i] === undefined ? '' : r[i]; });
+        return obj;
+      });
+    }
+    function safeJson(str) { try { return str ? JSON.parse(str) : null; } catch(e) { return str || null; } }
+
+    // Students
+    const students = readSht('Students').map(r => ({
+      id:r['ID']||'', admNo:r['Adm No']||'', name:r['Name']||'',
+      grade:r['Grade']||'', parent:r['Parent']||'', phone:r['Phone']||'',
+      course:r['Course']||'', subjects:r['Subjects']?r['Subjects'].toString().split(','):[],
+      fee:Number(r['Fee'])||0, admDate:r['Adm Date']||'', status:r['Status']||'active'
+    }));
+
+    // Fees
+    const fees = readSht('Fees').map(r => ({
+      rcpt:r['Receipt']||'', student:r['Student']||'', month:r['Month']||'',
+      total:Number(r['Total'])||0, paid:Number(r['Paid'])||0, balance:Number(r['Balance'])||0,
+      mode:r['Mode']||'Cash', status:r['Status']||'pending',
+      type:r['Type']||'monthly', paidOn:r['Paid On']||''
+    }));
+
+    // Staff
+    const staff = readSht('Staff').map(r => ({
+      id:r['ID']||'', name:r['Name']||'', role:r['Role']||'',
+      phone:r['Phone']||'', baseSalary:Number(r['Base Salary'])||0,
+      consolidatedPay:Number(r['Consolidated Pay'])||0, status:r['Status']||'active'
+    }));
+
+    // Batches
+    const batches = readSht('Batches').map(r => ({
+      id:r['ID']||'', name:r['Name']||'', grade:r['Grade']||'',
+      time:r['Time']||'', days:r['Days']?r['Days'].toString().split(','):[],
+      teacher:r['Teacher']||'', strength:Number(r['Strength'])||0, status:r['Status']||'active'
+    }));
+
+    // Exams
+    const exams = readSht('Exams').map(r => ({
+      id:r['ID']||'', name:r['Name']||'', grade:r['Grade']||'',
+      date:r['Date']||'', subjects:safeJson(r['Subjects'])||[]
+    }));
+
+    // Marks — reconstruct nested structure { examKey: { subj: { stuId: score } } }
+    const marks = {};
+    readSht('Marks').forEach(r => {
+      if (!r['Exam Key'] || !r['Subject'] || !r['Student ID']) return;
+      const ek = r['Exam Key']; const subj = r['Subject']; const sid = r['Student ID'];
+      if (!marks[ek]) marks[ek] = {};
+      if (!marks[ek][subj]) marks[ek][subj] = {};
+      marks[ek][subj][sid] = r['Score'] === '' ? '' : Number(r['Score']);
+    });
+
+    // Attendance (attState) — reconstruct { date: { batch_session: { stuId: status } } }
+    const attState = {};
+    const attendanceFull = {};
+    readSht('Attendance').forEach(r => {
+      if (r['Date'] && r['Batch'] && r['Student ID'] && r['Status']) {
+        const date=r['Date']; const batch=r['Batch']; const sess=r['Session']||'morning'; const sid=r['Student ID'];
+        if (!attState[date]) attState[date] = {};
+        const bk = batch+'_'+sess;
+        if (!attState[date][bk]) attState[date][bk] = {};
+        attState[date][bk][sid] = r['Status'];
+        const lk = '_erp_att_'+date;
+        if (!attendanceFull[lk]) attendanceFull[lk] = {};
+        if (!attendanceFull[lk][bk]) attendanceFull[lk][bk] = {};
+        attendanceFull[lk][bk][sid] = r['Status'];
+      }
+    });
+
+    // Salary
+    const salaryPayments = readSht('Salary').map(r => ({
+      key:r['Key']||'', staffId:r['Staff ID']||'', name:r['Name']||'',
+      month:r['Month']||'', amount:Number(r['Amount'])||0,
+      mode:r['Mode']||'Cash', paidOn:r['Paid On']||'', note:r['Note']||''
+    }));
+
+    // Staff Attendance
+    const staffAttendance = {};
+    readSht('StaffAttendance').forEach(r => {
+      if (!r['Staff ID'] || !r['Date']) return;
+      if (!staffAttendance[r['Staff ID']]) staffAttendance[r['Staff ID']] = {};
+      const dk = r['Date']+'_'+(r['Session']||'morning');
+      staffAttendance[r['Staff ID']][dk] = r['Status']||'present';
+    });
+
+    // Notifications
+    const notifications = readSht('Notifications').map(r => ({
+      id:r['ID']||'', type:r['Type']||'', msg:r['Message']||'',
+      grade:r['Grade']||'', date:r['Date']||'', read:r['Read']==='true'
+    }));
+
+    // Day Order
+    const dayOrder = {};
+    readSht('DayOrder').forEach(r => {
+      const dn = r['Day No']; const si = r['Slot']; const subj = r['Subject']||'';
+      if (dn !== '' && si !== '') {
+        if (!dayOrder[dn]) dayOrder[dn] = [];
+        dayOrder[dn][Number(si)-1] = subj;
+      }
+    });
+
+    // Timetables — reconstruct { _erp_tt_batchId: { days:[...] } }
+    const timetables = {};
+    readSht('Timetables').forEach(r => {
+      const bk = '_erp_tt_'+r['Batch']; const di = Number(r['Day Index']||0)-1;
+      if (!timetables[bk]) timetables[bk] = { days: [] };
+      if (!timetables[bk].days[di]) timetables[bk].days[di] = { dayName:r['Day Name']||'', subjects:[] };
+      const si = Number(r['Slot']||0)-1;
+      if (si >= 0) timetables[bk].days[di].subjects[si] = r['Subject']||'';
+    });
+
+    // Fee Structure
+    const feeStructure = {};
+    readSht('FeeStructure').forEach(r => {
+      if (r['Grade']) feeStructure[r['Grade']] = {
+        monthlyFee:Number(r['Monthly Fee'])||0, admFee:Number(r['Adm Fee'])||0,
+        lateFee:Number(r['Late Fee'])||0, subjectFee:Number(r['Subject Fee'])||0
+      };
+    });
+
+    // Student Summary
+    const studentSummary = {};
+    readSht('StudentSummary').forEach(r => {
+      const k = '_erp_sum_'+r['Student ID']+'_'+r['Year']+'_'+r['Month'];
+      studentSummary[k] = {
+        stars:Number(r['Stars'])||0,
+        activities:r['Activities']?r['Activities'].toString().split(', ').filter(Boolean):[],
+        note:r['Note']||''
+      };
+    });
+
+    // WhatsApp Templates
+    const waTemplates = {};
+    readSht('Templates').forEach(r => {
+      if (r['Template Name'] && r['Template Name'] !== 'fee_receipt' && r['Template Name'] !== 'admission')
+        waTemplates['_erp_wt_'+r['Template Name']] = r['Template Text']||'';
+    });
+    const feeRow = readSht('Templates').find(r=>r['Template Name']==='fee_receipt');
+    const admRow = readSht('Templates').find(r=>r['Template Name']==='admission');
+
+    // AI Data
+    const aiData = {};
+    readSht('AI_Data').forEach(r => { if (r['Key']) aiData[r['Key']] = r['Data']||''; });
+
+    // Teaching Log
+    const teachingLog = readSht('TeachingLog').map(r => ({
+      id:r['ID']||'', date:r['Date']||'', grade:r['Grade']||'', batch:r['Batch']||'',
+      subject:r['Subject']||'', topic:r['Topic']||'', lessonNotes:r['Lesson Notes']||'',
+      homeworkGiven:r['Homework']||'',
+      absentStudentIds:r['Absent Student IDs']?r['Absent Student IDs'].toString().split(', ').filter(Boolean):[],
+      dayOrder:r['Day Order']||'', sessionNo:r['Session No']||'', createdAt:r['Created At']||''
+    }));
+
+    // Settings from Settings sheet
+    const settingsRows = readSht('Settings');
+    const settingsMap = {};
+    settingsRows.forEach(r => { if (r['Setting']) settingsMap[r['Setting']] = r['Value']||''; });
+    const center = {
+      name:    settingsMap['center_name']||'',
+      phone:   settingsMap['center_phone']||'',
+      address: settingsMap['center_address']||'',
+      email:   settingsMap['center_email']||''
+    };
+
+    return ContentService.createTextOutput(JSON.stringify({
+      status: 'ok',
+      data: {
+        version: '3.3', timestamp: new Date().toISOString(), source: 'google_sheets',
+        center, students, fees, staff, exams, batches, notifications, salaryPayments,
+        attState, attendanceFull, timetables, dayOrder,
+        marks, marksIndex: Object.keys(marks),
+        feeStructure,
+        feeRcptTemplate: feeRow ? feeRow['Template Text']||'' : '',
+        admTemplate:     admRow ? admRow['Template Text']||'' : '',
+        feeRcptLang: settingsMap['fee_rcpt_lang']||'',
+        admLang:     settingsMap['adm_lang']||'',
+        waTemplates, studentSummary, aiData, staffAttendance,
+        teachingLog,
+        darkMode:         settingsMap['dark_mode']||'',
+        latesToLeave:     settingsMap['lates_to_leave']||'',
+        lastMonthlyReset: settingsMap['last_monthly_reset']||'',
+      }
+    })).setMimeType(ContentService.MimeType.JSON);
+
+  } catch(err) {
+    return ContentService.createTextOutput(
+      JSON.stringify({status:'error', msg:err.toString(), stack:err.stack||''})
+    ).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
 function doPost(e) {
   try {
     const data = JSON.parse(e.postData.contents);
@@ -10829,6 +11041,18 @@ function doPost(e) {
     if (aiRows.length>0)
       overwriteSht(ss,'AI_Data',['Time','Key','Data'],aiRows);
 
+    // ── Teaching Log ──────────────────────────────────────────
+    const tlRows = (data.teachingLog||[]).map(e=>[
+      ts, e.id||'', e.date||'', e.grade||'', e.batch||'',
+      e.subject||'', e.topic||'', e.lessonNotes||'',
+      e.homeworkGiven||'', (e.absentStudentIds||[]).join(', '),
+      e.dayOrder||'', e.sessionNo||'', e.createdAt||''
+    ]);
+    if (tlRows.length > 0)
+      overwriteSht(ss, 'TeachingLog',
+        ['Time','ID','Date','Grade','Batch','Subject','Topic','Lesson Notes','Homework','Absent Student IDs','Day Order','Session No','Created At'],
+        tlRows);
+
     // ── Settings ──────────────────────────────────────────────
     const center = data.center||{};
     overwriteSht(ss,'Settings',
@@ -10866,6 +11090,7 @@ function doPost(e) {
         summary    : sumRows.length,
         templates  : waRows.length,
         ai         : aiRows.length,
+        teachingLog: tlRows.length,
       }
     })).setMimeType(ContentService.MimeType.JSON);
 
@@ -11050,6 +11275,9 @@ function getSnapshot() {
     // AI / diagnostic data
     aiData:           aiData,
 
+    // Teaching Log
+    teachingLog:      ls('_erp_teaching_log') || [],
+
     // Settings
     sheetsUrl:        lsStr('_erp_sheets_url'),
     darkMode:         lsStr('_erp_dark'),
@@ -11174,6 +11402,9 @@ function restoreBackup(input) {
         try { localStorage.setItem(k, typeof v === 'string' ? v : JSON.stringify(v)); } catch(e) {}
       });
 
+      // Restore Teaching Log
+      if (data.teachingLog) try { localStorage.setItem('_erp_teaching_log', JSON.stringify(data.teachingLog)); } catch(e) {}
+
       // Restore settings
       if (data.darkMode)         try { localStorage.setItem('_erp_dark',               data.darkMode); } catch(e) {}
       if (data.latesToLeave)     try { localStorage.setItem('_erp_lates_to_leave',      data.latesToLeave); } catch(e) {}
@@ -11259,6 +11490,7 @@ async function syncSheets(silent) {
       studentSummary:   snapshot.studentSummary   || {},
       aiData:           snapshot.aiData           || {},
       staffAttendance:  snapshot.staffAttendance  || {},
+      teachingLog:      snapshot.teachingLog      || [],
     });
 
     const sizeKB = (body.length / 1024).toFixed(1);
@@ -11400,6 +11632,117 @@ function testSheetConnection() {
       if (statusEl) statusEl.innerHTML = `<span style="color:#dc2626">❌ Error: ${err.message||'Unknown error'}</span>`;
     }
   });
+}
+
+async function restoreFromSheets() {
+  const url = (document.getElementById('sheets-url')?.value || localStorage.getItem('_erp_sheets_url') || '').trim();
+  const statusEl = document.getElementById('sheets-sync-status');
+  const btn = document.getElementById('btn-restore-sheets');
+
+  if (!url || !url.includes('script.google.com/macros/s/')) {
+    showToast('⚠️ Enter your Apps Script URL first'); return;
+  }
+  if (!confirm('⚠️ Restore ALL data from Google Sheets?\n\nThis will REPLACE everything in this ERP with the data stored in your Google Sheet.\n\nMake sure your Sheet has the latest sync before proceeding.')) return;
+
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Fetching from Sheets…'; }
+  if (statusEl) { statusEl.style.display = 'block'; statusEl.textContent = '📥 Connecting to Google Sheets…'; }
+  addBkLog('[Restore] Starting Google Sheets restore…');
+
+  try {
+    const resp = await fetch(url + '?action=getBackup', { method: 'GET', mode: 'cors' });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
+    const result = await resp.json();
+    if (result.status !== 'ok') throw new Error(result.msg || 'Apps Script returned error');
+
+    const data = result.data;
+    if (!data || !data.students) throw new Error('No student data found in Google Sheet. Please sync first.');
+
+    // ── Restore core arrays ───────────────────────────────────
+    const safe = (v, fallback=[]) => { try { return v || fallback; } catch(e) { return fallback; } };
+    localStorage.setItem('_erp_students',        JSON.stringify(safe(data.students, [])));
+    localStorage.setItem('_erp_fees',            JSON.stringify(safe(data.fees, [])));
+    localStorage.setItem('_erp_staff',           JSON.stringify(safe(data.staff, [])));
+    localStorage.setItem('_erp_exams',           JSON.stringify(safe(data.exams, [])));
+    localStorage.setItem('_erp_batches',         JSON.stringify(safe(data.batches, [])));
+    localStorage.setItem('_erp_notifs',          JSON.stringify(safe(data.notifications, [])));
+    localStorage.setItem('_erp_salary_payments', JSON.stringify(safe(data.salaryPayments, [])));
+
+    // ── Attendance ────────────────────────────────────────────
+    if (data.attState)       localStorage.setItem('attState', JSON.stringify(data.attState));
+    if (data.staffAttendance) localStorage.setItem('_erp_staff_att', JSON.stringify(data.staffAttendance));
+    if (data.attendanceFull) {
+      const attIdx = [];
+      Object.entries(data.attendanceFull).forEach(([k, v]) => {
+        try { localStorage.setItem(k, typeof v === 'string' ? v : JSON.stringify(v)); attIdx.push(k); } catch(e) {}
+      });
+      localStorage.setItem('_erp_att_index', JSON.stringify(attIdx));
+    }
+
+    // ── Timetables & Day Order ────────────────────────────────
+    if (data.timetables) Object.entries(data.timetables).forEach(([k, v]) => {
+      try { localStorage.setItem(k, JSON.stringify(v)); } catch(e) {}
+    });
+    if (data.dayOrder) localStorage.setItem('_erp_day_order', JSON.stringify(data.dayOrder));
+    if (data.ttToday)  localStorage.setItem('_erp_tt_today', data.ttToday);
+
+    // ── Marks ─────────────────────────────────────────────────
+    if (data.marks) {
+      const idx = [];
+      Object.entries(data.marks).forEach(([k, v]) => {
+        try { localStorage.setItem(k, JSON.stringify(v)); idx.push(k); } catch(e) {}
+      });
+      localStorage.setItem('_erp_marks_index', JSON.stringify(data.marksIndex || idx));
+    }
+
+    // ── Fee config ────────────────────────────────────────────
+    if (data.feeStructure)   localStorage.setItem('_erp_fee_structure',     JSON.stringify(data.feeStructure));
+    if (data.feeRcptTemplate) localStorage.setItem('_erp_fee_rcpt_template', data.feeRcptTemplate);
+    if (data.feeRcptLang)    localStorage.setItem('_erp_fee_rcpt_lang',     data.feeRcptLang);
+    if (data.admTemplate)    localStorage.setItem('_erp_adm_template',      data.admTemplate);
+    if (data.admLang)        localStorage.setItem('_erp_adm_lang',          data.admLang);
+
+    // ── WhatsApp Templates ────────────────────────────────────
+    if (data.waTemplates) Object.entries(data.waTemplates).forEach(([k, v]) => {
+      try { localStorage.setItem(k, v); } catch(e) {}
+    });
+
+    // ── Student Summary ───────────────────────────────────────
+    if (data.studentSummary) Object.entries(data.studentSummary).forEach(([k, v]) => {
+      try { localStorage.setItem(k, typeof v === 'string' ? v : JSON.stringify(v)); } catch(e) {}
+    });
+
+    // ── AI / Diagnostic Data ──────────────────────────────────
+    if (data.aiData) Object.entries(data.aiData).forEach(([k, v]) => {
+      try { localStorage.setItem(k, typeof v === 'string' ? v : JSON.stringify(v)); } catch(e) {}
+    });
+
+    // ── Teaching Log ──────────────────────────────────────────
+    if (data.teachingLog) localStorage.setItem('_erp_teaching_log', JSON.stringify(data.teachingLog));
+
+    // ── Settings ──────────────────────────────────────────────
+    if (data.sheetsUrl)        localStorage.setItem('_erp_sheets_url',          data.sheetsUrl);
+    if (data.darkMode)         localStorage.setItem('_erp_dark',                data.darkMode);
+    if (data.latesToLeave)     localStorage.setItem('_erp_lates_to_leave',      data.latesToLeave);
+    if (data.lastMonthlyReset) localStorage.setItem('_erp_last_monthly_reset',  data.lastMonthlyReset);
+
+    const sc = data.students.length;
+    const fc = (data.fees || []).length;
+    const tc = (data.teachingLog || []).length;
+    const msg = `✅ Restored from Google Sheets — ${sc} students · ${fc} fees · ${tc} teaching logs`;
+    if (statusEl) statusEl.innerHTML = `<span style="color:#16a34a">${msg}</span>`;
+    addBkLog('[Restore] ' + msg);
+    showToast('✅ Google Sheets restore complete! Reloading…');
+    setBkStatus('ok', 'Restored from Google Sheets', msg);
+    setTimeout(() => location.reload(), 1500);
+
+  } catch(err) {
+    const msg = err.message || 'Unknown error';
+    if (statusEl) statusEl.innerHTML = `<span style="color:#dc2626">❌ Restore failed: ${msg}<br>Make sure you have re-deployed the Apps Script with the new doGet() function.</span>`;
+    showToast('❌ Restore failed — ' + msg);
+    addBkLog('[Restore ERROR] ' + msg);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '☁️ Restore from Google Sheets'; }
+  }
 }
 
 function showAppsScript() {

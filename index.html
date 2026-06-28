@@ -2313,28 +2313,47 @@ const CFG = {
 (function(){
 'use strict';
 var PLANS={
-  BASIC:{name:'Basic',maxStudents:25,features:{
+  // ── BASIC ₹300/yr — 10 students ──────────────────────────────
+  // Features: Fees WA + Absent WA + Attendance AI only
+  BASIC:{name:'Basic',maxStudents:10,features:{
     aiFeatures:true,googleSheets:false,autoBackup:true,multiCenter:false,advancedReports:false,
     shop:false,tamil:false,qrAttendance:false,waTypes:2,
-    aiModels:2,  // modules: attend_late_finder + weak_subject
-    aiModuleIds:['attend_late','weak_subject']
+    feesWA:true,absentWA:true,lateWA:false,
+    aiModels:1,
+    aiModuleIds:['attend_late']
   }},
-  PRO:{name:'Pro',maxStudents:100,features:{
+  // ── PRO ₹500/yr — 30 students ────────────────────────────────
+  // Features: Basic + Late WA + Exam Notice WA + AI Growth Prediction + Timetable
+  PRO:{name:'Pro',maxStudents:30,features:{
+    aiFeatures:true,googleSheets:false,autoBackup:true,multiCenter:false,advancedReports:false,
+    shop:true,tamil:true,qrAttendance:true,waTypes:4,
+    feesWA:true,absentWA:true,lateWA:true,
+    aiModels:4,
+    aiModuleIds:['attend_late','weak_subject','late_pattern','timetable']
+  }},
+  // ── PREMIUM ₹1200/yr — 100 students ─────────────────────────
+  // Features: Pro features + Google Sheets + Exam Marks + Monthly Report
+  PREMIUM:{name:'Premium',maxStudents:100,features:{
     aiFeatures:true,googleSheets:true,autoBackup:true,multiCenter:false,advancedReports:true,
-    shop:true,tamil:true,qrAttendance:true,waTypes:7,
-    aiModels:6,  // adds: frequent_absent + fee_forecast + late_pattern + concentration
-    aiModuleIds:['attend_late','weak_subject','frequent_absent','fee_forecast','late_pattern','concentration']
+    shop:true,tamil:true,qrAttendance:true,waTypes:6,
+    feesWA:true,absentWA:true,lateWA:true,
+    aiModels:5,
+    aiModuleIds:['attend_late','weak_subject','late_pattern','timetable','frequent_absent']
   }},
-  ENTERPRISE:{name:'Premium',maxStudents:99999,features:{
+  // ── ULTIMATE ₹1500/yr — Unlimited + All AI ──────────────────
+  ULTIMATE:{name:'Ultimate',maxStudents:99999,features:{
     aiFeatures:true,googleSheets:true,autoBackup:true,multiCenter:true,advancedReports:true,
-    shop:true,tamil:true,qrAttendance:true,waTypes:7,
+    shop:true,tamil:true,qrAttendance:true,waTypes:8,
+    feesWA:true,absentWA:true,lateWA:true,
     aiModels:8,
     aiModuleIds:['attend_late','weak_subject','frequent_absent','fee_forecast','late_pattern','concentration','timetable','msgdraft']
   }},
+  // ── TRIAL — 7 days free, 10 students ────────────────────────
   TRIAL:{name:'Free Trial',maxStudents:10,features:{
     aiFeatures:true,googleSheets:false,autoBackup:true,multiCenter:false,advancedReports:false,
-    shop:true,tamil:true,qrAttendance:true,waTypes:7,
-    aiModels:8,  // TRIAL: all features
+    shop:true,tamil:true,qrAttendance:true,waTypes:8,
+    feesWA:true,absentWA:true,lateWA:true,
+    aiModels:8,
     aiModuleIds:['attend_late','weak_subject','frequent_absent','fee_forecast','late_pattern','concentration','timetable','msgdraft']
   }}
 };
@@ -2605,14 +2624,14 @@ const t = k => T[lang][k] || T.en[k] || k;
    WHATSAPP MESSAGE TEMPLATES
 ═══════════════════════════════════════════════════════ */
 const WA_TYPES = [
-  {id:'absent',   label:'Absent Alert',   labelTA:'வருகை எச்சரிக்கை',   color:'#dc2626', bg:'#fee2e2'},
-  {id:'late',     label:'Late Alert',     labelTA:'தாமத எச்சரிக்கை',    color:'#ca8a04', bg:'#fef9c3'},
-  {id:'monthly',  label:'Monthly Report', labelTA:'மாதாந்திர அறிக்கை',   color:'#2563eb', bg:'#dbeafe'},
-  {id:'marks',    label:'Exam Marks',     labelTA:'தேர்வு மதிப்பெண்கள்', color:'#7c3aed', bg:'#ede9fe'},
-  {id:'holiday',  label:'Holiday Notice', labelTA:'விடுமுறை அறிவிப்பு',  color:'#0891b2', bg:'#ccfbf1'},
-  {id:'birthday', label:'Birthday Wish',  labelTA:'பிறந்தநாள் வாழ்த்து',  color:'#16a34a', bg:'#dcfce7'},
-  {id:'fees',     label:'Fee Reminder',   labelTA:'கட்டண நினைவூட்டல்',   color:'#854f0b', bg:'#fef3c7'},
-  {id:'exam_notice', label:'Exam Notice',  labelTA:'தேர்வு அறிவிப்பு',      color:'#0369a1', bg:'#e0f2fe'},
+  {id:'absent',      label:'Absent Alert',   labelTA:'வருகை எச்சரிக்கை',   color:'#dc2626', bg:'#fee2e2'},
+  {id:'fees',        label:'Fee Reminder',   labelTA:'கட்டண நினைவூட்டல்',   color:'#854f0b', bg:'#fef3c7'},
+  {id:'late',        label:'Late Alert',     labelTA:'தாமத எச்சரிக்கை',    color:'#ca8a04', bg:'#fef9c3'},
+  {id:'exam_notice', label:'Exam Notice',    labelTA:'தேர்வு அறிவிப்பு',    color:'#0369a1', bg:'#e0f2fe'},
+  {id:'marks',       label:'Exam Marks',     labelTA:'தேர்வு மதிப்பெண்கள்', color:'#7c3aed', bg:'#ede9fe'},
+  {id:'monthly',     label:'Monthly Report', labelTA:'மாதாந்திர அறிக்கை',   color:'#2563eb', bg:'#dbeafe'},
+  {id:'holiday',     label:'Holiday Notice', labelTA:'விடுமுறை அறிவிப்பு',  color:'#0891b2', bg:'#ccfbf1'},
+  {id:'birthday',    label:'Birthday Wish',  labelTA:'பிறந்தநாள் வாழ்த்து',  color:'#16a34a', bg:'#dcfce7'},
 ];
 
 const WA_TEMPLATES = {
@@ -3224,10 +3243,14 @@ const MODALS = {
     <div class="plan-grid">${renderPlansHTML()}</div>
     <div style="background:var(--bg);border-radius:10px;padding:14px;margin-bottom:12px">
       <div style="font-size:12px;font-weight:600;color:var(--tx);margin-bottom:8px">Already have a license key?</div>
-      <div style="display:flex;gap:8px"><input class="fi" id="m-lickey" placeholder="e.g. PRO-2027-0001-BF1D1D65" style="flex:1;font-family:monospace;font-size:12px"><button class="btn btn-p btn-sm" onclick="activateLic()">Activate</button></div>
+      <div style="display:flex;gap:8px"><input class="fi" id="m-lickey" placeholder="e.g. PRO-2027-0001-XXXXXXXX" style="flex:1;font-family:monospace;font-size:12px"><button class="btn btn-p btn-sm" onclick="activateLic()">Activate</button></div>
       <div id="m-lic-msg" style="font-size:11px;margin-top:6px"></div>
     </div>
-    <div style="text-align:center;font-size:11px;color:var(--tx3)">Contact: ${CFG.CENTER.email||'support@kalamtuitionerp.in'}</div>
+    <div style="text-align:center;font-size:11px;color:var(--tx3);line-height:1.9">
+      📞 Contact Admin: <strong style="color:var(--tx)">Subbulakshmi V</strong><br>
+      📧 <a href="mailto:kalamtuitioncenter@gmail.com" style="color:var(--pr);text-decoration:none">kalamtuitioncenter@gmail.com</a> &nbsp;|&nbsp;
+      📱 <a href="tel:+918148382815" style="color:var(--pr);text-decoration:none">+91 8148382815</a>
+    </div>
     <div class="modal-foot"><button class="btn" style="flex:1;justify-content:center" onclick="closeModal()">${t('cancel')}</button></div>`,
 
   holidayWA: () => `<div class="modal-title">Holiday Notice Details</div>
@@ -8653,7 +8676,7 @@ function renderShop() {
       <div style="grid-column:1/-1;text-align:center;padding:40px 20px;background:var(--bg);border-radius:12px;border:.5px solid var(--br)">
         <div style="font-size:32px;margin-bottom:12px">🛒</div>
         <div style="font-size:15px;font-weight:700;color:var(--tx);margin-bottom:6px">Shop requires Pro Plan</div>
-        <div style="font-size:12px;color:var(--tx2);margin-bottom:16px">Upgrade to Pro (₹1,999/yr) to access Shop & Inventory</div>
+        <div style="font-size:12px;color:var(--tx2);margin-bottom:16px">Upgrade to Pro (₹500/yr) to access Shop & Inventory</div>
         <button class="btn btn-p" onclick="openUpgrade()">View Plans & Upgrade</button>
       </div>`;
     return;
@@ -9074,33 +9097,34 @@ function sendAllStaffMonthlySummaryWA(monthVal) {
    Streams output with typewriter effect
 ═══════════════════════════════════════════════════════ */
 const AI_FEATS = [
-  // ── BASIC PLAN (2 modules) ──────────────────────────────
-  {id:'attend_late',    planMin:'BASIC', c:'#2563eb',bg:'#dbeafe',
+  // ── BASIC — Attendance AI only ──────────────────────────
+  {id:'attend_late',    planMin:'BASIC',   c:'#2563eb',bg:'#dbeafe',
    en:{name:'Attendance & Late Finder',       desc:'Finds students with low attendance or frequent late arrivals'},
    ta:{name:'வருகை & தாமத கண்டறிதல்',        desc:'குறைந்த வருகை மற்றும் தாமதமான மாணவர்கள்'}},
-  {id:'weak_subject',   planMin:'BASIC', c:'#dc2626',bg:'#fee2e2',
-   en:{name:'Weak Subject Analyser',           desc:'Identifies weak subjects per student from marks data'},
-   ta:{name:'பலவீன பாட பகுப்பாய்வு',          desc:'மதிப்பெண்கள் மூலம் பலவீன பாடங்களை கண்டறியவும்'}},
-  // ── PRO PLAN (+4 modules) ───────────────────────────────
-  {id:'frequent_absent',planMin:'PRO',   c:'#dc2626',bg:'#fff1f2',
-   en:{name:'Frequent Absentee Analyser',      desc:'Patterns of repeated absences with parent alert templates'},
-   ta:{name:'அடிக்கடி வராதவர் பகுப்பாய்வு',   desc:'மீண்டும் மீண்டும் வராத மாணவர்கள் & பெற்றோர் எச்சரிக்கை'}},
-  {id:'fee_forecast',   planMin:'PRO',   c:'#0891b2',bg:'#ccfbf1',
-   en:{name:'Weak Subject Fee Forecast',       desc:'Predicts which weak-subject students are also fee-defaulters'},
-   ta:{name:'பலவீன பாட கட்டண கணிப்பு',        desc:'பலவீன பாட மாணவர்களில் கட்டண நிலுவை ஆபத்து'}},
-  {id:'late_pattern',   planMin:'PRO',   c:'#ca8a04',bg:'#fef9c3',
+  // ── PRO — AI Growth Prediction + Timetable ─────────────
+  {id:'weak_subject',   planMin:'PRO',     c:'#dc2626',bg:'#fee2e2',
+   en:{name:'Weak Subject Analyser (AI Growth)',desc:'Identifies weak subjects per student — AI Growth Prediction'},
+   ta:{name:'பலவீன பாட பகுப்பாய்வு (AI வளர்ச்சி)',desc:'மதிப்பெண்கள் மூலம் AI வளர்ச்சி கணிப்பு'}},
+  {id:'late_pattern',   planMin:'PRO',     c:'#ca8a04',bg:'#fef9c3',
    en:{name:'Late Arrival Pattern Analyser',   desc:'Analyses late arrival trends by student, day, and time period'},
    ta:{name:'தாமத வருகை வடிவ பகுப்பாய்வு',    desc:'மாணவர், நாள் மற்றும் காலம் வாரியாக தாமத போக்கு'}},
-  {id:'concentration',  planMin:'PRO',   c:'#7c3aed',bg:'#ede9fe',
+  {id:'timetable',      planMin:'PRO',     c:'#7c3aed',bg:'#ede9fe',
+   en:{name:'Smart Timetable Generator',       desc:'Optimised Mon-Sat schedule following TN board weightage'},
+   ta:{name:'நேர அட்டவணை உருவாக்கி',           desc:'TN பாடத்திட்ட முன்னுரிமை அட்டவணை'}},
+  // ── PREMIUM — adds frequent absent ─────────────────────
+  {id:'frequent_absent',planMin:'PREMIUM', c:'#dc2626',bg:'#fff1f2',
+   en:{name:'Frequent Absentee Analyser',      desc:'Patterns of repeated absences with parent alert templates'},
+   ta:{name:'அடிக்கடி வராதவர் பகுப்பாய்வு',   desc:'மீண்டும் மீண்டும் வராத மாணவர்கள் & பெற்றோர் எச்சரிக்கை'}},
+  // ── ULTIMATE — all remaining AI ────────────────────────
+  {id:'fee_forecast',   planMin:'ULTIMATE',c:'#0891b2',bg:'#ccfbf1',
+   en:{name:'Fee Forecast AI',                 desc:'Predicts which students are likely fee-defaulters'},
+   ta:{name:'கட்டண கணிப்பு AI',               desc:'கட்டண நிலுவை ஆபத்தில் உள்ள மாணவர்கள்'}},
+  {id:'concentration',  planMin:'ULTIMATE',c:'#7c3aed',bg:'#ede9fe',
    en:{name:'Individual Concentration Report', desc:'Generates personalised study focus report per student via WhatsApp'},
    ta:{name:'தனிப்பட்ட கவனிப்பு அறிக்கை',     desc:'ஒவ்வொரு மாணவருக்கும் WhatsApp மூலம் தனிப்பட்ட படிப்பு அறிக்கை'}},
-  // ── PREMIUM PLAN (+2 modules) ──────────────────────────
-  {id:'timetable',      planMin:'ENTERPRISE', c:'#7c3aed',bg:'#ede9fe',
-   en:{name:'Smart Timetable Generator',       desc:'Optimised Mon-Sat 4–7PM schedule following TN board weightage'},
-   ta:{name:'நேர அட்டவணை உருவாக்கி',           desc:'TN பாடத்திட்ட முன்னுரிமை அட்டவணை'}},
-  {id:'msgdraft',       planMin:'ENTERPRISE', c:'#0d9488',bg:'#ccfbf1',
-   en:{name:'Message Template Drafter',        desc:'Tamil + English professional templates for all 5 communication types'},
-   ta:{name:'செய்தி வார்ப்புரு வரைவு',          desc:'தமிழ் & ஆங்கில 5 வகை தொடர்பு வார்ப்புருக்கள்'}},
+  {id:'msgdraft',       planMin:'ULTIMATE',c:'#0d9488',bg:'#ccfbf1',
+   en:{name:'Message Template Drafter',        desc:'Tamil + English professional templates for all communication types'},
+   ta:{name:'செய்தி வார்ப்புரு வரைவு',          desc:'தமிழ் & ஆங்கில தொடர்பு வார்ப்புருக்கள்'}},
 ];
 
 /* ── SMART PREDICTION FEATURES ── */
@@ -9123,7 +9147,7 @@ function renderAICards() {
   var el = document.getElementById('ai-cards');
   if (!el) return;
   var lic = window.__LIC__ || {};
-  var PLAN_ORDER = ['TRIAL','BASIC','PRO','ENTERPRISE'];
+  var PLAN_ORDER = ['TRIAL','BASIC','PRO','PREMIUM','ULTIMATE'];
   var userPlanIdx = PLAN_ORDER.indexOf(lic.plan || 'TRIAL');
 
   var META = {
@@ -9831,7 +9855,7 @@ async function runAI(id) {
   }
   var feat = AI_FEATS.find(function(f){return f.id===id;});
   if (!feat) return;
-  var PLAN_ORDER = ['TRIAL','BASIC','PRO','ENTERPRISE'];
+  var PLAN_ORDER = ['TRIAL','BASIC','PRO','PREMIUM','ULTIMATE'];
   var userPlanIdx = PLAN_ORDER.indexOf(lic.plan||'TRIAL');
   var reqIdx = PLAN_ORDER.indexOf(feat.planMin||'BASIC');
   if (userPlanIdx < reqIdx) { openUpgrade(); return; }
@@ -9929,7 +9953,7 @@ function clearAI(){activeAI=null;renderAICards();document.getElementById('ai-out
 /* ── Late-to-Leave Config (Pro+) ─────────────────────── */
 function changeLatesToLeave(delta) {
   const lic = window.__LIC__||{};
-  if (!lic.features?.advancedReports && lic.plan !== 'ENTERPRISE') {
+  if (!lic.features?.advancedReports && lic.plan !== 'PREMIUM' && lic.plan !== 'ULTIMATE') {
     showToast('Late → Leave config requires Pro or Premium plan');
     openUpgrade(); return;
   }
@@ -10312,18 +10336,73 @@ function sendStudyPlanWA(studentId) {
    Predicts: future marks · board exam score · rank probability
 ══════════════════════════════════════════════════════════ */
 
+/* ── Helper: get avg marks for a student in a specific month ── */
+function _gfMonthAvg(studentId, yr, mo) {
+  const monthStr = yr + '-' + String(mo + 1).padStart(2, '0');
+  const results = [];
+  try {
+    const idx = JSON.parse(localStorage.getItem('_erp_marks_index') || '[]');
+    idx.forEach(key => {
+      try {
+        const rec = JSON.parse(localStorage.getItem(key));
+        if (!rec) return;
+        const recDate = (rec.date || '').slice(0, 7);
+        if (recDate && recDate !== monthStr) return;
+        const entry = rec.marks?.[studentId];
+        if (!entry || entry.absent || entry.marks === null || (rec.maxMarks || 0) <= 0) return;
+        results.push((entry.marks / rec.maxMarks) * 100);
+      } catch(e2) {}
+    });
+  } catch(e) {}
+  if (!results.length) return null;
+  return Math.round(results.reduce((a, b) => a + b, 0) / results.length);
+}
+
+/* ── Helper: get avg attendance % for a student in a specific month ── */
+function _gfMonthAtt(studentId, yr, mo) {
+  const monthStr = yr + '-' + String(mo + 1).padStart(2, '0');
+  let present = 0, absent = 0, late = 0;
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (!k || !k.startsWith('_erp_att_')) continue;
+    const datePart = k.slice(9, 16);
+    if (!datePart.startsWith(monthStr.replace('-', '-'))) continue;
+    // compare full YYYY-MM
+    if (k.slice(9, 16) !== monthStr.replace('-', '-').slice(0, 7)) {
+      // Use a simpler date check
+    }
+    const dateChunk = k.slice(9, 19); // YYYY-MM-DD
+    if (!dateChunk.startsWith(monthStr)) continue;
+    try {
+      const rec = JSON.parse(localStorage.getItem(k));
+      Object.keys(rec).forEach(rk => {
+        if (!rk.startsWith(studentId + '|')) return;
+        const v = rec[rk];
+        if (v === 'P') present++;
+        else if (v === 'A') absent++;
+        else if (v === 'L') late++;
+      });
+    } catch(e) {}
+  }
+  const total = present + absent + late;
+  return total > 0 ? Math.round((present / total) * 100) : null;
+}
+
 function _gfGrade(pct){
   return pct>=91?'A+':pct>=81?'A':pct>=71?'B+':pct>=61?'B':pct>=51?'C':pct>=35?'D':'F';
 }
 
-/* Compute all forecast numbers for one student */
+/* Compute all forecast numbers for one student — now with 3-month historical comparison */
 function _gfCompute(student) {
   const marks  =(typeof getStudentMarksAuto==='function')?getStudentMarksAuto(student.id):[];
   const validM =marks.filter(m=>!m.absent&&m.marks!==null&&m.maxMarks>0);
+  const now    = new Date();
+  const curYr  = now.getFullYear();
+  const curMo  = now.getMonth();
   const att    =(typeof getStudentAttStats==='function')
-    ? getStudentAttStats(student,new Date().getFullYear(),new Date().getMonth()) : {pct:75,total:0};
+    ? getStudentAttStats(student,curYr,curMo) : {pct:75,total:0};
   const ranked =(typeof computeRanks==='function')
-    ? computeRanks(new Date().getFullYear(),new Date().getMonth()) : [];
+    ? computeRanks(curYr,curMo) : [];
   const myRank =ranked.find(r=>r.student.id===student.id);
   const totalSt=ranked.length||students.filter(s=>s.status==='active').length;
 
@@ -10337,6 +10416,33 @@ function _gfCompute(student) {
     const first=validM.slice(0,h).reduce((a,m)=>a+(m.marks/m.maxMarks*100),0)/h;
     const second=validM.slice(h).reduce((a,m)=>a+(m.marks/m.maxMarks*100),0)/(validM.length-h);
     trend=second-first;
+  }
+
+  // ── Monthly history: last 3 months vs current month ──
+  const monthHistory = [];
+  const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  for (let i = 3; i >= 0; i--) {
+    let hYr = curYr, hMo = curMo - i;
+    if (hMo < 0) { hMo += 12; hYr--; }
+    const avg  = _gfMonthAvg(student.id, hYr, hMo);
+    const att2 = _gfMonthAtt(student.id, hYr, hMo);
+    monthHistory.push({ label: MONTHS_SHORT[hMo], yr: hYr, mo: hMo, avg, att: att2, isCurrent: i === 0 });
+  }
+
+  // Determine improving/declining per subject across months by checking if last month
+  // is different from 2 months ago
+  const prevMonthAvg = monthHistory[2]?.avg; // last month
+  const prev2MonthAvg = monthHistory[1]?.avg; // 2 months ago
+  const prev3MonthAvg = monthHistory[0]?.avg; // 3 months ago
+  const curMonthAvg  = monthHistory[3]?.avg;  // this month
+
+  // Month-over-month trend
+  let monthTrend = 'stable'; // 'improving', 'declining', 'stable'
+  let monthTrendDelta = 0;
+  if (curMonthAvg !== null && prevMonthAvg !== null) {
+    monthTrendDelta = curMonthAvg - prevMonthAvg;
+    if (monthTrendDelta >= 3) monthTrend = 'improving';
+    else if (monthTrendDelta <= -3) monthTrend = 'declining';
   }
 
   const attFactor=att.total>0?(att.pct/100):0.75;
@@ -10361,6 +10467,7 @@ function _gfCompute(student) {
     boardGrade, predictedRank, totalStudents:totalSt,
     currentRank:myRank?myRank.rank:null, attFactor:Math.round(attFactor*100),
     subMap, hasData:validM.length>0,
+    monthHistory, monthTrend, monthTrendDelta: Math.round(monthTrendDelta * 10) / 10,
   };
 }
 
@@ -10418,12 +10525,35 @@ function renderGrowthForecastCards() {
 
   grid.innerHTML=_gfSlice.map(s=>{
     const fc=_gfCompute(s);
-    const trendIcon =fc.trend>2?'📈':fc.trend<-2?'📉':'➡️';
-    const trendColor=fc.trend>2?'#16a34a':fc.trend<-2?'#dc2626':'#ca8a04';
-    const trendLabel=fc.trend>2?(ta?'முன்னேற்றம்':'Improving'):fc.trend<-2?(ta?'சரிவு':'Declining'):(ta?'நிலையான':'Stable');
+    const trendIcon =fc.monthTrend==='improving'?'📈':fc.monthTrend==='declining'?'📉':'➡️';
+    const trendColor=fc.monthTrend==='improving'?'#16a34a':fc.monthTrend==='declining'?'#dc2626':'#ca8a04';
+    const trendLabel=fc.monthTrend==='improving'?(ta?'முன்னேற்றம்':'Improving'):fc.monthTrend==='declining'?(ta?'சரிவு':'Declining'):(ta?'நிலையான':'Stable');
     const noData=!fc.hasData
       ?`<div style="font-size:10px;color:var(--tx3);text-align:center;padding:6px;font-style:italic">
           ${ta?'மதிப்பெண்கள் சேர்த்த பிறகு துல்லியமான கணிப்பு கிடைக்கும்':'Add marks data for accurate forecast'}</div>`:''
+
+    // Monthly history mini-chart
+    const histWithData = fc.monthHistory.filter(h => h.avg !== null);
+    const monthHistHtml = histWithData.length >= 2
+      ? `<div style="margin-top:8px">
+          <div style="font-size:9px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">${ta?'மாத ஒப்பீடு':'Monthly Comparison'}</div>
+          <div style="display:flex;align-items:flex-end;gap:4px;height:40px">
+            ${fc.monthHistory.map(h => {
+              const pct = h.avg !== null ? h.avg : 0;
+              const ht  = h.avg !== null ? Math.max(6, Math.round(pct * 0.38)) : 4;
+              const col = h.isCurrent ? '#2563eb' : h.avg === null ? 'var(--br)' : pct >= 75 ? '#16a34a' : pct >= 50 ? '#ca8a04' : '#dc2626';
+              const opacity = h.avg === null ? '0.3' : '1';
+              return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px">
+                <div style="font-size:8px;color:var(--tx3);font-weight:${h.isCurrent?'700':'400'}">${h.avg !== null ? h.avg+'%' : '—'}</div>
+                <div style="width:100%;height:${ht}px;background:${col};border-radius:3px 3px 0 0;opacity:${opacity};transition:height .4s"></div>
+                <div style="font-size:8px;color:${h.isCurrent?'var(--tx)':'var(--tx3)'};font-weight:${h.isCurrent?'700':'400'}">${h.label}</div>
+              </div>`;
+            }).join('')}
+          </div>
+          ${fc.monthTrendDelta !== 0 ? `<div style="font-size:10px;font-weight:700;color:${trendColor};margin-top:5px;text-align:center">
+            ${trendIcon} ${fc.monthTrendDelta > 0 ? '+' : ''}${fc.monthTrendDelta}% ${ta ? 'கடந்த மாதத்தை விட' : 'vs last month'}
+          </div>` : ''}
+        </div>` : '';
 
     return `<div class="sum-card">
       <div class="sum-card-header" style="background:linear-gradient(135deg,#064e3b10,#065f4610)">
@@ -10445,6 +10575,7 @@ function renderGrowthForecastCards() {
           <b style="color:var(--tx)">${fc.avgPct}%</b>
         </div>
         ${bar(fc.avgPct,100,'#2563eb')}
+        ${monthHistHtml}
         ${noData}
       </div>
 
@@ -10456,7 +10587,7 @@ function renderGrowthForecastCards() {
         </div>
         ${bar(fc.predictedAvg,100,fc.predictedAvg>=fc.avgPct?'#16a34a':'#dc2626')}
         <div style="font-size:10px;color:${trendColor};margin-top:4px;font-weight:600">
-          ${trendIcon} ${fc.trend>0?'+':''}${fc.trend}% ${ta?'போக்கு':'trend'} · ${fc.attFactor}% ${ta?'வருகை காரணி':'att factor'}
+          ${trendIcon} ${fc.monthTrendDelta>0?'+':''}${fc.monthTrendDelta}% ${ta?'கடந்த மாதம்':'vs last month'} · ${fc.attFactor}% ${ta?'வருகை காரணி':'att factor'}
         </div>
       </div>
 
@@ -10550,7 +10681,41 @@ function _gfBuildReport(student,ta){
   const att=(typeof getStudentAttStats==='function')
     ? getStudentAttStats(student,new Date().getFullYear(),new Date().getMonth()) : {pct:75,total:0};
 
-  const trendArrow=fc.trend>2?(ta?'↑ உயர்வு':'↑ Improving'):fc.trend<-2?(ta?'↓ சரிவு':'↓ Declining'):(ta?'→ நிலையான':'→ Stable');
+  const trendArrow=fc.monthTrend==='improving'?(ta?'↑ உயர்வு':'↑ Improving'):fc.monthTrend==='declining'?(ta?'↓ சரிவு':'↓ Declining'):(ta?'→ நிலையான':'→ Stable');
+
+  // ── Monthly comparison section ──
+  const histWithData2 = fc.monthHistory.filter(h => h.avg !== null);
+  let monthlySec = '';
+  if (histWithData2.length >= 2) {
+    monthlySec = ta
+      ? `\n${dash}\n📅 மாத ஒப்பீடு (கடந்த 3 மாதங்கள்):\n${dash}\n`
+      : `\n${dash}\n📅 Month-by-Month Comparison:\n${dash}\n`;
+    
+    fc.monthHistory.forEach((h, i) => {
+      const label = h.isCurrent ? (ta ? '(இந்த மாதம்)' : '(This Month)') : '';
+      const avgStr = h.avg !== null ? `${h.avg}% [${_gfGrade(h.avg)}]` : (ta ? '— தரவு இல்லை' : '— No data');
+      const attStr = h.att !== null ? `${h.att}% ${ta ? 'வருகை' : 'att'}` : '';
+      
+      // Compare to previous month
+      let delta = '';
+      if (i > 0 && h.avg !== null && fc.monthHistory[i-1].avg !== null) {
+        const d = h.avg - fc.monthHistory[i-1].avg;
+        delta = d > 0 ? ` ↑+${Math.round(d)}%` : d < 0 ? ` ↓${Math.round(d)}%` : ' →0%';
+      }
+      
+      const bar2 = h.avg !== null ? ('█'.repeat(Math.round(h.avg/10))+'░'.repeat(10-Math.round(h.avg/10))) : '░'.repeat(10);
+      monthlySec += `  ${h.label} ${h.yr}  ${avgStr.padEnd(16)} ${attStr.padEnd(10)} ${bar2}${delta} ${label}\n`;
+    });
+    
+    if (fc.monthTrendDelta !== 0) {
+      const dir = fc.monthTrendDelta > 0 ? (ta ? '✅ முன்னேற்றம்' : '✅ Improving') : (ta ? '⚠️ சரிவு' : '⚠️ Declining');
+      monthlySec += `\n  ${dir}: ${fc.monthTrendDelta > 0 ? '+' : ''}${fc.monthTrendDelta}% ${ta ? 'கடந்த மாதத்தை விட' : 'compared to last month'}\n`;
+    }
+  } else {
+    monthlySec = ta
+      ? `\n${dash}\n📅 மாத ஒப்பீடு:\n${dash}\n  — இன்னும் போதுமான மாத தரவு இல்லை. தேர்வு மதிப்பெண்கள் சேர்த்த பிறகு இந்த பகுதி தோன்றும்.\n`
+      : `\n${dash}\n📅 Month-by-Month Comparison:\n${dash}\n  — Not enough monthly data yet. Enter test marks each month to see comparison.\n`;
+  }
 
   // Subject-wise
   let subSec=ta?`\n${dash}\n📊 பாடம் வாரியான கணிப்பு:\n${dash}\n`:`\n${dash}\n📊 Subject-wise Forecast:\n${dash}\n`;
@@ -10592,10 +10757,10 @@ function _gfBuildReport(student,ta){
     :`\n${dash}\n📋 Growth Action Plan:\n${dash}\n1. ${fc.trend>=0?'Good trend — keep the momentum!':'⚠️ Marks declining — schedule personal coaching immediately'}\n2. Attendance ${fc.attFactor}% → ${fc.attFactor<85?'Improve to 85%+ for better results':'Excellent — keep it up!'}\n3. Study weak subjects 20 extra minutes daily\n4. Weekly model test to track improvement\n5. Board exam target: ${fc.boardScore+20}/500`;
 
   const hdr=ta
-    ?`📈 ${ctr} — AI வளர்ச்சி கணிப்பு அறிக்கை\n${sep}\nமாணவர்: ${student.name} | வகுப்பு: ${student.grade}\n\n📊 தற்போதைய சராசரி   : ${fc.avgPct}%\n🔮 கணிக்கப்பட்ட சராசரி: ${fc.predictedAvg}%\n📈 மதிப்பெண் போக்கு   : ${trendArrow} (${fc.trend>0?'+':''}${fc.trend}%)\n🎓 வருகை காரணி       : ${fc.attFactor}%\n\n🏆 Public Exam கணிப்பு (5 பாடம் × 100):\n   எதிர்பார்க்கப்படும் மதிப்பெண்: *${fc.boardScore}/500*\n   தரம்: ${fc.boardGrade} | சதவீதம்: ${fc.boardPct}%\n\n🥇 தரவரிசை: #${fc.currentRank||'—'} → கணிப்பு #${fc.predictedRank} / ${fc.totalStudents}`
-    :`📈 ${ctr} — AI Growth Forecast Report\n${sep}\nStudent: ${student.name} | Grade: ${student.grade}\n\n📊 Current Average     : ${fc.avgPct}%\n🔮 Predicted Average   : ${fc.predictedAvg}%\n📈 Marks Trend         : ${trendArrow} (${fc.trend>0?'+':''}${fc.trend}%)\n🎓 Attendance Factor   : ${fc.attFactor}%\n\n🏆 Board Exam Forecast (5 subjects × 100):\n   Expected Score: *${fc.boardScore}/500*\n   Grade: ${fc.boardGrade} | Percentage: ${fc.boardPct}%\n\n🥇 Rank: #${fc.currentRank||'—'} → Predicted #${fc.predictedRank} / ${fc.totalStudents}`;
+    ?`📈 ${ctr} — AI வளர்ச்சி கணிப்பு அறிக்கை\n${sep}\nமாணவர்: ${student.name} | வகுப்பு: ${student.grade}\n\n📊 தற்போதைய சராசரி   : ${fc.avgPct}%\n🔮 கணிக்கப்பட்ட சராசரி: ${fc.predictedAvg}%\n📈 மாத போக்கு         : ${trendArrow} (${fc.monthTrendDelta>0?'+':''}${fc.monthTrendDelta}%)\n🎓 வருகை காரணி       : ${fc.attFactor}%\n\n🏆 Public Exam கணிப்பு (5 பாடம் × 100):\n   எதிர்பார்க்கப்படும் மதிப்பெண்: *${fc.boardScore}/500*\n   தரம்: ${fc.boardGrade} | சதவீதம்: ${fc.boardPct}%\n\n🥇 தரவரிசை: #${fc.currentRank||'—'} → கணிப்பு #${fc.predictedRank} / ${fc.totalStudents}`
+    :`📈 ${ctr} — AI Growth Forecast Report\n${sep}\nStudent: ${student.name} | Grade: ${student.grade}\n\n📊 Current Average     : ${fc.avgPct}%\n🔮 Predicted Average   : ${fc.predictedAvg}%\n📈 Monthly Trend       : ${trendArrow} (${fc.monthTrendDelta>0?'+':''}${fc.monthTrendDelta}% vs last month)\n🎓 Attendance Factor   : ${fc.attFactor}%\n\n🏆 Board Exam Forecast (5 subjects × 100):\n   Expected Score: *${fc.boardScore}/500*\n   Grade: ${fc.boardGrade} | Percentage: ${fc.boardPct}%\n\n🥇 Rank: #${fc.currentRank||'—'} → Predicted #${fc.predictedRank} / ${fc.totalStudents}`;
 
-  return hdr+subSec+projSec+ms+action;
+  return hdr+subSec+monthlySec+projSec+ms+action;
 }
 
 /* ── Growth Forecast WA ── */
@@ -10607,10 +10772,11 @@ function sendGrowthWA(studentId) {
   const ta=lang==='ta';
   const fc=_gfCompute(s);
   const ctr=CFG.CENTER.name||'Academy';
-  const trendIcon=fc.trend>2?'📈':fc.trend<-2?'📉':'➡️';
+  const trendIcon=fc.monthTrend==='improving'?'📈':fc.monthTrend==='declining'?'📉':'➡️';
+  const monthDeltaStr = fc.monthTrendDelta !== 0 ? ` (${fc.monthTrendDelta > 0 ? '+' : ''}${fc.monthTrendDelta}% ${ta ? 'கடந்த மாதத்தை விட' : 'vs last month'})` : '';
   const msg=ta
-    ?`🙏 வணக்கம் *${s.parent}* அவர்களுக்கு,\n\n📈 *${s.name}* — AI வளர்ச்சி கணிப்பு\n🏫 *${ctr}*\n\n━━━━━━━━━━━━━━━━━━━\n📊 *தற்போதைய சராசரி:* ${fc.avgPct}%\n🔮 *அடுத்த மாத கணிப்பு:* ${fc.predictedAvg}%\n${trendIcon} *போக்கு:* ${fc.trend>0?'+':''}${fc.trend}%\n\n🏆 *Public Exam கணிப்பு:*\nஎதிர்பார்க்கப்படும் மதிப்பெண்: *${fc.boardScore}/500*\nதரம்: *${fc.boardGrade}*\n\n🥇 தரவரிசை: #${fc.currentRank||'—'} → கணிப்பு #${fc.predictedRank} / ${fc.totalStudents}\n━━━━━━━━━━━━━━━━━━━\nதொடர்ந்து வாருங்கள்! 🌟\n📞 ${CFG.CENTER.phone}`
-    :`Dear *${s.parent}*,\n\n📈 *${s.name}* — AI Growth Forecast\n🏫 *${ctr}*\n\n━━━━━━━━━━━━━━━━━━━\n📊 *Current Average:* ${fc.avgPct}%\n🔮 *Predicted:* ${fc.predictedAvg}%\n${trendIcon} *Trend:* ${fc.trend>0?'+':''}${fc.trend}%\n\n🏆 *Board Exam Forecast:*\nExpected Score: *${fc.boardScore}/500*\nGrade: *${fc.boardGrade}*\n\n🥇 Rank: #${fc.currentRank||'—'} → Predicted #${fc.predictedRank} / ${fc.totalStudents}\n━━━━━━━━━━━━━━━━━━━\nKeep attending regularly! 🌟\n📞 ${CFG.CENTER.phone}`;
+    ?`🙏 வணக்கம் *${s.parent}* அவர்களுக்கு,\n\n📈 *${s.name}* — AI வளர்ச்சி கணிப்பு\n🏫 *${ctr}*\n\n━━━━━━━━━━━━━━━━━━━\n📊 *தற்போதைய சராசரி:* ${fc.avgPct}%\n🔮 *அடுத்த மாத கணிப்பு:* ${fc.predictedAvg}%\n${trendIcon} *மாத போக்கு:* ${fc.monthTrend==='improving'?'முன்னேற்றம்':fc.monthTrend==='declining'?'சரிவு':'நிலையான'}${monthDeltaStr}\n\n🏆 *Public Exam கணிப்பு:*\nஎதிர்பார்க்கப்படும் மதிப்பெண்: *${fc.boardScore}/500*\nதரம்: *${fc.boardGrade}*\n\n🥇 தரவரிசை: #${fc.currentRank||'—'} → கணிப்பு #${fc.predictedRank} / ${fc.totalStudents}\n━━━━━━━━━━━━━━━━━━━\nதொடர்ந்து வாருங்கள்! 🌟\n📞 ${CFG.CENTER.phone}`
+    :`Dear *${s.parent}*,\n\n📈 *${s.name}* — AI Growth Forecast\n🏫 *${ctr}*\n\n━━━━━━━━━━━━━━━━━━━\n📊 *Current Average:* ${fc.avgPct}%\n🔮 *Predicted:* ${fc.predictedAvg}%\n${trendIcon} *Monthly Trend:* ${fc.monthTrend==='improving'?'Improving':fc.monthTrend==='declining'?'Declining':'Stable'}${monthDeltaStr}\n\n🏆 *Board Exam Forecast:*\nExpected Score: *${fc.boardScore}/500*\nGrade: *${fc.boardGrade}*\n\n🥇 Rank: #${fc.currentRank||'—'} → Predicted #${fc.predictedRank} / ${fc.totalStudents}\n━━━━━━━━━━━━━━━━━━━\nKeep attending regularly! 🌟\n📞 ${CFG.CENTER.phone}`;
   openWA(phone, msg);
   showToast('📱 Growth Forecast WhatsApp திறக்கிறது…');
 }
@@ -11792,26 +11958,33 @@ function initBackup() {
    LICENSE UI
 ═══════════════════════════════════════════════════════ */
 function renderPlansHTML() {
-  const plans = window.__PLANS__||{};
-  const lic = window.__LIC__||{};
-  const DISPLAY = {BASIC:{name:'Basic',price:'₹999/yr'},PRO:{name:'Pro',price:'₹1,999/yr'},ENTERPRISE:{name:'Premium',price:'₹2,999/yr'}};
-  return ['BASIC','PRO','ENTERPRISE'].map(k=>{
-    const p=plans[k];if(!p)return'';
-    const isP=k==='PRO', isCur=lic.plan===k;
-    const disp=DISPLAY[k]||{name:k,price:''};
-    const feats=[
-      `Up to ${p.maxStudents===99999?'Unlimited':p.maxStudents} students`,
-      p.features.aiFeatures?'✅ AI Features':'❌ AI Features',
-      p.features.googleSheets?'✅ Google Sheets':'❌ Google Sheets',
-      p.features.advancedReports?'✅ Reports':'❌ Reports',
-      p.features.multiCenter?'✅ Multi-Center':'❌ Multi-Center',
-    ];
-    return `<div class="plan-card ${isP?'pop':''}">
-      ${isCur?'<div class="badge bg" style="margin-bottom:6px">Current</div>':''}
-      ${isP?'<div class="badge bb" style="margin-bottom:4px">Most Popular</div>':''}
-      <div class="plan-name">${disp.name}</div>
-      <div class="plan-price">${disp.price}<span style="font-size:11px;color:var(--tx2)">/yr</span></div>
-      <div class="plan-feat">${feats.join('<br>')}</div>
+  const plans = window.__PLANS__||PLANS||{};
+  const lic   = window.__LIC__||{};
+  const DISPLAY = {
+    BASIC:   {name:'Basic',   price:'₹300',  sub:'10 Students'},
+    PRO:     {name:'Pro',     price:'₹500',  sub:'30 Students'},
+    PREMIUM: {name:'Premium', price:'₹1,200',sub:'100 Students'},
+    ULTIMATE:{name:'Ultimate',price:'₹1,500',sub:'Unlimited Students'}
+  };
+  const FEAT_MAP = {
+    BASIC:   ['✅ Fees Reminder WA','✅ Absent Alert WA','✅ Attendance AI','❌ Late WA','❌ AI Growth','❌ Google Sheets'],
+    PRO:     ['✅ Fees Reminder WA','✅ Absent Alert WA','✅ Attendance AI','✅ Late WA','✅ AI Growth + Timetable','❌ Google Sheets'],
+    PREMIUM: ['✅ Fees Reminder WA','✅ Absent Alert WA','✅ Attendance AI','✅ Late WA','✅ AI Growth + Timetable','✅ Google Sheets'],
+    ULTIMATE:['✅ All WA Features','✅ All AI Features','✅ Fee Forecast AI','✅ Concentration AI','✅ Google Sheets','✅ Multi-Center'],
+  };
+  const BADGE = {BASIC:'bb',PRO:'bg',PREMIUM:'bp',ULTIMATE:'bt'};
+  return ['BASIC','PRO','PREMIUM','ULTIMATE'].map(k=>{
+    const p=plans[k]; if(!p) return '';
+    const isCur=lic.plan===k, isP=k==='PRO';
+    const d=DISPLAY[k];
+    return `<div class="plan-card${isP?' pop':''}" style="${k==='ULTIMATE'?'border-color:#7c3aed':''}">
+      ${isCur?`<div class="badge bg" style="margin-bottom:6px">✓ Current Plan</div>`:''}
+      ${isP?'<div class="badge bb" style="margin-bottom:4px">⭐ Most Popular</div>':''}
+      ${k==='ULTIMATE'?'<div class="badge bt" style="margin-bottom:4px;background:#4c1d95;color:#fff">🔥 Best Value</div>':''}
+      <div class="plan-name" style="${k==='ULTIMATE'?'color:#7c3aed':''}">${d.name}</div>
+      <div class="plan-price" style="font-size:22px;font-weight:800;color:var(--pr)">${d.price}<span style="font-size:11px;font-weight:400;color:var(--tx2)">/yr</span></div>
+      <div style="font-size:10px;font-weight:700;color:var(--tx3);margin-bottom:8px;text-transform:uppercase">${d.sub}</div>
+      <div class="plan-feat" style="text-align:left;line-height:2.2;font-size:12px">${(FEAT_MAP[k]||[]).join('<br>')}</div>
     </div>`;
   }).join('');
 }
@@ -11822,7 +11995,7 @@ function activateLic() {
   CFG.LICENSE_KEY=key;
   const lic=window.__VALIDATE_LICENSE__?window.__VALIDATE_LICENSE__():null;
   if(!lic||!lic.valid){
-    if(msgEl)msgEl.innerHTML='<span style="color:#dc2626">❌ Invalid key. Contact support.</span>';
+    if(msgEl)msgEl.innerHTML='<span style="color:#dc2626">❌ Invalid key. Contact Subbulakshmi V — +91 8148382815</span>';
     CFG.LICENSE_KEY='TRIAL'; // revert if invalid
   } else {
     // SAVE to localStorage so key persists after app close/reopen
@@ -11841,7 +12014,7 @@ function initLicenseUI() {
     if(!lic.valid){msg.textContent=lic.message||'License expired';banner.style.background='#dc2626';banner.style.display='block';}
   }
   // Update settings page
-  const setPlan=document.getElementById('set-plan'); if(setPlan){setPlan.textContent=lic.planName;setPlan.className='badge '+(lic.plan==='PRO'?'bp':lic.plan==='ENTERPRISE'?'bg':'ba');}
+  const setPlan=document.getElementById('set-plan'); if(setPlan){setPlan.textContent=lic.planName;setPlan.className='badge '+(lic.plan==='ULTIMATE'?'bt':lic.plan==='PREMIUM'?'bp':lic.plan==='PRO'?'bg':lic.plan==='BASIC'?'bb':'ba');}
   const setLic=document.getElementById('set-lic-msg'); if(setLic) setLic.textContent=lic.message;
   const setOwner=document.getElementById('set-owner'); if(setOwner) setOwner.textContent=CFG.CENTER.ownerName||'Admin';
   const setCenter=document.getElementById('set-center'); if(setCenter) setCenter.textContent=CFG.CENTER.name;
@@ -16277,7 +16450,6 @@ function saveTeachingLog(editId) {
 }
 
 function deleteTeachingLog(id) {
-  if (!confirm('Delete this teaching log entry?')) return;
   const logs = _tlLoad().filter(l=>l.id!==id);
   _tlSave(logs);
   renderTeachingLog();
@@ -16429,39 +16601,80 @@ async function tlRunAIGrowth() {
   const logs     = _tlFilteredLogs();
   const stArr = (typeof students !== 'undefined' && Array.isArray(students)) ? students : [];
   if (!logs.length) { showToast('No teaching log entries in this filter'); return; }
-  // Build absent summary
+  // Build absent summary with topic detail
   const missed = {};
   logs.forEach(l => {
     (l.absentStudentIds||[]).forEach(id => {
       if (!missed[id]) missed[id] = [];
-      missed[id].push(`${l.date}: ${l.subject}${l.topic?' ('+l.topic+')':''}`);
+      missed[id].push(`${l.date}: ${l.subject}${l.topic?' — Topic: '+l.topic:''}`);
     });
   });
-  const absentSummary = Object.entries(missed).map(([id, ls])=>{
+
+  // Build per-student correlation: missed topics vs test results
+  const studentCorrelations = Object.entries(missed).map(([id, ls])=>{
     const s = stArr.find(x=>x.id===id);
-    return `${s?s.name:id} (${s?.grade||''}): missed ${ls.length} lessons — ${ls.slice(0,5).join(', ')}`;
+    const name = s ? s.name : id;
+    const subjectAvg = s ? (typeof getSubjectAvgMarks==='function' ? getSubjectAvgMarks(id) : {}) : {};
+    
+    // Which subjects did they miss?
+    const missedSubjs = {};
+    ls.forEach(entry => {
+      const m = entry.match(/: (.+?)( —|$)/);
+      if (m) { const subj = m[1].trim(); missedSubjs[subj] = (missedSubjs[subj]||0)+1; }
+    });
+    
+    // Correlate with test scores
+    const correlations = Object.entries(missedSubjs).map(([subj, cnt]) => {
+      const avg = subjectAvg[subj];
+      if (avg !== undefined) {
+        return avg < 60
+          ? `${subj}: missed ${cnt} sessions → TEST SCORE LOW (${avg}%) — HIGH RISK`
+          : avg < 75
+          ? `${subj}: missed ${cnt} sessions → moderate score (${avg}%)`
+          : `${subj}: missed ${cnt} sessions but scored well (${avg}%)`;
+      }
+      return `${subj}: missed ${cnt} sessions (no test data yet)`;
+    }).join(', ');
+    
+    return `${name} (${s?.grade||''}): missed ${ls.length} sessions | ${correlations}`;
   }).join('\n');
+
   const subjectCoverage = {};
   logs.forEach(l=>{ if(!subjectCoverage[l.subject]) subjectCoverage[l.subject]=0; subjectCoverage[l.subject]++; });
+  
+  // Topic coverage per subject
+  const subjectTopics = {};
+  logs.forEach(l => {
+    if (!l.subject || !l.topic) return;
+    if (!subjectTopics[l.subject]) subjectTopics[l.subject] = [];
+    if (!subjectTopics[l.subject].includes(l.topic)) subjectTopics[l.subject].push(l.topic);
+  });
+  const topicLines = Object.entries(subjectTopics)
+    .map(([s, ts]) => `  ${s}: ${ts.slice(0,5).join(', ')}`)
+    .join('\n');
+
   const prompt = `You are an expert Tamil Nadu tuition center teaching analyst. Analyze this Teaching Log data and provide an AI Growth Factor report.
 
 Teaching Log Summary (${logs.length} entries):
 Subjects covered: ${Object.entries(subjectCoverage).map(([s,n])=>`${s}: ${n} sessions`).join(', ')}
 Date range: ${logs[logs.length-1]?.date||''} to ${logs[0]?.date||''}
 
-Absent Students — Missed Lessons:
-${absentSummary || 'No absences recorded'}
+Topics covered per subject:
+${topicLines || '  (no topic data)'}
+
+Absent Students — Missed Lessons + Test Score Correlation:
+${studentCorrelations || 'No absences recorded'}
 
 Sample lessons:
 ${logs.slice(0,6).map(l=>`• ${l.date} | ${l.subject} | ${l.topic||'—'} | ${l.lessonNotes?.slice(0,80)||''}`).join('\n')}
 
 Please provide:
-1. 📊 CURRICULUM COVERAGE ANALYSIS — Which subjects are getting enough sessions? Any gaps?
-2. 🔴 AT-RISK STUDENTS (missed lessons) — Who needs catch-up? What topics?
+1. 📊 CURRICULUM COVERAGE ANALYSIS — Which subjects are getting enough sessions? Topics covered vs gaps?
+2. 🔴 AT-RISK STUDENTS (missed lessons + low test scores) — SPECIFICALLY name students where absent days DIRECTLY correlate with low test scores in that subject. Explain the connection.
 3. 📈 AI GROWTH FACTORS — Key factors that will accelerate student growth based on this log
-4. 💡 CATCH-UP PLAN — Specific recommendations for students who were absent
-5. 🎯 NEXT WEEK PRIORITIES — What topics to prioritize based on coverage gaps
-6. 📱 PARENT WA MESSAGE TEMPLATE — For notifying parents of absent students what was missed
+4. 💡 TARGETED CATCH-UP PLAN — Per-student, per-subject specific missed topics to cover (use the correlation data above — if student missed topic X and scored low in that subject, they need to urgently revise topic X)
+5. 🎯 NEXT WEEK PRIORITIES — What topics to prioritize based on coverage gaps and missed sessions
+6. 📱 PARENT WA MESSAGE TEMPLATE — For notifying parents of absent students: mention EXACTLY what topics were missed and how it may have affected test performance
 
 Keep it practical and focused on Tamil Nadu tuition center context. Use both English and Tamil where helpful.`;
 
@@ -16478,7 +16691,7 @@ Keep it practical and focused on Tamil Nadu tuition center context. Use both Eng
     const resp = await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({ model:'claude-sonnet-4-6', max_tokens:1000, messages:[{role:'user',content:prompt}] })
+      body:JSON.stringify({ model:'claude-sonnet-4-6', max_tokens:1200, messages:[{role:'user',content:prompt}] })
     });
     const data = await resp.json();
     const text = (data.content||[]).map(c=>c.text||'').join('');
@@ -16647,19 +16860,62 @@ function _tlBuildStudentGrowthData(student, yr, mo) {
 
 /* ── Build the AI prompt for one student ── */
 function _tlBuildGrowthPrompt(data, monthLabel) {
-  const { student, att, attPct, marksLines, subjectSessions, subjectsStudentMissed, subjectAvg, tlLogs } = data;
+  const { student, att, attPct, marksLines, subjectSessions, subjectsStudentMissed, subjectAvg, tlLogs, marks } = data;
 
-  const subjectLines = Object.entries(subjectSessions).map(([s, d]) => {
-    const avg = subjectAvg[s];
-    const missed = subjectsStudentMissed[s];
-    const topicsStr = d.topics.slice(0, 4).join(', ');
-    return `  • ${s}: ${d.count} sessions covered (${topicsStr || 'general'})` +
-           (avg !== undefined ? ` | Overall avg: ${avg}%` : '') +
-           (missed ? ` | Student MISSED ${missed.count} sessions (${missed.topics.slice(0,2).join(', ')})` : '');
+  // Build rich subject analysis: sessions covered + missed topics + test correlation
+  const allSubjects = [...new Set(tlLogs.map(l => l.subject).filter(Boolean))];
+  
+  const subjectLines = allSubjects.map(subj => {
+    const sessions = subjectSessions[subj] || { count: 0, topics: [] };
+    const missed   = subjectsStudentMissed[subj];
+    const avg      = subjectAvg[subj];
+    const topicsStr = sessions.topics.slice(0, 5).join(', ');
+    
+    // Topics the student missed for this subject
+    const missedTopics = missed ? missed.topics.slice(0, 4).join(', ') : null;
+    
+    // Test results for this subject
+    const subjectTests = marks.filter(m => m.subject === subj && !m.absent && m.marks !== null);
+    const testLine = subjectTests.length > 0
+      ? subjectTests.map(t => {
+          const pct = Math.round((t.marks / t.maxMarks) * 100);
+          return `${t.examName}: ${t.marks}/${t.maxMarks} (${pct}%)`;
+        }).join(', ')
+      : null;
+    
+    // Correlation: was student absent during this subject AND did they score low?
+    let correlation = '';
+    if (missed && avg !== undefined) {
+      if (avg < 60) {
+        correlation = ` ⚠️ LOW SCORE (${avg}%) + ${missed.count} sessions missed — HIGH RISK: likely scored low because of missed topics`;
+      } else if (avg < 75) {
+        correlation = ` 🔶 Moderate score (${avg}%) despite missing ${missed.count} sessions`;
+      } else {
+        correlation = ` ✅ Good score (${avg}%) even though ${missed.count} sessions were missed`;
+      }
+    }
+    
+    let line = `  • ${subj}: ${sessions.count} sessions covered`;
+    if (topicsStr) line += ` | Topics: ${topicsStr}`;
+    if (avg !== undefined) line += ` | Test avg: ${avg}%`;
+    if (testLine) line += ` | Tests: ${testLine}`;
+    if (missed) line += `\n    🔴 MISSED ${missed.count} sessions — Topics missed: ${missedTopics || 'general'}${correlation}`;
+    return line;
   }).join('\n');
 
-  const allSubjectsForTimetable = [...new Set(tlLogs.map(l => l.subject).filter(Boolean))];
-  const weakSubjects = allSubjectsForTimetable.filter(s => (subjectAvg[s] || 100) < 70 || subjectsStudentMissed[s]);
+  // Subjects at highest risk (absent + low marks)
+  const highRiskSubjects = allSubjects.filter(s => {
+    const missed = subjectsStudentMissed[s];
+    const avg    = subjectAvg[s];
+    return missed && (avg === undefined || avg < 65);
+  });
+  
+  const catchUpTopics = highRiskSubjects.map(s => {
+    const missed = subjectsStudentMissed[s];
+    return `${s}: ${(missed?.topics || []).slice(0, 3).join(', ') || 'missed sessions'}`;
+  }).join('; ');
+
+  const weakSubjects = allSubjects.filter(s => (subjectAvg[s] || 100) < 70 || subjectsStudentMissed[s]);
 
   return `You are an expert tuition teacher at a Tamil Nadu tuition center. Generate a personalized monthly growth report + study timetable in TAMIL for a student.
 
@@ -16670,26 +16926,34 @@ ATTENDANCE (${monthLabel}):
   • Present: ${att.present} days | Absent: ${att.absent} days | Late: ${att.late} times
   • Attendance %: ${attPct}% | Total sessions: ${att.totalWorking}
 
-TEACHING LOG — SUBJECTS COVERED THIS MONTH:
+TEACHING LOG — SUBJECT ANALYSIS (sessions covered + what student missed + test results correlated):
 ${subjectLines || '  (No teaching log data for this month)'}
 
 THIS MONTH'S TEST RESULTS:
 ${marksLines.length ? marksLines.join('\n') : '  (No tests recorded this month)'}
 
+HIGH-RISK SUBJECTS (absent during lessons AND low test scores — needs urgent catch-up):
+${highRiskSubjects.length ? catchUpTopics : 'None identified'}
+
 Subjects needing attention: ${weakSubjects.join(', ') || 'None identified'}
+
+IMPORTANT ANALYSIS INSTRUCTIONS:
+- If a student was absent during a subject's sessions AND scored low in that subject's test, CLEARLY connect these: "You missed [topics] in [subject] and that is why the test score was low — you must study these topics immediately"
+- If absent but scored well, acknowledge their self-study effort
+- The study timetable must prioritize HIGH-RISK subjects and their specific missed topics
 
 Generate a WhatsApp message (in Tamil) with these sections. Use emojis. Keep warm and encouraging:
 
 1. 📊 மாதாந்திர வளர்ச்சி சுருக்கம் (2-3 sentences on overall progress)
-2. 📅 வருகை நிலை (attendance with specific feedback)
-3. 📝 தேர்வு செயல்திறன் (marks subject-by-subject with grade)
+2. 📅 வருகை நிலை (attendance with specific feedback — mention how absent days affected studies)
+3. 📝 தேர்வு செயல்திறன் (marks subject-by-subject with grade — connect low scores to missed topics if applicable)
 4. 📚 இந்த மாதம் படித்தது (key topics covered — list 3-5)
-5. ⚠️ கவனிக்க வேண்டியவை (missed topics to catch up — be specific)
-6. 🗓️ அடுத்த வாரம் படிப்பு அட்டவணை (7-day study timetable with specific subjects and topics for each day based on gaps — Monday to Sunday, each day 1-2 subjects, 1 hour each)
+5. ⚠️ கவனிக்க வேண்டியவை (SPECIFICALLY name the missed topics per subject that student needs to catch up — be very specific)
+6. 🗓️ அடுத்த வாரம் படிப்பு அட்டவணை (7-day study timetable — prioritize HIGH-RISK missed topics first, then general revision — Monday to Sunday, each day 1-2 subjects, 1 hour each with specific topic)
 7. 💪 ஆசிரியர் ஊக்கமளிக்கும் வார்த்தை (1 encouraging sentence)
 
 Format the timetable as:
-திங்கள்: [subject] — [specific topic]
+திங்கள்: [subject] — [specific missed topic to catch up]
 செவ்வாய்: [subject] — [specific topic]
 ...etc.
 

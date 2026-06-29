@@ -2320,7 +2320,8 @@ var PLANS={
     shop:false,tamil:false,qrAttendance:false,waTypes:2,
     feesWA:true,absentWA:true,lateWA:false,
     aiModels:1,
-    aiModuleIds:['attend_late']
+    aiModuleIds:['attend_late'],
+    teachingLog:true,monthlyGrowthWA:false,aiGrowthClass:false,
   }},
   // ── PRO ₹500/yr — 30 students ────────────────────────────────
   // Features: Basic + Late WA + Exam Notice WA + AI Growth Prediction + Timetable
@@ -2329,7 +2330,8 @@ var PLANS={
     shop:true,tamil:true,qrAttendance:true,waTypes:4,
     feesWA:true,absentWA:true,lateWA:true,
     aiModels:4,
-    aiModuleIds:['attend_late','weak_subject','late_pattern','timetable']
+    aiModuleIds:['attend_late','weak_subject','late_pattern','timetable'],
+    teachingLog:true,monthlyGrowthWA:true,aiGrowthClass:true,
   }},
   // ── PREMIUM ₹1200/yr — 100 students ─────────────────────────
   // Features: Pro features + Google Sheets + Exam Marks + Monthly Report
@@ -2338,7 +2340,8 @@ var PLANS={
     shop:true,tamil:true,qrAttendance:true,waTypes:6,
     feesWA:true,absentWA:true,lateWA:true,
     aiModels:5,
-    aiModuleIds:['attend_late','weak_subject','late_pattern','timetable','frequent_absent']
+    aiModuleIds:['attend_late','weak_subject','late_pattern','timetable','frequent_absent'],
+    teachingLog:true,monthlyGrowthWA:true,aiGrowthClass:true,
   }},
   // ── ULTIMATE ₹1500/yr — Unlimited + All AI ──────────────────
   ULTIMATE:{name:'Ultimate',maxStudents:99999,features:{
@@ -2346,15 +2349,17 @@ var PLANS={
     shop:true,tamil:true,qrAttendance:true,waTypes:8,
     feesWA:true,absentWA:true,lateWA:true,
     aiModels:8,
-    aiModuleIds:['attend_late','weak_subject','frequent_absent','fee_forecast','late_pattern','concentration','timetable','msgdraft']
+    aiModuleIds:['attend_late','weak_subject','frequent_absent','fee_forecast','late_pattern','concentration','timetable','msgdraft'],
+    teachingLog:true,monthlyGrowthWA:true,aiGrowthClass:true,
   }},
-  // ── TRIAL — 7 days free, 10 students ────────────────────────
-  TRIAL:{name:'Free Trial',maxStudents:10,features:{
-    aiFeatures:true,googleSheets:false,autoBackup:true,multiCenter:false,advancedReports:false,
+  // ── TRIAL — 7 days, max 5 students, ALL features unlocked ──
+  TRIAL:{name:'Free Trial',maxStudents:5,features:{
+    aiFeatures:true,googleSheets:true,autoBackup:true,multiCenter:true,advancedReports:true,
     shop:true,tamil:true,qrAttendance:true,waTypes:8,
     feesWA:true,absentWA:true,lateWA:true,
     aiModels:8,
-    aiModuleIds:['attend_late','weak_subject','frequent_absent','fee_forecast','late_pattern','concentration','timetable','msgdraft']
+    aiModuleIds:['attend_late','weak_subject','frequent_absent','fee_forecast','late_pattern','concentration','timetable','msgdraft'],
+    teachingLog:true,monthlyGrowthWA:true,aiGrowthClass:true,
   }}
 };
 var _dt=false;function _chk(){var t=new Date();debugger;if(new Date()-t>100)_dt=true;}setTimeout(_chk,8000);
@@ -2362,7 +2367,7 @@ function _sha256(msg){var K=[0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c
 var _sl=['KalamERP@','2025#Tamil','Nadu$Secu','re!XK9'].join('');
 function _val(key){if(!key||typeof key!=='string')return{valid:false};var p=key.trim().toUpperCase().split('-');if(p.length<4)return{valid:false};var plan=p[0],year=p[1],serial=p[2],hash=p[3];if(!PLANS[plan])return{valid:false};var y=parseInt(year),s=parseInt(serial);if(isNaN(y)||isNaN(s)||y<2025||y>2035||s<1||s>9999)return{valid:false};var payload=_sl+':'+plan+':'+y+':'+('000'+s).slice(-4);var exp=_sha256(payload).substring(0,8);if(exp!==hash)return{valid:false};if(plan==='ULTIMATE')return{valid:true,plan:plan,expiry:new Date(2099,11,31),daysLeft:99999,serial:s};var expiry=new Date(y+1,3,30,23,59,59);var now=new Date();if(now>expiry)return{valid:false,expired:true,plan:plan};return{valid:true,plan:plan,expiry:expiry,daysLeft:Math.ceil((expiry-now)/86400000),serial:s};}
 var _TK='_erp_ts';function _trial(){var s=localStorage.getItem(_TK)||Date.now().toString();localStorage.setItem(_TK,s);var d=Math.floor((Date.now()-parseInt(s))/86400000);return{daysLeft:Math.max(0,7-d),expired:7-d<=0};}
-function validateLicense(){var key=(CFG.LICENSE_KEY||'').trim().toUpperCase();var status={plan:'TRIAL',planName:'Free Trial',valid:true,expired:false,daysLeft:30,maxStudents:PLANS.TRIAL.maxStudents,features:{...PLANS.TRIAL.features},trialMode:true,message:''};if(!key||key==='TRIAL'){var t=_trial();status.daysLeft=t.daysLeft;status.expired=t.expired;status.valid=!t.expired;status.message=t.expired?'Trial expired':'Trial: '+t.daysLeft+' days left';}else{var r=_val(key);if(!r.valid){status={...status,valid:false,plan:'INVALID',planName:'Invalid',maxStudents:0,features:{},trialMode:false,message:r.expired?'License expired':'Invalid key'};} else{var pl=PLANS[r.plan];var daysMsg=r.plan==='ULTIMATE'?'Lifetime — ✅ Active':pl.name+' · '+r.daysLeft+' days left';status={...status,plan:r.plan,planName:pl.name,valid:true,expired:false,daysLeft:r.daysLeft,maxStudents:pl.maxStudents,features:{...pl.features},trialMode:false,message:daysMsg};}}CFG.FEATURES={...status.features};window.__LIC__=status;return status;}
+function validateLicense(){var key=(CFG.LICENSE_KEY||'').trim().toUpperCase();var status={plan:'TRIAL',planName:'Free Trial',valid:true,expired:false,daysLeft:7,maxStudents:PLANS.TRIAL.maxStudents,features:{...PLANS.TRIAL.features},trialMode:true,message:''};if(!key||key==='TRIAL'){var t=_trial();status.daysLeft=t.daysLeft;status.expired=t.expired;status.valid=!t.expired;status.message=t.expired?'Trial expired — enter license key to continue':'Trial: '+t.daysLeft+' day'+(t.daysLeft===1?'':'s')+' left (5 students max)';}else{var r=_val(key);if(!r.valid){status={...status,valid:false,plan:'INVALID',planName:'Invalid',maxStudents:0,features:{},trialMode:false,message:r.expired?'License expired':'Invalid key'};}else{var pl=PLANS[r.plan];var daysMsg=r.plan==='ULTIMATE'?'Lifetime — ✅ Active':pl.name+' · '+r.daysLeft+' days left';status={...status,plan:r.plan,planName:pl.name,valid:true,expired:false,daysLeft:r.daysLeft,maxStudents:pl.maxStudents,features:{...pl.features},trialMode:false,message:daysMsg};}}CFG.FEATURES={...status.features};window.__LIC__=status;return status;}
 window.__VALIDATE_LICENSE__=validateLicense;window.__PLANS__=PLANS;
 })();
 
@@ -12056,7 +12061,7 @@ function initLicenseUI() {
   const banner=document.getElementById('lic-banner'),msg=document.getElementById('lic-banner-msg');
   if(banner&&msg){
     if(lic.plan==='ULTIMATE'&&lic.valid){banner.style.display='none';}
-    else if(lic.trialMode&&lic.daysLeft<=30){msg.textContent='🎯 Free Trial — '+lic.daysLeft+' of 7 days remaining (10 student limit)';banner.style.display='block';}
+    else if(lic.trialMode&&lic.valid){msg.textContent='🎯 Free Trial — '+lic.daysLeft+' day'+(lic.daysLeft===1?'':'s')+' left · 5 students · All features unlocked';banner.style.background='#0369a1';banner.style.display='block';}
     else if(lic.daysLeft<=30&&!lic.trialMode){msg.textContent='⚠️ License expires in '+lic.daysLeft+' days';banner.style.display='block';}
     if(!lic.valid){msg.textContent=lic.message||'License expired';banner.style.background='#dc2626';banner.style.display='block';}
   }
@@ -16342,6 +16347,11 @@ function renderTeachingLog() {
     return;
   }
   el.innerHTML = logs.map(log => {
+    // Support both multi-subject (log.subjects[]) and legacy single-subject
+    const subjectsArr = (log.subjects && log.subjects.length)
+      ? log.subjects
+      : [{ subject: log.subject, topic: log.topic, notes: log.lessonNotes, hw: log.homeworkGiven }];
+
     const absent = (log.absentStudentIds||[]).map(id => {
       const s = stArr.find(x=>x.id===id);
       return s ? s.name : id;
@@ -16351,18 +16361,27 @@ function renderTeachingLog() {
            <div style="font-size:10px;font-weight:700;color:#92400e;margin-bottom:3px">🔴 Absent (${absent.length}) — Missed this lesson:</div>
            <div style="font-size:11px;color:#78350f">${absent.join(', ')}</div>
          </div>` : '';
-    const hwHtml = log.homeworkGiven
-      ? `<div style="font-size:11px;color:var(--tx2);margin-top:4px">📝 HW: ${escHtml(log.homeworkGiven)}</div>` : '';
+
+    const subjsHtml = subjectsArr.filter(s=>s.subject).map((s, i) => `
+      <div style="${i>0?'margin-top:8px;padding-top:8px;border-top:.5px dashed var(--br)':''}">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:2px">
+          <span style="font-size:12px;font-weight:700;color:var(--tx)">${escHtml(s.subject)}${s.topic?' — <span style="font-weight:500">'+escHtml(s.topic)+'</span>':''}</span>
+          ${s.type==='other'?'<span style="font-size:9px;background:#fef3c7;color:#92400e;border-radius:5px;padding:1px 6px;font-weight:600">Other</span>':''}
+        </div>
+        ${s.notes?`<div style="font-size:11px;color:var(--tx2)">${escHtml(s.notes)}</div>`:''}
+        ${s.hw?`<div style="font-size:11px;color:var(--tx2);margin-top:2px">📝 HW: ${escHtml(s.hw)}</div>`:''}
+      </div>`).join('');
+
     return `<div class="card" style="margin-bottom:10px;padding:12px 14px">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
         <div style="flex:1;min-width:0">
-          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">
-            <span style="font-size:13px;font-weight:700;color:var(--tx)">${escHtml(log.subject||'—')} — ${escHtml(log.topic||'')}</span>
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:6px">
             <span style="font-size:10px;background:#dbeafe;color:#1d4ed8;border-radius:5px;padding:2px 7px;font-weight:600">${escHtml(log.grade||'')}</span>
             ${log.batch?`<span style="font-size:10px;background:#ede9fe;color:#7c3aed;border-radius:5px;padding:2px 7px;font-weight:600">${escHtml(log.batch)}</span>`:''}
+            <span style="font-size:10px;background:${log.session==='evening'?'#fef3c7':'#f0fdf4'};color:${log.session==='evening'?'#92400e':'#15803d'};border-radius:5px;padding:2px 7px;font-weight:600">${log.session==='evening'?'🌙 Evening':'☀️ Morning'}</span>
+            ${subjectsArr.filter(s=>s.subject).length > 1 ? `<span style="font-size:9px;background:#f1f5f9;color:#475569;border-radius:5px;padding:2px 6px;font-weight:600">${subjectsArr.filter(s=>s.subject).length} subjects</span>` : ''}
           </div>
-          <div style="font-size:11px;color:var(--tx2)">${escHtml(log.lessonNotes||'')}</div>
-          ${hwHtml}
+          ${subjsHtml}
           ${absentHtml}
         </div>
         <div style="text-align:right;flex-shrink:0">
@@ -16381,7 +16400,9 @@ function _tlRenderStats(logs, students) {
   const el = document.getElementById('tl-stats-row');
   if (!el) return;
   const totalLogs   = logs.length;
-  const uniqueSub   = new Set(logs.map(l=>l.subject)).size;
+  const uniqueSub   = new Set(logs.flatMap(l =>
+    (l.subjects && l.subjects.length) ? l.subjects.map(s=>s.subject).filter(Boolean) : [l.subject].filter(Boolean)
+  )).size;
   const totalAbsent = logs.reduce((s,l)=>s+(l.absentStudentIds||[]).length,0);
   const uniqueMissed= new Set(logs.flatMap(l=>l.absentStudentIds||[])).size;
   const stats = [
@@ -16414,7 +16435,6 @@ function _tlShowModal(html) {
 
 function openAddTeachingLog() {
   const today = new Date().toISOString().slice(0,10);
-  // Snapshot today's absent students from attendance
   const absentIds = _tlGetTodayAbsentIds();
   _tlShowModal(`
     <div class="modal-title">📖 New Teaching Log Entry</div>
@@ -16423,39 +16443,52 @@ function openAddTeachingLog() {
       <div class="fg"><label class="fl">Grade *</label><select class="fi" id="tl-f-grade"><option value="">Select…</option>${_tlGradeOptions()}</select></div>
       <div class="fg"><label class="fl">Batch</label><select class="fi" id="tl-f-batch"><option value="">All / Any</option>${_tlBatchOptions()}</select></div>
     </div>
-    <!-- Day Order row — auto fills subject -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="fg"><label class="fl">Session</label>
+        <select class="fi" id="tl-f-session">
+          <option value="morning">☀️ Morning</option>
+          <option value="evening">🌙 Evening</option>
+        </select>
+      </div>
       <div class="fg">
-        <label class="fl" style="display:flex;align-items:center;gap:5px">Day Order <span style="font-size:10px;color:var(--tx3);font-weight:400">(auto-fills subject)</span></label>
+        <label class="fl" style="display:flex;align-items:center;gap:5px">Day Order <span style="font-size:10px;color:var(--tx3);font-weight:400">(loads timetable)</span></label>
         <select class="fi" id="tl-f-dayorder" onchange="tlFormOnDayOrderChange()">
           <option value="">Select Day Order…</option>
           ${_tlDayOrderOptions()}
         </select>
       </div>
-      <div class="fg"><label class="fl">Subject *</label>
-        <select class="fi" id="tl-f-subject-sel" onchange="document.getElementById('tl-f-subject').value=this.value" style="display:none"></select>
-        <input class="fi" id="tl-f-subject" placeholder="e.g. Mathematics">
+    </div>
+
+    <!-- ── Subjects block ── -->
+    <div style="margin-bottom:6px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <label class="fl" style="margin:0">📚 Subjects Taught *</label>
+        <button type="button" onclick="tlAddOtherSubject()" style="font-size:10px;padding:3px 10px;border-radius:7px;background:#ede9fe;color:#7c3aed;border:.5px solid #c4b5fd;cursor:pointer;font-family:inherit;font-weight:600">+ Other Subject</button>
+      </div>
+      <div id="tl-f-subjects-list" style="display:flex;flex-direction:column;gap:8px">
+        <div style="font-size:11px;color:var(--tx3);padding:10px;text-align:center;border:.5px dashed var(--br);border-radius:8px" id="tl-subjects-placeholder">Select Day Order above to load timetable subjects, or tap + Other Subject</div>
       </div>
     </div>
-    <!-- Subject chips: tap to select -->
-    <div id="tl-f-do-chips" style="display:none;flex-wrap:wrap;gap:6px;margin-top:-4px;margin-bottom:4px"></div>
-    <div class="fg"><label class="fl">Topic / Chapter</label><input class="fi" id="tl-f-topic" placeholder="e.g. Quadratic Equations – introduction"></div>
-    <div class="fg"><label class="fl">Lesson Notes</label><textarea class="fi" id="tl-f-notes" rows="3" placeholder="What was covered, teaching method, key points…"></textarea></div>
-    <div class="fg"><label class="fl">Homework Given</label><input class="fi" id="tl-f-hw" placeholder="Page numbers, exercises…"></div>
+
     <div class="fg">
       <label class="fl" style="display:flex;align-items:center;gap:6px">🔴 Absent Students <span style="font-size:10px;color:var(--tx3);font-weight:400">(auto-snapped from today's attendance)</span></label>
       <select class="fi" id="tl-f-absent" multiple style="height:90px;font-size:11px">${_tlStudentOptions(absentIds)}</select>
-      <div style="font-size:10px;color:var(--tx3);margin-top:3px">Hold Ctrl/Cmd to select multiple • These students missed this lesson</div>
+      <div style="font-size:10px;color:var(--tx3);margin-top:3px">Hold Ctrl/Cmd to select multiple</div>
     </div>
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px">
       <button class="btn btn-sm" onclick="closeModal()">Cancel</button>
       <button class="btn btn-p" onclick="saveTeachingLog()">💾 Save Entry</button>
     </div>`);
-  // Auto-fill Day Order from today's attendance session
+
   setTimeout(() => {
+    // Auto-select session from attendance page
+    const attSessEl = document.getElementById('att-session');
+    const sessSel   = document.getElementById('tl-f-session');
+    if (attSessEl && sessSel) sessSel.value = attSessEl.value || 'morning';
+
+    // Auto-fill Day Order
     const doSel = document.getElementById('tl-f-dayorder');
     if (!doSel) return;
-    // Try currentDayOrder global first (live session), then localStorage
     const activeDO = (typeof currentDayOrder !== 'undefined' && currentDayOrder)
       ? currentDayOrder
       : (() => { try { return localStorage.getItem('_erp_last_dayorder_' + today) || ''; } catch(e){ return ''; } })();
@@ -16467,6 +16500,32 @@ function openEditTeachingLog(id) {
   const logs = _tlLoad();
   const log  = logs.find(l=>l.id===id);
   if (!log) return;
+
+  // Build subjects array from log (support both old and new format)
+  const subjectsArr = (log.subjects && log.subjects.length)
+    ? log.subjects
+    : [{ subject: log.subject||'', topic: log.topic||'', notes: log.lessonNotes||'', hw: log.homeworkGiven||'', type: 'other' }];
+
+  const subjectRowsHtml = subjectsArr.filter(s=>s.subject).map((s, i) => {
+    const isOther = s.type === 'other' || !s.type;
+    return `<div class="tl-subj-row" data-type="${isOther?'other':'tt'}" data-subject="${escHtml(s.subject)}"
+      style="border:.5px solid ${isOther?'#fbbf24':'var(--br)'};border-radius:10px;overflow:hidden;background:${isOther?'#fffbeb':'var(--bg2)'}">
+      <div style="display:flex;align-items:center;gap:10px;padding:9px 12px">
+        <span style="font-size:12px">${isOther?'📝':'📅'}</span>
+        ${isOther
+          ? `<input class="fi" data-field="subject" value="${escHtml(s.subject)}" style="flex:1;border:none;background:transparent;padding:0;font-weight:600;font-size:12px">`
+          : `<span style="font-size:12px;font-weight:600;color:var(--tx);flex:1">${escHtml(s.subject)}</span>`}
+        <span style="font-size:10px;${isOther?'color:#92400e;background:#fef3c7':'color:var(--tx3);background:#ede9fe'};padding:2px 8px;border-radius:10px;font-weight:600">${isOther?'Other':'Timetable'}</span>
+        ${i>0||isOther?`<button type="button" onclick="this.closest('.tl-subj-row').remove()" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:16px;line-height:1;padding:0 2px">×</button>`:''}
+      </div>
+      <div style="padding:0 12px 10px;border-top:.5px solid ${isOther?'#fde68a':'var(--br)'}">
+        <input class="fi" placeholder="Topic / Chapter" value="${escHtml(s.topic||'')}" style="margin-top:8px;margin-bottom:6px" data-field="topic">
+        <textarea class="fi" placeholder="Lesson notes (optional)" rows="2" style="margin-bottom:6px" data-field="notes">${escHtml(s.notes||s.lessonNotes||'')}</textarea>
+        <input class="fi" placeholder="Homework given (optional)" value="${escHtml(s.hw||s.homeworkGiven||'')}" data-field="hw">
+      </div>
+    </div>`;
+  }).join('');
+
   _tlShowModal(`
     <div class="modal-title">✏️ Edit Teaching Log</div>
     <div class="fg"><label class="fl">Date *</label><input class="fi" id="tl-f-date" type="date" value="${log.date||''}"></div>
@@ -16474,10 +16533,21 @@ function openEditTeachingLog(id) {
       <div class="fg"><label class="fl">Grade *</label><select class="fi" id="tl-f-grade"><option value="">Select…</option>${_tlGradeOptions(log.grade)}</select></div>
       <div class="fg"><label class="fl">Batch</label><select class="fi" id="tl-f-batch"><option value="">All / Any</option>${_tlBatchOptions(log.batch)}</select></div>
     </div>
-    <div class="fg"><label class="fl">Subject *</label><input class="fi" id="tl-f-subject" value="${escHtml(log.subject||'')}" placeholder="e.g. Mathematics"></div>
-    <div class="fg"><label class="fl">Topic / Chapter</label><input class="fi" id="tl-f-topic" value="${escHtml(log.topic||'')}" placeholder="e.g. Quadratic Equations"></div>
-    <div class="fg"><label class="fl">Lesson Notes</label><textarea class="fi" id="tl-f-notes" rows="3">${escHtml(log.lessonNotes||'')}</textarea></div>
-    <div class="fg"><label class="fl">Homework Given</label><input class="fi" id="tl-f-hw" value="${escHtml(log.homeworkGiven||'')}"></div>
+    <div class="fg"><label class="fl">Session</label>
+      <select class="fi" id="tl-f-session">
+        <option value="morning" ${(log.session||'morning')==='morning'?'selected':''}>☀️ Morning</option>
+        <option value="evening" ${log.session==='evening'?'selected':''}>🌙 Evening</option>
+      </select>
+    </div>
+    <div style="margin-bottom:6px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <label class="fl" style="margin:0">📚 Subjects Taught</label>
+        <button type="button" onclick="tlAddOtherSubject()" style="font-size:10px;padding:3px 10px;border-radius:7px;background:#ede9fe;color:#7c3aed;border:.5px solid #c4b5fd;cursor:pointer;font-family:inherit;font-weight:600">+ Other Subject</button>
+      </div>
+      <div id="tl-f-subjects-list" style="display:flex;flex-direction:column;gap:8px">
+        ${subjectRowsHtml}
+      </div>
+    </div>
     <div class="fg">
       <label class="fl">🔴 Absent Students (missed this lesson)</label>
       <select class="fi" id="tl-f-absent" multiple style="height:90px;font-size:11px">${_tlStudentOptions(log.absentStudentIds||[])}</select>
@@ -16492,19 +16562,45 @@ function saveTeachingLog(editId) {
   const date    = (document.getElementById('tl-f-date')||{}).value || '';
   const grade   = (document.getElementById('tl-f-grade')||{}).value || '';
   const batch   = (document.getElementById('tl-f-batch')||{}).value || '';
-  const subject = (document.getElementById('tl-f-subject')||{}).value?.trim() || '';
-  const topic   = (document.getElementById('tl-f-topic')||{}).value?.trim() || '';
-  const notes   = (document.getElementById('tl-f-notes')||{}).value?.trim() || '';
-  const hw      = (document.getElementById('tl-f-hw')||{}).value?.trim() || '';
+  const session = (document.getElementById('tl-f-session')||{}).value || 'morning';
   const absSel  = document.getElementById('tl-f-absent');
   const absentIds = absSel ? [...absSel.selectedOptions].map(o=>o.value) : [];
-  if (!date || !grade || !subject) { showToast('⚠️ Date, Grade & Subject are required'); return; }
+
+  // Collect subjects array (multi-subject support)
+  const subjects = typeof _tlCollectSubjects === 'function' ? _tlCollectSubjects() : [];
+
+  // Legacy single-subject fallback (edit modal still uses single fields)
+  const legacySubject = (document.getElementById('tl-f-subject')||{}).value?.trim() || '';
+  const legacyTopic   = (document.getElementById('tl-f-topic')||{}).value?.trim()   || '';
+  const legacyNotes   = (document.getElementById('tl-f-notes')||{}).value?.trim()   || '';
+  const legacyHw      = (document.getElementById('tl-f-hw')||{}).value?.trim()      || '';
+
+  // Determine primary subject for backward compat
+  const primarySubj = subjects.length > 0 ? subjects[0] : (legacySubject ? {subject:legacySubject,topic:legacyTopic,notes:legacyNotes,hw:legacyHw} : null);
+
+  if (!date || !grade) { showToast('⚠️ Date & Grade are required'); return; }
+  if (!primarySubj) { showToast('⚠️ Add at least one subject'); return; }
+
   const logs = _tlLoad();
+  const entry = {
+    id: editId || ('tl_' + Date.now()),
+    date, grade, batch, session,
+    // Primary subject fields (backward compat)
+    subject: primarySubj.subject,
+    topic:   primarySubj.topic   || '',
+    lessonNotes: primarySubj.notes || '',
+    homeworkGiven: primarySubj.hw  || '',
+    // Multi-subject array (all subjects including primary)
+    subjects: subjects.length > 0 ? subjects : [{subject:legacySubject,topic:legacyTopic,notes:legacyNotes,hw:legacyHw}],
+    absentStudentIds: absentIds,
+    createdAt: new Date().toISOString(),
+  };
+
   if (editId) {
-    const idx = logs.findIndex(l=>l.id===editId);
-    if (idx>-1) logs[idx] = {...logs[idx], date, grade, batch, subject, topic, lessonNotes:notes, homeworkGiven:hw, absentStudentIds:absentIds};
+    const idx = logs.findIndex(l => l.id === editId);
+    if (idx > -1) logs[idx] = { ...logs[idx], ...entry };
   } else {
-    logs.push({ id:'tl_'+Date.now(), date, grade, batch, subject, topic, lessonNotes:notes, homeworkGiven:hw, absentStudentIds:absentIds, createdAt:new Date().toISOString() });
+    logs.push(entry);
   }
   _tlSave(logs);
   closeModal();
@@ -16571,30 +16667,128 @@ function _tlDayOrderOptions(sel) {
 
 function tlFormOnDayOrderChange() {
   const dayOrderNum = (document.getElementById('tl-f-dayorder')||{}).value || '';
-  if (!dayOrderNum) return;
-  const subjs = typeof getSubjectsForDayOrder === 'function'
-    ? getSubjectsForDayOrder(dayOrderNum)
-    : (typeof dayOrderMap === 'object' ? (dayOrderMap[dayOrderNum] || []) : []);
-  const subjectInput = document.getElementById('tl-f-subject');
-  const subjectSel   = document.getElementById('tl-f-subject-sel');
-  if (!subjectInput) return;
+  const list = document.getElementById('tl-f-subjects-list');
+  if (!list) return;
+
+  const subjs = dayOrderNum
+    ? (typeof getSubjectsForDayOrder === 'function'
+        ? getSubjectsForDayOrder(dayOrderNum)
+        : (typeof dayOrderMap === 'object' ? (dayOrderMap[dayOrderNum] || []) : []))
+    : [];
+
+  // Keep any existing "other" rows the user already added
+  const existingOthers = [...list.querySelectorAll('.tl-subj-row[data-type="other"]')];
+
+  // Remove timetable rows, rebuild them
+  [...list.querySelectorAll('.tl-subj-row[data-type="tt"]')].forEach(r => r.remove());
+  const placeholder = document.getElementById('tl-subjects-placeholder');
+
   if (subjs.length === 0) {
-    if (subjectSel) subjectSel.style.display = 'none';
-    subjectInput.style.display = '';
-    subjectInput.placeholder = 'No subjects set for Day Order ' + dayOrderNum;
+    if (placeholder) placeholder.style.display = existingOthers.length ? 'none' : '';
     return;
   }
-  if (subjectSel) {
-    subjectSel.style.display = subjs.length > 1 ? '' : 'none';
-    subjectSel.innerHTML = '<option value="">— Pick subject —</option>' + subjs.map(s=>`<option value="${s}">${s}</option>`).join('');
-    subjectSel.onchange = () => { if (subjectSel.value) subjectInput.value = subjectSel.value; };
+  if (placeholder) placeholder.style.display = 'none';
+
+  // Insert timetable subject rows before any "other" rows
+  const firstOther = list.querySelector('.tl-subj-row[data-type="other"]');
+  subjs.forEach((subj, i) => {
+    const row = document.createElement('div');
+    row.className = 'tl-subj-row';
+    row.dataset.type = 'tt';
+    row.dataset.subject = subj;
+    row.style.cssText = 'border:.5px solid var(--br);border-radius:10px;overflow:hidden;background:var(--bg2)';
+    row.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;cursor:pointer;user-select:none" onclick="tlToggleSubjRow(this)">
+        <div style="width:18px;height:18px;border-radius:5px;border:1.5px solid #7c3aed;background:#7c3aed;display:flex;align-items:center;justify-content:center;flex-shrink:0" class="tl-chk">
+          <svg width="10" height="10" viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke="#fff" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <span style="font-size:12px;font-weight:600;color:var(--tx);flex:1">${escHtml(subj)}</span>
+        <span style="font-size:10px;color:var(--tx3);background:#ede9fe;padding:2px 8px;border-radius:10px;font-weight:600">📅 Timetable</span>
+      </div>
+      <div class="tl-subj-fields" style="padding:0 12px 10px;border-top:.5px solid var(--br)">
+        <input class="fi" placeholder="Topic / Chapter" style="margin-top:8px;margin-bottom:6px" data-field="topic">
+        <textarea class="fi" placeholder="Lesson notes (optional)" rows="2" style="margin-bottom:6px" data-field="notes"></textarea>
+        <input class="fi" placeholder="Homework given (optional)" data-field="hw">
+      </div>`;
+    if (firstOther) list.insertBefore(row, firstOther);
+    else list.appendChild(row);
+  });
+}
+
+function tlToggleSubjRow(header) {
+  const row    = header.closest('.tl-subj-row');
+  const chk    = header.querySelector('.tl-chk');
+  const fields = row.querySelector('.tl-subj-fields');
+  const on     = chk.style.background === 'rgb(124, 58, 237)' || chk.style.background === '#7c3aed' || !chk.dataset.off;
+  if (on) {
+    chk.style.background = 'var(--bg)';
+    chk.style.borderColor = '#cbd5e1';
+    chk.innerHTML = '';
+    fields.style.display = 'none';
+    chk.dataset.off = '1';
+  } else {
+    chk.style.background = '#7c3aed';
+    chk.style.borderColor = '#7c3aed';
+    chk.innerHTML = '<svg width="10" height="10" viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke="#fff" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    fields.style.display = '';
+    delete chk.dataset.off;
   }
-  subjectInput.value = subjs[0];
-  const chipRow = document.getElementById('tl-f-do-chips');
-  if (chipRow) {
-    chipRow.style.display = 'flex';
-    chipRow.innerHTML = subjs.map((s,i)=>`<span style="font-size:10px;padding:2px 9px;border-radius:10px;background:${i===0?'#7c3aed22':'var(--bg)'};color:${i===0?'#5b21b6':'var(--tx2)'};border:.5px solid ${i===0?'#a78bfa':'var(--br)'};cursor:pointer" onclick="document.getElementById('tl-f-subject').value='${s.replace(/'/g,"\\'")}'${subjectSel?`;document.getElementById('tl-f-subject-sel').value='${s.replace(/'/g,"\\'")}';`:''}title='Tap to select'">${s}</span>`).join('');
-  }
+}
+
+let _tlOtherIdx = 0;
+function tlAddOtherSubject(prefillSubject) {
+  const list = document.getElementById('tl-f-subjects-list');
+  if (!list) return;
+  const placeholder = document.getElementById('tl-subjects-placeholder');
+  if (placeholder) placeholder.style.display = 'none';
+  const idx = _tlOtherIdx++;
+  const row = document.createElement('div');
+  row.className = 'tl-subj-row';
+  row.dataset.type = 'other';
+  row.style.cssText = 'border:.5px solid #fbbf24;border-radius:10px;overflow:hidden;background:#fffbeb';
+  row.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;padding:9px 12px">
+      <span style="font-size:12px">📝</span>
+      <input class="fi" placeholder="Subject name *" data-field="subject" value="${escHtml(prefillSubject||'')}" style="flex:1;border:none;background:transparent;padding:0;font-weight:600;font-size:12px">
+      <span style="font-size:10px;color:#92400e;background:#fef3c7;padding:2px 8px;border-radius:10px;font-weight:600">Other</span>
+      <button type="button" onclick="this.closest('.tl-subj-row').remove();_tlCheckSubjectsPlaceholder()" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:16px;line-height:1;padding:0 2px">×</button>
+    </div>
+    <div style="padding:0 12px 10px;border-top:.5px solid #fde68a">
+      <input class="fi" placeholder="Topic / Chapter" style="margin-top:8px;margin-bottom:6px" data-field="topic">
+      <textarea class="fi" placeholder="Lesson notes (optional)" rows="2" style="margin-bottom:6px" data-field="notes"></textarea>
+      <input class="fi" placeholder="Homework given (optional)" data-field="hw">
+    </div>`;
+  list.appendChild(row);
+}
+
+function _tlCheckSubjectsPlaceholder() {
+  const list = document.getElementById('tl-f-subjects-list');
+  const ph   = document.getElementById('tl-subjects-placeholder');
+  if (!list || !ph) return;
+  ph.style.display = list.querySelectorAll('.tl-subj-row').length === 0 ? '' : 'none';
+}
+
+/* ── Collect all subject rows from the form ── */
+function _tlCollectSubjects() {
+  const rows = document.querySelectorAll('#tl-f-subjects-list .tl-subj-row');
+  const result = [];
+  rows.forEach(row => {
+    const chk = row.querySelector('.tl-chk');
+    // Skip unchecked timetable rows
+    if (row.dataset.type === 'tt' && chk && chk.dataset.off) return;
+    const subj = row.dataset.type === 'tt'
+      ? row.dataset.subject
+      : (row.querySelector('[data-field="subject"]')?.value?.trim() || '');
+    if (!subj) return;
+    result.push({
+      subject: subj,
+      topic:   row.querySelector('[data-field="topic"]')?.value?.trim()  || '',
+      notes:   row.querySelector('[data-field="notes"]')?.value?.trim()  || '',
+      hw:      row.querySelector('[data-field="hw"]')?.value?.trim()     || '',
+      type:    row.dataset.type || 'other',
+    });
+  });
+  return result;
 }
 
 function tlFormSyncDayOrder() {
@@ -16668,28 +16862,58 @@ function _tlGetMonthlyTemplate() {
   try { return localStorage.getItem('_erp_wt_teaching_monthly_ta') || ''; } catch(e) { return ''; }
 }
 
-/* ── Fill daily lesson template for one absent student ── */
+/* ── Fill daily lesson template for one absent student — groups ALL subjects into one message ── */
 function _tlFillDailyMsg(s, missedLogs) {
   const tmpl = _tlGetDailyTemplate() || (WA_TEMPLATES.teaching_daily?.ta?.[0] || '');
   const today = new Date().toISOString().slice(0, 10);
   const dateLabel = new Date(today).toLocaleDateString('ta-IN', { weekday: 'long', day: 'numeric', month: 'long' });
-  const lessonsBlock = missedLogs.map(l => {
-    let line = `📚 ${l.subject || '—'}`;
-    if (l.topic) line += ` — ${l.topic}`;
-    if (l.lessonNotes) line += `\n   📝 ${l.lessonNotes.slice(0, 120)}${l.lessonNotes.length > 120 ? '…' : ''}`;
-    if (l.homeworkGiven) line += `\n   📋 Homework: ${l.homeworkGiven}`;
-    return line;
-  }).join('\n\n');
+
+  // Group logs by session (morning/evening) then list all subjects
+  const morningLogs = missedLogs.filter(l => l.session === 'morning' || !l.session);
+  const eveningLogs = missedLogs.filter(l => l.session === 'evening');
+
+  function buildSubjectBlock(logs) {
+    return logs.map(l => {
+      // Support multi-subject array
+      const subjectsArr = (l.subjects && l.subjects.length)
+        ? l.subjects
+        : [{ subject: l.subject, topic: l.topic, notes: l.lessonNotes, hw: l.homeworkGiven }];
+      return subjectsArr.filter(s => s.subject).map(s => {
+        let line = `📚 ${s.subject}`;
+        if (s.topic) line += ` — ${s.topic}`;
+        const notes = s.notes || s.lessonNotes || '';
+        if (notes) line += `\n   📝 ${notes.slice(0, 150)}${notes.length > 150 ? '…' : ''}`;
+        const hw = s.hw || s.homeworkGiven || '';
+        if (hw) line += `\n   📋 Homework: ${hw}`;
+        return line;
+      }).join('\n\n');
+    }).filter(Boolean).join('\n\n');
+  }
+
+  let lessonsBlock = '';
+  if (eveningLogs.length > 0) {
+    // Has both sessions — label them
+    if (morningLogs.length > 0) {
+      lessonsBlock = `☀️ *காலை வகுப்பு:*\n${buildSubjectBlock(morningLogs)}`;
+      lessonsBlock += `\n\n🌙 *மாலை வகுப்பு:*\n${buildSubjectBlock(eveningLogs)}`;
+    } else {
+      lessonsBlock = `🌙 *மாலை வகுப்பு:*\n${buildSubjectBlock(eveningLogs)}`;
+    }
+  } else {
+    // Single session — no label needed
+    lessonsBlock = buildSubjectBlock(morningLogs.length ? morningLogs : missedLogs);
+  }
+
   const batchLine = (s.batch || s.course) ? ' | ' + (s.batch || s.course) : '';
   return tmpl
-    .replace(/{parent_name}/g,  s.parent || 'பெற்றோர்')
-    .replace(/{student_name}/g, s.name || '')
-    .replace(/{grade}/g,        s.grade || '—')
-    .replace(/{batch_line}/g,   batchLine)
-    .replace(/{date}/g,         dateLabel)
+    .replace(/{parent_name}/g,   s.parent || 'பெற்றோர்')
+    .replace(/{student_name}/g,  s.name || '')
+    .replace(/{grade}/g,         s.grade || '—')
+    .replace(/{batch_line}/g,    batchLine)
+    .replace(/{date}/g,          dateLabel)
     .replace(/{lessons_block}/g, lessonsBlock)
-    .replace(/{center_name}/g,  CFG.CENTER.name)
-    .replace(/{center_phone}/g, CFG.CENTER.phone);
+    .replace(/{center_name}/g,   CFG.CENTER.name)
+    .replace(/{center_phone}/g,  CFG.CENTER.phone);
 }
 
 /* ── Fill monthly growth template for one student (non-AI fallback) ── */
@@ -16743,16 +16967,17 @@ function _tlFillMonthlyMsg(student, data, monthLabel) {
 }
 
 /* ── Send today's teaching content to absent students via WhatsApp ──
-   Filters by current class/batch selection. Only sends to students
-   marked absent in today's teaching log entries. ── */
+   Source of absent list: Attendance page state, filtered by selected class/batch.
+   All today's teaching logs for that class are bundled into ONE message per student.
+   Morning + Evening subjects appear together. No popup — sends directly. ── */
 function tlSendTodayContentToAbsent() {
-  const stArr   = (typeof students !== 'undefined' && Array.isArray(students)) ? students : [];
-  const today   = new Date().toISOString().slice(0, 10);
-  const grade   = (document.getElementById('tl-grade-sel') || {}).value || 'all';
-  const batch   = (document.getElementById('tl-batch-sel') || {}).value || 'all';
+  const stArr  = (typeof students !== 'undefined' && Array.isArray(students)) ? students : [];
+  const today  = new Date().toISOString().slice(0, 10);
+  const grade  = (document.getElementById('tl-grade-sel') || {}).value || 'all';
+  const batch  = (document.getElementById('tl-batch-sel') || {}).value || 'all';
 
-  // Get all teaching log entries for today matching current filter
-  const allLogs = _tlLoad();
+  // ── Get today's teaching logs for the selected class ──
+  const allLogs   = _tlLoad();
   const todayLogs = allLogs.filter(l => {
     if (l.date !== today) return false;
     if (grade !== 'all' && l.grade && l.grade !== grade) return false;
@@ -16761,82 +16986,93 @@ function tlSendTodayContentToAbsent() {
   });
 
   if (!todayLogs.length) {
-    showToast("⚠️ No teaching log entries for today" + (grade !== 'all' ? ' (Class ' + grade + ')' : '') + ". Add today's lesson first.");
+    showToast('⚠️ No teaching log for today' + (grade !== 'all' ? ' (Class ' + grade + ')' : '') + '. Add today\'s lesson first.');
     return;
   }
 
-  // Collect all absent student IDs across today's logs (respecting filter)
+  // ── Get absent student IDs from Attendance state, filtered by class ──
   const absentIdSet = new Set();
-  todayLogs.forEach(l => (l.absentStudentIds || []).forEach(id => absentIdSet.add(id)));
+
+  // From live attState (current session in memory)
+  if (typeof attState === 'object') {
+    Object.keys(attState).forEach(k => {
+      if (attState[k] !== 'A') return;
+      const sid = k.split('|')[0];
+      const s = stArr.find(x => x.id === sid);
+      if (!s) return;
+      if (grade !== 'all' && s.grade !== grade) return;
+      if (batch !== 'all' && (s.batch || s.course || '') !== batch) return;
+      absentIdSet.add(sid);
+    });
+  }
+
+  // From localStorage — scan all of today's saved sessions
+  try {
+    const idx = JSON.parse(localStorage.getItem('_erp_att_index') || '[]');
+    idx.forEach(sk => {
+      if (!sk.includes('_erp_att_' + today)) return;
+      try {
+        const saved = JSON.parse(localStorage.getItem(sk) || '{}');
+        Object.keys(saved).forEach(k => {
+          if (saved[k] !== 'A') return;
+          const sid = k.split('|')[0];
+          const s = stArr.find(x => x.id === sid);
+          if (!s) return;
+          if (grade !== 'all' && s.grade !== grade) return;
+          if (batch !== 'all' && (s.batch || s.course || '') !== batch) return;
+          absentIdSet.add(sid);
+        });
+      } catch(e2) {}
+    });
+  } catch(e) {}
+
+  // Fallback: also include students marked absent in the teaching log entries themselves
+  todayLogs.forEach(l => (l.absentStudentIds || []).forEach(id => {
+    const s = stArr.find(x => x.id === id);
+    if (!s) return;
+    if (grade !== 'all' && s.grade !== grade) return;
+    if (batch !== 'all' && (s.batch || s.course || '') !== batch) return;
+    absentIdSet.add(id);
+  }));
+
+  const filterLabel = grade !== 'all' ? ` (Class ${grade}${batch !== 'all' ? '/' + batch : ''})` : '';
 
   if (!absentIdSet.size) {
-    showToast('✅ No absent students in today\'s teaching logs' + (grade !== 'all' ? ' for Class ' + grade : '') + '.');
+    showToast('✅ No absent students in today\'s attendance' + filterLabel + '.');
     return;
   }
 
-  // Build per-absent-student message
-  const queue = [];
-  absentIdSet.forEach(sid => {
+  // ── Build and send — one WA per absent student with ALL subjects bundled ──
+  let sentCount = 0, noPhoneCount = 0;
+
+  [...absentIdSet].forEach((sid, i) => {
     const s = stArr.find(x => x.id === sid);
     if (!s) return;
-    const phone = s.phone || s.pphone || s.parentPhone || '';
-    if (!phone) return;
+    const phone = (s.phone || s.pphone || s.parentPhone || '').replace(/\D/g, '').replace(/^91/, '');
+    if (!phone) { noPhoneCount++; return; }
 
-    // Which lessons did this student miss today
-    const missedLogs = todayLogs.filter(l => (l.absentStudentIds || []).includes(sid));
-    const msg = _tlFillDailyMsg(s, missedLogs);
-
-    queue.push({ s, phone, msg });
+    // Pass ALL today's class logs — morning + evening bundled into one message
+    const msg = _tlFillDailyMsg(s, todayLogs);
+    setTimeout(() => openWA('91' + phone, msg), sentCount * 900);
+    sentCount++;
   });
 
-  if (!queue.length) {
-    showToast('⚠️ Absent students found but none have phone numbers recorded.');
+  if (!sentCount) {
+    showToast('⚠️ ' + absentIdSet.size + ' absent student(s) found but none have phone numbers.');
     return;
   }
 
-  // Build a modal queue list
-  const filterLabel = grade !== 'all' ? ` — Class ${grade}${batch !== 'all' ? ' / ' + batch : ''}` : '';
-  const rows = queue.map((item, idx) => {
-    const waUrl = 'https://wa.me/91' + item.phone.replace(/\D/g, '').replace(/^91/, '') + '?text=' + encodeURIComponent(item.msg);
-    return `<div id="tltoday-row-${idx}" style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:.5px solid var(--br)">
-      <div class="av" style="background:${item.s.color||'#dc2626'};width:30px;height:30px;font-size:12px;flex-shrink:0">${(item.s.name||'?')[0]}</div>
-      <div style="flex:1;min-width:0">
-        <div style="font-size:12px;font-weight:600;color:var(--tx)">${item.s.name}</div>
-        <div style="font-size:10px;color:var(--tx3)">Class ${item.s.grade||'—'} · ${item.phone}</div>
-      </div>
-      <a href="${waUrl}" target="_blank" onclick="document.getElementById('tltoday-row-${idx}').style.opacity='.45';showToast('📱 Opened WA for ${item.s.name}')"
-        class="btn btn-wa btn-sm" style="font-size:10px;text-decoration:none;padding:4px 10px;flex-shrink:0">📱 Send</a>
-    </div>`;
-  }).join('');
-
-  _tlShowModal(`
-    <div class="modal-title">📨 Today's Lesson — Send to Absent Students${filterLabel}</div>
-    <div style="font-size:11px;color:var(--tx3);margin-bottom:2px">${todayLogs.length} lesson(s) today · ${queue.length} absent student(s) with phone</div>
-    <div style="background:#fef3c7;border:.5px solid #fbbf24;border-radius:8px;padding:8px 12px;font-size:11px;color:#92400e;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px">
-      <div>📚 Subjects: <b>${[...new Set(todayLogs.map(l=>l.subject).filter(Boolean))].join(', ')}</b></div>
-      <button onclick="closeModal();navTo('whatsapp');setTimeout(()=>{switchWATab('templates');selectWTType('teaching_daily')},120)" style="background:none;border:.5px solid #fbbf24;border-radius:6px;padding:3px 9px;font-size:10px;color:#92400e;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0">✏️ Edit Template</button>
-    </div>
-    <div style="border:.5px solid var(--br);border-radius:10px;overflow:hidden;max-height:360px;overflow-y:auto">
-      ${rows}
-    </div>
-    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
-      <button class="btn btn-sm" onclick="closeModal()">Close</button>
-      <button class="btn btn-wa" onclick="tlSendAllTodayAbsent(${JSON.stringify(queue.map(q=>({p:q.phone,m:q.msg})))});closeModal()" style="font-size:11px">📱 Send All (${queue.length})</button>
-    </div>`);
-}
-
-function tlSendAllTodayAbsent(items) {
-  if (!items || !items.length) return;
-  items.forEach((item, i) => {
-    setTimeout(() => {
-      const clean = item.p.replace(/\D/g,'').replace(/^91/,'');
-      window.open('https://wa.me/91' + clean + '?text=' + encodeURIComponent(item.m), '_blank');
-    }, i * 900);
-  });
-  showToast('📱 Sending to ' + items.length + ' absent student(s)…');
+  const subjects = [...new Set(todayLogs.map(l => l.subject).filter(Boolean))];
+  const noPhoneNote = noPhoneCount ? `, ${noPhoneCount} skipped (no phone)` : '';
+  showToast(`📱 Sending to ${sentCount} absent student(s)${filterLabel} — ${subjects.join(', ')}${noPhoneNote}`);
 }
 
 async function tlRunAIGrowth() {
+  const lic = window.__LIC__ || {};
+  if (lic.features && lic.features.aiGrowthClass === false) {
+    showToast('✨ AI Growth (Class) requires Pro plan or above');
+    openUpgrade(); return;
+  }
   const logs     = _tlFilteredLogs();
   const stArr = (typeof students !== 'undefined' && Array.isArray(students)) ? students : [];
   if (!logs.length) { showToast('No teaching log entries in this filter'); return; }
@@ -17208,6 +17444,11 @@ var _tlMonthlyWAQueue = [];
 var _tlMonthlyWASentIdx = 0;
 
 async function tlRunMonthlyGrowthWA() {
+  const lic = window.__LIC__ || {};
+  if (lic.features && lic.features.monthlyGrowthWA === false) {
+    showToast('📱 Monthly Growth WA requires Pro plan or above');
+    openUpgrade(); return;
+  }
   const now  = new Date();
   const yr   = now.getFullYear();
   const mo   = now.getMonth();
@@ -17297,19 +17538,23 @@ function _tlRenderMonthlyQueueList() {
   if (!qList) return;
   qList.innerHTML = _tlMonthlyWAQueue.map((item, idx) => {
     const s = item.student;
-    const waUrl = 'https://wa.me/91' + (item.phone||'').replace(/\D/g,'').replace(/^91/,'') + '?text=' + encodeURIComponent(item.message);
-    return `<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-bottom:.5px solid var(--br);${item.sent?'opacity:.5':''}">
-      <div class="av" style="background:${s.color||'#7c3aed'};width:28px;height:28px;font-size:11px;flex-shrink:0">${(s.name||'?')[0]}</div>
-      <div style="flex:1;min-width:0">
-        <div style="font-size:12px;font-weight:600;color:var(--tx)">${s.name}</div>
-        <div style="font-size:10px;color:var(--tx3)">Class ${s.grade||'—'} · ${s.batch||s.course||'—'} · ${item.phone||'No phone'}</div>
+    const cleanPhone = (item.phone||'').replace(/\D/g,'').replace(/^91/,'');
+    const waUrl = 'https://wa.me/91' + cleanPhone + '?text=' + encodeURIComponent(item.message);
+    return `<div style="${item.sent?'opacity:.5':''}">
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-bottom:.5px solid var(--br)">
+        <div class="av" style="background:${s.color||'#7c3aed'};width:28px;height:28px;font-size:11px;flex-shrink:0">${(s.name||'?')[0]}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:12px;font-weight:600;color:var(--tx)">${s.name}</div>
+          <div style="font-size:10px;color:var(--tx3)">Class ${s.grade||'—'} · ${s.batch||s.course||'—'} · ${item.phone||'No phone'}</div>
+        </div>
+        <div style="display:flex;gap:5px;flex-shrink:0">
+          <button onclick="tlPreviewMonthlyMsg(${idx})" style="font-size:10px;padding:3px 8px;border-radius:6px;background:var(--bg);border:.5px solid var(--br);cursor:pointer;color:var(--tx2);font-family:inherit" title="Preview message">👁</button>
+          ${item.phone
+            ? `<a href="${waUrl}" target="_blank" onclick="tlMarkMonthlySent(${idx})" class="btn btn-wa btn-sm" style="font-size:10px;text-decoration:none;padding:3px 9px">${item.sent?'✅ Sent':'📱 Send'}</a>`
+            : `<span style="font-size:10px;color:#dc2626;padding:3px 8px">No phone</span>`}
+        </div>
       </div>
-      <div style="display:flex;gap:5px;flex-shrink:0">
-        <button onclick="tlPreviewMonthlyMsg(${idx})" style="font-size:10px;padding:3px 8px;border-radius:6px;background:var(--bg);border:.5px solid var(--br);cursor:pointer;color:var(--tx2);font-family:inherit">👁</button>
-        ${item.phone
-          ? `<a href="${waUrl}" target="_blank" onclick="tlMarkMonthlySent(${idx})" class="btn btn-wa btn-sm" style="font-size:10px;text-decoration:none;padding:3px 9px">${item.sent?'✅ Sent':'📱 Send'}</a>`
-          : `<span style="font-size:10px;color:#dc2626;padding:3px 8px">No phone</span>`}
-      </div>
+      <div id="tlmq-preview-${idx}" style="display:none;background:#f0fdf4;border-bottom:.5px solid var(--br);padding:10px 14px;font-size:11px;color:#166534;line-height:1.7;white-space:pre-wrap;font-family:'Noto Sans Tamil',system-ui;max-height:260px;overflow-y:auto">${escHtml(item.message)}</div>
     </div>`;
   }).join('');
 }
@@ -17335,12 +17580,9 @@ function tlMarkMonthlySent(idx) {
 function tlPreviewMonthlyMsg(idx) {
   const item = _tlMonthlyWAQueue[idx];
   if (!item) return;
-  _tlShowModal(`<div class="modal-title">👁 Preview — ${item.student.name}</div>
-    <div style="background:#dcfce7;border-radius:8px;padding:12px;font-size:12px;color:#166534;line-height:1.7;white-space:pre-wrap;max-height:400px;overflow-y:auto;font-family:'Noto Sans Tamil',system-ui">${escHtml(item.message)}</div>
-    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
-      <button class="btn btn-sm" onclick="closeModal()">Close</button>
-      ${item.phone ? `<a href="https://wa.me/91${(item.phone||'').replace(/\\D/g,'').replace(/^91/,'')}?text=${encodeURIComponent(item.message)}" target="_blank" onclick="tlMarkMonthlySent(${idx});closeModal()" class="btn btn-wa btn-sm" style="text-decoration:none">📱 Open WA</a>` : ''}
-    </div>`);
+  const el = document.getElementById('tlmq-preview-' + idx);
+  if (!el) return;
+  el.style.display = el.style.display === 'none' ? '' : 'none';
 }
 
 /* ── Check on Teaching Log page load: if last working day, suggest sending ── */

@@ -350,6 +350,51 @@ tbody tr:hover td{background:var(--bg)}
 /* Scrollbar */
 .dark ::-webkit-scrollbar-track{background:var(--bg)}
 .dark ::-webkit-scrollbar-thumb{background:var(--br2)}
+
+/* ══════════════════════════════════════════════════════
+   DARK MODE — LETTER (TEXT) COLOUR FIXES
+   These saturated "600/700" text colours (red/green/amber/blue/
+   teal/indigo/purple) are used hundreds of times as status text
+   (Absent, Present, Critical, ✅/⚠️/🔴 labels, section titles etc).
+   Many sit inside boxes whose background is ALSO remapped to a
+   dark shade above (e.g. #fee2e2→#7f1d1d), which left dark red
+   text on a dark red box — nearly unreadable. Lightening the text
+   to the same light-tint family used elsewhere in dark mode fixes
+   contrast everywhere these colours appear, on or off a box.
+══════════════════════════════════════════════════════ */
+.dark [style*="color:#dc2626"]{color:#fca5a5!important}
+.dark [style*="color:#16a34a"]{color:#6ee7b7!important}
+.dark [style*="color:#ca8a04"]{color:#fcd34d!important}
+.dark [style*="color:#d97706"]{color:#fcd34d!important}
+.dark [style*="color:#a16207"]{color:#fcd34d!important}
+.dark [style*="color:#0369a1"]{color:#67e8f9!important}
+.dark [style*="color:#065f46"]{color:#6ee7b7!important}
+.dark [style*="color:#c2410c"]{color:#fdba74!important}
+.dark [style*="color:#0f766e"]{color:#5eead4!important}
+.dark [style*="color:#4338ca"]{color:#a5b4fc!important}
+.dark [style*="color:#6d28d9"]{color:#c4b5fd!important}
+.dark [style*="color:#534ab7"]{color:#c4b5fd!important}
+.dark [style*="color:#475569"]{color:var(--tx2)!important}
+
+/* ── DARK MODE — HIGHLIGHT (BACKGROUND) COLOUR FIXES ──
+   Light pastel boxes that weren't yet remapped to their dark
+   equivalent (would otherwise stay bright white/pastel — a glaring
+   "light hole" inside an otherwise dark page). ── */
+.dark [style*="background:#fff7ed"]{background:#78350f!important;border-color:#92400e!important}
+.dark [style*="background:#fff3cd"]{background:#78350f!important;border-color:#92400e!important}
+.dark [style*="background:#e0f2fe"]{background:#164e63!important;border-color:#0e7490!important}
+.dark [style*="background:#bae6fd"]{background:#164e63!important;border-color:#0e7490!important}
+.dark [style*="background:#d1fae5"]{background:#064e3b!important;border-color:#166534!important}
+.dark [style*="background:#a7f3d0"]{background:#064e3b!important;border-color:#166534!important}
+.dark [style*="background:#e6f7f2"]{background:#064e3b!important;border-color:#166534!important}
+.dark [style*="background:#ccfbf1"]{background:#134e4a!important;border-color:#0f766e!important}
+.dark [style*="background:#eef2ff"]{background:#1e3a8a!important;border-color:#1d4ed8!important}
+.dark [style*="background:#e0e7ff"]{background:#1e3a8a!important;border-color:#1d4ed8!important}
+.dark [style*="background:#bfdbfe"]{background:#1e3a8a!important;border-color:#1d4ed8!important}
+.dark [style*="background:#c7d2fe"]{background:#4c1d95!important;border-color:#5b21b6!important}
+.dark [style*="border:.5px solid #fed7aa"]{border-color:#92400e!important}
+.dark [style*="border:.5px solid #c4b5fd"]{border-color:#5b21b6!important}
+.dark [style*="border-color:#fecaca"]{border-color:#7f1d1d!important}
 .wa-msg-header{display:flex;align-items:center;gap:10px;margin-bottom:10px}
 .wa-type-badge{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
 .wa-preview{background:#dcfce7;border-radius:8px;padding:12px;font-size:12px;color:#166534;line-height:1.6;white-space:pre-wrap;font-family:'Noto Sans Tamil',system-ui,sans-serif;max-height:200px;overflow-y:auto}
@@ -9287,7 +9332,7 @@ function renderAdminDangerZone() {
     if (p.leaveScore >= 70) reasons.push('🚪 Dropout Risk');
     if (p.feeScore   >= 70) reasons.push('💸 Fee Delay');
     if (p.attScore   >= 70) reasons.push('📊 Attendance');
-    return `<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:10px 12px">
+    return `<div class="dm-red-box" style="border-radius:10px;padding:10px 12px">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
         <div class="av" style="background:${s.color};width:28px;height:28px;font-size:11px;flex-shrink:0">${(s.name||'?')[0]}</div>
         <div style="flex:1;min-width:0">
@@ -9297,7 +9342,7 @@ function renderAdminDangerZone() {
         <span style="font-size:9px;font-weight:800;background:#dc2626;color:#fff;padding:2px 8px;border-radius:8px">🔴 CRITICAL</span>
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">
-        ${reasons.map(r => `<span style="font-size:9px;font-weight:600;background:#fee2e2;color:#991b1b;padding:2px 7px;border-radius:7px">${r}</span>`).join('')}
+        ${reasons.map(r => `<span class="dm-red-box" style="font-size:9px;font-weight:600;padding:2px 7px;border-radius:7px">${r}</span>`).join('')}
       </div>
       <div style="display:flex;gap:6px">
         <button class="btn btn-wa btn-sm" style="flex:1;justify-content:center;font-size:10px" onclick="sendSumWA('${s.id}',new Date().getFullYear(),new Date().getMonth())">📱 Send Report</button>

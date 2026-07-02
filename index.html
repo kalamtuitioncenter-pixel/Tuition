@@ -1726,6 +1726,21 @@ tbody tr:hover td{background:var(--bg)}
   <!-- Today's Summary Cards -->
   <div id="adm-summary-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:12px"></div>
 
+  <!-- 🚨 Individual Concentration — Danger Zone -->
+  <div class="card" style="margin-bottom:12px;border:1.5px solid #fecaca" id="adm-danger-zone-card">
+    <div class="card-hd" style="flex-wrap:wrap;gap:8px;margin-bottom:6px">
+      <span class="card-title" style="color:#dc2626">🚨 Individual Concentration — Danger Zone</span>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-left:auto">
+        <span id="adm-danger-count" style="font-size:10px;background:#fee2e2;color:#dc2626;padding:3px 10px;border-radius:8px;font-weight:700">0 critical</span>
+        <select class="fi" id="adm-danger-grade" style="width:auto;font-size:11px;padding:4px 9px" onchange="renderAdminDangerZone()">
+          <option value="all">🎓 All Classes</option>
+        </select>
+      </div>
+    </div>
+    <div style="font-size:11px;color:var(--tx2);padding:0 16px 10px">Students at CRITICAL risk (fail / dropout / fee-delay / attendance ≥70) — needs immediate personal attention, grouped by class.</div>
+    <div id="adm-danger-zone-grid" style="padding:0 16px 14px;display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px"></div>
+  </div>
+
   <!-- Staff Summary — Attendance + Salary overview -->
   <div class="card" style="margin-bottom:12px" id="adm-staff-summary-card">
     <div class="card-hd" style="flex-wrap:wrap;gap:8px;margin-bottom:10px">
@@ -2094,8 +2109,8 @@ tbody tr:hover td{background:var(--bg)}
   <div style="background:linear-gradient(135deg,#78350f,#f59e0b);border-radius:12px;padding:16px 20px;margin-bottom:16px;display:flex;align-items:center;gap:14px">
     <div style="width:44px;height:44px;background:rgba(255,255,255,.15);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">📋</div>
     <div style="flex:1">
-      <div style="font-size:16px;font-weight:700;color:#fff">Student Monthly Summary</div>
-      <div style="font-size:12px;color:rgba(255,255,255,.8);margin-top:2px">Attendance · Late · Class Focus & Activities — Send to parents via WhatsApp</div>
+      <div style="font-size:16px;font-weight:700;color:#fff">Student Monthly Summary — All-in-One AI Report</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.8);margin-top:2px">Attendance · Marks · Class Rank · AI Growth Forecast · Predict Score/% · Concentration · Study Planner — ONE WhatsApp message, sent once a month</div>
     </div>
     <div style="text-align:right;flex-shrink:0">
       <div style="font-size:10px;color:rgba(255,255,255,.7)">Total Students</div>
@@ -7497,6 +7512,87 @@ function saveMarksToStorage(examIdx) {
 }
 
 
+/* ── Build extra context object for WhatsApp AI Monthly Report ──
+   Supplies this month's attendance, marks, class-wise rank, and a
+   predicted score (10th = Board Exam /500) or predicted % (other classes).
+   Used by buildAIMonthlyReports() and fillWATemplate(). ── */
+function getWAExtra(student) {
+  const now   = new Date();
+  const year  = now.getFullYear();
+  const month = now.getMonth();
+  const MONTHS_TA = ['ஜனவரி','பிப்ரவரி','மார்ச்','ஏப்ரல்','மே','ஜூன்','ஜூலை','ஆகஸ்ட்','செப்டம்பர்','அக்டோபர்','நவம்பர்','டிசம்பர்'];
+
+  // ── Attendance (this month, per student) ──
+  const att = (typeof getStudentAttStats === 'function')
+    ? getStudentAttStats(student, year, month)
+    : { present: 0, absent: 0, late: 0, pct: 0 };
+  const presentDays = att.present || 0;
+  const absentDays  = att.absent  || 0;
+  const lateDays    = att.late    || 0;
+  const attPct      = att.pct     || 0;
+  const attStatus   = attPct >= 90 ? '🌟 சிறப்பானது' : attPct >= 75 ? '✅ நல்லது' : attPct >= 60 ? '⚠️ மேம்படுத்த வேண்டும்' : '🔴 கவனம் தேவை';
+
+  // ── Marks obtained this month (latest exams) ──
+  const marks = (typeof getStudentMarksAuto === 'function') ? getStudentMarksAuto(student.id) : [];
+  const validMarks = marks.filter(m => !m.absent && m.marks !== null && m.maxMarks > 0);
+  let marksSection = '— இந்த மாதம் தேர்வு மதிப்பெண்கள் இல்லை';
+  if (validMarks.length > 0) {
+    marksSection = validMarks.slice(-5).map(m => {
+      const pct = Math.round(m.marks / m.maxMarks * 100);
+      const gl  = (typeof _gradeFromPct === 'function') ? _gradeFromPct(pct) : '';
+      return `• ${m.examName} (${m.subject}): ${m.marks}/${m.maxMarks} — ${gl} (${pct}%)`;
+    }).join('\n');
+  }
+
+  // ── Missed subjects this month ──
+  const missed = (typeof getMissedSubjects === 'function') ? getMissedSubjects(student.id) : {};
+  const missedList = Object.entries(missed).filter(([,d]) => (d.count||0) > 0).sort((a,b) => b[1].count - a[1].count);
+  const missedSubjects = missedList.length > 0
+    ? missedList.map(([subj,d]) => `• ${subj} — ${d.count} முறை`).join('\n')
+    : '— தவறிய பாடங்கள் இல்லை ✅';
+
+  // ── Class-wise rank (never mixed across grades — see computeRanks) ──
+  const ranked  = (typeof computeRanks === 'function') ? computeRanks(year, month, student.grade) : [];
+  const myRank  = ranked.find(r => r.student.id === student.id);
+  const rankStr = myRank ? `${myRank.rank} / ${myRank.classTotal}` : '—';
+
+  // ── Star rating for the month ──
+  const sumD = (typeof loadSumData === 'function') ? loadSumData(student.id, year, month) : { stars: 3, activities: [] };
+  const stars = sumD.stars || 3;
+  const starLabel = stars >= 5 ? 'சிறப்பானது 🌟🌟🌟🌟🌟' : stars >= 4 ? 'நல்லது 🌟🌟🌟🌟' : stars >= 3 ? 'சராசரி 🌟🌟🌟' : 'மேம்பாடு தேவை 🌟🌟';
+
+  // ── Predict Score (10th → Board Exam /500) / Predict % (every other class) ──
+  const isBoardClass = String(student.grade || '').trim() === '10';
+  const fc = (typeof _gfCompute === 'function') ? _gfCompute(student) : null;
+  const predictLine = fc
+    ? (isBoardClass
+        ? `🎯 எதிர்பார்க்கப்படும் Public Exam மதிப்பெண்: *${fc.boardScore}/500* (${fc.boardGrade})`
+        : `🎯 அடுத்த மாத கணிக்கப்பட்ட சராசரி: *${fc.predictedAvg}%*`)
+    : '';
+
+  // ── Fallback study tip (used only if the AI API call fails) ──
+  const weakSubjData = (typeof getSubjectAvgMarks === 'function') ? getSubjectAvgMarks(student.id) : {};
+  const weakList = Object.entries(weakSubjData).filter(([,v]) => v < 70).sort((a,b) => a[1] - b[1]);
+  const studyTip = weakList.length > 0
+    ? `📖 ${weakList[0][0]} பாடத்தில் கூடுதல் கவனம் செலுத்தவும் — வாரத்திற்கு 3 முறை பயிற்சி செய்யவும்.`
+    : '📖 தொடர்ந்து படிக்கவும், வழக்கமான திருப்புதலை பராமரிக்கவும்! 💪';
+
+  const teacherNote = attPct >= 85 && validMarks.length > 0
+    ? 'மிகவும் திருப்திகரமான செயல்திறன். தொடர்ந்து இதே ஆர்வத்துடன் படிக்கவும்.'
+    : 'இன்னும் கவனமாக பாடங்களை பின்பற்றவும்.';
+
+  return {
+    present_days: presentDays, absent_days: absentDays, late_days: lateDays,
+    att_pct: attPct, att_status: attStatus,
+    marks_section: marksSection, missed_subjects: missedSubjects,
+    rank: rankStr, total_students: myRank ? myRank.classTotal : '—',
+    star_label: starLabel, stars,
+    predict_line: predictLine, is_board_class: isBoardClass,
+    study_tip: studyTip, teacher_note: teacherNote,
+    month_name: MONTHS_TA[month], year: String(year),
+  };
+}
+
 /* ── AI Monthly Reports — Anthropic API powered ─────── */
 async function buildAIMonthlyReports() {
   const now = new Date();
@@ -7593,8 +7689,8 @@ ${aiStudyTip}
 ${extra.teacher_note}
 
 ⭐ மாதாந்திர மதிப்பீடு: ${extra.star_label}
-🏅 வகுப்பு தரம்: ${extra.rank}
-
+🏅 வகுப்பு தரவரிசை (Class Rank): ${extra.rank}
+${extra.predict_line ? '\n' + extra.predict_line + '\n' : ''}
 📞 ${ctr.phone}
 ${ctr.name}`;
 
@@ -9147,6 +9243,68 @@ function renderAdminPanel() {
     </div>`).join('');
 
   renderAdminStaffSummary();
+  renderAdminDangerZone();
+}
+
+/* ── 🚨 Danger Zone: students at CRITICAL risk (any prediction score ≥70) ──
+   Shown on the Admin Panel so staff can see at a glance who needs
+   immediate individual concentration / intervention, grouped by class. ── */
+function renderAdminDangerZone() {
+  const grid  = document.getElementById('adm-danger-zone-grid');
+  const cntEl = document.getElementById('adm-danger-count');
+  const selEl = document.getElementById('adm-danger-grade');
+  if (!grid) return;
+
+  const preds = (typeof computePredictions === 'function') ? computePredictions() : [];
+
+  // Populate grade filter once
+  if (selEl && selEl.options.length <= 1) {
+    const grades = ['KG','1','2','3','4','5','6','7','8','9','10','11','12'];
+    const existGrades = [...new Set(preds.map(p => String(p.student.grade||'').trim()))]
+      .sort((a,b) => { const ai=grades.indexOf(a), bi=grades.indexOf(b); return (ai===-1?99:ai)-(bi===-1?99:bi); });
+    selEl.innerHTML = '<option value="all">🎓 All Classes</option>'
+      + existGrades.map(g => `<option value="${g}">${g==='KG'?'KG':'Class '+g}</option>`).join('');
+  }
+  const gradeFilter = selEl ? selEl.value : 'all';
+
+  const critical = preds.filter(p =>
+    (p.failScore>=70 || p.leaveScore>=70 || p.feeScore>=70 || p.attScore>=70)
+    && (gradeFilter==='all' || String(p.student.grade||'').trim()===gradeFilter)
+  ).sort((a,b) => Math.max(b.failScore,b.leaveScore,b.feeScore,b.attScore) - Math.max(a.failScore,a.leaveScore,a.feeScore,a.attScore));
+
+  if (cntEl) cntEl.textContent = critical.length + ' critical';
+
+  if (critical.length === 0) {
+    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:20px;color:#16a34a;font-size:12px;font-weight:600;background:#f0fdf4;border-radius:8px">✅ No students in the danger zone right now</div>`;
+    return;
+  }
+
+  const clsLabel = s => s.grade ? (s.grade==='KG'?'KG':'Class '+s.grade) : '—';
+  grid.innerHTML = critical.map(p => {
+    const s = p.student;
+    const reasons = [];
+    if (p.failScore  >= 70) reasons.push('📉 Fail Risk');
+    if (p.leaveScore >= 70) reasons.push('🚪 Dropout Risk');
+    if (p.feeScore   >= 70) reasons.push('💸 Fee Delay');
+    if (p.attScore   >= 70) reasons.push('📊 Attendance');
+    return `<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:10px 12px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <div class="av" style="background:${s.color};width:28px;height:28px;font-size:11px;flex-shrink:0">${(s.name||'?')[0]}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:12px;font-weight:700;color:var(--tx)">${s.name}</div>
+          <div style="font-size:9px;color:var(--tx3)">${clsLabel(s)} · ${s.parent||'—'}</div>
+        </div>
+        <span style="font-size:9px;font-weight:800;background:#dc2626;color:#fff;padding:2px 8px;border-radius:8px">🔴 CRITICAL</span>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">
+        ${reasons.map(r => `<span style="font-size:9px;font-weight:600;background:#fee2e2;color:#991b1b;padding:2px 7px;border-radius:7px">${r}</span>`).join('')}
+      </div>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-wa btn-sm" style="flex:1;justify-content:center;font-size:10px" onclick="sendSumWA('${s.id}',new Date().getFullYear(),new Date().getMonth())">📱 Send Report</button>
+        <button class="btn btn-sm" style="font-size:10px" onclick="navTo('summary');setTimeout(()=>{const c=document.getElementById('sum-card-${s.id}');if(c)c.scrollIntoView({behavior:'smooth',block:'center'})},150)">👁 View</button>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -15758,6 +15916,7 @@ function buildSumCard(item, year, month) {
     </div>
 
     <!-- ── Footer ── -->
+    ${isSumSentThisMonth(s.id, year, month) ? `<div style="padding:4px 15px;font-size:9px;color:#16a34a;font-weight:700;background:#f0fdf4">✅ இந்த மாதம் அனுப்பப்பட்டது (Combined AI Report)</div>` : ''}
     <div class="sum-card-foot">
       <button class="btn btn-wa btn-sm" style="flex:1;justify-content:center;font-size:11px"
         onclick="sendSumWA('${s.id}',${year},${month})">📱 WhatsApp அனுப்பு</button>
@@ -15819,6 +15978,7 @@ function fillMonthlySummaryTemplate(template, data) {
     .replace(/{total_students}/g,   String(data.total_students || ''))
     .replace(/{marks_section}/g,    data.marks_section   || 'மதிப்பெண்கள் இல்லை')
     .replace(/{teacher_note}/g,     data.teacher_note    || '')
+    .replace(/{ai_insights_section}/g, data.ai_insights_section || '')
     .replace(/{center_name}/g,      data.center_name     || CFG.CENTER.name  || '')
     .replace(/{center_phone}/g,     data.center_phone    || CFG.CENTER.phone || '');
 }
@@ -15826,6 +15986,87 @@ function fillMonthlySummaryTemplate(template, data) {
 /* ════════════════════════════════════════════════════════
    WHATSAPP MESSAGE BUILDER — uses custom template if set
 ════════════════════════════════════════════════════════ */
+/* ════════════════════════════════════════════════════════
+   COMBINED AI INSIGHTS — merges Growth Forecast, Predictions,
+   Individual Concentration & Study Planner into ONE block that
+   gets appended to the Monthly Student Summary WhatsApp message.
+   This replaces sending 4-5 separate AI WhatsApp messages —
+   parents now get everything in a single monthly send.
+════════════════════════════════════════════════════════ */
+function buildCombinedAISection(s) {
+  const dash = '━━━━━━━━━━━━━━━━━━━';
+
+  // ── 1. AI Growth Forecast (current → predicted, trend) ──
+  const fc = (typeof _gfCompute === 'function') ? _gfCompute(s) : null;
+  const trendIcon = fc ? (fc.monthTrend==='improving'?'📈':fc.monthTrend==='declining'?'📉':'➡️') : '';
+  let growthSec = '';
+  if (fc && fc.hasData) {
+    growthSec = `${dash}\n📈 *AI வளர்ச்சி கணிப்பு (Growth Forecast)*\n${dash}\n`
+      + `📊 தற்போதைய சராசரி: *${fc.avgPct}%*\n`
+      + `🔮 அடுத்த மாத கணிப்பு: *${fc.predictedAvg}%* ${trendIcon}\n`;
+  }
+
+  // ── 2. Predict Score (10th → Board Exam /500) / Predict % (all other classes) ──
+  const isBoardClass = String(s.grade || '').trim() === '10';
+  let predictSec = '';
+  if (fc && fc.hasData) {
+    predictSec = isBoardClass
+      ? `🎯 எதிர்பார்க்கப்படும் Public Exam மதிப்பெண்: *${fc.boardScore}/500* (${fc.boardGrade})\n`
+      : `🎯 அடுத்த மாத கணிக்கப்பட்ட சராசரி: *${fc.predictedAvg}%*\n`;
+  }
+
+  // ── 3. AI Predictions — risk flags (only shown if genuinely at-risk) ──
+  const pred = (typeof computePredictions === 'function')
+    ? computePredictions().find(p => p.student.id === s.id) : null;
+  let riskSec = '';
+  if (pred) {
+    const flags = [];
+    if (pred.failScore  >= 45) flags.push(`📉 தேர்ச்சி ஆபத்து: ${_riskLevel(pred.failScore).label}`);
+    if (pred.leaveScore >= 45) flags.push(`🚪 விலக ஆபத்து: ${_riskLevel(pred.leaveScore).label}`);
+    if (pred.feeScore   >= 45) flags.push(`💸 கட்டண தாமத ஆபத்து: ${_riskLevel(pred.feeScore).label}`);
+    if (pred.attScore   >= 45) flags.push(`📊 வருகை ஆபத்து: ${_riskLevel(pred.attScore).label}`);
+    riskSec = flags.length > 0
+      ? `${dash}\n🔮 *AI கணிப்பு எச்சரிக்கை*\n${dash}\n${flags.join('\n')}\n`
+      : `${dash}\n🔮 *AI கணிப்பு*\n${dash}\n✅ தற்போது ஆபத்து இல்லை — தொடர்ந்து நல்ல செயல்பாடு\n`;
+  }
+
+  // ── 4. Individual Concentration — weakest subject needing focus ──
+  const weak = (typeof _spWeakSubjects === 'function') ? _spWeakSubjects(s.id) : [];
+  let concSec = '';
+  if (weak.length > 0) {
+    const w = weak[0];
+    concSec = `${dash}\n📋 *தனிப்பட்ட கவனிப்பு (Individual Concentration)*\n${dash}\n`
+      + `⚠️ கூடுதல் கவனம் தேவையான பாடம்: *${w.sub}* (${w.avg}%)\n`
+      + `${w.avg < 40 ? 'இந்த பாடத்திற்கு உடனடியாக தனிப்பட்ட கவனிப்பு ஏற்பாடு செய்யப்படும்.' : 'வழக்கமான பயிற்சி மூலம் மேம்படுத்தலாம்.'}\n`;
+  }
+
+  // ── 5. AI Study Planner — today's focus subject + suggested minutes ──
+  let planSec = '';
+  if (typeof _spBuildDayPlan === 'function') {
+    const plan = _spBuildDayPlan(s, 0);
+    if (plan && plan.slots && plan.slots.length > 0) {
+      const top = plan.slots[0];
+      planSec = `${dash}\n📚 *AI படிப்பு திட்டம் (Study Planner)*\n${dash}\n`
+        + `இன்று முன்னுரிமை: *${top.subject}* — ${top.mins} நிமிடம்\n`
+        + `மொத்த பரிந்துரைக்கப்பட்ட படிப்பு நேரம்: *${plan.totalMins} நிமிடம்/நாள்*\n`;
+    }
+  }
+
+  return growthSec + predictSec + riskSec + concSec + planSec;
+}
+
+/* ── Monthly "once-a-month" send lock — prevents accidentally
+   re-sending the combined report to the same parent twice ── */
+function _sumSentKey(studentId, year, month) {
+  return '_erp_sum_sent_' + studentId + '_' + year + '_' + month;
+}
+function isSumSentThisMonth(studentId, year, month) {
+  try { return !!localStorage.getItem(_sumSentKey(studentId, year, month)); } catch(e) { return false; }
+}
+function markSumSent(studentId, year, month) {
+  try { localStorage.setItem(_sumSentKey(studentId, year, month), new Date().toISOString()); } catch(e) {}
+}
+
 function buildSumWAMessage(s, year, month) {
   const att       = getStudentAttStats(s, year, month);
   const sumD      = loadSumData(s.id, year, month);
@@ -15869,6 +16110,9 @@ function buildSumWAMessage(s, year, month) {
 
   const noteText = sumD.note ? `📝 *ஆசிரியர் குறிப்பு:*\n${sumD.note}` : '';
 
+  // ── Combined AI Insights: Growth Forecast + Predict Score/% + Predictions + Concentration + Study Planner ──
+  const aiInsightsSec = (typeof buildCombinedAISection === 'function') ? buildCombinedAISection(s) : '';
+
   // ── Check for a saved custom Tamil template (via WA Templates page) ──
   const savedTmpl = (typeof getWTSaved === 'function')
     ? (getWTSaved('monthly_summary', 'ta') || '')
@@ -15899,6 +16143,7 @@ function buildSumWAMessage(s, year, month) {
       total_students: myRank ? myRank.classTotal : ranked.length,
       marks_section:  marksSec,
       teacher_note:   noteText,
+      ai_insights_section: aiInsightsSec,
       center_name:    ctr.name  || '',
       center_phone:   ctr.phone || '',
     });
@@ -15936,6 +16181,7 @@ ${att.total===0?'தரவு இல்லை':lateStatus}
 ━━━━━━━━━━━━━━━━━━━
 ${marksSec}
 
+${aiInsightsSec}
 ━━━━━━━━━━━━━━━━━━━
 🌟 *வகுப்பு கவனம்*
 ━━━━━━━━━━━━━━━━━━━
@@ -15959,7 +16205,12 @@ function sendSumWA(studentId, year, month) {
   if (!s) return showToast('மாணவர் கிடைக்கவில்லை');
   const phone = s.phone || s.pphone || '';
   if (!phone) return showToast('⚠️ தொலைபேசி எண் இல்லை');
+  if (isSumSentThisMonth(s.id, year, month) && !confirm('✅ இந்த மாதம் ஏற்கனவே அனுப்பப்பட்டது (' + TA_MONTHS[month] + ' ' + year + '). மீண்டும் அனுப்பவா?')) {
+    return;
+  }
   openWA(phone, buildSumWAMessage(s, year, month));
+  markSumSent(s.id, year, month);
+  renderSummaryCards();
   showToast('📱 WhatsApp திறக்கிறது…');
 }
 
@@ -15998,21 +16249,24 @@ function sendAllSummaryWA() {
   const month = parseInt(document.getElementById('sum-month-sel').value);
   const active = students.filter(s => s.status === 'active');
   if (active.length === 0) return showToast('மாணவர்கள் இல்லை');
+  const sentCount = active.filter(s => isSumSentThisMonth(s.id, year, month)).length;
   const root = document.getElementById('modal-root');
   root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()">
     <div class="modal" style="max-width:500px">
-      <div class="modal-title">📱 அனைத்து மாணவர் WhatsApp வரிசை</div>
+      <div class="modal-title">📱 அனைத்து மாணவர் WhatsApp வரிசை (ஒரு முழுமையான அறிக்கை)</div>
       <div style="font-size:12px;color:var(--tx2);margin-bottom:12px">
-        ${TA_MONTHS[month]} ${year} — ${active.length} மாணவர்களுக்கு அனுப்பு
+        ${TA_MONTHS[month]} ${year} — ${active.length} மாணவர்கள் ${sentCount>0?`· ✅ ${sentCount} ஏற்கனவே அனுப்பப்பட்டது`:''}
       </div>
+      <div style="font-size:10px;color:var(--tx3);margin-bottom:8px">Attendance + Marks + Rank + AI Growth Forecast + Predict Score/% + Concentration + Study Planner — ஒரே WhatsApp செய்தியில்</div>
       <div style="max-height:340px;overflow-y:auto;border:.5px solid var(--br);border-radius:10px">
         ${active.map(s => {
-          const att = getStudentAttStats(s, year, month);
-          const lbl = att.total > 0 ? att.pct + '% வருகை' : 'வருகை தரவு இல்லை';
+          const att   = getStudentAttStats(s, year, month);
+          const lbl   = att.total > 0 ? att.pct + '% வருகை' : 'வருகை தரவு இல்லை';
+          const sent  = isSumSentThisMonth(s.id, year, month);
           return `<div class="wa-queue-item">
             <div class="av" style="background:${s.color};width:28px;height:28px;font-size:11px;flex-shrink:0">${(s.name||'?')[0]}</div>
             <div style="flex:1">
-              <div style="font-weight:600;font-size:12px">${s.name}</div>
+              <div style="font-weight:600;font-size:12px">${s.name} ${sent?'<span style="font-size:9px;color:#16a34a;font-weight:700">✅ Sent</span>':''}</div>
               <div style="font-size:10px;color:var(--tx3)">${s.phone||'எண் இல்லை'} · Gr.${s.grade} · ${lbl}</div>
             </div>
             <button class="btn btn-wa btn-sm" onclick="sendSumWA('${s.id}',${year},${month})" style="font-size:10px">📱</button>

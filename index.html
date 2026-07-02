@@ -1175,10 +1175,14 @@ tbody tr:hover td{background:var(--bg)}
   <!-- ── Monthly Summary Bar ── -->
   <div style="background:var(--card);border:.5px solid var(--br);border-radius:11px;padding:11px 14px;margin-bottom:10px;box-shadow:var(--shadow)">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px;flex-wrap:wrap;gap:6px">
-      <div style="display:flex;align-items:center;gap:8px">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
         <span style="font-size:12px;font-weight:700;color:var(--tx)">📅 Month:</span>
         <select id="fee-month-filter" class="fi" style="padding:4px 8px;font-size:12px;border-radius:7px;min-width:120px" onchange="applyFeeMonthFilter()"></select>
         <span style="font-size:10px;color:var(--tx3)" id="fee-month-badge"></span>
+        <span style="font-size:12px;font-weight:700;color:var(--tx);margin-left:6px">🎓 Class:</span>
+        <select id="fee-grade-filter" class="fi" style="padding:4px 8px;font-size:12px;border-radius:7px;min-width:120px" onchange="applyFeeGradeFilter()">
+          <option value="all">All Classes</option>
+        </select>
       </div>
       <button onclick="openPendingFeesWAModal()" style="background:#25d366;color:#fff;border:none;border-radius:7px;padding:6px 12px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px">
         <svg viewBox="0 0 16 16" fill="none" width="12" height="12"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.4"/><path d="M5 8.5c.5 1.5 2 2.5 3.5 2.5 1 0 2-.4 2.7-1.1M11 7.5c-.5-1.5-2-2.5-3.5-2.5-1 0-2 .4-2.7 1.1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M5 11l-.5 1.5L6 12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -1576,6 +1580,7 @@ tbody tr:hover td{background:var(--bg)}
           <input type="month" class="fi" id="sf-pay-month" style="max-width:180px;font-size:14px;font-weight:600" onchange="generatePayroll()">
         </div>
         <button class="btn btn-g" onclick="exportPayrollCSV()">⬇ Export CSV</button>
+        <button class="btn btn-sm" onclick="navTo('whatsapp');setTimeout(()=>{switchWATab('templates');selectWTType('payroll_slip')},120)" style="font-size:11px;color:#16a34a;border-color:#bbf7d0;background:#f0fdf4">✏️ Payroll WA Template</button>
       </div>
     </div>
     <!-- Summary cards -->
@@ -2838,6 +2843,36 @@ const WA_TEMPLATES = {
 📞 {center_phone}
 {center_name}`],
   },
+  payroll_slip: {
+    ta: [`Dear *{staff_name}*,
+
+🏫 *{center_name}*
+━━━━━━━━━━━━━━━━━━━━
+💼 *Salary Slip — {month}*
+━━━━━━━━━━━━━━━━━━━━
+
+👤 Name        : {staff_name}
+💼 Designation : {designation}
+📅 Month       : {month}
+
+━━━━━━━━━━━━━━━━━━━━
+💵 Base Pay    : ₹{base_pay}
+🎉 Bonus       : ₹{bonus}{bonus_note}
+➖ Deduction   : ₹{deduction}{deduction_note}
+━━━━━━━━━━━━━━━━━━━━
+💰 *Net Pay    : ₹{net_pay}*
+━━━━━━━━━━━━━━━━━━━━
+
+💳 Mode        : {payment_mode}
+📆 Date        : {date}
+{note}
+✅ *Payment Confirmed*
+
+நன்றி! Thank you for your dedication 🙏
+
+📞 {center_phone}
+_{center_name}_`],
+  },
 };
 
 // Fill template with actual data
@@ -2908,14 +2943,31 @@ function cleanPhone(phone) {
   return '91' + num.slice(-10); // take last 10 digits, add 91
 }
 
-/* ── Direct WA send (no edit modal) — used internally after edit ── */
+/* ── Direct WA send (no edit modal) — used internally after edit ──
+   IMPORTANT: never assign to window.location.href for this. Doing so makes the
+   mobile browser actually navigate the whole app away to the whatsapp:// URI,
+   which unloads the page and wipes all in-memory state (queues, rendered
+   cards, un-saved form values, etc). That is the root cause of "send report
+   to one student, then the next student's data disappears until refresh".
+   window.open launches the WhatsApp app / wa.me fallback WITHOUT navigating
+   the current tab away, so the ERP keeps running and in-memory state (like
+   the monthly report queue) survives. ── */
 function _openWADirect(phone, msg) {
   const clean   = cleanPhone(phone);
   const encoded = encodeURIComponent(msg);
   const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-  if (isMobile) {
-    window.location.href = 'whatsapp://send?phone=' + clean + '&text=' + encoded;
-  } else {
+  const url = isMobile
+    ? 'whatsapp://send?phone=' + clean + '&text=' + encoded
+    : 'https://wa.me/' + clean + '?text=' + encoded;
+  try {
+    const win = window.open(url, '_blank');
+    // Some mobile browsers refuse to handle whatsapp:// via window.open and
+    // return null/undefined instead of throwing — fall back to wa.me in a
+    // new tab (still does not navigate the current app away).
+    if (isMobile && !win) {
+      window.open('https://wa.me/' + clean + '?text=' + encoded, '_blank');
+    }
+  } catch (e) {
     window.open('https://wa.me/' + clean + '?text=' + encoded, '_blank');
   }
 }
@@ -4797,14 +4849,15 @@ function sendAllMASWA() {
   if (batch !== 'all') list = list.filter(s=>s.course===batch||s.batch===batch);
   if (list.length===0) return showToast('⚠️ No students with phone numbers');
 
-  let delay = 0;
-  list.forEach(s => {
-    setTimeout(() => {
-      openWA(s.phone||s.pphone, buildMASWA(s, yr, mo));
-    }, delay);
-    delay += 900;
-  });
-  showToast(`📱 Sending to ${list.length} parents…`);
+  // Only the first open is a direct result of this click (a trusted user
+  // gesture) — further opens queued behind setTimeout are not, so
+  // browsers silently block them. Send #1 now, ask for the rest by tap
+  // via each row's own "📱 Send" button (sendMASWA).
+  const s0 = list[0];
+  openWA(s0.phone||s0.pphone, buildMASWA(s0, yr, mo));
+  showToast(list.length > 1
+    ? `📱 Sent to ${s0.name}. Tap "📱 Send" on each remaining student (${list.length - 1} left) — WhatsApp can't be auto-sent to everyone at once.`
+    : '📱 WA opening for ' + s0.name + '…');
 }
 
 /* Download CSV of the summary */
@@ -5276,12 +5329,14 @@ function sendAllResultsWA() {
   if (!window._resultStudents || !window._resultExam) return;
   const withPhone = window._resultStudents.filter(x => (x.s.phone||'').replace(/\D/g,'').length >= 10);
   if (withPhone.length === 0) return showToast('⚠️ தொலைபேசி எண் உள்ள மாணவர்கள் இல்லை');
-  let delay = 0;
-  withPhone.forEach(item => {
-    setTimeout(() => sendOneResultWA(item.s.id), delay);
-    delay += 800;
-  });
-  showToast('📱 ' + withPhone.length + ' பெற்றோருக்கு அனுப்புகிறது…');
+
+  // Only the first WA open is a direct result of this click (a trusted
+  // gesture) — any further opens queued behind setTimeout are not, so
+  // browsers silently block them. Send #1 now, ask for the rest by tap.
+  sendOneResultWA(withPhone[0].s.id);
+  showToast(withPhone.length > 1
+    ? `📱 Sent to ${withPhone[0].s.name}. Tap "📱 Send" on each remaining result (${withPhone.length - 1} left) — WhatsApp can't be auto-sent to everyone at once.`
+    : '📱 ' + withPhone[0].s.name + ' பெற்றோருக்கு WA திறக்கிறது…');
 }
 
 function sendLateWA() {
@@ -5466,12 +5521,14 @@ function sendAllLateWA() {
   if (!window._lateStudents) return;
   const withPhone = window._lateStudents.filter(s => s.phone || s.pphone);
   if (withPhone.length === 0) return showToast('⚠️ No late students have phone numbers');
-  let delay = 0;
-  withPhone.forEach(s => {
-    setTimeout(() => sendOneLateWA(s.id), delay);
-    delay += 800; // stagger 800ms to avoid browser popup blocker
-  });
-  showToast(`📱 Sending to ${withPhone.length} parents…`);
+
+  // Only the first WA open is a direct result of this click (a trusted
+  // gesture) — any further opens queued behind setTimeout are not, so
+  // browsers silently block them. Send #1 now, ask for the rest by tap.
+  sendOneLateWA(withPhone[0].id);
+  showToast(withPhone.length > 1
+    ? `📱 Sent to ${withPhone[0].name}. Tap "📱 Send" on each remaining parent (${withPhone.length - 1} left) — WhatsApp can't be auto-sent to everyone at once.`
+    : '📱 Opening WA for ' + withPhone[0].name + '…');
 }
 
 /* ── Send WA for a single student from the att row (P/A/L button) ── */
@@ -5543,6 +5600,7 @@ function initFeeMonthFilter() {
   // Restore previous selection if still valid
   if (prev && sorted.includes(prev)) sel.value = prev;
 
+  initFeeGradeFilter();
   applyFeeMonthFilter();
 }
 
@@ -5552,15 +5610,19 @@ function applyFeeMonthFilter() {
   const month = sel ? sel.value : '';
   window._feeSelectedMonth = month;
 
-  // Update summary stats for selected month
+  // Update summary stats for selected month (also respects class filter)
+  const grade = window._feeSelectedGrade || 'all';
   const allValid = fees.filter(f => f && f.rcpt && !f._deleted);
-  const monthFees = month ? allValid.filter(f => f.month === month) : allValid;
+  let monthFees = month ? allValid.filter(f => f.month === month) : allValid;
+  if (grade !== 'all') monthFees = monthFees.filter(f => _feeStudentGrade(f) === grade);
 
   const collected   = monthFees.filter(f=>f.status==='paid').reduce((s,f)=>s+(f.paid||0),0);
   const pendingAmt  = monthFees.filter(f=>f.status==='pending'||f.status==='partial').reduce((s,f)=>s+(f.balance||0),0);
   const overdueCount= monthFees.filter(f=>f.status==='overdue').length;
-  // All-time outstanding (not filtered by month)
-  const allPending  = allValid.filter(f=>f.status!=='paid').reduce((s,f)=>s+(f.balance||0),0);
+  // All-time outstanding (not filtered by month, but respects class filter)
+  let allValidForTotal = allValid;
+  if (grade !== 'all') allValidForTotal = allValidForTotal.filter(f => _feeStudentGrade(f) === grade);
+  const allPending  = allValidForTotal.filter(f=>f.status!=='paid').reduce((s,f)=>s+(f.balance||0),0);
 
   const cEl = document.getElementById('fv-collected');       if(cEl) cEl.textContent = '₹'+collected.toLocaleString('en-IN');
   const pEl = document.getElementById('fv-pending');         if(pEl) pEl.textContent = '₹'+pendingAmt.toLocaleString('en-IN');
@@ -5578,13 +5640,48 @@ function applyFeeMonthFilter() {
   _renderFeesFiltered(tabVal, month);
 }
 
-/* Core render — respects both tab filter AND month filter */
+/* Returns the grade/class for a fee record, looked up via its student */
+function _feeStudentGrade(f) {
+  const s = students.find(x => x.id === f.studentId || x.name === f.student);
+  return s && s.grade ? String(s.grade).trim() : '';
+}
+
+/* Populate the Class filter dropdown on the Fees page with grades in use */
+function initFeeGradeFilter() {
+  const sel = document.getElementById('fee-grade-filter');
+  if (!sel) return;
+  const current = sel.value || window._feeSelectedGrade || 'all';
+  const grades = [...new Set(students.filter(s => s && s.grade).map(s => String(s.grade).trim()))]
+    .sort((a,b) => {
+      const na = parseInt(a), nb = parseInt(b);
+      if (!isNaN(na) && !isNaN(nb)) return na - nb;
+      if (a === 'KG') return -1;
+      if (b === 'KG') return 1;
+      return String(a).localeCompare(String(b));
+    });
+  sel.innerHTML = '<option value="all">All Classes</option>' +
+    grades.map(g => `<option value="${g}">${g==='KG' ? 'KG' : 'Class '+g}</option>`).join('');
+  if (grades.includes(current)) sel.value = current;
+}
+
+/* Apply the Class filter on the Fees page */
+function applyFeeGradeFilter() {
+  const sel = document.getElementById('fee-grade-filter');
+  window._feeSelectedGrade = sel ? sel.value : 'all';
+  applyFeeMonthFilter();
+}
+
+/* Core render — respects tab filter, month filter AND class filter */
 function _renderFeesFiltered(tabVal, month) {
   const bm = {paid:'bg', partial:'bp', pending:'ba', overdue:'br2'};
+  const grade = window._feeSelectedGrade || 'all';
   const allValid = fees.filter(f => f && f.rcpt && !f._deleted);
 
   // Month filter first
   let source = month ? allValid.filter(f => f.month === month) : allValid;
+
+  // Class/grade filter
+  if (grade !== 'all') source = source.filter(f => _feeStudentGrade(f) === grade);
 
   // Tab filter
   if (tabVal === 'paid')    source = source.filter(f => f.status === 'paid');
@@ -5592,7 +5689,7 @@ function _renderFeesFiltered(tabVal, month) {
   else if (tabVal === 'overdue') source = source.filter(f => f.status === 'overdue');
 
   if (source.length === 0) {
-    const isFiltered = month || tabVal !== 'all';
+    const isFiltered = month || tabVal !== 'all' || grade !== 'all';
     document.getElementById('fee-body').innerHTML = `<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--tx3);font-size:13px">
       ${tabVal==='pending' ? '🎉 No pending fees for ' + (month||'this period') + '! All caught up.' :
         isFiltered ? 'No records match the selected filter.' : 'No fee records found.'}
@@ -6718,23 +6815,32 @@ function ewSendAllNotices() {
   const list = window._ewNotifStudents || [];
   const msgs = window._ewNotifMsgs || [];
   if (!list.length) { showToast('No parents with phone numbers'); return; }
-  let delay = 0;
-  list.forEach((s, i) => {
-    setTimeout(() => {
-      const phone = (s.phone||s.pphone||'').replace(/\D/g,'');
-      const ph = phone.startsWith('91') ? phone : '91'+phone;
-      window.location.href = 'whatsapp://send?phone=' + ph + '&text=' + encodeURIComponent(msgs[i] || '');
-      const btn = document.getElementById('ew3-btn-'+i);
-      if (btn) { btn.textContent = '✅ Sent'; btn.style.background = '#dcfce7'; btn.style.color = '#166534'; btn.disabled = true; }
-    }, delay);
-    delay += 1500;
-  });
+
+  // NOTE: we intentionally do NOT auto-fire WhatsApp opens for every
+  // recipient via setTimeout. Mobile/desktop browsers only allow
+  // window.open() to succeed when it's a direct result of a user tap —
+  // a delayed setTimeout callback is not a "trusted" gesture, so every
+  // open after the first would get silently popup-blocked (or, with the
+  // old location.href approach, would navigate the whole app away and
+  // wipe its state). So: send the first one now (this click IS the
+  // trusted gesture), then ask the teacher to tap "📱 Send" on each
+  // remaining row — same reliable one-by-one pattern used elsewhere.
+  const s0 = list[0];
+  const phone0 = (s0.phone||s0.pphone||'').replace(/\D/g,'');
+  const ph0 = phone0.startsWith('91') ? phone0 : '91'+phone0;
+  _openWADirect(ph0, msgs[0] || '');
+  const btn0 = document.getElementById('ew3-btn-0');
+  if (btn0) { btn0.textContent = '✅ Sent'; btn0.style.background = '#dcfce7'; btn0.style.color = '#166534'; btn0.disabled = true; }
+
   // Increment notified count
   try {
     const n = parseInt(localStorage.getItem('_erp_exam_notified_count') || '0');
     localStorage.setItem('_erp_exam_notified_count', n + list.length);
   } catch(e) {}
-  showToast('📱 Sending to ' + list.length + ' parents…');
+
+  showToast(list.length > 1
+    ? `📱 Sent to ${s0.name}. Tap "📱 Send" on each remaining parent (${list.length - 1} left) — WhatsApp can't be auto-sent to everyone at once.`
+    : '📱 Sending to ' + s0.name + '…');
 }
 
 /* ── Step 4: init (Marks entry + WA results) ── */
@@ -6927,22 +7033,26 @@ function ewSendOneResult(i) {
 function ewSendAllResults() {
   const list = window._ewResultRecipients || [];
   if (!list.length) { showToast('No recipients'); return; }
-  let delay = 0;
-  list.forEach((r, i) => {
-    setTimeout(() => {
-      const phone = r.phone.replace(/\D/g,'');
-      const ph = phone.startsWith('91') ? phone : '91'+phone;
-      window.location.href = 'whatsapp://send?phone=' + ph + '&text=' + encodeURIComponent(r.msg);
-      const btn = document.getElementById('res-btn-'+i);
-      if (btn) { btn.textContent = '✅ Sent'; btn.style.background = '#dcfce7'; btn.style.color = '#166534'; btn.disabled = true; }
-    }, delay);
-    delay += 1500;
-  });
+
+  // Only the first open happens synchronously from this click (a trusted
+  // gesture); every subsequent auto-open via setTimeout would get
+  // popup-blocked by the browser, so we send #1 now and ask for the rest
+  // to be tapped one-by-one via their own "📱 Send" buttons.
+  const r0 = list[0];
+  const phone0 = r0.phone.replace(/\D/g,'');
+  const ph0 = phone0.startsWith('91') ? phone0 : '91'+phone0;
+  _openWADirect(ph0, r0.msg);
+  const btn0 = document.getElementById('res-btn-0');
+  if (btn0) { btn0.textContent = '✅ Sent'; btn0.style.background = '#dcfce7'; btn0.style.color = '#166534'; btn0.disabled = true; }
+
   try {
     const n = parseInt(localStorage.getItem('_erp_results_sent_count') || '0');
     localStorage.setItem('_erp_results_sent_count', n + list.length);
   } catch(e) {}
-  showToast('📱 Sending results to ' + list.length + ' parents…');
+
+  showToast(list.length > 1
+    ? `📱 Sent to ${r0.name || '1st parent'}. Tap "📱 Send" on each remaining result (${list.length - 1} left) — browsers block auto-sending WhatsApp to everyone at once.`
+    : '📱 Sending result…');
 }
 
 /**
@@ -7884,20 +7994,24 @@ function sendExamNoticeToAll(exam, lang) {
 }
 
 function sendAllExamNoticeWA() {
-  const list = (window._examWAMsgs || []).filter(x => x.phone);
+  const full = window._examWAMsgs || [];
+  const list = full.filter(x => x.phone);
   if (!list.length) { showToast('Phone number இல்லை'); return; }
-  let delay = 0;
-  list.forEach((x, i) => {
-    setTimeout(() => {
-      const clean = x.phone.replace(/\D/g,'');
-      const ph    = clean.startsWith('91') ? clean : '91'+clean;
-      window.location.href = 'whatsapp://send?phone=' + ph + '&text=' + encodeURIComponent(x.msg);
-      const btn = document.getElementById('exam-wa-btn-'+i);
-      if (btn) { btn.textContent='✅ Sent'; btn.style.background='#dcfce7'; btn.style.color='#166534'; btn.disabled=true; }
-    }, delay);
-    delay += 1500;
-  });
-  showToast(`📱 ${list.length} பெற்றோருக்கு அனுப்புகிறது…`);
+
+  // Send the first one now (this click is the trusted user gesture); a
+  // setTimeout-chained window.open for the rest gets silently popup-blocked
+  // by the browser, so ask the teacher to tap each remaining row instead.
+  const x0 = list[0];
+  const idx0 = full.indexOf(x0);
+  const clean0 = x0.phone.replace(/\D/g,'');
+  const ph0    = clean0.startsWith('91') ? clean0 : '91'+clean0;
+  _openWADirect(ph0, x0.msg);
+  const btn0 = document.getElementById('exam-wa-btn-'+idx0);
+  if (btn0) { btn0.textContent='✅ Sent'; btn0.style.background='#dcfce7'; btn0.style.color='#166534'; btn0.disabled=true; }
+
+  showToast(list.length > 1
+    ? `📱 ${x0.name}-க்கு அனுப்பப்பட்டது. மீதமுள்ள ${list.length - 1} பெற்றோருக்கும் "📱 Send" தட்டவும்.`
+    : `📱 ${x0.name}-க்கு அனுப்புகிறது…`);
 }
 
 /* Safe individual exam notice send using stored _examWAMsgs */
@@ -8043,9 +8157,11 @@ function waStaff(phone, name) {
 function editStaffMember(idx) {
   const s = staffData[idx];
   if (!s) return;
-  const gross = (s.baseSalary||0)+(s.hra||0)+(s.ta||0);
-  const net   = gross - (s.pf||0) - (s.tax||0) - (s.otherDed||0);
   const root = document.getElementById('modal-root');
+  const totalStudents = (typeof students !== 'undefined' && Array.isArray(students)) ? students.length : 0;
+  const feePerStu = s.feePerStudent || 0;
+  const feeEarned = Math.round(feePerStu * totalStudents);
+  const consol = s.consolidatedPay || s.baseSalary || 0;
   root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal">
     <div class="modal-title">✏️ Edit Staff — ${s.name}</div>
     <div class="frow">
@@ -8074,29 +8190,130 @@ function editStaffMember(idx) {
       <div class="fg"><label class="fl">Join Date</label><input class="fi" id="esf-join" type="date" value="${s.joinDate||''}"></div>
       <div class="fg"><label class="fl">Experience</label><input class="fi" id="esf-exp" value="${s.exp||''}"></div>
     </div>
-    <div style="background:var(--bg);border-radius:8px;padding:12px;margin:8px 0">
-      <div style="font-size:11px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">💰 Salary</div>
-      <div class="fg">
-        <label class="fl">Consolidated Monthly Pay ₹</label>
-        <input class="fi" id="esf-basic" type="number" value="${s.consolidatedPay||s.baseSalary||0}" style="font-size:16px;font-weight:600">
-        <div style="font-size:10px;color:var(--tx3);margin-top:3px">LOP deduction calculated automatically from attendance</div>
+
+    <!-- ── Salary Section ── -->
+    <div style="background:var(--bg);border-radius:10px;padding:14px;margin:10px 0;border:.5px solid var(--br)">
+      <div style="font-size:11px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px">💰 Salary Structure</div>
+
+      <!-- Pay type toggle -->
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <button type="button" id="pay-type-fixed" onclick="esfSetPayType('fixed')"
+          style="flex:1;padding:8px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;border:1.5px solid ${(s.payType||'fixed')==='fixed'?'#7c3aed':'var(--br)'};background:${(s.payType||'fixed')==='fixed'?'#ede9fe':'var(--bg)'};color:${(s.payType||'fixed')==='fixed'?'#7c3aed':'var(--tx2)'}">
+          📋 Fixed Monthly Pay
+        </button>
+        <button type="button" id="pay-type-perstudent" onclick="esfSetPayType('perstudent')"
+          style="flex:1;padding:8px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;border:1.5px solid ${s.payType==='perstudent'?'#0891b2':'var(--br)'};background:${s.payType==='perstudent'?'#cffafe':'var(--bg)'};color:${s.payType==='perstudent'?'#0891b2':'var(--tx2)'}">
+          👥 Per Student Fee
+        </button>
       </div>
-      <div class="frow">
-        <div class="fg"><label class="fl">Extra Deduction ₹</label><input class="fi" id="esf-other" type="number" value="${s.extraDed||s.otherDed||0}"></div>
-        <div class="fg"><label class="fl">Reason (e.g. Advance)</label><input class="fi" id="esf-otherNote" value="${s.extraDedNote||''}"></div>
+
+      <!-- Fixed pay row -->
+      <div id="esf-fixed-row" style="display:${s.payType==='perstudent'?'none':''}">
+        <div class="fg">
+          <label class="fl">Consolidated Monthly Pay ₹</label>
+          <input class="fi" id="esf-basic" type="number" value="${consol}" style="font-size:16px;font-weight:600"
+            oninput="esfUpdatePreview()">
+        </div>
+      </div>
+
+      <!-- Per-student pay row -->
+      <div id="esf-persturow" style="display:${s.payType==='perstudent'?'':'none'}">
+        <div class="frow">
+          <div class="fg">
+            <label class="fl">Rate per Student ₹</label>
+            <input class="fi" id="esf-perstudent" type="number" value="${feePerStu}" placeholder="e.g. 50"
+              style="font-size:16px;font-weight:600" oninput="esfUpdatePreview()">
+          </div>
+          <div class="fg">
+            <label class="fl">Current Students</label>
+            <input class="fi" id="esf-stucount" type="number" value="${s.studentCountOverride || totalStudents}"
+              oninput="esfUpdatePreview()">
+          </div>
+        </div>
+        <div id="esf-perstudent-calc" style="font-size:12px;color:#0891b2;background:#cffafe;border-radius:7px;padding:7px 10px;margin-top:4px">
+          👥 ${totalStudents} students × ₹${feePerStu} = <b>₹${feeEarned.toLocaleString('en-IN')}</b> base pay
+        </div>
+      </div>
+
+      <!-- Bonus row -->
+      <div class="frow" style="margin-top:10px">
+        <div class="fg">
+          <label class="fl">Bonus ₹ <span style="font-size:10px;color:var(--tx3);font-weight:400">(this month)</span></label>
+          <input class="fi" id="esf-bonus" type="number" value="${s.bonus||0}" placeholder="0" oninput="esfUpdatePreview()">
+        </div>
+        <div class="fg">
+          <label class="fl">Bonus Reason</label>
+          <input class="fi" id="esf-bonusNote" value="${s.bonusNote||''}" placeholder="e.g. Diwali bonus, Performance">
+        </div>
+      </div>
+
+      <!-- Extra Deduction row -->
+      <div class="frow" style="margin-top:4px">
+        <div class="fg">
+          <label class="fl">Deduction ₹</label>
+          <input class="fi" id="esf-other" type="number" value="${s.extraDed||s.otherDed||0}" placeholder="0" oninput="esfUpdatePreview()">
+        </div>
+        <div class="fg">
+          <label class="fl">Deduction Reason</label>
+          <input class="fi" id="esf-otherNote" value="${s.extraDedNote||''}" placeholder="e.g. Advance taken">
+        </div>
+      </div>
+
+      <!-- Live net pay preview -->
+      <div id="esf-net-preview" style="display:flex;align-items:center;justify-content:space-between;background:var(--card);border-radius:8px;padding:10px 14px;margin-top:10px;border:.5px solid var(--br)">
+        <span style="font-size:12px;color:var(--tx2)">Estimated Net Pay</span>
+        <span style="font-size:22px;font-weight:800;color:#16a34a" id="esf-net-val">₹${consol.toLocaleString('en-IN')}</span>
       </div>
     </div>
+
     <div class="modal-foot">
       <button class="btn btn-p" onclick="saveEditStaff(${idx})">💾 Save</button>
       <button class="btn" onclick="closeModal()">Cancel</button>
     </div>
   </div></div>`;
+  // init preview
+  setTimeout(esfUpdatePreview, 50);
 }
 
-function calcEditStaffSalary() { /* simplified */ }
+function esfSetPayType(type) {
+  document.getElementById('esf-fixed-row').style.display  = type === 'fixed' ? '' : 'none';
+  document.getElementById('esf-persturow').style.display  = type === 'perstudent' ? '' : 'none';
+  const fixedBtn  = document.getElementById('pay-type-fixed');
+  const perBtn    = document.getElementById('pay-type-perstudent');
+  if (fixedBtn) {
+    fixedBtn.style.border    = type === 'fixed' ? '1.5px solid #7c3aed' : '1.5px solid var(--br)';
+    fixedBtn.style.background = type === 'fixed' ? '#ede9fe' : 'var(--bg)';
+    fixedBtn.style.color     = type === 'fixed' ? '#7c3aed' : 'var(--tx2)';
+  }
+  if (perBtn) {
+    perBtn.style.border    = type === 'perstudent' ? '1.5px solid #0891b2' : '1.5px solid var(--br)';
+    perBtn.style.background = type === 'perstudent' ? '#cffafe' : 'var(--bg)';
+    perBtn.style.color     = type === 'perstudent' ? '#0891b2' : 'var(--tx2)';
+  }
+  esfUpdatePreview();
+}
+
+function esfUpdatePreview() {
+  const isPerStu  = document.getElementById('esf-persturow')?.style.display !== 'none';
+  const basic     = parseFloat(document.getElementById('esf-basic')?.value) || 0;
+  const rate      = parseFloat(document.getElementById('esf-perstudent')?.value) || 0;
+  const stuCount  = parseInt(document.getElementById('esf-stucount')?.value) || 0;
+  const bonus     = parseFloat(document.getElementById('esf-bonus')?.value) || 0;
+  const ded       = parseFloat(document.getElementById('esf-other')?.value) || 0;
+  const basePay   = isPerStu ? Math.round(rate * stuCount) : basic;
+  const net       = Math.max(0, basePay + bonus - ded);
+
+  const calcEl = document.getElementById('esf-perstudent-calc');
+  if (calcEl && isPerStu) {
+    calcEl.innerHTML = `👥 ${stuCount} students × ₹${rate} = <b>₹${basePay.toLocaleString('en-IN')}</b> base pay`;
+  }
+  const netEl = document.getElementById('esf-net-val');
+  if (netEl) netEl.textContent = '₹' + net.toLocaleString('en-IN');
+}
 
 function saveEditStaff(idx) {
   const s = staffData[idx]; if (!s) return;
+  const isPerStu = document.getElementById('esf-persturow')?.style.display !== 'none';
   s.name       = document.getElementById('esf-name')?.value.trim()  || s.name;
   s.desg       = document.getElementById('esf-desg')?.value          || s.desg;
   s.phone      = document.getElementById('esf-phone')?.value.trim() || s.phone;
@@ -8105,7 +8322,16 @@ function saveEditStaff(idx) {
   s.session    = document.getElementById('esf-session')?.value      || s.session || 'both';
   s.joinDate   = document.getElementById('esf-join')?.value         || s.joinDate;
   s.exp        = document.getElementById('esf-exp')?.value.trim()   || s.exp;
-  s.consolidatedPay = parseFloat(document.getElementById('esf-basic')?.value) || s.consolidatedPay || 0;
+  s.payType    = isPerStu ? 'perstudent' : 'fixed';
+  s.feePerStudent     = parseFloat(document.getElementById('esf-perstudent')?.value) || 0;
+  s.studentCountOverride = parseInt(document.getElementById('esf-stucount')?.value) || 0;
+  const stuCount = s.studentCountOverride || ((typeof students !== 'undefined' && Array.isArray(students)) ? students.length : 0);
+  s.consolidatedPay = isPerStu
+    ? Math.round((s.feePerStudent || 0) * stuCount)
+    : (parseFloat(document.getElementById('esf-basic')?.value) || s.consolidatedPay || 0);
+  s.baseSalary   = s.consolidatedPay;
+  s.bonus        = parseFloat(document.getElementById('esf-bonus')?.value) || 0;
+  s.bonusNote    = document.getElementById('esf-bonusNote')?.value.trim() || '';
   s.extraDed     = parseFloat(document.getElementById('esf-other')?.value) || 0;
   s.extraDedNote = document.getElementById('esf-otherNote')?.value.trim() || '';
   saveStaffData(); renderStaff(); closeModal(); showToast(`✅ ${s.name} updated!`); runBackup('change');
@@ -8340,11 +8566,11 @@ function generatePayroll() {
     var dailyRate  = pay / 26;
     var lopDed     = Math.round(lopDays * dailyRate);
     var extraDed   = s.extraDed || 0;
-    var net        = Math.max(0, pay - lopDed - extraDed);
+    var bonus      = s.bonus || 0;
     var effectiveLop = lopDays + lateAsLop;
     lopDed = Math.round(effectiveLop * dailyRate);
-    net    = Math.max(0, pay - lopDed - extraDed);
-    return { s:s, pay:pay, lopDays:lopDays, clDays:clDays, hDays:hDays, lateDays:lateDays, lateAsLop:lateAsLop, lopDed:lopDed, extraDed:extraDed, net:net, dailyRate:dailyRate };
+    var net = Math.max(0, pay + bonus - lopDed - extraDed);
+    return { s:s, pay:pay, bonus:bonus, lopDays:lopDays, clDays:clDays, hDays:hDays, lateDays:lateDays, lateAsLop:lateAsLop, lopDed:lopDed, extraDed:extraDed, net:net, dailyRate:dailyRate };
   });
 
   var totalNet = payData.reduce(function(a,b){return a+b.net;}, 0);
@@ -8381,6 +8607,14 @@ function generatePayroll() {
     var lopFmt    = item.lopDed.toLocaleString('en-IN');
     var netFmt    = item.net.toLocaleString('en-IN');
     var extraNote = s.extraDedNote ? ' ('+s.extraDedNote+')' : '';
+    var bonusNote = s.bonusNote    ? ' ('+s.bonusNote+')'    : '';
+
+    // Per-student pay info row
+    var perStuRow = s.payType === 'perstudent' && s.feePerStudent
+      ? '<div style="font-size:11px;color:#0891b2;padding:4px 0">'
+      + '  👥 '+(s.studentCountOverride||((typeof students!=='undefined'&&Array.isArray(students))?students.length:0))+' students × ₹'+s.feePerStudent+'/student'
+      + '</div>'
+      : '';
 
     // Salary payment status for this month
     var salKey  = getSalaryPayKey(s.id, monthEl.value);
@@ -8395,8 +8629,15 @@ function generatePayroll() {
 
     var extraRow = item.extraDed > 0
       ? '<div style="display:flex;justify-content:space-between;padding:4px 0">'
-      + '  <span style="font-size:12px;color:#7c3aed">Extra Deduction'+extraNote+'</span>'
+      + '  <span style="font-size:12px;color:#7c3aed">Deduction'+extraNote+'</span>'
       + '  <span style="font-size:13px;font-weight:700;color:#7c3aed">&minus; &#8377;'+item.extraDed.toLocaleString('en-IN')+'</span>'
+      + '</div>'
+      : '';
+
+    var bonusRow = item.bonus > 0
+      ? '<div style="display:flex;justify-content:space-between;padding:4px 0">'
+      + '  <span style="font-size:12px;color:#16a34a">&#127881; Bonus'+bonusNote+'</span>'
+      + '  <span style="font-size:13px;font-weight:700;color:#16a34a">+ &#8377;'+item.bonus.toLocaleString('en-IN')+'</span>'
       + '</div>'
       : '';
 
@@ -8435,11 +8676,13 @@ function generatePayroll() {
       // Salary breakdown
       +'<div style="padding:10px 16px">'
       +'  <div style="display:flex;justify-content:space-between;padding:4px 0">'
-      +'    <span style="font-size:12px;color:var(--tx2)">Consolidated Pay</span>'
+      +'    <span style="font-size:12px;color:var(--tx2)">'+(s.payType==='perstudent'?'Per-Student Pay':'Consolidated Pay')+'</span>'
       +'    <span style="font-size:13px;font-weight:600">&#8377;'+payFmt+'</span>'
       +'  </div>'
+      +perStuRow
       +attRow
       +lopRow
+      +bonusRow
       +extraRow
       +paidBanner
       // Add deduction row
@@ -8501,7 +8744,8 @@ function openSalaryPaidModal(staffId) {
   const dailyRate = pay / 26;
   const lopDed    = Math.round((lopDays + lateAsLopM) * dailyRate);
   const extraDed  = s.extraDed || 0;
-  const net       = Math.max(0, pay - lopDed - extraDed);
+  const bonus     = s.bonus || 0;
+  const net       = Math.max(0, pay + bonus - lopDed - extraDed);
 
   const root = document.getElementById('modal-root');
   root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()">
@@ -8522,8 +8766,12 @@ function openSalaryPaidModal(staffId) {
         <span style="font-size:12px;color:#92400e">LOP Deduction (${lopDays} days)</span>
         <span style="font-size:12px;font-weight:600;color:#92400e">− ₹${lopDed.toLocaleString('en-IN')}</span>
       </div>` : ''}
+      ${bonus > 0 ? `<div style="display:flex;justify-content:space-between;padding:4px 0">
+        <span style="font-size:12px;color:#16a34a">🎉 Bonus${s.bonusNote?' ('+s.bonusNote+')':''}</span>
+        <span style="font-size:12px;font-weight:600;color:#16a34a">+ ₹${bonus.toLocaleString('en-IN')}</span>
+      </div>` : ''}
       ${extraDed > 0 ? `<div style="display:flex;justify-content:space-between;padding:4px 0">
-        <span style="font-size:12px;color:#7c3aed">Extra Deduction${s.extraDedNote ? ' ('+s.extraDedNote+')' : ''}</span>
+        <span style="font-size:12px;color:#7c3aed">Deduction${s.extraDedNote?' ('+s.extraDedNote+')':''}</span>
         <span style="font-size:12px;font-weight:600;color:#7c3aed">− ₹${extraDed.toLocaleString('en-IN')}</span>
       </div>` : ''}
       <div style="display:flex;justify-content:space-between;padding:8px 0 4px;border-top:.5px solid var(--br);margin-top:4px">
@@ -8591,7 +8839,7 @@ function confirmSalaryPaid(staffId, monthVal, netPay) {
   const [yr, mo] = monthVal.split('-').map(Number);
   const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const monthLabel = months[mo - 1] + ' ' + yr;
-  const waMsg = buildSalarySlipWA(s, amount, mode, monthLabel, dateStr, note);
+  const waMsg = buildSalarySlipWA(s, amount, mode, monthLabel, dateStr, note, s.bonus||0, s.extraDed||0);
 
   closeModal();
   generatePayroll(); // refresh cards to show paid badge
@@ -8600,7 +8848,34 @@ function confirmSalaryPaid(staffId, monthVal, netPay) {
   showSalaryPaidModal(s, amount, mode, monthLabel, dateStr, waMsg);
 }
 
-function buildSalarySlipWA(s, amount, mode, monthLabel, dateStr, note) {
+function buildSalarySlipWA(s, amount, mode, monthLabel, dateStr, note, bonus, extraDed) {
+  // Try customized template first
+  let tmpl = '';
+  try { tmpl = localStorage.getItem('_erp_wt_payroll_slip_ta') || ''; } catch(e) {}
+  if (!tmpl) tmpl = WA_TEMPLATES.payroll_slip?.ta?.[0] || '';
+
+  if (tmpl) {
+    const pay = s.consolidatedPay || s.baseSalary || 0;
+    return tmpl
+      .replace(/{staff_name}/g,    s.name || '')
+      .replace(/{designation}/g,   s.desg || '')
+      .replace(/{month}/g,         monthLabel)
+      .replace(/{base_pay}/g,      pay.toLocaleString('en-IN'))
+      .replace(/{bonus}/g,         (bonus||0).toLocaleString('en-IN'))
+      .replace(/{bonus_note}/g,    s.bonusNote || '')
+      .replace(/{deduction}/g,     (extraDed||0).toLocaleString('en-IN'))
+      .replace(/{deduction_note}/g, s.extraDedNote || '')
+      .replace(/{net_pay}/g,       amount.toLocaleString('en-IN'))
+      .replace(/{payment_mode}/g,  mode)
+      .replace(/{date}/g,          dateStr)
+      .replace(/{note}/g,          note || '')
+      .replace(/{center_name}/g,   CFG.CENTER.name)
+      .replace(/{center_phone}/g,  CFG.CENTER.phone);
+  }
+
+  // Default template
+  const bonusLine  = bonus   > 0 ? `\n🎉 Bonus   : ₹${bonus.toLocaleString('en-IN')}${s.bonusNote?' ('+s.bonusNote+')':''}` : '';
+  const dedLine    = extraDed > 0 ? `\n➖ Deduction: ₹${extraDed.toLocaleString('en-IN')}${s.extraDedNote?' ('+s.extraDedNote+')':''}` : '';
   return `Dear *${s.name}*,
 
 🏫 *${CFG.CENTER.name}*
@@ -8610,13 +8885,15 @@ function buildSalarySlipWA(s, amount, mode, monthLabel, dateStr, note) {
 
 Your salary for *${monthLabel}* has been processed:
 
-👤 Name    : ${s.name}
-💼 Role    : ${s.desg}
-📅 Month   : ${monthLabel}
+👤 Name       : ${s.name}
+💼 Role       : ${s.desg}
+📅 Month      : ${monthLabel}
 
-💵 Amount  : ₹${amount.toLocaleString('en-IN')}
-💳 Mode    : ${mode}
-📆 Date    : ${dateStr}
+💵 Base Pay   : ₹${(s.consolidatedPay||0).toLocaleString('en-IN')}${bonusLine}${dedLine}
+
+💰 *Net Pay   : ₹${amount.toLocaleString('en-IN')}*
+💳 Mode       : ${mode}
+📆 Date       : ${dateStr}
 ${note ? `📝 Note    : ${note}\n` : ''}
 ✅ *Payment Confirmed*
 
@@ -10453,9 +10730,11 @@ function _gfCompute(student) {
   const att    =(typeof getStudentAttStats==='function')
     ? getStudentAttStats(student,curYr,curMo) : {pct:75,total:0};
   const ranked =(typeof computeRanks==='function')
-    ? computeRanks(curYr,curMo) : [];
+    ? computeRanks(curYr,curMo,student.grade) : [];
   const myRank =ranked.find(r=>r.student.id===student.id);
-  const totalSt=ranked.length||students.filter(s=>s.status==='active').length;
+  const totalSt=myRank
+    ? myRank.classTotal
+    : students.filter(s=>s.status==='active' && String(s.grade||'').trim()===String(student.grade||'').trim()).length;
 
   const avgPct=validM.length>0
     ? validM.reduce((a,m)=>a+(m.marks/m.maxMarks*100),0)/validM.length : 60;
@@ -12787,10 +13066,13 @@ function _buildPendingWAMsg(entry) {
   return `அன்பான ${parent},\n\n💰 *கட்டண நினைவூட்டல் — ${entry.name}*\n🏫 ${ctr.name || ''}\n\n📋 மாணவர்  : *${entry.name}*${gradeLine}\n📅 மாதம்   : ${monthsStr}\n🔴 நிலுவை  : *₹${entry.total.toLocaleString('en-IN')}*\n📆 கடைசி நாள்: ${dueDate}${overdueLine}\n\nவிரைவில் கட்டணம் செலுத்தவும்.\n\n📞 ${ctr.phone || ''}\n${ctr.name || ''}`;
 }
 
-function _getPendingEntries(filterMonth) {
-  const src = filterMonth
+function _getPendingEntries(filterMonth, filterGrade) {
+  let src = filterMonth
     ? fees.filter(f => f && f.rcpt && f.status !== 'paid' && f.balance > 0 && f.month === filterMonth)
     : fees.filter(f => f && f.rcpt && f.status !== 'paid' && f.balance > 0);
+  if (filterGrade && filterGrade !== 'all') {
+    src = src.filter(f => _feeStudentGrade(f) === filterGrade);
+  }
   const map = {};
   src.forEach(f => {
     const key = f.studentId || f.student;
@@ -12805,13 +13087,22 @@ function _getPendingEntries(filterMonth) {
 function openPendingFeesWAModal(filterMonth) {
   // filterMonth: optional — if passed, only show pending for that month
   const selMonth  = filterMonth || (document.getElementById('fee-month-filter')?.value) || '';
-  const entries   = _getPendingEntries(selMonth);
+  const selGrade  = window._feeSelectedGrade || (document.getElementById('fee-grade-filter')?.value) || 'all';
+  const entries   = _getPendingEntries(selMonth, selGrade);
   if (entries.length === 0) {
     showToast(selMonth ? 'No pending fees for ' + selMonth : 'No pending fees found');
     return;
   }
 
   const totalOwed = entries.reduce((s,e) => s + e.total, 0);
+  const gradeOptions = [...new Set(students.filter(s => s && s.grade).map(s => String(s.grade).trim()))]
+    .sort((a,b) => {
+      const na = parseInt(a), nb = parseInt(b);
+      if (!isNaN(na) && !isNaN(nb)) return na - nb;
+      if (a === 'KG') return -1;
+      if (b === 'KG') return 1;
+      return String(a).localeCompare(String(b));
+    });
 
   const root = document.getElementById('modal-root');
   root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()">
@@ -12819,12 +13110,12 @@ function openPendingFeesWAModal(filterMonth) {
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
       <div>
         <div class="modal-title" style="margin:0">📱 Pending Fee Reminder — WhatsApp</div>
-        <div style="font-size:11px;color:var(--tx3);margin-top:2px">${entries.length} students · ₹${totalOwed.toLocaleString('en-IN')} total · ${selMonth || 'All months'}</div>
+        <div style="font-size:11px;color:var(--tx3);margin-top:2px">${entries.length} students · ₹${totalOwed.toLocaleString('en-IN')} total · ${selMonth || 'All months'}${selGrade!=='all' ? ' · Class '+selGrade : ''}</div>
       </div>
       <button onclick="closeModal()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--tx2);line-height:1">×</button>
     </div>
 
-    <!-- Month filter inside modal -->
+    <!-- Month + Class filter inside modal -->
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;background:var(--bg);padding:8px 10px;border-radius:8px;border:.5px solid var(--br)">
       <span style="font-size:11px;font-weight:600;color:var(--tx2)">📅 Month:</span>
       <select id="pf-month-sel" style="border:.5px solid var(--br);border-radius:6px;padding:4px 8px;font-size:11px;font-family:inherit;background:var(--bg);color:var(--tx)" onchange="refreshPendingFeeModal()">
@@ -12832,6 +13123,11 @@ function openPendingFeesWAModal(filterMonth) {
         ${[...new Set(fees.filter(f=>f.status!=='paid'&&f.balance>0).map(f=>f.month).filter(Boolean))].map(m =>
           `<option value="${m}" ${m===selMonth?'selected':''}>${m}</option>`
         ).join('')}
+      </select>
+      <span style="font-size:11px;font-weight:600;color:var(--tx2);margin-left:4px">🎓 Class:</span>
+      <select id="pf-grade-sel" style="border:.5px solid var(--br);border-radius:6px;padding:4px 8px;font-size:11px;font-family:inherit;background:var(--bg);color:var(--tx)" onchange="refreshPendingFeeModal()">
+        <option value="all" ${selGrade==='all'?'selected':''}>All Classes</option>
+        ${gradeOptions.map(g => `<option value="${g}" ${g===selGrade?'selected':''}>${g==='KG'?'KG':'Class '+g}</option>`).join('')}
       </select>
       <button onclick="navTo('wa-templates');setTimeout(()=>typeof selectWTType==='function'&&selectWTType('fees'),300);closeModal()" style="margin-left:auto;background:none;border:.5px solid var(--br);border-radius:6px;padding:3px 10px;font-size:10px;color:var(--tx2);cursor:pointer;font-family:inherit">✏️ Edit Template</button>
     </div>
@@ -12881,7 +13177,8 @@ function _buildPFRows(entries) {
 
 function refreshPendingFeeModal() {
   const selMonth = document.getElementById('pf-month-sel')?.value || '';
-  const entries  = _getPendingEntries(selMonth);
+  const selGrade = document.getElementById('pf-grade-sel')?.value || 'all';
+  const entries  = _getPendingEntries(selMonth, selGrade);
   window._pfEntries = entries;
   const rowsEl = document.getElementById('pf-student-rows');
   if (rowsEl) rowsEl.innerHTML = _buildPFRows(entries);
@@ -12889,6 +13186,13 @@ function refreshPendingFeeModal() {
   // update count in send-all button
   const btn = document.querySelector('.btn.btn-wa');
   if (btn) btn.textContent = '\uD83D\uDCF1 Send to All (' + entries.length + ')';
+  // update header count row
+  const totalOwed = entries.reduce((s,e) => s + e.total, 0);
+  const hdr = document.querySelector('.modal-title')?.nextElementSibling;
+  if (hdr) hdr.textContent = `${entries.length} students · ₹${totalOwed.toLocaleString('en-IN')} total · ${selMonth || 'All months'}${selGrade!=='all' ? ' · Class '+selGrade : ''}`;
+  // update STUDENTS (n) label
+  const stuLbl = document.getElementById('pf-student-rows')?.previousElementSibling;
+  if (stuLbl) stuLbl.textContent = `STUDENTS (${entries.length})`;
 }
 
 function refreshPendingFeePreview() {
@@ -12919,18 +13223,24 @@ function sendAllPendingFeeWA() {
     return !!(s?.phone);
   });
   if (!withPhone.length) { showToast('No students with phone numbers'); return; }
-  // Queue all: open WA for each with a delay
-  let delay = 0;
-  withPhone.forEach((entry, idx) => {
-    const stu = students.find(s => s.id === entry.studentId || s.name === entry.name);
-    setTimeout(() => {
-      openWA(stu.phone, _buildPendingWAMsg(entry));
-      const btn = document.getElementById('pf-btn-' + window._pfEntries.indexOf(entry));
-      if (btn) { btn.textContent = '✅ Sent'; btn.style.background = '#dcfce7'; btn.style.color = '#166534'; btn.disabled = true; }
-    }, delay);
-    delay += 1500;
-  });
-  showToast('\uD83D\uDCF1 Sending to ' + withPhone.length + ' parents\u2026 (one per 1.5s)');
+
+  // Only open the first WhatsApp chat now — this click is the trusted user
+  // gesture that browsers require for window.open() to succeed. Any
+  // further opens queued behind a setTimeout are NOT tied to a user
+  // gesture, so browsers silently block them (and the old location.href
+  // approach avoided the block only by navigating the whole app away,
+  // which wiped all in-memory data — the very "disappearing" bug reported
+  // earlier). So: send #1 now, then ask the teacher to tap "📱 Send" on
+  // each remaining row — reliable every time.
+  const entry0 = withPhone[0];
+  const stu0   = students.find(s => s.id === entry0.studentId || s.name === entry0.name);
+  openWA(stu0.phone, _buildPendingWAMsg(entry0));
+  const btn0 = document.getElementById('pf-btn-' + window._pfEntries.indexOf(entry0));
+  if (btn0) { btn0.textContent = '✅ Sent'; btn0.style.background = '#dcfce7'; btn0.style.color = '#166534'; btn0.disabled = true; }
+
+  showToast(withPhone.length > 1
+    ? `📱 Sent to ${entry0.name}. Tap "📱 Send" on each remaining student (${withPhone.length - 1} left) — WhatsApp can't be auto-sent to everyone at once.`
+    : '📱 Sending to ' + entry0.name + '…');
 }
 
 
@@ -13112,6 +13422,7 @@ const WT_VARS = {
   exam_notice: '{parent_name} · {student_name} · {grade} · {exam_name} · {subject} · {exam_date} · {max_marks} · {pass_marks} · {syllabus} · {center_name} · {center_phone}',
   teaching_daily: '{parent_name} · {student_name} · {grade} · {batch_line} · {date} · {lessons_block} · {center_name} · {center_phone}',
   teaching_monthly: '{parent_name} · {student_name} · {grade} · {batch_line} · {month_name} · {year} · {present_days} · {absent_days} · {att_pct} · {monthly_topics} · {marks_section} · {missed_note} · {teacher_note} · {center_name} · {center_phone}',
+  payroll_slip: '{staff_name} · {designation} · {month} · {base_pay} · {bonus} · {bonus_note} · {deduction} · {deduction_note} · {net_pay} · {payment_mode} · {date} · {note} · {center_name} · {center_phone}',
 };
 
 const WT_SAMPLE = {
@@ -13128,6 +13439,7 @@ const WT_SAMPLE = {
   exam_notice: { parent_name:'Suresh', student_name:'Monisha', grade:'10', exam_name:'Monthly Test', subject:'Mathematics', exam_date:'20 Jun 2026', max_marks:'100', pass_marks:'35', syllabus:'Chapter 1–4, Algebra', center_name:'KTC', center_phone:'9876543210' },
   teaching_daily: { parent_name:'Suresh', student_name:'Monisha', grade:'10', batch_line:' | Evening Batch', date:'29 Jun 2026 (திங்கள்)', lessons_block:'📚 Mathematics — Quadratic Equations\n   📝 Solving ax²+bx+c=0 by factorisation method\n   📋 Homework: Exercise 4.2 Q1–Q5\n\n📚 Science — Light Reflection\n   📝 Laws of reflection, plane mirror images\n   📋 Homework: Draw ray diagram for concave mirror', center_name:'KTC', center_phone:'9876543210' },
   teaching_monthly: { parent_name:'Suresh', student_name:'Monisha', grade:'10', batch_line:' | Evening Batch', month_name:'ஜூன்', year:'2026', present_days:'20', absent_days:'4', att_pct:'83', monthly_topics:'• Mathematics: Quadratic Equations, Polynomials, Trigonometry\n• Science: Light Reflection, Chemical Reactions\n• Tamil: கவிதை, இலக்கணம்', marks_section:'• Monthly Test (Maths): 87/100 — A\n• Science Quiz: 42/50 — A', missed_note:'⚠️ கவனிக்கவும்: Quadratic Equations மற்றும் Light Reflection தவறிவிட்டீர்கள் — வீட்டில் படிக்கவும்.', teacher_note:'சிறப்பாக தொடர்ந்து படியுங்கள்! 💪', center_name:'KTC', center_phone:'9876543210' },
+  payroll_slip: { staff_name:'Kavitha', designation:'Teacher', month:'June 2026', base_pay:'12,000', bonus:'1,000', bonus_note:' (Performance)', deduction:'500', deduction_note:' (Advance)', net_pay:'12,500', payment_mode:'UPI', date:'30 Jun 2026', note:'', center_name:'KTC', center_phone:'9876543210' },
 };
 
 const WT_ALL_TYPES = [
@@ -13144,6 +13456,7 @@ const WT_ALL_TYPES = [
   {id:'exam_notice',      label:'Exam Notice',             emoji:'📝', color:'#0369a1'},
   {id:'teaching_daily',   label:'Daily Lesson (Absent)',   emoji:'📖', color:'#dc2626'},
   {id:'teaching_monthly', label:'Monthly Growth WA',       emoji:'📈', color:'#7c3aed'},
+  {id:'payroll_slip',     label:'Payroll Salary Slip',     emoji:'💼', color:'#16a34a'},
 ];
 
 let wtActiveType = null;
@@ -13253,8 +13566,8 @@ function refreshWTPreview() {
     preview = fillFeeReceiptTemplate(template, sample);
   } else if (wtActiveType === 'monthly_summary') {
     preview = fillMonthlySummaryTemplate(template, sample);
-  } else if (wtActiveType === 'teaching_daily' || wtActiveType === 'teaching_monthly') {
-    // Fill teaching template variables with sample data
+  } else if (wtActiveType === 'teaching_daily' || wtActiveType === 'teaching_monthly' || wtActiveType === 'payroll_slip') {
+    // Fill teaching/payroll template variables with sample data
     preview = template;
     Object.entries(sample).forEach(([k,v]) => {
       preview = preview.replace(new RegExp('{'+k+'}','g'), v||'');
@@ -15141,23 +15454,48 @@ function _gradeFromPct(pct) {
 
 /* ════════════════════════════════════════════════════════
    RANK COMPUTATION  (att 40% + marks 30% + stars 20% + activities 10%)
+   Ranks are always computed CLASSWISE — a student's rank and classTotal are
+   relative only to other active students in the SAME grade/class, never
+   across the whole tuition center. Pass gradeFilter to restrict the pool to
+   a single class; omit it (or pass 'all') to get every active student back,
+   each still carrying their own class-scoped rank/classTotal.
 ════════════════════════════════════════════════════════ */
-function computeRanks(year, month) {
-  return students
-    .filter(s => s && s.name && s.status === 'active')
-    .map(s => {
-      const att   = getStudentAttStats(s, year, month);
-      const sumD  = loadSumData(s.id, year, month);
-      const marks = getStudentMarksAuto(s.id);
-      const validM = marks.filter(m => !m.absent && m.marks !== null && m.maxMarks > 0);
-      const avgPct = validM.length > 0
-        ? Math.round(validM.reduce((acc, m) => acc + (m.marks / m.maxMarks * 100), 0) / validM.length)
-        : 0;
-      const score = (att.pct * 0.4) + (avgPct * 0.3) + ((sumD.stars / 5) * 100 * 0.2) + (Math.min(sumD.activities.length, 4) * 2.5);
-      return { student: s, score, att, sumD, marks, avgPct };
-    })
-    .sort((a, b) => b.score - a.score)
-    .map((item, idx) => ({ ...item, rank: idx + 1 }));
+function computeRanks(year, month, gradeFilter) {
+  let pool = students.filter(s => s && s.name && s.status === 'active');
+  if (gradeFilter && gradeFilter !== 'all') {
+    pool = pool.filter(s => String(s.grade || '').trim() === String(gradeFilter).trim());
+  }
+
+  const scored = pool.map(s => {
+    const att   = getStudentAttStats(s, year, month);
+    const sumD  = loadSumData(s.id, year, month);
+    const marks = getStudentMarksAuto(s.id);
+    const validM = marks.filter(m => !m.absent && m.marks !== null && m.maxMarks > 0);
+    const avgPct = validM.length > 0
+      ? Math.round(validM.reduce((acc, m) => acc + (m.marks / m.maxMarks * 100), 0) / validM.length)
+      : 0;
+    const score = (att.pct * 0.4) + (avgPct * 0.3) + ((sumD.stars / 5) * 100 * 0.2) + (Math.min(sumD.activities.length, 4) * 2.5);
+    return { student: s, score, att, sumD, marks, avgPct };
+  });
+
+  // Group by class (grade) and rank strictly within each group — this is
+  // what keeps rank #1..N meaningful per-class instead of merging Class 6
+  // and Class 10 students into one combined ladder.
+  const groups = {};
+  scored.forEach(item => {
+    const g = String(item.student.grade || '—').trim();
+    (groups[g] = groups[g] || []).push(item);
+  });
+
+  let result = [];
+  Object.keys(groups).forEach(g => {
+    const groupTotal = groups[g].length;
+    const groupRanked = groups[g]
+      .sort((a, b) => b.score - a.score)
+      .map((item, idx) => ({ ...item, rank: idx + 1, classTotal: groupTotal }));
+    result = result.concat(groupRanked);
+  });
+  return result;
 }
 
 /* ════════════════════════════════════════════════════════
@@ -15509,9 +15847,9 @@ function buildSumWAMessage(s, year, month) {
     .map(a => a.emoji + ' ' + a.label);
   const actsText  = actLabels.length > 0 ? actLabels.join(', ') : 'பதிவு செய்யப்படவில்லை';
 
-  const ranked  = computeRanks(year, month);
+  const ranked  = computeRanks(year, month, s.grade);
   const myRank  = ranked.find(r => r.student.id === s.id);
-  const rankTxt = myRank ? myRank.rank + ' / ' + ranked.length : '—';
+  const rankTxt = myRank ? myRank.rank + ' / ' + myRank.classTotal : '—';
 
   // Auto marks section
   let marksSec = 'மதிப்பெண்கள் இன்னும் உள்ளிடப்படவில்லை';
@@ -15558,7 +15896,7 @@ function buildSumWAMessage(s, year, month) {
       star_label:     starLabel,
       activities:     actsText,
       rank:           rankTxt,
-      total_students: ranked.length,
+      total_students: myRank ? myRank.classTotal : ranked.length,
       marks_section:  marksSec,
       teacher_note:   noteText,
       center_name:    ctr.name  || '',
@@ -17042,29 +17380,72 @@ function tlSendTodayContentToAbsent() {
     return;
   }
 
-  // ── Build and send — one WA per absent student with ALL subjects bundled ──
-  let sentCount = 0, noPhoneCount = 0;
-
-  [...absentIdSet].forEach((sid, i) => {
+  // ── Build the send queue — one WA per absent student with ALL subjects bundled ──
+  const queue = [];
+  let noPhoneCount = 0;
+  [...absentIdSet].forEach(sid => {
     const s = stArr.find(x => x.id === sid);
     if (!s) return;
     const phone = (s.phone || s.pphone || s.parentPhone || '').replace(/\D/g, '').replace(/^91/, '');
     if (!phone) { noPhoneCount++; return; }
-
     // Pass ALL today's class logs — morning + evening bundled into one message
     const msg = _tlFillDailyMsg(s, todayLogs);
-    setTimeout(() => openWA('91' + phone, msg), sentCount * 900);
-    sentCount++;
+    queue.push({ student: s, phone, msg });
   });
 
-  if (!sentCount) {
+  if (!queue.length) {
     showToast('⚠️ ' + absentIdSet.size + ' absent student(s) found but none have phone numbers.');
     return;
   }
 
-  const subjects = [...new Set(todayLogs.map(l => l.subject).filter(Boolean))];
+  const subjects   = [...new Set(todayLogs.map(l => l.subject).filter(Boolean))];
   const noPhoneNote = noPhoneCount ? `, ${noPhoneCount} skipped (no phone)` : '';
-  showToast(`📱 Sending to ${sentCount} absent student(s)${filterLabel} — ${subjects.join(', ')}${noPhoneNote}`);
+
+  // NOTE: we deliberately do NOT auto-fire WhatsApp opens for every absent
+  // student via setTimeout. window.open() only succeeds when it is a
+  // direct result of a user tap — a delayed setTimeout callback is not a
+  // "trusted" gesture, so every open after the first would get silently
+  // popup-blocked (and the old approach that avoided this by navigating
+  // the page away wiped all in-memory data instead). So: send the first
+  // one now, and show the rest as tappable rows.
+  window._tlAbsentWAQueue = queue;
+  const first = queue[0];
+  openWA('91' + first.phone, first.msg);
+
+  const root = document.getElementById('modal-root');
+  if (root) {
+    root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()">
+    <div class="modal" style="max-width:480px">
+      <div class="modal-title">📱 Absent Notice${filterLabel}</div>
+      <div style="font-size:11px;color:var(--tx2);margin-bottom:10px">${subjects.join(', ') || 'Today\u2019s class'} · ${queue.length} student(s)${noPhoneNote}</div>
+      <div style="max-height:320px;overflow-y:auto;border:.5px solid var(--br);border-radius:10px">
+        ${queue.map((q,i) => `<div style="display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:.5px solid var(--br)">
+          <div class="av" style="background:${q.student.color||'#185FA5'};width:28px;height:28px;font-size:11px;flex-shrink:0">${(q.student.name||'?')[0]}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:12px;font-weight:600;color:var(--tx)">${q.student.name}</div>
+            <div style="font-size:10px;color:var(--tx3)">${q.phone}</div>
+          </div>
+          <button id="tlabs-btn-${i}" onclick="tlSendOneAbsentWA(${i})"
+            style="background:${i===0?'#dcfce7':'#25d366'};color:${i===0?'#166534':'#fff'};border:none;padding:6px 10px;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;flex-shrink:0">
+            ${i===0?'✅ Sent':'📱 Send'}
+          </button>
+        </div>`).join('')}
+      </div>
+      <div class="modal-foot" style="margin-top:10px">
+        <button class="btn" style="width:100%;justify-content:center" onclick="closeModal()">Close</button>
+      </div>
+    </div></div>`;
+  }
+  showToast(`📱 Sent to ${first.student.name}. Tap "📱 Send" on each remaining student${noPhoneNote}.`);
+}
+
+/* Tap-to-send one absent-notice WA from the queue built by tlSendTodayContentToAbsent() */
+function tlSendOneAbsentWA(i) {
+  const q = (window._tlAbsentWAQueue || [])[i];
+  if (!q) return;
+  openWA('91' + q.phone, q.msg);
+  const btn = document.getElementById('tlabs-btn-' + i);
+  if (btn) { btn.textContent = '✅ Sent'; btn.style.background = '#dcfce7'; btn.style.color = '#166534'; }
 }
 
 async function tlRunAIGrowth() {

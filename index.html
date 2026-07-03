@@ -586,6 +586,7 @@ tbody tr:hover td{background:var(--bg)}
     <button class="nav-item" data-page="teaching"><svg viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="10" rx="1.5" stroke="#0369a1" stroke-width="1.3"/><path d="M5 6h6M5 8.5h4" stroke="#0369a1" stroke-width="1.2" stroke-linecap="round"/><path d="M5 13l3-1.5 3 1.5" stroke="#0369a1" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Teaching Log</span></button>
     <button class="nav-item" data-page="summary"><svg viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="#f59e0b" stroke-width="1.3"/><path d="M5 8l2 2 4-4" stroke="#f59e0b" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 5h2M5 11h6" stroke="#f59e0b" stroke-width="1.1" stroke-linecap="round"/></svg><span>Student Summary</span></button>
     <button class="nav-item" data-page="timetable"><svg viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="1.5" stroke="#0ea5e9" stroke-width="1.3"/><path d="M5 2v2M11 2v2M2 7h12" stroke="#0ea5e9" stroke-width="1.3" stroke-linecap="round"/><path d="M5 10h2M9 10h2M5 12.5h2M9 12.5h2" stroke="#0ea5e9" stroke-width="1.2" stroke-linecap="round"/></svg><span>Time Table</span></button>
+    <button class="nav-item" data-page="recovery"><svg viewBox="0 0 16 16" fill="none"><path d="M8 2a6 6 0 106 6" stroke="#16a34a" stroke-width="1.3" stroke-linecap="round"/><path d="M8 2v0M12.5 2.5L14 4l-3.2 3.2" stroke="#16a34a" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 8.5l1.3 1.3L10.5 6.5" stroke="#16a34a" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Recovery Planner</span></button>
     <button class="nav-item" data-page="settings"><svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.3"/><path d="M8 2v1.5M8 12.5V14M14 8h-1.5M3.5 8H2M12.2 3.8l-1.06 1.06M4.86 11.14L3.8 12.2M12.2 12.2l-1.06-1.06M4.86 4.86L3.8 3.8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg><span id="nl-settings">Settings</span></button>
   </nav>
 <div id="_save_status_bar" style="text-align:center;font-size:10px;padding:3px 10px;color:var(--tx3,#94a3b8);background:var(--bg2,#f8fafc);transition:all .3s;border-bottom:.5px solid var(--br,#e2e8f0)">Ready</div>
@@ -2266,6 +2267,68 @@ tbody tr:hover td{background:var(--bg)}
 </div>
 <!-- END TIME TABLE -->
 
+
+<!-- ═══════════════ WEEKEND RECOVERY PLANNER ═══════════════ -->
+<div class="page" id="pg-recovery">
+
+  <!-- Header Banner -->
+  <div style="background:linear-gradient(135deg,#166534,#16a34a);border-radius:12px;padding:16px 20px;margin-bottom:16px;display:flex;align-items:center;gap:14px">
+    <div style="width:44px;height:44px;background:rgba(255,255,255,.15);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">📋</div>
+    <div style="flex:1">
+      <div style="font-size:16px;font-weight:700;color:#fff">Weekend Recovery Planner</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.8);margin-top:2px">Attendance + Timetable + Teaching Log — auto-builds what an absent student missed and sends it to parents</div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="card" style="margin-bottom:14px">
+    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px">
+      <select class="fi" id="rp-grade-sel" style="width:auto" onchange="rpOnGradeChange()">
+        <option value="all">🎓 All Classes</option>
+      </select>
+      <select class="fi" id="rp-student-sel" style="width:auto;min-width:180px" onchange="rpClearPlan()">
+        <option value="">— Select Student —</option>
+      </select>
+      <div style="display:flex;align-items:center;gap:6px;background:var(--bg);border:.5px solid var(--br);border-radius:8px;padding:4px 6px">
+        <button class="btn btn-sm" style="padding:5px 9px" onclick="rpShiftWeek(-1)" title="Previous week">◀</button>
+        <span id="rp-week-label" style="font-size:12px;font-weight:700;color:var(--tx);white-space:nowrap;padding:0 4px">This Week</span>
+        <button class="btn btn-sm" style="padding:5px 9px" onclick="rpShiftWeek(1)" title="Next week">▶</button>
+      </div>
+      <button class="btn btn-p btn-sm" style="margin-left:auto" onclick="rpGeneratePreview()">🔍 Preview Recovery Plan</button>
+    </div>
+  </div>
+
+  <!-- Preview + Edit -->
+  <div id="rp-preview-wrap" style="display:none;margin-bottom:16px">
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <span style="font-size:13px;font-weight:700;color:var(--tx)">📖 Recovery Plan Preview</span>
+        <span id="rp-preview-badge" style="font-size:10px;font-weight:700;background:#dcfce7;color:#166534;padding:2px 9px;border-radius:8px"></span>
+      </div>
+      <div id="rp-plan-detail" style="background:var(--bg);border:.5px solid var(--br);border-radius:10px;padding:12px 14px;margin-bottom:12px;font-size:12px;color:var(--tx2)"></div>
+
+      <label class="fl">✏️ WhatsApp Message (edit before sending)</label>
+      <textarea class="fi" id="rp-message" rows="10" style="font-size:12px;font-family:'Noto Sans Tamil',system-ui;line-height:1.7;resize:vertical;margin-bottom:10px"></textarea>
+
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-wa" style="flex:1;justify-content:center;min-width:160px" onclick="rpSendWA()">📱 Send WhatsApp</button>
+        <button class="btn btn-sm" onclick="rpGeneratePreview()">↺ Regenerate</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recovery History -->
+  <div class="card">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+      <span style="font-size:13px;font-weight:700;color:var(--tx)">🗂 Recovery History</span>
+      <span id="rp-history-count" style="font-size:10px;background:var(--bg);color:var(--tx2);padding:2px 9px;border-radius:8px;border:.5px solid var(--br)"></span>
+    </div>
+    <div id="rp-history-list" style="display:flex;flex-direction:column;gap:8px"></div>
+  </div>
+
+</div>
+<!-- END WEEKEND RECOVERY PLANNER -->
+
   </div><!-- /content -->
 </div><!-- /main -->
 </div><!-- /app -->
@@ -2667,6 +2730,7 @@ const T = {
     cancel:'Cancel',
     admissions:'Admissions',
     batches:'Batch Management',
+    recovery:'Weekend Recovery Planner',
   },
   ta:{
     dashboard:'டாஷ்போர்டு',students:'மாணவர்கள்',attendance:'வருகை பதிவு',fees:'கட்டணம்',
@@ -2685,6 +2749,7 @@ const T = {
     newFee:'கட்டண உள்ளீடு',saveFee:'சேமி & ரசீது',
     exams:'தேர்வுகள்',marksPlaceholder:'← மதிப்பெண் உள்ளிட தேர்வை தேர்ந்தெடுக்கவும்',
     batches:'குழு மேலாண்மை',
+    recovery:'வார இறுதி ஈடுசெய் திட்டம்',
     addStaff:'ஊழியர் சேர்',sendNotif:'அறிவிப்பு அனுப்பு',
     aiFeatures:'AI அம்சங்கள்',backupSync:'காப்புப் பிரதி & ஒத்திசைவு',
     langSwitch:'Switch to English',langLbl:'English',
@@ -3126,6 +3191,7 @@ function navTo(id) {
   if (id === 'summary') { if (typeof renderSummaryCards === 'function') renderSummaryCards(); }
   if (id === 'marks') { if (typeof ewInit === 'function') ewInit(); }
   if (id === 'timetable') { if (typeof initTimetablePage === 'function') initTimetablePage(); }
+  if (id === 'recovery') { if (typeof initRecoveryPage === 'function') initRecoveryPage(); }
   if (id === 'notifications') { if (typeof renderAdminPanel === 'function') renderAdminPanel(); }}
 
 function tbAddAction() {
@@ -16025,6 +16091,8 @@ function buildSumCard(item, year, month) {
       >${sumD.note||''}</textarea>
     </div>
 
+    ${typeof _rpSumHistoryBlockHTML === 'function' ? _rpSumHistoryBlockHTML(s.id) : ''}
+
     <!-- ── Footer ── -->
     ${isSumSentThisMonth(s.id, year, month) ? `<div style="padding:4px 15px;font-size:9px;color:#16a34a;font-weight:700;background:#f0fdf4">✅ இந்த மாதம் அனுப்பப்பட்டது (Combined AI Report)</div>` : ''}
     <div class="sum-card-foot">
@@ -16713,6 +16781,354 @@ function updateTTTodayDisplay(data, batch) {
   var todayIdx = parseInt(localStorage.getItem('_erp_tt_today') || '0') % data.days.length;
   var day = data.days[todayIdx];
   if (day) el.textContent = day.name || ('D-' + (todayIdx+1));
+}
+
+/* ═══════════════════════════════════════════════════════
+   WEEKEND RECOVERY PLANNER
+   Reuses existing data only — no new data store for source data:
+     • Attendance   → scans existing `_erp_att_*` keys (same as getStudentAttStats)
+     • Timetable    → getSubjectsForDayOrder() / ttLoadBatch() (existing)
+     • Teaching Log → _tlLoad() (existing _erp_teaching_log)
+     • Students     → existing `students` array
+     • WhatsApp     → existing openWA()
+   Only NEW storage: `_erp_recovery_plans` — a log of plans that were
+   actually generated/sent, purely for the "Recovery History" feature
+   (this is a record of an action taken, not a duplicate of source data).
+═══════════════════════════════════════════════════════ */
+function _rpLoad() {
+  try { return JSON.parse(localStorage.getItem('_erp_recovery_plans') || '[]'); } catch(e) { return []; }
+}
+function _rpSave(list) {
+  try { localStorage.setItem('_erp_recovery_plans', JSON.stringify(list)); } catch(e) {}
+}
+
+const RP_DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+function _rpDayName(dateStr) {
+  try { return RP_DAY_NAMES[new Date(dateStr + 'T00:00:00').getDay()]; } catch(e) { return dateStr; }
+}
+function _rpFmtDate(d) { return d.toISOString().slice(0,10); }
+
+/* School week = Monday → Saturday (recovery happens on Sun, due back Monday) */
+function _rpWeekBounds(refDate) {
+  const d = new Date(refDate);
+  const day = d.getDay(); // 0=Sun..6=Sat
+  const diffToMon = day === 0 ? -6 : 1 - day;
+  const mon = new Date(d); mon.setDate(d.getDate() + diffToMon);
+  const sat = new Date(mon); sat.setDate(mon.getDate() + 5);
+  return { start: _rpFmtDate(mon), end: _rpFmtDate(sat) };
+}
+
+/* ── Step 1: scan existing attendance keys for this student's absent dates
+   in a range (same key format/scan approach as getStudentAttStats) ── */
+function _rpGetAbsentDatesInRange(student, startDate, endDate) {
+  const prefix = '_erp_att_';
+  const found = [];
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (!k || !k.startsWith(prefix)) continue;
+      if (k === '_erp_att_index' || k.startsWith('_erp_att_dayorder_')) continue;
+      const datePart = k.slice(prefix.length, prefix.length + 10);
+      if (datePart < startDate || datePart > endDate) continue;
+      const rest    = k.slice(prefix.length + 11);
+      const lastU   = rest.lastIndexOf('_');
+      const batchId = rest.slice(0, lastU);
+      const session = rest.slice(lastU + 1);
+      try {
+        const rec = JSON.parse(localStorage.getItem(k));
+        if (!rec || typeof rec !== 'object') continue;
+        Object.keys(rec).forEach(rk => {
+          if (!rk.startsWith(student.id + '|')) return;
+          if (rec[rk] === 'A') found.push({ date: datePart, session, batchId });
+        });
+      } catch(e2) {}
+    }
+  } catch(e) {}
+  // One row per date (a student is only ever in one batch/session per day in practice)
+  const byDate = {};
+  found.forEach(r => { if (!byDate[r.date]) byDate[r.date] = r; });
+  return Object.values(byDate).sort((a,b) => a.date.localeCompare(b.date));
+}
+
+/* ── Step 2: Timetable → subjects taught on that absent date (same
+   Day Order lookup + fallback pattern used by getStudentAttStats) ── */
+function _rpGetSubjectsForAbsence(date, batchId) {
+  let dayNum = null;
+  try { dayNum = localStorage.getItem('_erp_att_dayorder_' + date + '_' + batchId); } catch(e) {}
+  let subjs = dayNum ? (getSubjectsForDayOrder(dayNum) || []) : [];
+  if (subjs.length === 0 && typeof batches !== 'undefined') {
+    const batch = batches.find(b => b.id === batchId);
+    if (batch && typeof ttLoadBatch === 'function') {
+      const ttData = ttLoadBatch(batch.name);
+      (ttData.days || []).forEach(day => (day.subjects || []).filter(Boolean).forEach(s => subjs.push(s)));
+    }
+  }
+  return [...new Set(subjs)];
+}
+
+/* ── Step 3: Teaching Log → lesson/topic/homework for that date+subject ── */
+function _rpFindLessonForSubject(date, grade, batch, subject) {
+  const logs = _tlLoad();
+  const candidates = logs.filter(l => l.date === date && l.grade === grade &&
+    (l.subjects || []).some(s => s.subject === subject));
+  if (candidates.length === 0) return null;
+  const entry = candidates.find(l => l.batch === batch) || candidates[0];
+  const subjEntry = (entry.subjects || []).find(s => s.subject === subject);
+  if (!subjEntry) return null;
+  return { topic: subjEntry.topic || '', notes: subjEntry.notes || '', hw: subjEntry.hw || '' };
+}
+
+/* ── Build the full recovery plan for a student + week ── */
+function buildRecoveryPlan(student, weekStart, weekEnd) {
+  const absences = _rpGetAbsentDatesInRange(student, weekStart, weekEnd);
+  const items = [];
+  const batchLabel = student.course || student.batch || '';
+  absences.forEach(({ date, batchId }) => {
+    _rpGetSubjectsForAbsence(date, batchId).forEach(subj => {
+      const lesson = _rpFindLessonForSubject(date, student.grade, batchLabel, subj);
+      items.push({
+        date, dayName: _rpDayName(date), subject: subj,
+        topic: lesson ? lesson.topic : '', notes: lesson ? lesson.notes : '', hw: lesson ? lesson.hw : '',
+        hasLog: !!lesson,
+      });
+    });
+  });
+  return {
+    studentId: student.id, studentName: student.name, grade: student.grade, batch: batchLabel,
+    weekStart, weekEnd, absentDates: absences.map(a => a.date), items,
+  };
+}
+
+/* ── Build the WhatsApp message from a plan (matches the requested format) ── */
+function buildRecoveryWAMessage(student, plan) {
+  const ctr = (typeof CFG !== 'undefined' && CFG.CENTER) ? CFG.CENTER : {};
+  if (!plan || plan.absentDates.length === 0) return '';
+  const dayNames = [...new Set(plan.absentDates.map(_rpDayName))];
+  const dayLine  = dayNames.join(', ');
+  const multiDay = dayNames.length > 1;
+
+  let body = '';
+  plan.items.forEach(it => {
+    if (!it.topic && !it.notes && !it.hw) {
+      body += `📖 ${multiDay ? '[' + it.dayName.slice(0,3) + '] ' : ''}${it.subject} — (பாடக்குறிப்பு இன்னும் பதிவு செய்யப்படவில்லை)\n`;
+      return;
+    }
+    const parts = [];
+    if (it.topic || it.notes) parts.push('Lesson: ' + (it.topic || it.notes));
+    if (it.hw) parts.push('Homework: ' + it.hw);
+    body += `📖 ${multiDay ? '[' + it.dayName.slice(0,3) + '] ' : ''}${it.subject} • ${parts.join(' • ')}\n`;
+  });
+
+  const nextMon = new Date(plan.weekEnd + 'T00:00:00');
+  nextMon.setDate(nextMon.getDate() + 2); // Saturday + 2 = Monday
+  const dueStr = nextMon.toLocaleDateString('en-IN', { day:'2-digit', month:'short' });
+
+  return `Vanakkam ${student.parent || 'Parent'},
+
+இந்த வாரம் ${student.name} ${dayLine} அன்று வரவில்லை.
+This week ${student.name} was absent on ${dayLine}.
+
+Please complete the following this weekend:
+
+${body}
+Please complete before Monday (${dueStr}).
+
+Thank you,
+${ctr.name || 'Kalam Tuition Center'}`;
+}
+
+/* ── Page state ── */
+var _rpWeekOffset = 0;
+var _rpCurrentPlan = null;
+
+function initRecoveryPage() {
+  _rpPopulateRPGrades();
+  rpOnGradeChange();
+  _rpUpdateWeekLabel();
+  renderRecoveryHistory();
+}
+
+function _rpPopulateRPGrades() {
+  const gSel = document.getElementById('rp-grade-sel');
+  if (!gSel || typeof students === 'undefined') return;
+  const order  = ['KG','1','2','3','4','5','6','7','8','9','10','11','12'];
+  const grades = [...new Set(students.filter(s=>s.grade).map(s=>String(s.grade).trim()))]
+    .sort((a,b) => (order.indexOf(a)<0?99:order.indexOf(a)) - (order.indexOf(b)<0?99:order.indexOf(b)));
+  const cur = gSel.value;
+  gSel.innerHTML = '<option value="all">🎓 All Classes</option>' + grades.map(g=>`<option value="${g}">${g==='KG'?'KG':'Class '+g}</option>`).join('');
+  if (grades.includes(cur)) gSel.value = cur;
+}
+
+function rpOnGradeChange() {
+  const grade = document.getElementById('rp-grade-sel')?.value || 'all';
+  const sSel  = document.getElementById('rp-student-sel');
+  if (!sSel || typeof students === 'undefined') return;
+  const list = students.filter(s => s.status === 'active' && (grade === 'all' || String(s.grade).trim() === grade))
+    .sort((a,b) => (a.name||'').localeCompare(b.name||''));
+  sSel.innerHTML = '<option value="">— Select Student —</option>'
+    + list.map(s => `<option value="${s.id}">${s.name} — ${s.grade==='KG'?'KG':'Class '+s.grade}</option>`).join('');
+  rpClearPlan();
+  renderRecoveryHistory();
+}
+
+function rpClearPlan() {
+  _rpCurrentPlan = null;
+  const wrap = document.getElementById('rp-preview-wrap');
+  if (wrap) wrap.style.display = 'none';
+}
+
+function rpShiftWeek(delta) {
+  _rpWeekOffset += delta;
+  _rpUpdateWeekLabel();
+  rpClearPlan();
+}
+
+function _rpGetWeekRange() {
+  const ref = new Date();
+  ref.setDate(ref.getDate() + _rpWeekOffset * 7);
+  return _rpWeekBounds(ref);
+}
+
+function _rpUpdateWeekLabel() {
+  const { start, end } = _rpGetWeekRange();
+  const lbl = document.getElementById('rp-week-label');
+  if (!lbl) return;
+  const fmt = d => new Date(d + 'T00:00:00').toLocaleDateString('en-IN', { day:'2-digit', month:'short' });
+  lbl.textContent = (_rpWeekOffset === 0 ? 'This Week: ' : (_rpWeekOffset < 0 ? '⏮ ' : '⏭ ')) + fmt(start) + ' – ' + fmt(end);
+}
+
+function rpGeneratePreview() {
+  const studentId = document.getElementById('rp-student-sel')?.value;
+  if (!studentId) { showToast('⚠️ மாணவரை தேர்ந்தெடுக்கவும்'); return; }
+  const student = students.find(s => s.id === studentId);
+  if (!student) return;
+
+  const { start, end } = _rpGetWeekRange();
+  const plan = buildRecoveryPlan(student, start, end);
+  _rpCurrentPlan = plan;
+
+  const wrap  = document.getElementById('rp-preview-wrap');
+  const badge = document.getElementById('rp-preview-badge');
+  const detail= document.getElementById('rp-plan-detail');
+  const msgEl = document.getElementById('rp-message');
+  if (!wrap || !detail || !msgEl) return;
+  wrap.style.display = 'block';
+
+  if (plan.absentDates.length === 0) {
+    if (badge) { badge.textContent = '✅ No absences'; badge.style.background = '#dcfce7'; badge.style.color = '#166534'; }
+    detail.innerHTML = `<div style="text-align:center;padding:14px;color:#166534">✅ ${student.name} was present all days this week — no recovery needed.</div>`;
+    msgEl.value = '';
+    return;
+  }
+
+  if (badge) { badge.textContent = plan.absentDates.length + ' day(s) absent'; badge.style.background = '#fee2e2'; badge.style.color = '#991b1b'; }
+
+  detail.innerHTML = plan.items.length === 0
+    ? `<div style="color:var(--tx3);text-align:center;padding:10px">Absent on ${plan.absentDates.map(_rpDayName).join(', ')}, but no timetable subjects found for those Day Orders — check Time Table page.</div>`
+    : plan.items.map(it => `
+      <div style="padding:8px 0;border-bottom:.5px dashed var(--br)">
+        <div style="font-weight:700;color:var(--tx);font-size:12px">📖 ${it.subject} <span style="font-weight:400;color:var(--tx3);font-size:10px">(${it.dayName})</span></div>
+        ${it.topic || it.notes ? `<div style="font-size:11px;color:var(--tx2);margin-top:2px">Lesson: ${it.topic || it.notes}</div>` : ''}
+        ${it.hw ? `<div style="font-size:11px;color:var(--tx2)">Homework: ${it.hw}</div>` : ''}
+        ${!it.hasLog ? `<div style="font-size:10px;color:#ca8a04;margin-top:2px">⚠️ Teaching Log not filled for this subject/date yet</div>` : ''}
+      </div>`).join('');
+
+  msgEl.value = buildRecoveryWAMessage(student, plan);
+}
+
+function rpSendWA() {
+  if (!_rpCurrentPlan) return;
+  const student = students.find(s => s.id === _rpCurrentPlan.studentId);
+  if (!student) return;
+  const phone = student.phone || student.pphone || '';
+  if (!phone) { showToast('⚠️ தொலைபேசி எண் இல்லை'); return; }
+  const msg = document.getElementById('rp-message')?.value || '';
+  if (!msg.trim()) { showToast('செய்தி காலியாக உள்ளது'); return; }
+
+  openWA(phone, msg);
+
+  const list = _rpLoad();
+  list.unshift({
+    id: 'rp_' + Date.now(),
+    studentId: student.id, studentName: student.name, grade: student.grade,
+    weekStart: _rpCurrentPlan.weekStart, weekEnd: _rpCurrentPlan.weekEnd,
+    absentDates: _rpCurrentPlan.absentDates, items: _rpCurrentPlan.items,
+    message: msg, status: 'sent', sentAt: new Date().toISOString(), completedAt: '',
+  });
+  _rpSave(list);
+  renderRecoveryHistory();
+  showToast('📱 WhatsApp திறக்கிறது — Recovery Plan அனுப்பப்பட்டது');
+}
+
+function rpMarkCompleted(id) {
+  const list = _rpLoad();
+  const rec  = list.find(r => r.id === id);
+  if (!rec) return;
+  rec.status = 'completed';
+  rec.completedAt = new Date().toISOString();
+  _rpSave(list);
+  renderRecoveryHistory();
+  showToast('✅ Recovery Plan முடிந்தது என குறிக்கப்பட்டது');
+}
+
+function rpDeleteHistory(id) {
+  _rpSave(_rpLoad().filter(r => r.id !== id));
+  renderRecoveryHistory();
+}
+
+function renderRecoveryHistory() {
+  const el  = document.getElementById('rp-history-list');
+  const cnt = document.getElementById('rp-history-count');
+  if (!el) return;
+  const grade     = document.getElementById('rp-grade-sel')?.value || 'all';
+  const studentId = document.getElementById('rp-student-sel')?.value || '';
+  let list = _rpLoad();
+  if (studentId)      list = list.filter(r => r.studentId === studentId);
+  else if (grade!=='all') list = list.filter(r => r.grade === grade);
+  if (cnt) cnt.textContent = list.length + ' record(s)';
+  el.innerHTML = list.length === 0
+    ? '<div style="text-align:center;padding:20px;color:var(--tx3);font-size:12px">No recovery plans sent yet</div>'
+    : list.slice(0,50).map(_rpHistoryRowHTML).join('');
+}
+
+function _rpHistoryRowHTML(r) {
+  const fmt = d => d ? new Date(d + 'T00:00:00').toLocaleDateString('en-IN', { day:'2-digit', month:'short' }) : '';
+  const statusBadge = r.status === 'completed'
+    ? '<span style="font-size:9px;font-weight:700;background:#dcfce7;color:#166534;padding:2px 8px;border-radius:8px">✅ Completed</span>'
+    : '<span style="font-size:9px;font-weight:700;background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:8px">📤 Sent</span>';
+  return `<div style="border:.5px solid var(--br);border-radius:9px;padding:9px 12px">
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <span style="font-size:12px;font-weight:700;color:var(--tx)">${r.studentName}</span>
+      <span style="font-size:10px;color:var(--tx3)">${r.grade==='KG'?'KG':'Class '+r.grade} · ${fmt(r.weekStart)}–${fmt(r.weekEnd)}</span>
+      ${statusBadge}
+      <div style="margin-left:auto;display:flex;gap:6px">
+        ${r.status!=='completed' ? `<button class="btn btn-sm" style="font-size:10px;padding:3px 9px" onclick="rpMarkCompleted('${r.id}')">✅ Mark Completed</button>` : ''}
+        <button class="btn btn-sm" style="font-size:10px;padding:3px 9px;color:#dc2626" onclick="rpDeleteHistory('${r.id}')">🗑</button>
+      </div>
+    </div>
+    <div style="font-size:10px;color:var(--tx3);margin-top:4px">Absent: ${(r.absentDates||[]).map(_rpDayName).join(', ')} · Subjects: ${[...new Set((r.items||[]).map(i=>i.subject))].join(', ')||'—'}</div>
+  </div>`;
+}
+
+/* ── Compact Recovery History block for the Student Summary card ── */
+function _rpSumHistoryBlockHTML(studentId) {
+  const list = _rpLoad().filter(r => r.studentId === studentId).slice(0,5);
+  if (list.length === 0) return '';
+  const fmt = d => d ? new Date(d + 'T00:00:00').toLocaleDateString('en-IN', { day:'2-digit', month:'short' }) : '';
+  const rows = list.map(r => {
+    const badge = r.status === 'completed'
+      ? '<span style="font-size:8px;font-weight:700;background:#dcfce7;color:#166534;padding:1px 6px;border-radius:7px">✅</span>'
+      : '<span style="font-size:8px;font-weight:700;background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:7px">📤</span>';
+    return `<div style="display:flex;align-items:center;gap:6px;padding:3px 0;font-size:10px;color:var(--tx2)">
+      ${badge} <span>${fmt(r.weekStart)}–${fmt(r.weekEnd)}</span>
+      <span style="color:var(--tx3)">· ${(r.absentDates||[]).map(_rpDayName).join(', ')}</span>
+      ${r.status!=='completed' ? `<button onclick="rpMarkCompleted('${r.id}');renderSummaryCards();" style="margin-left:auto;font-size:9px;padding:1px 7px;border-radius:6px;background:none;border:.5px solid var(--br);cursor:pointer;color:var(--tx2);font-family:inherit">✅ Done</button>` : ''}
+    </div>`;
+  }).join('');
+  return `<div style="margin-top:8px;padding-top:8px;border-top:.5px dashed var(--br)">
+    <div style="font-size:10px;font-weight:700;color:var(--tx2);margin-bottom:4px">📋 Recovery History</div>
+    ${rows}
+  </div>`;
 }
 
 /* ═══════════════════════════════════════════════════════

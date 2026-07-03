@@ -937,6 +937,10 @@ tbody tr:hover td{background:var(--bg)}
           <span style="font-size:18px;font-weight:800;color:#16a34a" id="adm-grand-total">₹0</span>
         </div>
       </div>
+      <label id="adm-no-fee-label" style="display:flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:var(--tx2);margin-bottom:10px;padding:8px 10px;background:var(--bg);border-radius:8px;border:.5px solid var(--br);cursor:pointer">
+        <input type="checkbox" id="adm-no-fee-now" onchange="toggleAdmNoFee()" style="width:15px;height:15px;cursor:pointer">
+        🆓 இந்த மாணவருக்கு இப்போது கட்டணம் இல்லை (No fee collected at admission — arranged later)
+      </label>
       <div class="frow">
         <div class="fg"><label class="fl">Monthly Fee ₹ <span style="color:#7c3aed;font-size:10px">(auto-filled)</span></label><input class="fi" id="adm-fee" type="number" placeholder="0" oninput="recalcAdmFees()"></div>
         <div class="fg"><label class="fl">Admission Fee ₹</label><input class="fi" id="adm-admfee" type="number" placeholder="500" oninput="recalcAdmFees()"></div>
@@ -977,7 +981,12 @@ tbody tr:hover td{background:var(--bg)}
           <code style="background:var(--bg);padding:1px 4px;border-radius:3px">{center_phone}</code>
           <code style="background:var(--bg);padding:1px 4px;border-radius:3px">{fee}</code>
           <code style="background:var(--bg);padding:1px 4px;border-radius:3px">{batch}</code>
+          <code style="background:var(--bg);padding:1px 4px;border-radius:3px">{timetable}</code>
         </div>
+        <label style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--tx2);margin-bottom:8px;cursor:pointer">
+          <input type="checkbox" id="adm-include-tt" checked onchange="refreshAdmPreview()" style="width:15px;height:15px;cursor:pointer">
+          📅 Include selected batch's Class Time Table in the welcome message
+        </label>
         <div style="background:#dcfce7;border-radius:8px;padding:11px;font-size:12px;color:#166534;font-family:'Noto Sans Tamil',system-ui;line-height:1.7;white-space:pre-wrap;max-height:160px;overflow-y:auto" id="adm-wa-preview">Preview…</div>
         <button class="btn btn-sm" style="margin-top:8px" onclick="resetAdmTemplate()">↺ Reset to Default</button>
       </div>
@@ -13573,8 +13582,8 @@ Student  : {student_name}
 Class    : {class}
 Batch    : {batch}
 Adm. No  : {admission_no}
-Monthly Fee: ₹{fee}
-
+Monthly Fee: {fee}
+{timetable}
 Classes begin from the next working day. Please carry the admission slip on the first day.
 
 For any queries:
@@ -13595,8 +13604,8 @@ Warm regards,
 வகுப்பு  : {class}
 குழு     : {batch}
 சேர்க்கை எண்: {admission_no}
-மாதக் கட்டணம்: ₹{fee}
-
+மாதக் கட்டணம்: {fee}
+{timetable}
 அடுத்த வேலை நாளில் இருந்து வகுப்புகள் தொடங்கும். முதல் நாள் சேர்க்கை slip கொண்டு வரவும்.
 
 தொடர்புக்கு:
@@ -14340,6 +14349,28 @@ function recalcAdmFees() {
   if (gEl) gEl.textContent = '₹'+(fee+admFee).toLocaleString('en-IN');
 }
 
+/* ── "No fee collected at admission" toggle ──────────────
+   Some students join without paying anything at admission
+   (fees to be arranged later). This disables the fee inputs,
+   zeroes the summary, and tells submitAdmission() to skip
+   creating fee records for this student. ── */
+function toggleAdmNoFee() {
+  const noFee   = document.getElementById('adm-no-fee-now')?.checked;
+  const feeEl   = document.getElementById('adm-fee');
+  const admFeeEl= document.getElementById('adm-admfee');
+  if (feeEl)    feeEl.disabled    = noFee;
+  if (admFeeEl) admFeeEl.disabled = noFee;
+  if (noFee) {
+    if (feeEl)    { feeEl.dataset.prevVal    = feeEl.value;    feeEl.value    = 0; }
+    if (admFeeEl) { admFeeEl.dataset.prevVal = admFeeEl.value; admFeeEl.value = 0; }
+  } else {
+    if (feeEl    && feeEl.dataset.prevVal)    feeEl.value    = feeEl.dataset.prevVal;
+    if (admFeeEl && admFeeEl.dataset.prevVal) admFeeEl.value = admFeeEl.dataset.prevVal;
+  }
+  recalcAdmFees();
+  refreshAdmPreview();
+}
+
 /* ── Get selected subjects from admission form ──────────── */
 function getSelectedAdmSubjects() {
   const grade = document.getElementById('adm-grade')?.value || '';
@@ -14373,7 +14404,23 @@ function toggleAdmSubject(btn, subj) {
   btn.style.borderColor = on ? 'var(--br)'   : 'var(--pr)';
 }
 
+/* ── Build a WhatsApp-ready Class Time Table block for the admission
+   welcome message, from the selected batch's saved Day Order table. ── */
+function buildTimetableWAText(batch) {
+  if (typeof ttLoadBatch !== 'function') return '';
+  const data = ttLoadBatch(batch || 'all');
+  if (!data.days || data.days.length === 0) return '';
+  const lines = data.days.map(day => {
+    const subs = (day.subjects || []).filter(s => s && s.trim());
+    return `• ${day.name}: ${subs.length > 0 ? subs.join(' → ') : '—'}`;
+  });
+  return `\n📅 *Class Time Table (${batch === 'all' || !batch ? 'General' : batch})*\n` + lines.join('\n') + '\n';
+}
+
 function fillAdmTemplate(template, data) {
+  const feeDisplay = data.noFee
+    ? 'பின்னர் ஏற்பாடு செய்யப்படும் (To be arranged later)'
+    : ('₹' + (data.fee || '0'));
   return template
     .replace(/{student_name}/g, data.name || '')
     .replace(/{parent_name}/g,  data.parent || '')
@@ -14382,7 +14429,8 @@ function fillAdmTemplate(template, data) {
     .replace(/{admission_no}/g, data.admNo || '')
     .replace(/{center_name}/g,  CFG.CENTER.name || 'Tuition Center')
     .replace(/{center_phone}/g, CFG.CENTER.phone || '')
-    .replace(/{fee}/g,          data.fee || '—');
+    .replace(/{fee}/g,          feeDisplay)
+    .replace(/{timetable}/g,    data.timetable || '');
 }
 
 function refreshAdmPreview() {
@@ -14409,13 +14457,18 @@ function refreshAdmPreview() {
   // Save choice
   try { localStorage.setItem('_erp_adm_lang', lang_); } catch(e) {}
 
+  const batchVal  = document.getElementById('adm-course')?.value || 'Evening Batch';
+  const includeTT = document.getElementById('adm-include-tt')?.checked !== false;
+  const noFeeNow  = document.getElementById('adm-no-fee-now')?.checked || false;
   const preview = fillAdmTemplate(tmplEl.value, {
     name:   document.getElementById('adm-name')?.value  || 'Student Name',
     parent: document.getElementById('adm-parent')?.value|| 'Parent',
     grade:  document.getElementById('adm-grade')?.value || '10',
-    batch:  document.getElementById('adm-course')?.value|| 'Evening Batch',
+    batch:  batchVal,
     admNo:  document.getElementById('adm-no')?.value    || 'ADM-2024-001',
     fee:    document.getElementById('adm-fee')?.value   || '2500',
+    noFee:  noFeeNow,
+    timetable: includeTT ? buildTimetableWAText(batchVal) : '',
   });
   prevEl.textContent = preview;
 }
@@ -14455,6 +14508,8 @@ function submitAdmission() {
   const fee      = document.getElementById('adm-fee')?.value || '0';
   const admFee   = document.getElementById('adm-admfee')?.value || '0';
   const admNo    = document.getElementById('adm-no')?.value || genAdmNo();
+  const noFeeNow = document.getElementById('adm-no-fee-now')?.checked || false;
+  const includeTT= document.getElementById('adm-include-tt')?.checked !== false;
 
   // Use new subject selection for 10th/11th/12th
   const selectedSubjects = getSelectedAdmSubjects();
@@ -14479,6 +14534,7 @@ function submitAdmission() {
     grade, dob, school, course, subjects, fee,
     status: 'active', color: COLORS[students.length % COLORS.length],
     admDate: new Date().toLocaleDateString('en-IN'),
+    noFeeAtAdmission: noFeeNow,
   };
 
   // Add to students array
@@ -14489,9 +14545,11 @@ function submitAdmission() {
   const tmpl = document.getElementById('adm-wa-template')?.value || '';
   try { localStorage.setItem('_erp_adm_template', tmpl); } catch(e) {}
 
-  // Build WA message and open WhatsApp
+  // Build WA message (with class timetable, if enabled) and open WhatsApp
   const message = fillAdmTemplate(tmpl, {
     name, parent, grade, batch: course || 'General Batch', admNo, fee,
+    noFee: noFeeNow,
+    timetable: includeTT ? buildTimetableWAText(course) : '',
   });
 
   // Add to recent admissions
@@ -14500,7 +14558,9 @@ function submitAdmission() {
   try { localStorage.setItem('_erp_adm_recent', JSON.stringify(admRecentList)); } catch(e) {}
 
   // Auto-create fee records for the new student
-  (function() {
+  // — skipped entirely when "No fee collected at admission" is checked,
+  //   since not every student pays fees at admission time.
+  if (!noFeeNow) (function() {
     const fs        = getFeeForClass(grade);
     const curMonth  = _feeMonthLabel(new Date());
     const now       = new Date().toLocaleDateString('en-IN');
@@ -14542,7 +14602,7 @@ function submitAdmission() {
     if (monthlyAmt > 0 || admAmt > 0) saveFees();
   })();
 
-  showToast('✅ ' + name + ' admitted successfully!');
+  showToast(noFeeNow ? ('✅ ' + name + ' admitted — no fee collected now') : ('✅ ' + name + ' admitted successfully!'));
 
   runBackup('change');
   renderStudents(students);
@@ -14589,7 +14649,9 @@ function showAdmSuccess(s, message, phone) {
     <!-- Fee Summary -->
     <div style="background:var(--bg);border-radius:10px;padding:12px 14px;border:.5px solid var(--br);margin-bottom:14px">
       <div style="font-size:11px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">💰 Fees Created</div>
-      ${feeRows || '<div style="font-size:12px;color:var(--tx3);text-align:center;padding:8px 0">No fees configured</div>'}
+      ${feeRows || (s.noFeeAtAdmission
+          ? '<div style="font-size:12px;color:#166534;text-align:center;padding:8px 0">🆓 No fee collected at admission — add fees anytime via the Fees page</div>'
+          : '<div style="font-size:12px;color:var(--tx3);text-align:center;padding:8px 0">No fees configured</div>')}
     </div>
 
     <!-- Collect Admission Fee Now section (admission fee only) -->
@@ -14712,6 +14774,9 @@ function resetAdmForm() {
   });
   const subjRow = document.getElementById('adm-subj-row');
   if (subjRow) subjRow.style.display = 'none';
+  // Reset "no fee at admission" toggle back to default (fees expected)
+  const noFeeEl = document.getElementById('adm-no-fee-now');
+  if (noFeeEl) { noFeeEl.checked = false; toggleAdmNoFee(); }
   // Generate next admission number
   const yr = new Date().getFullYear();
   const admEl = document.getElementById('adm-no');
@@ -16387,8 +16452,25 @@ var TT_DEFAULT_PERIODS = [
 function ttKey(batch) { return '_erp_tt_' + (batch || 'all'); }
 
 function ttLoadBatch(batch) {
-  try { return JSON.parse(localStorage.getItem(ttKey(batch)) || 'null') || { periods: TT_DEFAULT_PERIODS, days: [] }; }
-  catch(e) { return { periods: TT_DEFAULT_PERIODS, days: [] }; }
+  var d = null;
+  try { d = JSON.parse(localStorage.getItem(ttKey(batch)) || 'null'); } catch(e) { d = null; }
+  if (!d || typeof d !== 'object') d = {};
+  // Guard against malformed/partial saved data (e.g. missing periods/days) —
+  // this was the cause of "Add Day Order" silently doing nothing: ttAddDay()
+  // called data.periods.forEach() which throws if periods is undefined.
+  if (!Array.isArray(d.periods) || d.periods.length === 0) {
+    d.periods = JSON.parse(JSON.stringify(TT_DEFAULT_PERIODS));
+  }
+  if (!Array.isArray(d.days)) d.days = [];
+  // Guard each day entry too (must have name + a 4-slot subjects array)
+  d.days = d.days.map(function(day, i) {
+    if (!day || typeof day !== 'object') day = {};
+    if (!Array.isArray(day.subjects)) day.subjects = ['', '', '', ''];
+    while (day.subjects.length < 4) day.subjects.push('');
+    if (!day.name) day.name = 'Day ' + (i + 1);
+    return day;
+  });
+  return d;
 }
 
 function ttSaveBatch(batch, data) {
@@ -16402,6 +16484,7 @@ function ttLoad() {
 }
 
 function ttSave() {
+ try {
   var bSel = document.getElementById('tt-batch-sel');
   var batch = bSel ? bSel.value : 'all';
   var data = ttLoadBatch(batch);
@@ -16437,9 +16520,14 @@ function ttSave() {
   });
   saveDayOrder();
   showToast('✅ நேர அட்டவணை சேமிக்கப்பட்டது — ' + (batch === 'all' ? 'அனைத்து' : batch) + ' · Day Order sync ஆனது');
+ } catch(err) {
+  console.error('ttSave error:', err);
+  showToast('⚠️ சேமிக்க முடியவில்லை — ' + err.message);
+ }
 }
 
 function ttAddDay() {
+ try {
   var bSel = document.getElementById('tt-batch-sel');
   var batch = bSel ? bSel.value : 'all';
   var data = ttLoadBatch(batch);
@@ -16464,15 +16552,24 @@ function ttAddDay() {
   ttSaveBatch(batch, data);
   initTimetablePage();
   showToast('Day ' + n + ' சேர்க்கப்பட்டது — ' + (batch === 'all' ? 'அனைத்து பிரிவுகளுக்கு' : batch));
+ } catch(err) {
+  console.error('ttAddDay error:', err);
+  showToast('⚠️ Day Order சேர்க்க முடியவில்லை — ' + err.message);
+ }
 }
 
 function ttDeleteDay(di) {
+ try {
   var bSel = document.getElementById('tt-batch-sel');
   var batch = bSel ? bSel.value : 'all';
   var data = ttLoadBatch(batch);
   data.days.splice(di, 1);
   ttSaveBatch(batch, data);
   initTimetablePage();
+ } catch(err) {
+  console.error('ttDeleteDay error:', err);
+  showToast('⚠️ நீக்க முடியவில்லை — ' + err.message);
+ }
 }
 
 function initTimetablePage() {

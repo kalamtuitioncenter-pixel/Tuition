@@ -670,6 +670,19 @@ tbody tr:hover td{background:var(--bg)}
   </div>
 
   <!-- Income Summary Card (Income - Expense) -->
+  <!-- ── Today's Fees Collection Card ── -->
+  <div class="card" style="margin-bottom:14px;cursor:pointer" id="dash-today-fees-card" onclick="showTodayFeesModal()">
+    <div style="display:flex;align-items:center;gap:14px">
+      <div style="width:46px;height:46px;background:#dcfce7;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">💰</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;color:var(--tx2);font-weight:600">Today's Fees Collection</div>
+        <div style="font-size:22px;font-weight:800;color:#16a34a" id="dash-today-fees-amt">₹0</div>
+        <div style="font-size:10px;color:var(--tx3)" id="dash-today-fees-sub">0 payments today</div>
+      </div>
+      <div style="font-size:11px;color:var(--pr);font-weight:700;flex-shrink:0">View →</div>
+    </div>
+  </div>
+
   <div id="dash-income-summary" style="margin-bottom:14px">
     <div style="background:var(--card);border:.5px solid var(--br);border-radius:12px;padding:14px 16px;box-shadow:var(--shadow)">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
@@ -4198,7 +4211,11 @@ function _getBatchStudents(batchId) {
     }
   }
 
-  // ── STEP 5: Final debug log ───────────────────────────────────────
+  // ── STEP 5: Alphabetical order — class-wise attendance list should always
+  // read A→Z by student name, regardless of admission/insertion order ──
+  active.sort((a,b) => (a.name||'').localeCompare(b.name||''));
+
+  // ── STEP 6: Final debug log ───────────────────────────────────────
   const renderedStudents = active;
   console.log('[ATT] Filtered Students:', active.length);
   console.log('[ATT] Rendered Students:', renderedStudents.length, renderedStudents.map(s => s.name + ' (Gr.' + s.grade + ')'));
@@ -6058,6 +6075,7 @@ function saveFeeEntry() {
     mode: document.getElementById('m-fmode')?.value || 'Cash',
     status, type: 'monthly',
     paidOn: paid > 0 ? new Date().toLocaleDateString('en-IN') : '',
+    paidAtTs: paid > 0 ? Date.now() : 0,
   };
   if (dupIdx !== -1) {
     // Update existing record instead of creating a duplicate
@@ -6550,6 +6568,7 @@ function submitCollect(rcpt) {
   const timeStr    = now.toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit', hour12:true});
   const dateTimeStr = dateStr + ' at ' + timeStr;
   f.paidOn  = dateTimeStr;
+  f.paidAtTs = now.getTime();
 
   saveFees();
 
@@ -13073,6 +13092,102 @@ function renderPendingCarryOver() {
   carryDiv.style.display = '';
 }
 
+/* ── Robust payment timestamp: prefer the exact epoch (paidAtTs, set on
+   every payment going forward); fall back to best-effort parsing of the
+   older `paidOn` text for historical records that predate that field. ── */
+function _feeParsePaidOn(f) {
+  if (f.paidAtTs) return f.paidAtTs;
+  const s = f.paidOn || '';
+  if (!s) return 0;
+  try {
+    if (s.includes(' at ')) {
+      const [datePart, timePart] = s.split(' at ');
+      const t = new Date(datePart + ' ' + timePart);
+      if (!isNaN(t)) return t.getTime();
+    }
+    if (s.includes('/')) {
+      const [d, m, y] = s.split('/').map(Number);
+      if (d && m && y) return new Date(y, m - 1, d).getTime();
+    }
+    const t2 = new Date(s);
+    if (!isNaN(t2)) return t2.getTime();
+  } catch(e) {}
+  return 0;
+}
+
+/* ── All fee payments recorded today (any amount, monthly or admission) ── */
+function _todayFeesList() {
+  const now        = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const todayEnd   = todayStart + 24 * 60 * 60 * 1000;
+  return fees
+    .filter(f => f && f.rcpt && f.paidOn && (f.status === 'paid' || f.status === 'partial') && (f.paid || 0) > 0)
+    .filter(f => { const ts = _feeParsePaidOn(f); return ts >= todayStart && ts < todayEnd; })
+    .sort((a, b) => _feeParsePaidOn(b) - _feeParsePaidOn(a)); // most recent payment first
+}
+
+/* ── Today's Fees Collection card on Dashboard ── */
+function renderTodayFeeCard() {
+  const list  = _todayFeesList();
+  // Sum what was collected today — for records fully paid in one go this equals f.paid;
+  // matches how the rest of the app already reports collections (e.g. renderIncomeSummary),
+  // since the fee model doesn't keep a separate per-installment ledger.
+  const totalToday = list.reduce((s, f) => s + (f.paid || 0), 0);
+  const amtEl = document.getElementById('dash-today-fees-amt');
+  const subEl = document.getElementById('dash-today-fees-sub');
+  if (amtEl) amtEl.textContent = '₹' + totalToday.toLocaleString('en-IN');
+  if (subEl) subEl.textContent = list.length + ' payment' + (list.length !== 1 ? 's' : '') + ' today';
+}
+
+/* ── Click-through: today's paid students, sorted by paid date (most recent first) ── */
+function showTodayFeesModal() {
+  const list = _todayFeesList();
+  const root = document.getElementById('modal-root');
+  const total = list.reduce((s, f) => s + (f.paid || 0), 0);
+
+  const rows = list.length === 0
+    ? '<div style="text-align:center;padding:30px;color:var(--tx3);font-size:12px">இன்று இன்னும் கட்டணம் எதுவும் வசூலிக்கப்படவில்லை</div>'
+    : list.map(f => {
+        const s = students.find(x => x.id === f.studentId || x.name === f.student);
+        const initial = (f.student || '?')[0];
+        const typeBadge = f.type === 'admission'
+          ? '<span style="font-size:9px;font-weight:700;background:#ede9fe;color:#5b21b6;padding:1px 7px;border-radius:7px">Admission</span>'
+          : '<span style="font-size:9px;font-weight:700;background:#dbeafe;color:#1d4ed8;padding:1px 7px;border-radius:7px">' + (f.month||'Monthly') + '</span>';
+        return `<div style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-bottom:.5px solid var(--br)">
+          <div class="av" style="background:${s?s.color:'#185FA5'};width:32px;height:32px;font-size:12px;flex-shrink:0">${initial}</div>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+              <span style="font-weight:600;font-size:12px;color:var(--tx)">${f.student}</span>
+              ${typeBadge}
+            </div>
+            <div style="font-size:10px;color:var(--tx3);margin-top:2px">${s ? (s.grade==='KG'?'KG':'Gr.'+s.grade)+' · ' : ''}${f.mode||'Cash'} · ${f.paidOn}</div>
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            <div style="font-weight:800;font-size:14px;color:#16a34a">₹${(f.paid||0).toLocaleString('en-IN')}</div>
+            <div style="font-size:9px;color:var(--tx3)">${f.rcpt}</div>
+          </div>
+        </div>`;
+      }).join('');
+
+  root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()">
+    <div class="modal" style="max-width:520px;max-height:82vh;display:flex;flex-direction:column">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;flex-shrink:0">
+        <div class="modal-title" style="margin:0">💰 Today's Fees Collection</div>
+        <button onclick="closeModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--tx2)">×</button>
+      </div>
+      <div style="font-size:11px;color:var(--tx3);margin-bottom:10px;flex-shrink:0">${new Date().toLocaleDateString('en-IN',{weekday:'long',day:'2-digit',month:'short',year:'numeric'})} · Sorted by most recent payment</div>
+      <div style="background:#dcfce7;border-radius:10px;padding:11px 14px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0">
+        <span style="font-size:12px;color:#166534;font-weight:600">Total Collected Today</span>
+        <span style="font-size:20px;font-weight:800;color:#16a34a">₹${total.toLocaleString('en-IN')}</span>
+      </div>
+      <div style="flex:1;overflow-y:auto;border:.5px solid var(--br);border-radius:10px">${rows}</div>
+      <div class="modal-foot" style="flex-shrink:0">
+        <button class="btn" onclick="closeModal()">மூடு</button>
+      </div>
+    </div>
+  </div>`;
+}
+
 /* ── Income Summary card on Dashboard ────────────────────*/
 function renderIncomeSummary() {
   const now        = new Date();
@@ -13284,6 +13399,9 @@ function updateDashStats() {
 
   // Day-1 reset + carry-over + income summary
   checkAndDoMonthlyReset();
+
+  // Today's Fees Collection card
+  if (typeof renderTodayFeeCard === 'function') renderTodayFeeCard();
 
   // Class-wise Strength card
   renderClassStrength();
@@ -14476,9 +14594,15 @@ function buildTimetableWAText(batch) {
   if (typeof ttLoadBatch !== 'function') return '';
   const data = ttLoadBatch(batch || 'all');
   if (!data.days || data.days.length === 0) return '';
+  const periods = data.periods || [];
   const lines = data.days.map(day => {
-    const subs = (day.subjects || []).filter(s => s && s.trim());
-    return `• ${day.name}: ${subs.length > 0 ? subs.join(' → ') : '—'}`;
+    const rows = (day.subjects || []).map((subj, i) => {
+      if (!subj || !subj.trim()) return null;
+      const p = periods[i];
+      const timeStr = p && p.start && p.end ? `${p.start}-${p.end}` : '';
+      return `   ${timeStr ? timeStr + ' ' : ''}${subj.trim()}`;
+    }).filter(Boolean);
+    return `• *${day.name}*\n` + (rows.length > 0 ? rows.join('\n') : '   —');
   });
   return `\n📅 *Class Time Table (${batch === 'all' || !batch ? 'General' : batch})*\n` + lines.join('\n') + '\n';
 }
@@ -14784,6 +14908,7 @@ function collectAdmissionFee(studentId, phone, waMsg) {
     f.mode    = mode;
     f.status  = f.balance <= 0 ? 'paid' : 'partial';
     f.paidOn  = dateTimeStr;
+    f.paidAtTs = now.getTime();
     remaining -= paying;
   });
 

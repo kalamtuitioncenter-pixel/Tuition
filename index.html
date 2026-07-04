@@ -11018,7 +11018,7 @@ function _gfGrade(pct){
 }
 
 /* Compute all forecast numbers for one student — now with 3-month historical comparison */
-function _gfCompute(student) {
+function _gfCompute(student, precomputedRanked) {
   const marks  =(typeof getStudentMarksAuto==='function')?getStudentMarksAuto(student.id):[];
   const validM =marks.filter(m=>!m.absent&&m.marks!==null&&m.maxMarks>0);
   const now    = new Date();
@@ -11026,8 +11026,8 @@ function _gfCompute(student) {
   const curMo  = now.getMonth();
   const att    =(typeof getStudentAttStats==='function')
     ? getStudentAttStats(student,curYr,curMo) : {pct:75,total:0};
-  const ranked =(typeof computeRanks==='function')
-    ? computeRanks(curYr,curMo,student.grade) : [];
+  const ranked = Array.isArray(precomputedRanked) ? precomputedRanked
+    : ((typeof computeRanks==='function') ? computeRanks(curYr,curMo,student.grade) : []);
   const myRank =ranked.find(r=>r.student.id===student.id);
   const totalSt=myRank
     ? myRank.classTotal
@@ -15960,6 +15960,12 @@ function computeRanks(year, month, gradeFilter) {
 /* ════════════════════════════════════════════════════════
    RENDER CARDS
 ════════════════════════════════════════════════════════ */
+/* Shared cache: avoids re-scanning attendance/marks for ALL students every
+   time a single student's WA report is sent/previewed. Only populated (and
+   only ever used) when the report month being viewed IS the current real
+   month, since Growth Forecast/Predictions are always "as of today". */
+var _sumPageCtx = null;
+
 function renderSummaryCards() {
   const year        = parseInt(document.getElementById('sum-year-sel').value);
   const month       = parseInt(document.getElementById('sum-month-sel').value);
@@ -15969,6 +15975,14 @@ function renderSummaryCards() {
   const totalEl     = document.getElementById('sum-total-count');
 
   let ranked = computeRanks(year, month);
+
+  const _now = new Date();
+  if (year === _now.getFullYear() && month === _now.getMonth()) {
+    _sumPageCtx = { year, month, ranked, preds: (typeof computePredictions === 'function') ? computePredictions() : [] };
+  } else {
+    _sumPageCtx = null; // different month being viewed — always recompute fresh for correctness
+  }
+
   if (batchFilter !== 'all') {
     ranked = ranked.filter(r => r.student.course === batchFilter || r.student.batch === batchFilter);
   }
@@ -16185,6 +16199,53 @@ function buildSumCard(item, year, month) {
       ${marksHtml}
     </div>
 
+    <!-- ── Class-wise Rank (AUTO) ── -->
+    <div class="sum-section">
+      <div class="sum-section-title">🏅 வகுப்பு தரவரிசை (Class Rank) ${AUTO_BADGE}</div>
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;background:${rc.bg}">
+        <div style="font-size:22px;font-weight:800;color:${rc.color}">${rank <= 3 ? rc.label : '#' + rank}</div>
+        <div style="font-size:11px;color:var(--tx2)">
+          Rank <b style="color:${rc.color}">${rank}</b> / ${item.classTotal || '—'} —
+          ${s.grade === 'KG' ? 'KG' : 'Class ' + s.grade} இல்
+        </div>
+      </div>
+    </div>
+
+    <!-- ── AI Growth Forecast + Predict Score/% (AUTO) ── -->
+    ${(() => {
+      let gfc = null;
+      try {
+        const nowRC = new Date();
+        const useCache = _sumPageCtx && _sumPageCtx.year === nowRC.getFullYear() && _sumPageCtx.month === nowRC.getMonth();
+        gfc = (typeof _gfCompute === 'function') ? _gfCompute(s, useCache ? _sumPageCtx.ranked : null) : null;
+      } catch(err) { console.error('buildSumCard: growth forecast failed for', s.name, err); }
+      if (!gfc || !gfc.hasData) {
+        return `<div class="sum-section">
+          <div class="sum-section-title">📈 AI வளர்ச்சி கணிப்பு ${AUTO_BADGE}</div>
+          <div style="font-size:11px;color:var(--tx3);text-align:center;padding:8px 0">மதிப்பெண்கள் சேர்த்த பிறகு கணிப்பு காட்டப்படும்</div>
+        </div>`;
+      }
+      const isBoard = String(s.grade||'').trim() === '10';
+      const trendIcon = gfc.monthTrend==='improving'?'📈':gfc.monthTrend==='declining'?'📉':'➡️';
+      const trendColor = gfc.monthTrend==='improving'?'#16a34a':gfc.monthTrend==='declining'?'#dc2626':'#64748b';
+      return `<div class="sum-section">
+        <div class="sum-section-title">📈 AI வளர்ச்சி கணிப்பு (Growth Forecast) ${AUTO_BADGE}</div>
+        <div style="display:flex;gap:8px;margin-bottom:6px">
+          <div style="flex:1;text-align:center;padding:7px 4px;border-radius:8px;background:var(--bg);border:.5px solid var(--br)">
+            <div style="font-size:16px;font-weight:800;color:var(--tx)">${gfc.avgPct}%</div>
+            <div style="font-size:9px;color:var(--tx3);font-weight:600">தற்போதைய சராசரி</div>
+          </div>
+          <div style="flex:1;text-align:center;padding:7px 4px;border-radius:8px;background:var(--bg);border:.5px solid var(--br)">
+            <div style="font-size:16px;font-weight:800;color:${trendColor}">${gfc.predictedAvg}% ${trendIcon}</div>
+            <div style="font-size:9px;color:var(--tx3);font-weight:600">அடுத்த மாத கணிப்பு</div>
+          </div>
+        </div>
+        <div style="font-size:11px;font-weight:700;text-align:center;padding:6px 9px;border-radius:7px;background:#ede9fe;color:#5b21b6">
+          🎯 ${isBoard ? `Public Exam கணிப்பு: ${gfc.boardScore}/500 (${gfc.boardGrade})` : `கணிக்கப்பட்ட சராசரி: ${gfc.predictedAvg}%`}
+        </div>
+      </div>`;
+    })()}
+
     <!-- ── Class Concentration — Teacher fills ── -->
     <div class="sum-section">
       <div class="sum-section-title">🌟 வகுப்பு கவனம் (ஆசிரியர் மதிப்பீடு)</div>
@@ -16296,66 +16357,104 @@ function fillMonthlySummaryTemplate(template, data) {
    This replaces sending 4-5 separate AI WhatsApp messages —
    parents now get everything in a single monthly send.
 ════════════════════════════════════════════════════════ */
-function buildCombinedAISection(s) {
+function buildCombinedAISection(s, ctx) {
   const dash = '━━━━━━━━━━━━━━━━━━━';
+  // ctx.ranked / ctx.preds are only valid to reuse when they were computed
+  // for the CURRENT real-world month — Growth Forecast & Predictions are
+  // always "as of today", independent of which report month is being viewed.
+  const now = new Date();
+  const ctxIsCurrentMonth = ctx && ctx.year === now.getFullYear() && ctx.month === now.getMonth();
+  const cachedRanked = ctxIsCurrentMonth ? ctx.ranked : null;
+  const cachedPreds  = ctxIsCurrentMonth ? ctx.preds  : null;
 
-  // ── 1. AI Growth Forecast (current → predicted, trend) ──
-  const fc = (typeof _gfCompute === 'function') ? _gfCompute(s) : null;
-  const trendIcon = fc ? (fc.monthTrend==='improving'?'📈':fc.monthTrend==='declining'?'📉':'➡️') : '';
-  let growthSec = '';
-  if (fc && fc.hasData) {
-    growthSec = `${dash}\n📈 *AI வளர்ச்சி கணிப்பு (Growth Forecast)*\n${dash}\n`
-      + `📊 தற்போதைய சராசரி: *${fc.avgPct}%*\n`
-      + `🔮 அடுத்த மாத கணிப்பு: *${fc.predictedAvg}%* ${trendIcon}\n`;
-  }
-
-  // ── 2. Predict Score (10th → Board Exam /500) / Predict % (all other classes) ──
-  const isBoardClass = String(s.grade || '').trim() === '10';
-  let predictSec = '';
-  if (fc && fc.hasData) {
-    predictSec = isBoardClass
-      ? `🎯 எதிர்பார்க்கப்படும் Public Exam மதிப்பெண்: *${fc.boardScore}/500* (${fc.boardGrade})\n`
-      : `🎯 அடுத்த மாத கணிக்கப்பட்ட சராசரி: *${fc.predictedAvg}%*\n`;
-  }
+  // ── 1 & 2. AI Growth Forecast + Predict Score/% (10th → Board /500, others → %) ──
+  let fc = null, growthSec = '', predictSec = '';
+  try {
+    fc = (typeof _gfCompute === 'function') ? _gfCompute(s, cachedRanked) : null;
+    const trendIcon = fc ? (fc.monthTrend==='improving'?'📈':fc.monthTrend==='declining'?'📉':'➡️') : '';
+    if (fc && fc.hasData) {
+      growthSec = `${dash}\n📈 *AI வளர்ச்சி கணிப்பு (Growth Forecast)*\n${dash}\n`
+        + `📊 தற்போதைய சராசரி: *${fc.avgPct}%*\n`
+        + `🔮 அடுத்த மாத கணிப்பு: *${fc.predictedAvg}%* ${trendIcon}\n`;
+      const isBoardClass = String(s.grade || '').trim() === '10';
+      predictSec = isBoardClass
+        ? `🎯 எதிர்பார்க்கப்படும் Public Exam மதிப்பெண்: *${fc.boardScore}/500* (${fc.boardGrade})\n`
+        : `🎯 அடுத்த மாத கணிக்கப்பட்ட சராசரி: *${fc.predictedAvg}%*\n`;
+    }
+  } catch(err) { console.error('buildCombinedAISection: growth forecast failed for', s.name, err); }
 
   // ── 3. AI Predictions — risk flags (only shown if genuinely at-risk) ──
-  const pred = (typeof computePredictions === 'function')
-    ? computePredictions().find(p => p.student.id === s.id) : null;
   let riskSec = '';
-  if (pred) {
-    const flags = [];
-    if (pred.failScore  >= 45) flags.push(`📉 தேர்ச்சி ஆபத்து: ${_riskLevel(pred.failScore).label}`);
-    if (pred.leaveScore >= 45) flags.push(`🚪 விலக ஆபத்து: ${_riskLevel(pred.leaveScore).label}`);
-    if (pred.feeScore   >= 45) flags.push(`💸 கட்டண தாமத ஆபத்து: ${_riskLevel(pred.feeScore).label}`);
-    if (pred.attScore   >= 45) flags.push(`📊 வருகை ஆபத்து: ${_riskLevel(pred.attScore).label}`);
-    riskSec = flags.length > 0
-      ? `${dash}\n🔮 *AI கணிப்பு எச்சரிக்கை*\n${dash}\n${flags.join('\n')}\n`
-      : `${dash}\n🔮 *AI கணிப்பு*\n${dash}\n✅ தற்போது ஆபத்து இல்லை — தொடர்ந்து நல்ல செயல்பாடு\n`;
-  }
+  try {
+    const pred = cachedPreds
+      ? cachedPreds.find(p => p.student.id === s.id)
+      : ((typeof computePredictions === 'function') ? computePredictions().find(p => p.student.id === s.id) : null);
+    if (pred) {
+      const flags = [];
+      if (pred.failScore  >= 45) flags.push(`📉 தேர்ச்சி ஆபத்து: ${_riskLevel(pred.failScore).label}`);
+      if (pred.leaveScore >= 45) flags.push(`🚪 விலக ஆபத்து: ${_riskLevel(pred.leaveScore).label}`);
+      if (pred.feeScore   >= 45) flags.push(`💸 கட்டண தாமத ஆபத்து: ${_riskLevel(pred.feeScore).label}`);
+      if (pred.attScore   >= 45) flags.push(`📊 வருகை ஆபத்து: ${_riskLevel(pred.attScore).label}`);
+      riskSec = flags.length > 0
+        ? `${dash}\n🔮 *AI கணிப்பு எச்சரிக்கை*\n${dash}\n${flags.join('\n')}\n`
+        : `${dash}\n🔮 *AI கணிப்பு*\n${dash}\n✅ தற்போது ஆபத்து இல்லை — தொடர்ந்து நல்ல செயல்பாடு\n`;
+    }
+  } catch(err) { console.error('buildCombinedAISection: predictions failed for', s.name, err); }
 
   // ── 4. Individual Concentration — weakest subject needing focus ──
-  const weak = (typeof _spWeakSubjects === 'function') ? _spWeakSubjects(s.id) : [];
   let concSec = '';
-  if (weak.length > 0) {
-    const w = weak[0];
-    concSec = `${dash}\n📋 *தனிப்பட்ட கவனிப்பு (Individual Concentration)*\n${dash}\n`
-      + `⚠️ கூடுதல் கவனம் தேவையான பாடம்: *${w.sub}* (${w.avg}%)\n`
-      + `${w.avg < 40 ? 'இந்த பாடத்திற்கு உடனடியாக தனிப்பட்ட கவனிப்பு ஏற்பாடு செய்யப்படும்.' : 'வழக்கமான பயிற்சி மூலம் மேம்படுத்தலாம்.'}\n`;
-  }
+  try {
+    const weak = (typeof _spWeakSubjects === 'function') ? _spWeakSubjects(s.id) : [];
+    if (weak.length > 0) {
+      const w = weak[0];
+      concSec = `${dash}\n📋 *தனிப்பட்ட கவனிப்பு (Individual Concentration)*\n${dash}\n`
+        + `⚠️ கூடுதல் கவனம் தேவையான பாடம்: *${w.sub}* (${w.avg}%)\n`
+        + `${w.avg < 40 ? 'இந்த பாடத்திற்கு உடனடியாக தனிப்பட்ட கவனிப்பு ஏற்பாடு செய்யப்படும்.' : 'வழக்கமான பயிற்சி மூலம் மேம்படுத்தலாம்.'}\n`;
+    }
+  } catch(err) { console.error('buildCombinedAISection: concentration failed for', s.name, err); }
 
   // ── 5. AI Study Planner — today's focus subject + suggested minutes ──
   let planSec = '';
-  if (typeof _spBuildDayPlan === 'function') {
-    const plan = _spBuildDayPlan(s, 0);
-    if (plan && plan.slots && plan.slots.length > 0) {
-      const top = plan.slots[0];
-      planSec = `${dash}\n📚 *AI படிப்பு திட்டம் (Study Planner)*\n${dash}\n`
-        + `இன்று முன்னுரிமை: *${top.subject}* — ${top.mins} நிமிடம்\n`
-        + `மொத்த பரிந்துரைக்கப்பட்ட படிப்பு நேரம்: *${plan.totalMins} நிமிடம்/நாள்*\n`;
+  try {
+    if (typeof _spBuildDayPlan === 'function') {
+      const plan = _spBuildDayPlan(s, 0);
+      if (plan && plan.slots && plan.slots.length > 0) {
+        const top = plan.slots[0];
+        planSec = `${dash}\n📚 *AI படிப்பு திட்டம் (Study Planner)*\n${dash}\n`
+          + `இன்று முன்னுரிமை: *${top.subject}* — ${top.mins} நிமிடம்\n`
+          + `மொத்த பரிந்துரைக்கப்பட்ட படிப்பு நேரம்: *${plan.totalMins} நிமிடம்/நாள்*\n`;
+      }
     }
-  }
+  } catch(err) { console.error('buildCombinedAISection: study planner failed for', s.name, err); }
 
-  return growthSec + predictSec + riskSec + concSec + planSec;
+  /* ── 6. Frequent Absence Pattern — real attendance-based check (this
+     month's absence count + longest consecutive-day streak), reusing the
+     same attendance scan used by the Weekend Recovery Planner. This is a
+     genuine per-student pattern check, unlike the standalone "Frequent
+     Absentee Analyser" AI module which only flags students marked inactive. ── */
+  let absenceSec = '';
+  try {
+    if (typeof _rpGetAbsentDatesInRange === 'function') {
+      const now2     = new Date();
+      const monStart = new Date(now2.getFullYear(), now2.getMonth(), 1).toISOString().slice(0,10);
+      const monEnd   = new Date(now2.getFullYear(), now2.getMonth()+1, 0).toISOString().slice(0,10);
+      const absences = _rpGetAbsentDatesInRange(s, monStart, monEnd);
+      let maxStreak = absences.length > 0 ? 1 : 0, curStreak = 1;
+      for (let i = 1; i < absences.length; i++) {
+        const diffDays = Math.round((new Date(absences[i].date) - new Date(absences[i-1].date)) / 86400000);
+        curStreak = diffDays === 1 ? curStreak + 1 : 1;
+        maxStreak = Math.max(maxStreak, curStreak);
+      }
+      if (absences.length >= 4 || maxStreak >= 3) {
+        absenceSec = `${dash}\n🔴 *அடிக்கடி வரவில்லை (Frequent Absence Alert)*\n${dash}\n`
+          + `இந்த மாதம் *${absences.length} நாட்கள்* வரவில்லை`
+          + `${maxStreak >= 3 ? ` — *${maxStreak} நாட்கள் தொடர்ச்சியாக* வரவில்லை` : ''}.\n`
+          + `தயவுசெய்து காரணத்தை தெரியப்படுத்தவும். 🙏\n`;
+      }
+    }
+  } catch(err) { console.error('buildCombinedAISection: frequent absence check failed for', s.name, err); }
+
+  return growthSec + predictSec + riskSec + concSec + planSec + absenceSec;
 }
 
 /* ── Monthly "once-a-month" send lock — prevents accidentally
@@ -16370,7 +16469,7 @@ function markSumSent(studentId, year, month) {
   try { localStorage.setItem(_sumSentKey(studentId, year, month), new Date().toISOString()); } catch(e) {}
 }
 
-function buildSumWAMessage(s, year, month) {
+function buildSumWAMessage(s, year, month, ctx) {
   const att       = getStudentAttStats(s, year, month);
   const sumD      = loadSumData(s.id, year, month);
   const marks     = getStudentMarksAuto(s.id);
@@ -16414,7 +16513,7 @@ function buildSumWAMessage(s, year, month) {
   const noteText = sumD.note ? `📝 *ஆசிரியர் குறிப்பு:*\n${sumD.note}` : '';
 
   // ── Combined AI Insights: Growth Forecast + Predict Score/% + Predictions + Concentration + Study Planner ──
-  const aiInsightsSec = (typeof buildCombinedAISection === 'function') ? buildCombinedAISection(s) : '';
+  const aiInsightsSec = (typeof buildCombinedAISection === 'function') ? buildCombinedAISection(s, ctx) : '';
 
   // ── Check for a saved custom Tamil template (via WA Templates page) ──
   const savedTmpl = (typeof getWTSaved === 'function')
@@ -16511,17 +16610,56 @@ function sendSumWA(studentId, year, month) {
   if (isSumSentThisMonth(s.id, year, month) && !confirm('✅ இந்த மாதம் ஏற்கனவே அனுப்பப்பட்டது (' + TA_MONTHS[month] + ' ' + year + '). மீண்டும் அனுப்பவா?')) {
     return;
   }
-  openWA(phone, buildSumWAMessage(s, year, month));
+
+  let msg = '';
+  try {
+    msg = buildSumWAMessage(s, year, month, (_sumPageCtx && _sumPageCtx.year === year && _sumPageCtx.month === month) ? _sumPageCtx : null);
+  } catch(err) {
+    console.error('buildSumWAMessage error for', s.name, err);
+    // Fall back to a minimal, still-useful message rather than blocking the send entirely
+    const att = (typeof getStudentAttStats === 'function') ? getStudentAttStats(s, year, month) : { pct:0 };
+    msg = `Vanakkam ${s.parent||'Parent'},\n\n${s.name} - ${TA_MONTHS[month]} ${year} Monthly Summary\nAttendance: ${att.pct||0}%\n\n(⚠️ Some report sections could not be generated — please check Marks/Timetable/Teaching Log data for this student.)\n\n${CFG.CENTER?.name||''}`;
+    showToast('⚠️ சில பகுதிகள் உருவாக்க முடியவில்லை — அடிப்படை செய்தி அனுப்பப்படுகிறது');
+  }
+
+  openWA(phone, msg);
   markSumSent(s.id, year, month);
-  renderSummaryCards();
+  // Refresh ONLY this student's card (not the whole grid) — rebuilding every
+  // card here was the cause of other students' cards briefly losing their
+  // rendered data until a manual page refresh.
+  _sumRefreshOneCard(s.id, year, month);
   showToast('📱 WhatsApp திறக்கிறது…');
+}
+
+/* ── Update just one card in place, leaving every other student's
+   card/DOM state completely untouched ── */
+function _sumRefreshOneCard(studentId, year, month) {
+  const cardEl = document.getElementById('sum-card-' + studentId);
+  if (!cardEl) return; // student not in current filtered view — nothing to update
+  try {
+    const ranked = computeRanks(year, month);
+    const item = ranked.find(r => r.student.id === studentId);
+    if (!item) return;
+    const wrap = document.createElement('div');
+    wrap.innerHTML = buildSumCard(item, year, month);
+    const newCardEl = wrap.firstElementChild;
+    if (newCardEl) cardEl.replaceWith(newCardEl);
+  } catch(err) {
+    console.error('_sumRefreshOneCard error:', err);
+  }
 }
 
 /* ── Preview WA ── */
 function previewSumWA(studentId, year, month) {
   const s = students.find(x => x.id === studentId);
   if (!s) return showToast('மாணவர் கிடைக்கவில்லை');
-  const msg  = buildSumWAMessage(s, year, month);
+  let msg = '';
+  try {
+    msg = buildSumWAMessage(s, year, month, (_sumPageCtx && _sumPageCtx.year === year && _sumPageCtx.month === month) ? _sumPageCtx : null);
+  } catch(err) {
+    console.error('previewSumWA build error for', s.name, err);
+    msg = '⚠️ இந்த மாணவருக்கான அறிக்கை உருவாக்குவதில் சிக்கல் — Console-ஐ சரிபார்க்கவும்.';
+  }
   const hasSavedTmpl = (typeof getWTSaved === 'function') && !!getWTSaved('monthly_summary','ta');
   const root = document.getElementById('modal-root');
   root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()">
@@ -16548,17 +16686,27 @@ function previewSumWA(studentId, year, month) {
 
 /* ── Send all ── */
 function sendAllSummaryWA() {
-  const year  = parseInt(document.getElementById('sum-year-sel').value);
-  const month = parseInt(document.getElementById('sum-month-sel').value);
-  const active = students.filter(s => s.status === 'active');
-  if (active.length === 0) return showToast('மாணவர்கள் இல்லை');
+  const year        = parseInt(document.getElementById('sum-year-sel').value);
+  const month       = parseInt(document.getElementById('sum-month-sel').value);
+  const gradeFilter = document.getElementById('sum-grade-sel')?.value || 'all';
+  const batchFilter = document.getElementById('sum-batch-sel')?.value || 'all';
+
+  let active = students.filter(s => s.status === 'active');
+  if (gradeFilter !== 'all') active = active.filter(s => String(s.grade || '').trim() === gradeFilter);
+  if (batchFilter !== 'all') active = active.filter(s => s.course === batchFilter || s.batch === batchFilter);
+  if (active.length === 0) return showToast('இந்த வடிகட்டலில் மாணவர்கள் இல்லை');
+
+  const filterLabel = (gradeFilter !== 'all' || batchFilter !== 'all')
+    ? ` — ${[gradeFilter !== 'all' ? (gradeFilter === 'KG' ? 'KG' : 'Class ' + gradeFilter) : '', batchFilter !== 'all' ? batchFilter : ''].filter(Boolean).join(' · ')}`
+    : '';
+
   const sentCount = active.filter(s => isSumSentThisMonth(s.id, year, month)).length;
   const root = document.getElementById('modal-root');
   root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()">
     <div class="modal" style="max-width:500px">
       <div class="modal-title">📱 அனைத்து மாணவர் WhatsApp வரிசை (ஒரு முழுமையான அறிக்கை)</div>
       <div style="font-size:12px;color:var(--tx2);margin-bottom:12px">
-        ${TA_MONTHS[month]} ${year} — ${active.length} மாணவர்கள் ${sentCount>0?`· ✅ ${sentCount} ஏற்கனவே அனுப்பப்பட்டது`:''}
+        ${TA_MONTHS[month]} ${year}${filterLabel} — ${active.length} மாணவர்கள் ${sentCount>0?`· ✅ ${sentCount} ஏற்கனவே அனுப்பப்பட்டது`:''}
       </div>
       <div style="font-size:10px;color:var(--tx3);margin-bottom:8px">Attendance + Marks + Rank + AI Growth Forecast + Predict Score/% + Concentration + Study Planner — ஒரே WhatsApp செய்தியில்</div>
       <div style="max-height:340px;overflow-y:auto;border:.5px solid var(--br);border-radius:10px">

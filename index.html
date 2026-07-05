@@ -2530,14 +2530,11 @@ let attState = {};
 
 /* ═══════════════════════════════════════════════════════
    DAY ORDER / TIMETABLE STORE
-   Format: dayOrderMap[batchKey][dayOrderNumber] = ['Subject1','Subject2',...]
-   Scoped PER BATCH — different classes can both use "Day Order 3" with
-   completely different subjects without overwriting each other.
-   'all' is the batch key used as the global fallback (no batch context /
-   admin-entered defaults via the Day Order Setup modal).
+   Format: dayOrderMap[dayOrderNumber] = ['Subject1','Subject2',...]
    dayOrderMap stored in localStorage as _erp_day_order
+   Admin sets this once; attendance system reads it on mark
 ═══════════════════════════════════════════════════════ */
-let dayOrderMap = {};            // { "10th (Both)": { "1": ["Physics","Maths"] }, "all": { "1": [...] }, ... }
+let dayOrderMap = {};            // { "1": ["Physics","Maths"], "2": ["Chemistry","Biology"], ... }
 let currentDayOrder = '';        // which day order is active today (set by admin in attendance toolbar)
 
 function saveDayOrder() {
@@ -2546,62 +2543,20 @@ function saveDayOrder() {
 function loadDayOrder() {
   try {
     const v = localStorage.getItem('_erp_day_order');
-    if (v) {
-      const p = JSON.parse(v);
-      if (p && typeof p === 'object') {
-        // Migrate old flat format { "1": ["Physics",...] } (subjects arrays
-        // directly under day numbers) into the new per-batch shape under 'all'.
-        const isOldFlat = Object.values(p).some(x => Array.isArray(x));
-        if (isOldFlat) {
-          dayOrderMap.all = Object.assign({}, dayOrderMap.all, p);
-        } else {
-          Object.assign(dayOrderMap, p);
-        }
-      }
-    }
+    if (v) { const p = JSON.parse(v); if (p && typeof p === 'object') Object.assign(dayOrderMap, p); }
   } catch(e) {}
 }
 
-/* Resolve the best matching batch key already present in dayOrderMap for a
-   given batch/grade string — exact match, then base-name match (strips
-   "(Both)" / "- Morning" / "– Evening" suffixes), then substring match,
-   else falls back to 'all'. */
-function _dokResolveKey(batchKey) {
-  if (!batchKey) return 'all';
-  const bKey = String(batchKey).trim();
-  if (dayOrderMap[bKey]) return bKey;
-  const baseName = bKey.replace(/\s*[\(\-–].*$/, '').trim();
-  if (baseName && dayOrderMap[baseName]) return baseName;
-  const match = Object.keys(dayOrderMap).find(k =>
-    k !== 'all' && (bKey.startsWith(k) || k.startsWith(baseName) || (baseName && baseName.startsWith(k)))
-  );
-  return match || 'all';
-}
-
-/* Set subjects for a given day order number, scoped to a batch (defaults to global 'all') */
-function setSubjectsForDayOrder(dayNum, subjects, batchKey) {
-  if (!dayNum) return;
-  const bKey = batchKey ? String(batchKey).trim() : 'all';
-  if (!dayOrderMap[bKey]) dayOrderMap[bKey] = {};
-  const key = String(dayNum);
-  if (subjects && subjects.length) dayOrderMap[bKey][key] = subjects;
-  else delete dayOrderMap[bKey][key];
-}
-
-/* Get subjects for a given day order number, scoped to a batch.
-   Falls back to the global 'all' bucket if this batch has nothing saved. */
-function getSubjectsForDayOrder(dayNum, batchKey) {
+/* Get subjects for a given day order number */
+function getSubjectsForDayOrder(dayNum) {
   if (!dayNum) return [];
-  const key = String(dayNum);
-  const bKey = _dokResolveKey(batchKey);
-  if (dayOrderMap[bKey] && dayOrderMap[bKey][key] && dayOrderMap[bKey][key].length) return dayOrderMap[bKey][key];
-  return (dayOrderMap.all && dayOrderMap.all[key]) || [];
+  return dayOrderMap[String(dayNum)] || [];
 }
 
 /* Called when marking attendance — record missed subjects for absent/late students */
-function recordMissedSubjects(studentId, status, date, dayOrderNum, batchKey) {
+function recordMissedSubjects(studentId, status, date, dayOrderNum) {
   if (status !== 'A' && status !== 'L') return; // track absences AND late arrivals
-  const allSubjects = getSubjectsForDayOrder(dayOrderNum, batchKey);
+  const allSubjects = getSubjectsForDayOrder(dayOrderNum);
   if (!allSubjects.length) return;
 
   // Absent → missed ALL subjects; Late → missed only the FIRST period subject
@@ -3973,11 +3928,8 @@ function _populateDayOrderDropdown(date, batch) {
               const subjs = (d.subjects || []).filter(s => s && s.trim()).map(s => s.trim());
               const unique = [...new Set(subjs)];
               days.push({ num, label, subjs: unique });
-              // Sync into dayOrderMap, SCOPED to the batch key this data actually
-              // came from (key is batch.name / base name / 'all') — so two
-              // different classes on the same Day Order number never clobber
-              // each other's subjects.
-              if (unique.length > 0) setSubjectsForDayOrder(num, unique, key);
+              // Sync into dayOrderMap so getSubjectsForDayOrder works correctly for this batch
+              if (unique.length > 0) dayOrderMap[num] = unique;
             }
           });
         }
@@ -3985,11 +3937,9 @@ function _populateDayOrderDropdown(date, batch) {
     } catch(e) {}
   });
 
-  // Fallback: use dayOrderMap keys for this batch (or global) if timetable empty
+  // Fallback: use dayOrderMap keys if timetable empty
   if (days.length === 0) {
-    const bKey   = batch ? _dokResolveKey(batch.name) : 'all';
-    const scoped = dayOrderMap[bKey] || dayOrderMap.all || {};
-    const nums   = Object.keys(scoped).sort((a, b) => parseInt(a) - parseInt(b));
+    const nums = Object.keys(dayOrderMap).sort((a, b) => parseInt(a) - parseInt(b));
     if (nums.length > 0) {
       nums.forEach(n => days.push({ num: n, label: 'Day Order ' + n }));
     } else {
@@ -4001,7 +3951,7 @@ function _populateDayOrderDropdown(date, batch) {
   // Rebuild options
   sel.innerHTML = '<option value="">⚠️ Day Order தேர்வு செய்யவும் *</option>';
   days.forEach(d => {
-    const subjs  = (d.subjs && d.subjs.length > 0) ? d.subjs : getSubjectsForDayOrder(d.num, batch ? batch.name : '');
+    const subjs  = (d.subjs && d.subjs.length > 0) ? d.subjs : getSubjectsForDayOrder(d.num);
     const subjStr = subjs.length > 0 ? ' — ' + subjs.slice(0, 3).join(', ') + (subjs.length > 3 ? '…' : '') : '';
     const opt = document.createElement('option');
     opt.value = d.num;
@@ -4352,15 +4302,6 @@ function onDayOrderChange() {
   refreshDOPanel();
 }
 
-/* Which batch's Day Order data is currently in view on the Attendance page (falls back to 'all') */
-function _attCurBatchKey() {
-  try {
-    const batchId = document.getElementById('att-batch')?.value || '';
-    const b = (typeof batches !== 'undefined' ? batches.find(x => x.id === batchId) : null);
-    return b ? b.name : 'all';
-  } catch(e) { return 'all'; }
-}
-
 /* Rebuild the Day Order panel chips + edit field */
 function refreshDOPanel() {
   const sel   = document.getElementById('att-day-order');
@@ -4377,8 +4318,8 @@ function refreshDOPanel() {
     return;
   }
 
-  const subjs = getSubjectsForDayOrder(num, _attCurBatchKey());
-  if (editLbl) editLbl.textContent = 'Day Order ' + num + ' · ' + _attCurBatchKey();
+  const subjs = getSubjectsForDayOrder(num);
+  if (editLbl) editLbl.textContent = 'Day Order ' + num;
 
   if (subjs.length > 0) {
     chips.innerHTML = subjs.map(s =>
@@ -4408,7 +4349,7 @@ function toggleDOEdit() {
     // Pre-fill input with current subjects
     const num  = document.getElementById('att-day-order')?.value || '';
     const inp  = document.getElementById('att-do-subj-inp');
-    if (inp && num) inp.value = getSubjectsForDayOrder(num, _attCurBatchKey()).join(', ');
+    if (inp && num) inp.value = getSubjectsForDayOrder(num).join(', ');
     setTimeout(() => document.getElementById('att-do-subj-inp')?.focus(), 80);
   }
 }
@@ -4432,7 +4373,8 @@ function saveDOInline() {
   if (!num) { showToast('⚠️ Day Order தேர்வு செய்யவும்'); return; }
   const val   = document.getElementById('att-do-subj-inp')?.value || '';
   const subjs = val.split(',').map(s => s.trim()).filter(Boolean);
-  setSubjectsForDayOrder(num, subjs, _attCurBatchKey());
+  if (subjs.length > 0) dayOrderMap[String(num)] = subjs;
+  else delete dayOrderMap[String(num)];
   saveDayOrder();
   refreshDOPanel();
   // Close edit area
@@ -4440,17 +4382,14 @@ function saveDOInline() {
   const btn  = document.getElementById('att-do-edit-btn');
   if (area) area.style.display = 'none';
   if (btn)  btn.textContent = '✏️ Edit';
-  showToast('✅ Day Order ' + num + ' (' + _attCurBatchKey() + ') — ' + subjs.length + ' பாடங்கள் சேமிக்கப்பட்டது');
+  showToast('✅ Day Order ' + num + ' — ' + subjs.length + ' பாடங்கள் சேமிக்கப்பட்டது');
 }
 
-/* Setup modal — admin enters subjects for each day order, for the CURRENTLY
-   selected batch on the Attendance page (so this never overwrites another
-   class's Day Order subjects). */
+/* Setup modal — admin enters subjects for each day order */
 function openDayOrderSetup() {
-  const root  = document.getElementById('modal-root');
-  const bKey  = _attCurBatchKey();
+  const root = document.getElementById('modal-root');
   const rows = [1,2,3,4,5,6].map(n => {
-    const saved = ((dayOrderMap[bKey] && dayOrderMap[bKey][String(n)]) || []).join(', ');
+    const saved = (dayOrderMap[String(n)] || []).join(', ');
     return `
     <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:.5px solid var(--br)">
       <div style="min-width:80px;font-size:12px;font-weight:700;color:#7c3aed">Day Order ${n}</div>
@@ -4464,10 +4403,10 @@ function openDayOrderSetup() {
 
   root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()">
   <div class="modal" style="max-width:520px">
-    <div class="modal-title">📅 Day Order — Subject Setup <span style="font-size:11px;color:#7c3aed;font-weight:600">(${bKey === 'all' ? 'All Batches' : escHtml(bKey)})</span></div>
+    <div class="modal-title">📅 Day Order — Subject Setup</div>
     <div style="font-size:11px;color:var(--tx3);margin-bottom:14px;padding:8px 12px;background:var(--bg);border-radius:8px;border:.5px solid var(--br)">
-      Enter subjects for each Day Order (comma-separated) — specific to <b>${bKey === 'all' ? 'All Batches' : escHtml(bKey)}</b>, the batch currently selected in Attendance.
-      When admin selects a Day Order before saving attendance, absent students automatically get those subjects recorded as <b>missed</b> — used by the AI Weak Subject Analyser.
+      Enter subjects for each Day Order (comma-separated). When admin selects a Day Order before saving attendance,
+      absent students automatically get those subjects recorded as <b>missed</b> — used by the AI Weak Subject Analyser.
     </div>
     <div style="max-height:50vh;overflow-y:auto">
       ${rows}
@@ -4489,11 +4428,11 @@ function updateDayOrderPreview(n) {
 }
 
 function saveDayOrderSetup() {
-  const bKey = _attCurBatchKey();
   [1,2,3,4,5,6].forEach(n => {
     const val  = document.getElementById('do-inp-'+n)?.value || '';
     const subjs = val.split(',').map(s => s.trim()).filter(Boolean);
-    setSubjectsForDayOrder(n, subjs, bKey);
+    if (subjs.length > 0) dayOrderMap[String(n)] = subjs;
+    else delete dayOrderMap[String(n)];
   });
   saveDayOrder();
   closeModal();
@@ -4543,16 +4482,16 @@ function saveAttendance() {
     try { localStorage.setItem('_erp_att_dayorder_' + date + '_' + batchId, String(dayNum)); } catch(e) {}
   }
 
-  if (dayNum && getSubjectsForDayOrder(dayNum, batch ? batch.name : '').length > 0) {
+  if (dayNum && getSubjectsForDayOrder(dayNum).length > 0) {
     const bStu = _getBatchStudents(batchId);
     let missCount = 0, lateCount = 0;
     bStu.forEach(s => {
       const status = attState[_attKey(s.id, batchId, session)] || '';
       if (status === 'A') {
-        recordMissedSubjects(s.id, 'A', date, dayNum, batch ? batch.name : '');
+        recordMissedSubjects(s.id, 'A', date, dayNum);
         missCount++;
       } else if (status === 'L') {
-        recordMissedSubjects(s.id, 'L', date, dayNum, batch ? batch.name : '');
+        recordMissedSubjects(s.id, 'L', date, dayNum);
         lateCount++;
       }
     });
@@ -11790,25 +11729,11 @@ function doPost(e) {
         attRows.slice(0,3000));
 
     // ── Day Order ─────────────────────────────────────────────
-    // NOTE: dayOrderMap is now stored per-batch as { batchKey: { dayNum: [subjects] } }.
-    // Flatten across batches here (this export doesn't track batch) — this keeps
-    // the existing sheet format working without crashing on the new shape.
     const dayOrderRows = [];
-    const dayOrderRaw = data.dayOrder||{};
-    const dayOrderFlat = {};
-    Object.values(dayOrderRaw).forEach(v => {
-      if (Array.isArray(v)) return; // ignore any stray legacy flat entries mixed in
-      if (v && typeof v === 'object') {
-        Object.entries(v).forEach(([dayNum, subjects]) => {
-          if (!dayOrderFlat[dayNum]) dayOrderFlat[dayNum] = [];
-          (Array.isArray(subjects) ? subjects : [subjects]).forEach(s => {
-            if (s && !dayOrderFlat[dayNum].includes(s)) dayOrderFlat[dayNum].push(s);
-          });
-        });
-      }
-    });
-    Object.entries(dayOrderFlat).forEach(([dayNum, subjects])=>{
-      subjects.forEach((subj,i)=>{
+    const dayOrderMap = data.dayOrder||{};
+    Object.entries(dayOrderMap).forEach(([dayNum, subjects])=>{
+      const subjList = Array.isArray(subjects) ? subjects : [subjects];
+      subjList.forEach((subj,i)=>{
         dayOrderRows.push([ts, dayNum, i+1, subj||'']);
       });
     });
@@ -15598,10 +15523,9 @@ function loadAllData() {
             var subjs = (day.subjects || []).filter(function(s){ return s && s.trim(); }).map(function(s){ return s.trim(); });
             var unique = [];
             subjs.forEach(function(s){ if (unique.indexOf(s) === -1) unique.push(s); });
-            // Scope to THIS batch's key (k) — only set if not already present,
-            // so re-running this sync on every startup never clobbers data.
-            if (unique.length > 0 && (!dayOrderMap[k] || !dayOrderMap[k][dayNum] || dayOrderMap[k][dayNum].length === 0)) {
-              setSubjectsForDayOrder(dayNum, unique, k);
+            // Only set if dayOrderMap doesn't already have richer data for this slot
+            if (unique.length > 0 && (!dayOrderMap[dayNum] || dayOrderMap[dayNum].length === 0)) {
+              dayOrderMap[dayNum] = unique;
             }
           });
         } catch(e){}
@@ -15783,7 +15707,7 @@ function saveSumData(studentId, year, month, data) {
 ════════════════════════════════════════════════════════ */
 function getStudentAttStats(student, year, month) {
   let present = 0, absent = 0, late = 0;
-  let mrnAbsent = 0, evnAbsent = 0, mrnPresent = 0, evnPresent = 0;
+  let mrnAbsent = 0, evnAbsent = 0, mrnPresent = 0, evnPresent = 0, mrnLate = 0, evnLate = 0;
 
   const prefix   = '_erp_att_';
   const monthStr = year + '-' + String(month + 1).padStart(2, '0');
@@ -15818,7 +15742,7 @@ function getStudentAttStats(student, year, month) {
             if (isMrn) mrnAbsent++; else evnAbsent++;
             absentEntries.push({ date: datePart, session, batchId });
           }
-          else if (v === 'L') late++;
+          else if (v === 'L') { late++; if (isMrn) mrnLate++; else evnLate++; }
         });
       } catch(e2) {}
     }
@@ -15864,12 +15788,11 @@ function getStudentAttStats(student, year, month) {
       // Check if day order was stored for this date+batch
       const doKey = '_erp_att_dayorder_' + date + '_' + batchId;
       const dayNum = localStorage.getItem(doKey);
-      const batchForLookup = batches.find(b => b.id === batchId);
-      const subjs  = dayNum ? (getSubjectsForDayOrder(dayNum, batchForLookup ? batchForLookup.name : '') || []) : [];
+      const subjs  = dayNum ? (getSubjectsForDayOrder(dayNum) || []) : [];
 
       // Also try timetable directly by batch name
       if (subjs.length === 0) {
-        const batch = batchForLookup;
+        const batch = batches.find(b => b.id === batchId);
         if (batch) {
           // Try all timetable keys for this batch name
           try {
@@ -15913,8 +15836,7 @@ function getStudentAttStats(student, year, month) {
         if (!hasStudent) continue;
         const doKey  = '_erp_att_dayorder_' + datePart + '_' + batchId;
         const dayNum = localStorage.getItem(doKey);
-        const batchForLookup2 = batches.find(b => b.id === batchId);
-        const subjs  = dayNum ? (getSubjectsForDayOrder(dayNum, batchForLookup2 ? batchForLookup2.name : '') || []) : [];
+        const subjs  = dayNum ? (getSubjectsForDayOrder(dayNum) || []) : [];
         subjs.forEach(subj => {
           subjectTaughtMap[subj] = (subjectTaughtMap[subj] || 0) + 1;
         });
@@ -15940,8 +15862,10 @@ function getStudentAttStats(student, year, month) {
 
   return {
     present, absent, late, total, pct,
-    morning : { absent: mrnAbsent, present: mrnPresent },
-    evening : { absent: evnAbsent, present: evnPresent },
+    absentPct: total > 0 ? Math.round(absent / total * 100) : 0,
+    latePct  : total > 0 ? Math.round(late   / total * 100) : 0,
+    morning : { absent: mrnAbsent, present: mrnPresent, late: mrnLate },
+    evening : { absent: evnAbsent, present: evnPresent, late: evnLate },
     subjectMissed: subjectRisk,
     absentDates: { morning: absentEntries.filter(e=>e.session==='morning').map(e=>e.date),
                    evening: absentEntries.filter(e=>e.session==='evening').map(e=>e.date) }
@@ -16421,6 +16345,9 @@ function fillMonthlySummaryTemplate(template, data) {
     .replace(/{marks_section}/g,    data.marks_section   || 'மதிப்பெண்கள் இல்லை')
     .replace(/{teacher_note}/g,     data.teacher_note    || '')
     .replace(/{ai_insights_section}/g, data.ai_insights_section || '')
+    .replace(/{session_section}/g,   data.session_section || '')
+    .replace(/{missed_subjects_section}/g, data.missed_subjects_section || '')
+    .replace(/{recovery_plan_section}/g,   data.recovery_plan_section   || '')
     .replace(/{center_name}/g,      data.center_name     || CFG.CENTER.name  || '')
     .replace(/{center_phone}/g,     data.center_phone    || CFG.CENTER.phone || '');
 }
@@ -16588,6 +16515,47 @@ function buildSumWAMessage(s, year, month, ctx) {
     marksSec = lines.join('\n') + (avgPct > 0 ? `\n\n📊 சராசரி: *${avgPct}%*` : '');
   }
 
+  // ── Session-wise (Morning/Evening) Absent + Late breakdown ──
+  // Only shown when the center actually runs both sessions for this student's data
+  let sessionSec = '';
+  try {
+    const hasSessionData = (att.morning.present + att.morning.absent + att.morning.late
+                           + att.evening.present + att.evening.absent + att.evening.late) > 0;
+    if (hasSessionData) {
+      sessionSec = `☀️ காலை: வராதது *${att.morning.absent}* · தாமதம் *${att.morning.late}*\n`
+                 + `🌙 மாலை: வராதது *${att.evening.absent}* · தாமதம் *${att.evening.late}*\n`;
+    }
+  } catch(err) { console.error('buildSumWAMessage: session breakdown failed for', s.name, err); }
+
+  // ── Missed Subjects (real per-subject risk, from actual timetable + attendance) ──
+  let missedSubSec = '';
+  try {
+    const risky = (att.subjectMissed || []).filter(r => r.missed > 0);
+    if (risky.length > 0) {
+      missedSubSec = risky.slice(0, 6).map(r => {
+        const flag = r.risk === 'high' ? '🔴' : r.risk === 'medium' ? '🟡' : '🟢';
+        return `${flag} ${r.subject}: *${r.missed}* வகுப்பு தவறியது (${r.missPct}%)`;
+      }).join('\n');
+    }
+  } catch(err) { console.error('buildSumWAMessage: missed subjects failed for', s.name, err); }
+
+  // ── This Week's Recovery Plan (Weekend Recovery Planner) ──
+  let recoveryPlanSec = '';
+  try {
+    if (typeof buildRecoveryPlan === 'function' && typeof _rpWeekBounds === 'function') {
+      const { start, end } = _rpWeekBounds(new Date());
+      const plan = buildRecoveryPlan(s, start, end);
+      if (plan.absentDates.length > 0 && plan.items.length > 0) {
+        recoveryPlanSec = plan.items.slice(0, 6).map(it => {
+          const parts = [];
+          if (it.topic || it.notes) parts.push('Lesson: ' + (it.topic || it.notes));
+          if (it.hw) parts.push('Homework: ' + it.hw);
+          return `📖 [${(it.dayName||'').slice(0,3)}] ${it.subject}${parts.length ? ' • ' + parts.join(' • ') : ' — (பதிவு செய்யப்படவில்லை)'}`;
+        }).join('\n');
+      }
+    }
+  } catch(err) { console.error('buildSumWAMessage: recovery plan failed for', s.name, err); }
+
   const noteText = sumD.note ? `📝 *ஆசிரியர் குறிப்பு:*\n${sumD.note}` : '';
 
   // ── Combined AI Insights: Growth Forecast + Predict Score/% + Predictions + Concentration + Study Planner ──
@@ -16602,7 +16570,7 @@ function buildSumWAMessage(s, year, month, ctx) {
     // Use the custom template with variable substitution
     const attBlock = att.total === 0
       ? 'இந்த மாதம் வருகை தரவு இல்லை'
-      : `✅ வந்த நாட்கள்: *${att.present}*\n❌ வராத நாட்கள்: *${att.absent}*\n⚠️ தாமத நாட்கள்: *${att.late}*\n📊 வருகை சதவீதம்: *${att.pct}%* — ${attStatus}`;
+      : `✅ வந்த நாட்கள்: *${att.present}*\n❌ வராத நாட்கள்: *${att.absent}* (${att.absentPct}%)\n⚠️ தாமத நாட்கள்: *${att.late}* (${att.latePct}%)\n📊 வருகை சதவீதம்: *${att.pct}%* — ${attStatus}`;
 
     return fillMonthlySummaryTemplate(savedTmpl, {
       parent_name:    s.parent   || 'Parent',
@@ -16624,6 +16592,9 @@ function buildSumWAMessage(s, year, month, ctx) {
       marks_section:  marksSec,
       teacher_note:   noteText,
       ai_insights_section: aiInsightsSec,
+      session_section: sessionSec,
+      missed_subjects_section: missedSubSec,
+      recovery_plan_section: recoveryPlanSec,
       center_name:    ctr.name  || '',
       center_phone:   ctr.phone || '',
     });
@@ -16632,7 +16603,7 @@ function buildSumWAMessage(s, year, month, ctx) {
   // ── Default built-in Tamil message (no custom template saved) ──
   const attBlock = att.total === 0
     ? 'இந்த மாதம் வருகை தரவு இல்லை'
-    : `✅ வந்த நாட்கள்: *${att.present}*\n❌ வராத நாட்கள்: *${att.absent}*\n⚠️ தாமத நாட்கள்: *${att.late}*\n📊 வருகை சதவீதம்: *${att.pct}%* — ${attStatus}`;
+    : `✅ வந்த நாட்கள்: *${att.present}*\n❌ வராத நாட்கள்: *${att.absent}* (${att.absentPct}%)\n⚠️ தாமத நாட்கள்: *${att.late}* (${att.latePct}%)\n📊 வருகை சதவீதம்: *${att.pct}%* — ${attStatus}`;
 
   return `🙏 வணக்கம் *${s.parent}* அவர்களுக்கு,
 
@@ -16655,14 +16626,14 @@ ${attBlock}
 ⏰ *தாமத பகுப்பாய்வு*
 ━━━━━━━━━━━━━━━━━━━
 ${att.total===0?'தரவு இல்லை':lateStatus}
-
+${sessionSec ? '\n━━━━━━━━━━━━━━━━━━━\n☀️🌙 *அமர்வு வாரியாக (Session-wise)*\n━━━━━━━━━━━━━━━━━━━\n' + sessionSec.trim() : ''}
+${missedSubSec ? '\n━━━━━━━━━━━━━━━━━━━\n📚 *தவறவிட்ட பாடங்கள் (Missed Subjects)*\n━━━━━━━━━━━━━━━━━━━\n' + missedSubSec.trim() : ''}
 ━━━━━━━━━━━━━━━━━━━
 📝 *தேர்வு மதிப்பெண்கள்*
 ━━━━━━━━━━━━━━━━━━━
 ${marksSec}
 
-${aiInsightsSec}
-━━━━━━━━━━━━━━━━━━━
+${aiInsightsSec}${recoveryPlanSec ? '━━━━━━━━━━━━━━━━━━━\n📋 *இந்த வார ஈடுசெய் திட்டம் (Weekly Recovery Plan)*\n━━━━━━━━━━━━━━━━━━━\n' + recoveryPlanSec + '\n\n' : ''}━━━━━━━━━━━━━━━━━━━
 🌟 *வகுப்பு கவனம்*
 ━━━━━━━━━━━━━━━━━━━
 ${[1,2,3,4,5].map(n=>n<=sumD.stars?'⭐':'☆').join('')} — ${starLabel}
@@ -16934,7 +16905,7 @@ function ttSave() {
     var unique = [];
     allSubjs.forEach(function(s){ if (unique.indexOf(s) === -1) unique.push(s); });
     if (unique.length > 0) {
-      setSubjectsForDayOrder(dayNum, unique, batch);
+      dayOrderMap[dayNum] = unique;
     }
   });
   saveDayOrder();
@@ -17206,10 +17177,9 @@ function _rpGetAbsentDatesInRange(student, startDate, endDate) {
 function _rpGetSubjectsForAbsence(date, batchId) {
   let dayNum = null;
   try { dayNum = localStorage.getItem('_erp_att_dayorder_' + date + '_' + batchId); } catch(e) {}
-  const rpBatch = (typeof batches !== 'undefined') ? batches.find(b => b.id === batchId) : null;
-  let subjs = dayNum ? (getSubjectsForDayOrder(dayNum, rpBatch ? rpBatch.name : '') || []) : [];
+  let subjs = dayNum ? (getSubjectsForDayOrder(dayNum) || []) : [];
   if (subjs.length === 0 && typeof batches !== 'undefined') {
-    const batch = rpBatch;
+    const batch = batches.find(b => b.id === batchId);
     if (batch && typeof ttLoadBatch === 'function') {
       const ttData = ttLoadBatch(batch.name);
       (ttData.days || []).forEach(day => (day.subjects || []).filter(Boolean).forEach(s => subjs.push(s)));
@@ -17942,8 +17912,8 @@ function openAddTeachingLog() {
     <div class="modal-title">📖 New Teaching Log Entry</div>
     <div class="fg"><label class="fl">Date *</label><input class="fi" id="tl-f-date" type="date" value="${today}" onchange="tlFormSyncDayOrder()"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-      <div class="fg"><label class="fl">Grade *</label><select class="fi" id="tl-f-grade" onchange="tlFormOnBatchOrGradeChange()"><option value="">Select…</option>${_tlGradeOptions()}</select></div>
-      <div class="fg"><label class="fl">Batch <span style="font-size:10px;color:var(--tx3);font-weight:400">(sets which timetable is used)</span></label><select class="fi" id="tl-f-batch" onchange="tlFormOnBatchOrGradeChange()"><option value="">All / Any</option>${_tlBatchOptions()}</select></div>
+      <div class="fg"><label class="fl">Grade *</label><select class="fi" id="tl-f-grade"><option value="">Select…</option>${_tlGradeOptions()}</select></div>
+      <div class="fg"><label class="fl">Batch</label><select class="fi" id="tl-f-batch" onchange="tlFormOnBatchChange()"><option value="">All / Any</option>${_tlBatchOptions()}</select></div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
       <div class="fg"><label class="fl">Session</label>
@@ -17988,38 +17958,14 @@ function openAddTeachingLog() {
     const sessSel   = document.getElementById('tl-f-session');
     if (attSessEl && sessSel) sessSel.value = attSessEl.value || 'morning';
 
-    // Auto-fill Batch from the batch currently selected in Attendance — this is
-    // what makes the Day Order dropdown load THIS batch's timetable subjects
-    // instead of whatever batch happened to be viewed last.
-    const batchSel = document.getElementById('tl-f-batch');
-    if (batchSel) {
-      const attBatchKey = _attCurBatchKey();
-      if (attBatchKey && attBatchKey !== 'all' && [...batchSel.options].some(o => o.value === attBatchKey)) {
-        batchSel.value = attBatchKey;
-      }
-    }
-
-    // Auto-fill Day Order (also rebuilds the option list scoped to the batch above)
+    // Auto-fill Day Order
     const doSel = document.getElementById('tl-f-dayorder');
     if (!doSel) return;
     const activeDO = (typeof currentDayOrder !== 'undefined' && currentDayOrder)
       ? currentDayOrder
       : (() => { try { return localStorage.getItem('_erp_last_dayorder_' + today) || ''; } catch(e){ return ''; } })();
-    tlFormOnBatchOrGradeChange();
     if (activeDO) { doSel.value = activeDO; tlFormOnDayOrderChange(); }
   }, 80);
-}
-
-/* Rebuild the Day Order dropdown scoped to whichever Batch/Grade is now
-   selected in the Teaching Log form, so subjects always come from THIS
-   class's timetable — not a different class that happened to be viewed last. */
-function tlFormOnBatchOrGradeChange() {
-  const doSel = document.getElementById('tl-f-dayorder');
-  if (!doSel) return;
-  const batchKey = (document.getElementById('tl-f-batch')||{}).value || (document.getElementById('tl-f-grade')||{}).value || '';
-  const curVal = doSel.value;
-  doSel.innerHTML = '<option value="">Select Day Order…</option>' + _tlDayOrderOptions(curVal, batchKey);
-  tlFormOnDayOrderChange();
 }
 
 function openEditTeachingLog(id) {
@@ -18141,6 +18087,50 @@ function deleteTeachingLog(id) {
   showToast('Deleted');
 }
 
+/* ── Get subjects for a Day Order, scoped to ONE specific batch's saved
+   Time Table — mirrors _populateDayOrderDropdown()'s batch-key matching
+   exactly, so Teaching Log always shows the SAME subjects Attendance would
+   for that batch+day, regardless of which batch was last viewed elsewhere.
+   (Previously Teaching Log read the shared `dayOrderMap`, which gets
+   silently overwritten by whichever batch was last opened in Attendance —
+   causing wrong/stale subjects to show for a different batch.) ── */
+function _tlGetSubjectsForBatchDayOrder(batchName, dayNum) {
+  if (!dayNum) return [];
+  const batchKeys = [];
+  if (batchName) {
+    batchKeys.push(batchName);
+    const baseName = batchName.replace(/\s*[\(\-].*$/, '').trim();
+    if (baseName && baseName !== batchName) batchKeys.push(baseName);
+    try {
+      Object.keys(localStorage).forEach(k => {
+        if (k.startsWith('_erp_tt_')) {
+          const ttKey = k.replace('_erp_tt_', '');
+          if (ttKey !== 'all' && !batchKeys.includes(ttKey)) {
+            if (batchName.startsWith(ttKey) || ttKey.startsWith(baseName)) batchKeys.push(ttKey);
+          }
+        }
+      });
+    } catch(e) {}
+  }
+  batchKeys.push('all');
+
+  for (const key of batchKeys) {
+    try {
+      const raw = localStorage.getItem('_erp_tt_' + key);
+      if (!raw) continue;
+      const data = JSON.parse(raw);
+      const day  = data && data.days ? data.days[parseInt(dayNum, 10) - 1] : null;
+      if (day) {
+        const subjs = (day.subjects || []).filter(s => s && s.trim()).map(s => s.trim());
+        const unique = [...new Set(subjs)];
+        if (unique.length > 0) return unique;
+      }
+    } catch(e) {}
+  }
+  // Fall back to the legacy shared map only if no per-batch Time Table exists
+  return (typeof getSubjectsForDayOrder === 'function') ? getSubjectsForDayOrder(dayNum) : [];
+}
+
 function _tlGetTodayAbsentIds() {
   // Read from attState (global) or scan localStorage keys for today
   try {
@@ -18171,44 +18161,69 @@ function _tlGetTodayAbsentIds() {
   } catch(e) { return []; }
 }
 
-/* Build Day Order <option>s scoped to a batch/grade key — pulls subjects from
-   THAT batch's timetable data (falls back to the global 'all' bucket, then
-   to Attendance's dropdown if nothing has been set up at all yet). */
-function _tlDayOrderOptions(sel, batchKey) {
+function _tlDayOrderOptions(sel, batchName) {
   const opts = [];
-  if (typeof dayOrderMap === 'object') {
-    const bKey = (typeof _dokResolveKey === 'function') ? _dokResolveKey(batchKey) : (batchKey || 'all');
-    const nums = new Set([
-      ...Object.keys(dayOrderMap[bKey] || {}),
-      ...Object.keys(dayOrderMap.all || {})
-    ]);
-    [...nums].sort((a,b)=>parseInt(a)-parseInt(b)).forEach(num => {
-      const subjs = (typeof getSubjectsForDayOrder === 'function') ? getSubjectsForDayOrder(num, batchKey) : [];
+  const batchKeys = [];
+  if (batchName) {
+    batchKeys.push(batchName);
+    const baseName = batchName.replace(/\s*[\(\-].*$/, '').trim();
+    if (baseName && baseName !== batchName) batchKeys.push(baseName);
+  }
+  batchKeys.push('all');
+
+  let days = [];
+  for (const key of batchKeys) {
+    try {
+      const raw = localStorage.getItem('_erp_tt_' + key);
+      if (!raw) continue;
+      const data = JSON.parse(raw);
+      if (data && data.days && data.days.length > 0) {
+        days = data.days.map((d, i) => {
+          const subjs = (d.subjects || []).filter(s => s && s.trim()).map(s => s.trim());
+          return { num: String(i + 1), label: d.name || ('Day ' + (i + 1)), subjs: [...new Set(subjs)] };
+        });
+        break; // found a real timetable for this batch (or 'all') — stop here
+      }
+    } catch(e) {}
+  }
+
+  if (days.length > 0) {
+    days.forEach(d => {
+      const subjStr = d.subjs.length > 0 ? ' — ' + d.subjs.slice(0,3).join(', ') + (d.subjs.length>3?'…':'') : '';
+      opts.push(`<option value="${d.num}" ${sel==d.num?'selected':''}>📅 ${d.label}${subjStr}</option>`);
+    });
+  } else if (typeof dayOrderMap === 'object' && Object.keys(dayOrderMap).length > 0) {
+    // Legacy fallback — no per-batch Time Table saved yet for this batch
+    const nums = Object.keys(dayOrderMap).sort((a,b)=>parseInt(a)-parseInt(b));
+    nums.forEach(num => {
+      const subjs = dayOrderMap[num] || [];
       opts.push(`<option value="${num}" ${sel==num?'selected':''}>Day Order ${num}${subjs.length ? ' — ' + subjs.slice(0,3).join(', ')+(subjs.length>3?'…':'') : ''}</option>`);
     });
-  }
-  if (!opts.length) {
-    const attSel = document.getElementById('att-day-order');
-    if (attSel) {
-      [...attSel.options].forEach(o => {
-        if (o.value) opts.push(`<option value="${o.value}" ${sel==o.value?'selected':''}>${o.text}</option>`);
-      });
-    }
+  } else {
+    for (let i = 1; i <= 6; i++) opts.push(`<option value="${i}" ${sel==String(i)?'selected':''}>Day Order ${i}</option>`);
   }
   return opts.join('');
 }
 
+/* ── Refresh Day Order options + reload subjects when the Batch selection
+   changes in the Teaching Log form (so the right per-batch Time Table is used) ── */
+function tlFormOnBatchChange() {
+  const batchSel = document.getElementById('tl-f-batch');
+  const doSel    = document.getElementById('tl-f-dayorder');
+  if (!batchSel || !doSel) return;
+  const batchName = batchSel.value || '';
+  const curVal = doSel.value;
+  doSel.innerHTML = '<option value="">Select Day Order…</option>' + _tlDayOrderOptions(curVal, batchName);
+  tlFormOnDayOrderChange();
+}
+
 function tlFormOnDayOrderChange() {
   const dayOrderNum = (document.getElementById('tl-f-dayorder')||{}).value || '';
+  const batchName   = (document.getElementById('tl-f-batch')||{}).value || '';
   const list = document.getElementById('tl-f-subjects-list');
   if (!list) return;
 
-  const batchKey = (document.getElementById('tl-f-batch')||{}).value || (document.getElementById('tl-f-grade')||{}).value || '';
-  const subjs = dayOrderNum
-    ? (typeof getSubjectsForDayOrder === 'function'
-        ? getSubjectsForDayOrder(dayOrderNum, batchKey)
-        : (typeof dayOrderMap === 'object' ? (dayOrderMap[dayOrderNum] || []) : []))
-    : [];
+  const subjs = dayOrderNum ? _tlGetSubjectsForBatchDayOrder(batchName, dayOrderNum) : [];
 
   // Keep any existing "other" rows the user already added
   const existingOthers = [...list.querySelectorAll('.tl-subj-row[data-type="other"]')];

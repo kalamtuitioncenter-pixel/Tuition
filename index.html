@@ -2699,6 +2699,7 @@ const staffData = []; // loaded from localStorage by loadAllData()
 // Staff attendance: staffAtt[staffId][YYYY-MM-DD] = 'P'|'A'|'H'|'L'
 let staffAtt = {};
 let salaryPayments = {}; // { "staffId|YYYY-MM": { paid: true, amount, mode, date, note } }
+let staffAdvances = []; // [{ id, staffId, type:'advance'|'loan'|'repayment', amount, date, mode, note, createdAt }]
 const prods = [
   {name:'Geometry Box',price:120,cost:80,stock:45,qty:0},
   {name:'A4 Notebook (200pg)',price:80,cost:50,stock:120,qty:0},
@@ -8384,6 +8385,118 @@ function saveStaff() {
 
 function calcStaffSalary() { /* simplified - no live calc needed */ }
 
+/* ═══════════════════════════════════════════════════════
+   STAFF ADVANCE / LOAN / PARTIAL PAYMENT LEDGER
+═══════════════════════════════════════════════════════ */
+function saveStaffAdvances() {
+  try { localStorage.setItem('_erp_staff_advances', JSON.stringify(staffAdvances)); } catch(e) {}
+}
+function _stAdvForStaff(staffId) {
+  return staffAdvances
+    .filter(a => a && a.staffId === staffId)
+    .sort((a,b) => (a.date||'').localeCompare(b.date||'') || (a.createdAt||'').localeCompare(b.createdAt||''));
+}
+function _stAdvOutstanding(staffId) {
+  return _stAdvForStaff(staffId).reduce((sum, a) => {
+    if (a.type === 'advance' || a.type === 'loan') return sum + (a.amount||0);
+    return sum - (a.amount||0); // repayment / partial payment
+  }, 0);
+}
+
+function openStaffAdvanceModal(staffId) {
+  const s = staffData.find(x => x.id === staffId);
+  if (!s) return;
+  const hist = _stAdvForStaff(staffId);
+  const outstanding = _stAdvOutstanding(staffId);
+  const today = new Date().toISOString().slice(0,10);
+  const typeLabel = { advance:'💵 Advance Given', loan:'🏦 Loan Given', repayment:'✅ Repayment / Partial Payment' };
+  const rows = hist.length ? hist.slice().reverse().map(a => {
+    const isGiven = (a.type === 'advance' || a.type === 'loan');
+    return `<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:.5px solid var(--br);border-radius:8px;margin-bottom:6px">
+      <div style="flex:1">
+        <div style="font-size:11px;font-weight:700;color:${isGiven?'#dc2626':'#16a34a'}">${typeLabel[a.type]||a.type}</div>
+        <div style="font-size:10px;color:var(--tx3)">${a.date||''}${a.mode?' · '+a.mode:''}${a.note?' · '+escHtml(a.note):''}</div>
+      </div>
+      <div style="font-size:13px;font-weight:700;color:${isGiven?'#dc2626':'#16a34a'}">${isGiven?'+':'−'} ₹${(a.amount||0).toLocaleString('en-IN')}</div>
+      <button onclick="deleteStaffAdvance('${a.id}','${staffId}')" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:15px;padding:0 2px">×</button>
+    </div>`;
+  }).join('') : '<div style="font-size:11px;color:var(--tx3);text-align:center;padding:14px">No advance/loan records yet</div>';
+
+  _tlShowModal(`
+    <div class="modal-title">💰 Advance / Loan — ${escHtml(s.name)}</div>
+    <div style="background:${outstanding>0?'#fef2f2':'#f0fdf4'};border:.5px solid ${outstanding>0?'#fecaca':'#bbf7d0'};border-radius:10px;padding:12px 14px;margin-bottom:12px;text-align:center">
+      <div style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.05em">Outstanding Balance</div>
+      <div style="font-size:24px;font-weight:800;color:${outstanding>0?'#dc2626':'#16a34a'}">₹${Math.abs(outstanding).toLocaleString('en-IN')}</div>
+      <div style="font-size:10px;color:${outstanding>0?'#991b1b':'#166534'}">${outstanding>0?'Staff owes this amount (recoverable from salary)':'No dues pending'}</div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="fg"><label class="fl">Type</label>
+        <select class="fi" id="sa-type">
+          <option value="advance">💵 Advance Given</option>
+          <option value="loan">🏦 Loan Given</option>
+          <option value="repayment">✅ Repayment / Partial Payment</option>
+        </select>
+      </div>
+      <div class="fg"><label class="fl">Amount ₹ *</label><input class="fi" id="sa-amount" type="number" placeholder="e.g. 2000"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="fg"><label class="fl">Date</label><input class="fi" id="sa-date" type="date" value="${today}"></div>
+      <div class="fg"><label class="fl">Mode</label>
+        <select class="fi" id="sa-mode">
+          <option>Cash</option><option>Bank Transfer</option><option>UPI</option>
+        </select>
+      </div>
+    </div>
+    <div class="fg"><label class="fl">Note (optional)</label><input class="fi" id="sa-note" placeholder="e.g. Medical emergency, festival advance…"></div>
+    <div style="display:flex;justify-content:flex-end;margin-bottom:14px">
+      <button class="btn btn-p btn-sm" onclick="saveStaffAdvanceEntry('${staffId}')">💾 Add Entry</button>
+    </div>
+
+    <div style="font-size:11px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">History</div>
+    <div style="max-height:260px;overflow-y:auto">${rows}</div>
+    <div style="text-align:right;margin-top:10px"><button class="btn btn-sm" onclick="closeModal()">Close</button></div>
+  `);
+}
+
+function saveStaffAdvanceEntry(staffId) {
+  const type   = (document.getElementById('sa-type')||{}).value || 'advance';
+  const amount = parseFloat((document.getElementById('sa-amount')||{}).value) || 0;
+  const date   = (document.getElementById('sa-date')||{}).value || new Date().toISOString().slice(0,10);
+  const mode   = (document.getElementById('sa-mode')||{}).value || 'Cash';
+  const note   = (document.getElementById('sa-note')||{}).value.trim() || '';
+  if (!amount || amount <= 0) { showToast('⚠️ Enter a valid amount'); return; }
+  staffAdvances.push({ id:'adv_'+Date.now(), staffId, type, amount, date, mode, note, createdAt: new Date().toISOString() });
+  saveStaffAdvances();
+  showToast('✅ Entry recorded');
+  openStaffAdvanceModal(staffId);
+  if (typeof generatePayroll === 'function') generatePayroll();
+}
+
+function deleteStaffAdvance(id, staffId) {
+  staffAdvances = staffAdvances.filter(a => a.id !== id);
+  saveStaffAdvances();
+  showToast('Deleted');
+  openStaffAdvanceModal(staffId);
+  if (typeof generatePayroll === 'function') generatePayroll();
+}
+
+/* Quick-fill the existing "Extra Deduction" box with the outstanding advance/loan
+   balance so it's recovered through this month's salary, and log the matching
+   repayment entry in the ledger so the balance stays accurate. */
+function useAdvanceAsDeduction(staffId) {
+  const outstanding = _stAdvOutstanding(staffId);
+  if (outstanding <= 0) { showToast('No outstanding advance/loan for this staff'); return; }
+  const amtEl  = document.getElementById('xtra-amt-'+staffId);
+  const noteEl = document.getElementById('xtra-note-'+staffId);
+  if (amtEl)  amtEl.value  = outstanding;
+  if (noteEl && !noteEl.value) noteEl.value = 'Advance/Loan recovery';
+  // Log the recovery in the ledger right away so the balance clears in sync with the deduction box
+  staffAdvances.push({ id:'adv_'+Date.now(), staffId, type:'repayment', amount: outstanding, date: new Date().toISOString().slice(0,10), mode:'Salary Deduction', note:'Recovered via salary deduction', createdAt: new Date().toISOString() });
+  saveStaffAdvances();
+  showToast('Filled ₹'+outstanding.toLocaleString('en-IN')+' — click Apply to confirm this month\'s deduction');
+}
+
 function waStaff(phone, name) {
   var msg = 'Dear ' + name + ', this is ' + CFG.CENTER.name + '. Please note important information regarding your work. Thank you.';
   openWA(phone, msg);
@@ -8843,6 +8956,7 @@ function generatePayroll() {
     var netFmt    = item.net.toLocaleString('en-IN');
     var extraNote = s.extraDedNote ? ' ('+s.extraDedNote+')' : '';
     var bonusNote = s.bonusNote    ? ' ('+s.bonusNote+')'    : '';
+    var outstandingAdv = (typeof _stAdvOutstanding==='function') ? _stAdvOutstanding(s.id) : 0;
 
     // Per-student pay info row
     var perStuRow = s.payType === 'perstudent' && s.feePerStudent
@@ -8873,6 +8987,16 @@ function generatePayroll() {
       ? '<div style="display:flex;justify-content:space-between;padding:4px 0">'
       + '  <span style="font-size:12px;color:#16a34a">&#127881; Bonus'+bonusNote+'</span>'
       + '  <span style="font-size:13px;font-weight:700;color:#16a34a">+ &#8377;'+item.bonus.toLocaleString('en-IN')+'</span>'
+      + '</div>'
+      : '';
+
+    var advRow = outstandingAdv > 0
+      ? '<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 8px;margin-top:4px;background:#fef2f2;border-radius:6px;border:.5px solid #fecdd3">'
+      + '  <span style="font-size:11px;color:#991b1b;font-weight:600">&#9888; Advance/Loan Due</span>'
+      + '  <span style="display:flex;align-items:center;gap:8px">'
+      + '    <span style="font-size:13px;font-weight:700;color:#dc2626">&#8377;'+outstandingAdv.toLocaleString('en-IN')+'</span>'
+      + '    <button onclick="useAdvanceAsDeduction(\''+s.id+'\')" style="font-size:9px;padding:2px 7px;border-radius:6px;background:#fff;border:.5px solid #fca5a5;color:#dc2626;cursor:pointer;font-family:inherit;font-weight:600">Use as Deduction</button>'
+      + '  </span>'
       + '</div>'
       : '';
 
@@ -8919,6 +9043,7 @@ function generatePayroll() {
       +lopRow
       +bonusRow
       +extraRow
+      +advRow
       +paidBanner
       // Add deduction row
       +'  <div style="display:flex;align-items:center;gap:8px;margin-top:8px;padding-top:8px;border-top:.5px solid var(--br)">'
@@ -8936,6 +9061,7 @@ function generatePayroll() {
         : '  <button class="btn btn-p btn-sm" style="background:#16a34a;border-color:#16a34a;" onclick="openSalaryPaidModal(\''+s.id+'\')">&#10003; Mark Salary Paid</button>'
       )
       +'  <button class="btn btn-wa btn-sm" onclick="waStaff(\''+s.phone+'\',\''+s.name+'\')">&#128242; Salary Slip WA</button>'
+      +'  <button class="btn btn-sm" onclick="openStaffAdvanceModal(\''+s.id+'\')">&#128176; Advance/Loan'+(outstandingAdv>0?' ('+outstandingAdv.toLocaleString('en-IN')+')':'')+'</button>'
       +'</div>'
       +'</div>';
   });
@@ -9019,6 +9145,12 @@ function openSalaryPaidModal(staffId) {
     <div style="background:#dcfce7;border-radius:8px;padding:10px 14px;margin-bottom:14px;border:.5px solid #bbf7d0;font-size:12px;color:#166534">
       ✅ <b>Already Paid</b> — ₹${(existing.amount||net).toLocaleString('en-IN')} on ${existing.date||'—'} via ${existing.mode||'Cash'}
       ${existing.note ? `<br><span style="font-size:11px;color:var(--tx3)">${existing.note}</span>` : ''}
+    </div>` : ''}
+
+    ${(typeof _stAdvOutstanding==='function' && _stAdvOutstanding(staffId) > 0) ? `
+    <div style="background:#fef2f2;border-radius:8px;padding:10px 14px;margin-bottom:14px;border:.5px solid #fecdd3;font-size:12px;color:#991b1b;display:flex;align-items:center;justify-content:space-between">
+      <span>⚠️ Advance/Loan due: <b>₹${_stAdvOutstanding(staffId).toLocaleString('en-IN')}</b></span>
+      <button onclick="closeModal();openStaffAdvanceModal('${staffId}')" style="font-size:10px;background:none;border:none;cursor:pointer;color:#991b1b;text-decoration:underline;font-family:inherit;padding:0">Manage</button>
     </div>` : ''}
 
     <div class="frow">
@@ -12033,6 +12165,7 @@ function getSnapshot() {
     batches:          batches    || [],
     notifications:    ls('_erp_notifs') || [],
     salaryPayments:   salaryPaymentsArr,
+    staffAdvances:    ls('_erp_staff_advances') || [],
 
     // Attendance
     attState:         attState   || {},
@@ -12155,6 +12288,7 @@ function restoreBackup(input) {
       try { localStorage.setItem('_erp_batches',         JSON.stringify(data.batches         || [])); } catch(e) {}
       try { localStorage.setItem('_erp_notifs',          JSON.stringify(data.notifications   || [])); } catch(e) {}
       try { localStorage.setItem('_erp_salary_payments', JSON.stringify(data.salaryPayments  || [])); } catch(e) {}
+      if (data.staffAdvances) try { localStorage.setItem('_erp_staff_advances', JSON.stringify(data.staffAdvances)); } catch(e) {}
       if (data.staffAttendance) try { localStorage.setItem('_erp_staff_att', JSON.stringify(data.staffAttendance)); } catch(e) {}
 
       // Restore fee config
@@ -12270,6 +12404,7 @@ async function syncSheets(silent) {
       batches:          snapshot.batches          || [],
       notifications:    snapshot.notifications    || [],
       salaryPayments:   snapshot.salaryPayments   || [],
+      staffAdvances:    snapshot.staffAdvances    || [],
       attendance:       snapshot.attState         || {},
       attendanceFull:   snapshot.attendanceFull   || {},
       timetables:       snapshot.timetables       || {},
@@ -12459,6 +12594,7 @@ async function restoreFromSheets() {
     localStorage.setItem('_erp_batches',         JSON.stringify(safe(data.batches, [])));
     localStorage.setItem('_erp_notifs',          JSON.stringify(safe(data.notifications, [])));
     localStorage.setItem('_erp_salary_payments', JSON.stringify(safe(data.salaryPayments, [])));
+    if (data.staffAdvances) localStorage.setItem('_erp_staff_advances', JSON.stringify(safe(data.staffAdvances, [])));
 
     // ── Attendance ────────────────────────────────────────────
     if (data.attState)       localStorage.setItem('attState', JSON.stringify(data.attState));
@@ -15602,6 +15738,11 @@ function _safeInit() {
     const savedSalPay = localStorage.getItem('_erp_salary_payments');
     if (savedSalPay) { Object.assign(salaryPayments, JSON.parse(savedSalPay)); }
   } catch(e) {}
+  // Restore staff advances/loans
+  try {
+    const savedAdv = localStorage.getItem('_erp_staff_advances');
+    if (savedAdv) { const p = JSON.parse(savedAdv); if (Array.isArray(p)) { staffAdvances.length = 0; p.forEach(a=>staffAdvances.push(a)); } }
+  } catch(e) {}
   // Restore late-to-leave config
   try {
     const savedLTL = localStorage.getItem('_erp_lates_to_leave');
@@ -17891,12 +18032,32 @@ function _tlRenderStats(logs, students) {
     </div>`).join('');
 }
 
-function _tlStudentOptions(selectedIds) {
+function _tlStudentOptions(selectedIds, grade, batchName, restrictIds) {
   const stArr = (typeof students !== 'undefined' && Array.isArray(students)) ? students : [];
+  const restrictSet = Array.isArray(restrictIds) ? new Set(restrictIds) : null;
   return stArr
     .filter(s => s && s.name && s.status !== 'inactive')
+    .filter(s => !grade || String(s.grade||'').trim() === String(grade).trim())
+    .filter(s => !batchName || (s.batch||s.course) === batchName)
+    .filter(s => !restrictSet || restrictSet.has(s.id))
     .sort((a,b) => (a.name||'').localeCompare(b.name||''))
-    .map(s => `<option value="${s.id}" ${(selectedIds||[]).includes(s.id)?'selected':''}>${s.name} (${s.grade||''}${s.batch?' · '+s.batch:''})</option>`).join('');
+    .map(s => `<option value="${s.id}" ${(selectedIds||[]).includes(s.id)?'selected':''}>${s.name} (${s.grade||''}${(s.batch||s.course)?' · '+(s.batch||s.course):''})</option>`).join('');
+}
+/* Refresh the Absent Students multi-select to only show students who were
+   actually marked Absent in Attendance for the log's Date — scoped further
+   to the chosen Grade/Batch. Present students never appear in the list, so
+   there's nothing to accidentally mark wrong. Preserves valid selections. */
+function tlRefreshAbsentList() {
+  const absSel = document.getElementById('tl-f-absent');
+  if (!absSel) return;
+  const grade = (document.getElementById('tl-f-grade')||{}).value || '';
+  const batch = (document.getElementById('tl-f-batch')||{}).value || '';
+  const date  = (document.getElementById('tl-f-date')||{}).value || new Date().toISOString().slice(0,10);
+  const selectedIds = [...absSel.selectedOptions].map(o=>o.value);
+  // Students already ticked stay visible even if attendance doesn't (yet) mark
+  // them absent, so a manual pick is never silently dropped when switching fields.
+  const restrictIds = [...new Set([..._tlGetAbsentIdsForDate(date), ...selectedIds])];
+  absSel.innerHTML = _tlStudentOptions(selectedIds, grade, batch, restrictIds);
 }
 
 function _tlShowModal(html) {
@@ -17912,7 +18073,7 @@ function openAddTeachingLog() {
     <div class="modal-title">📖 New Teaching Log Entry</div>
     <div class="fg"><label class="fl">Date *</label><input class="fi" id="tl-f-date" type="date" value="${today}" onchange="tlFormSyncDayOrder()"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-      <div class="fg"><label class="fl">Grade *</label><select class="fi" id="tl-f-grade"><option value="">Select…</option>${_tlGradeOptions()}</select></div>
+      <div class="fg"><label class="fl">Grade *</label><select class="fi" id="tl-f-grade" onchange="tlFormOnGradeChange()"><option value="">Select…</option>${_tlGradeOptions()}</select></div>
       <div class="fg"><label class="fl">Batch</label><select class="fi" id="tl-f-batch" onchange="tlFormOnBatchChange()"><option value="">All / Any</option>${_tlBatchOptions()}</select></div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
@@ -17923,7 +18084,7 @@ function openAddTeachingLog() {
         </select>
       </div>
       <div class="fg">
-        <label class="fl" style="display:flex;align-items:center;gap:5px">Day Order <span style="font-size:10px;color:var(--tx3);font-weight:400">(loads timetable)</span></label>
+        <label class="fl" style="display:flex;align-items:center;gap:5px">Day Order <span style="font-size:10px;color:var(--tx3);font-weight:400">(auto from attendance — change if needed)</span></label>
         <select class="fi" id="tl-f-dayorder" onchange="tlFormOnDayOrderChange()">
           <option value="">Select Day Order…</option>
           ${_tlDayOrderOptions()}
@@ -17938,14 +18099,14 @@ function openAddTeachingLog() {
         <button type="button" onclick="tlAddOtherSubject()" style="font-size:10px;padding:3px 10px;border-radius:7px;background:#ede9fe;color:#7c3aed;border:.5px solid #c4b5fd;cursor:pointer;font-family:inherit;font-weight:600">+ Other Subject</button>
       </div>
       <div id="tl-f-subjects-list" style="display:flex;flex-direction:column;gap:8px">
-        <div style="font-size:11px;color:var(--tx3);padding:10px;text-align:center;border:.5px dashed var(--br);border-radius:8px" id="tl-subjects-placeholder">Select Day Order above to load timetable subjects, or tap + Other Subject</div>
+        <div style="font-size:11px;color:var(--tx3);padding:10px;text-align:center;border:.5px dashed var(--br);border-radius:8px" id="tl-subjects-placeholder">Select Grade/Batch + Day Order above to auto-load subjects, or tap + Other Subject</div>
       </div>
     </div>
 
     <div class="fg">
-      <label class="fl" style="display:flex;align-items:center;gap:6px">🔴 Absent Students <span style="font-size:10px;color:var(--tx3);font-weight:400">(auto-snapped from today's attendance)</span></label>
-      <select class="fi" id="tl-f-absent" multiple style="height:90px;font-size:11px">${_tlStudentOptions(absentIds)}</select>
-      <div style="font-size:10px;color:var(--tx3);margin-top:3px">Hold Ctrl/Cmd to select multiple</div>
+      <label class="fl" style="display:flex;align-items:center;gap:6px">🔴 Absent Students <span style="font-size:10px;color:var(--tx3);font-weight:400">(only students marked Absent in attendance show here)</span></label>
+      <select class="fi" id="tl-f-absent" multiple style="height:90px;font-size:11px">${_tlStudentOptions(absentIds, '', '', absentIds)}</select>
+      <div style="font-size:10px;color:var(--tx3);margin-top:3px">Present students won't appear here · Hold Ctrl/Cmd to select multiple</div>
     </div>
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px">
       <button class="btn btn-sm" onclick="closeModal()">Cancel</button>
@@ -17958,13 +18119,9 @@ function openAddTeachingLog() {
     const sessSel   = document.getElementById('tl-f-session');
     if (attSessEl && sessSel) sessSel.value = attSessEl.value || 'morning';
 
-    // Auto-fill Day Order
-    const doSel = document.getElementById('tl-f-dayorder');
-    if (!doSel) return;
-    const activeDO = (typeof currentDayOrder !== 'undefined' && currentDayOrder)
-      ? currentDayOrder
-      : (() => { try { return localStorage.getItem('_erp_last_dayorder_' + today) || ''; } catch(e){ return ''; } })();
-    if (activeDO) { doSel.value = activeDO; tlFormOnDayOrderChange(); }
+    // Auto-fill Day Order from whatever was actually recorded in Attendance
+    // today (falls back to 'all'/last-used); re-runs whenever Grade/Batch/Date change.
+    tlFormOnBatchChange();
   }, 80);
 }
 
@@ -18000,10 +18157,10 @@ function openEditTeachingLog(id) {
 
   _tlShowModal(`
     <div class="modal-title">✏️ Edit Teaching Log</div>
-    <div class="fg"><label class="fl">Date *</label><input class="fi" id="tl-f-date" type="date" value="${log.date||''}"></div>
+    <div class="fg"><label class="fl">Date *</label><input class="fi" id="tl-f-date" type="date" value="${log.date||''}" onchange="tlFormSyncDayOrder()"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-      <div class="fg"><label class="fl">Grade *</label><select class="fi" id="tl-f-grade"><option value="">Select…</option>${_tlGradeOptions(log.grade)}</select></div>
-      <div class="fg"><label class="fl">Batch</label><select class="fi" id="tl-f-batch"><option value="">All / Any</option>${_tlBatchOptions(log.batch)}</select></div>
+      <div class="fg"><label class="fl">Grade *</label><select class="fi" id="tl-f-grade" onchange="tlFormOnGradeChange()"><option value="">Select…</option>${_tlGradeOptions(log.grade)}</select></div>
+      <div class="fg"><label class="fl">Batch</label><select class="fi" id="tl-f-batch" onchange="tlFormOnBatchChange()"><option value="">All / Any</option>${_tlBatchOptions(log.batch, log.grade)}</select></div>
     </div>
     <div class="fg"><label class="fl">Session</label>
       <select class="fi" id="tl-f-session">
@@ -18021,8 +18178,8 @@ function openEditTeachingLog(id) {
       </div>
     </div>
     <div class="fg">
-      <label class="fl">🔴 Absent Students (missed this lesson)</label>
-      <select class="fi" id="tl-f-absent" multiple style="height:90px;font-size:11px">${_tlStudentOptions(log.absentStudentIds||[])}</select>
+      <label class="fl">🔴 Absent Students (missed this lesson) <span style="font-size:10px;color:var(--tx3);font-weight:400">(filtered by class)</span></label>
+      <select class="fi" id="tl-f-absent" multiple style="height:90px;font-size:11px">${_tlStudentOptions(log.absentStudentIds||[], log.grade, log.batch, [...new Set([..._tlGetAbsentIdsForDate(log.date), ...(log.absentStudentIds||[])])])}</select>
     </div>
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px">
       <button class="btn btn-sm" onclick="closeModal()">Cancel</button>
@@ -18131,13 +18288,13 @@ function _tlGetSubjectsForBatchDayOrder(batchName, dayNum) {
   return (typeof getSubjectsForDayOrder === 'function') ? getSubjectsForDayOrder(dayNum) : [];
 }
 
-function _tlGetTodayAbsentIds() {
-  // Read from attState (global) or scan localStorage keys for today
+function _tlGetAbsentIdsForDate(date) {
   try {
+    const d = date || new Date().toISOString().slice(0,10);
     const today = new Date().toISOString().slice(0,10);
     const absentIds = new Set();
-    // First try attState (live session)
-    if (typeof attState === 'object') {
+    // Live in-memory session only applies to today's attendance page
+    if (d === today && typeof attState === 'object') {
       Object.keys(attState).forEach(k => {
         if (attState[k] === 'A') {
           const sid = k.split('|')[0];
@@ -18145,10 +18302,10 @@ function _tlGetTodayAbsentIds() {
         }
       });
     }
-    // Also scan localStorage for today's saved sessions
+    // Scan saved attendance sessions for the given date
     const idx = JSON.parse(localStorage.getItem('_erp_att_index') || '[]');
     idx.forEach(sk => {
-      if (sk.includes('_erp_att_' + today)) {
+      if (sk.includes('_erp_att_' + d)) {
         try {
           const saved = JSON.parse(localStorage.getItem(sk) || '{}');
           Object.keys(saved).forEach(k => {
@@ -18160,6 +18317,7 @@ function _tlGetTodayAbsentIds() {
     return [...absentIds];
   } catch(e) { return []; }
 }
+function _tlGetTodayAbsentIds() { return _tlGetAbsentIdsForDate(new Date().toISOString().slice(0,10)); }
 
 function _tlDayOrderOptions(sel, batchName) {
   const opts = [];
@@ -18205,16 +18363,63 @@ function _tlDayOrderOptions(sel, batchName) {
   return opts.join('');
 }
 
-/* ── Refresh Day Order options + reload subjects when the Batch selection
-   changes in the Teaching Log form (so the right per-batch Time Table is used) ── */
+/* ── Look up the Day Order that was ACTUALLY recorded in Attendance for a
+   given date + batch (saveAttendance writes '_erp_att_dayorder_{date}_{batchId}').
+   Teaching Log's Batch field stores a batch NAME (e.g. student.course), while
+   Attendance keys by batch ID, so we map name→id via the global `batches` list
+   before checking. Falls back to the 'all' batch record, then to the plain
+   last-used-day-order-for-that-date key. Returns '' if nothing found. ── */
+function _tlFindAttDayOrder(date, courseName) {
+  if (!date) return '';
+  const candidates = [];
+  const barr = (typeof batches !== 'undefined' && Array.isArray(batches)) ? batches : [];
+  if (courseName) {
+    barr.forEach(b => {
+      const full = b.name + ' – ' + b.time;
+      if (full === courseName || b.name === courseName || courseName.startsWith(b.name)) candidates.push(b.id);
+    });
+  }
+  candidates.push('all');
+  for (const bid of candidates) {
+    try {
+      const v = localStorage.getItem('_erp_att_dayorder_' + date + '_' + bid);
+      if (v) return v;
+    } catch(e) {}
+  }
+  try { return localStorage.getItem('_erp_last_dayorder_' + date) || ''; } catch(e) { return ''; }
+}
+
+/* ── Refresh Batch list when Grade changes, so only batches that actually
+   contain students of that class show up; also refilters the Absent
+   Students list and re-derives Day Order/subjects for the (now cleared) batch. ── */
+function tlFormOnGradeChange() {
+  const grade    = (document.getElementById('tl-f-grade')||{}).value || '';
+  const batchSel = document.getElementById('tl-f-batch');
+  if (batchSel) {
+    const curVal = batchSel.value;
+    batchSel.innerHTML = '<option value="">All / Any</option>' + _tlBatchOptions(curVal, grade);
+    // Clear batch if it no longer belongs to the newly selected grade
+    if (curVal && ![...batchSel.options].some(o => o.value === curVal)) batchSel.value = '';
+  }
+  tlFormOnBatchChange();
+}
+
+/* ── Refresh Day Order options + auto-select the one actually recorded in
+   Attendance for this date+batch, reload timetable subjects, and refilter
+   the Absent Students list — whenever Batch (or Date) changes in the form.
+   Teacher can still pick a different Day Order manually to override. ── */
 function tlFormOnBatchChange() {
   const batchSel = document.getElementById('tl-f-batch');
   const doSel    = document.getElementById('tl-f-dayorder');
-  if (!batchSel || !doSel) return;
-  const batchName = batchSel.value || '';
-  const curVal = doSel.value;
-  doSel.innerHTML = '<option value="">Select Day Order…</option>' + _tlDayOrderOptions(curVal, batchName);
-  tlFormOnDayOrderChange();
+  const batchName = batchSel ? (batchSel.value || '') : '';
+  if (doSel) {
+    const dateVal = (document.getElementById('tl-f-date')||{}).value || '';
+    const autoDO  = _tlFindAttDayOrder(dateVal, batchName);
+    doSel.innerHTML = '<option value="">Select Day Order…</option>' + _tlDayOrderOptions(autoDO || doSel.value, batchName);
+    if (autoDO) doSel.value = autoDO;
+    tlFormOnDayOrderChange();
+  }
+  tlRefreshAbsentList();
 }
 
 function tlFormOnDayOrderChange() {
@@ -18343,11 +18548,9 @@ function _tlCollectSubjects() {
 function tlFormSyncDayOrder() {
   const date = (document.getElementById('tl-f-date')||{}).value || '';
   if (!date) return;
-  try {
-    const saved = localStorage.getItem('_erp_last_dayorder_' + date) || '';
-    const sel = document.getElementById('tl-f-dayorder');
-    if (sel && saved) { sel.value = saved; tlFormOnDayOrderChange(); }
-  } catch(e) {}
+  // Re-derive Day Order (and subjects) for the newly picked date, scoped to
+  // whichever batch is currently selected — same logic as changing batch.
+  tlFormOnBatchChange();
 }
 
 function _tlGradeOptions(sel) {
@@ -18359,10 +18562,11 @@ function _tlGradeOptions(sel) {
   });
   return grades.map(g=>`<option value="${g}" ${sel===g?'selected':''}>${g==='KG'?'KG':'Class '+g}</option>`).join('');
 }
-function _tlBatchOptions(sel) {
+function _tlBatchOptions(sel, grade) {
   const stArr = (typeof students !== 'undefined' && Array.isArray(students)) ? students : [];
-  const batches = [...new Set(stArr.map(s=>s.batch||s.course).filter(Boolean))].sort();
-  return batches.map(b=>`<option value="${b}" ${sel===b?'selected':''}>${b}</option>`).join('');
+  const scoped = grade ? stArr.filter(s => String(s.grade||'').trim() === String(grade).trim()) : stArr;
+  const batchNames = [...new Set(scoped.map(s=>s.batch||s.course).filter(Boolean))].sort();
+  return batchNames.map(b=>`<option value="${b}" ${sel===b?'selected':''}>${b}</option>`).join('');
 }
 
 function tlShowAbsentSummary() {

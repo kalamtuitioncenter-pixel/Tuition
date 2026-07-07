@@ -58,6 +58,7 @@ body{font-family:'Inter','Noto Sans Tamil',system-ui,sans-serif;background:var(-
 .nav-item.active{background:var(--pr);color:#fff;font-weight:500}
 .nav-item svg{width:15px;height:15px;flex-shrink:0;opacity:.75}
 .nav-item.active svg{opacity:1}
+.nav-badge{margin-left:auto;background:#dc2626;color:#fff;font-size:9px;font-weight:700;border-radius:20px;padding:1px 6px;min-width:15px;text-align:center;line-height:1.5;flex-shrink:0}
 .s-foot{padding:8px;border-top:1px solid rgba(255,255,255,.07);display:flex;gap:5px}
 .s-fbt{flex:1;padding:7px 4px;border-radius:7px;background:rgba(255,255,255,.06);border:none;color:#94a3b8;cursor:pointer;font-size:10px;display:flex;align-items:center;justify-content:center;gap:4px;transition:.12s;font-family:inherit}
 .s-fbt:hover{background:rgba(255,255,255,.12);color:#e2e8f0}
@@ -580,7 +581,7 @@ tbody tr:hover td{background:var(--bg)}
     <button class="nav-item" data-page="staff"><svg viewBox="0 0 16 16" fill="none"><circle cx="6" cy="5" r="2.5" stroke="currentColor" stroke-width="1.3"/><path d="M1 14c0-2.8 2.2-4 5-4M13 14v-4m0 4l-2-2m2 2l2-2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="13" cy="7" r="2.5" stroke="currentColor" stroke-width="1.3"/></svg><span id="nl-staff">Staff</span></button>
     <button class="nav-item" data-page="shop"><svg viewBox="0 0 16 16" fill="none"><path d="M2 3h12l-1.5 6H3.5L2 3z" stroke="currentColor" stroke-width="1.3"/><circle cx="5.5" cy="13" r="1" stroke="currentColor" stroke-width="1.3"/><circle cx="11.5" cy="13" r="1" stroke="currentColor" stroke-width="1.3"/></svg><span id="nl-shop">Shop</span></button>
     <button class="nav-item" data-page="whatsapp"><svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="#25d366" stroke-width="1.3"/><path d="M5 8.5c.5 1.5 2 2.5 3.5 2.5 1 0 2-.4 2.7-1.1M11 7.5c-.5-1.5-2-2.5-3.5-2.5-1 0-2 .4-2.7 1.1" stroke="#25d366" stroke-width="1.2" stroke-linecap="round"/><path d="M5 11l-.5 1.5L6 12" stroke="#25d366" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span id="nl-whatsapp">WhatsApp</span></button>
-    <button class="nav-item" data-page="notifications"><svg viewBox="0 0 16 16" fill="none"><path d="M8 2a4 4 0 014 4v3l1.5 2h-11L4 9V6a4 4 0 014-4z" stroke="currentColor" stroke-width="1.3"/><path d="M6.5 12.5a1.5 1.5 0 003 0" stroke="currentColor" stroke-width="1.3"/></svg><span id="nl-notifications">Notifications</span></button>
+    <button class="nav-item" data-page="notifications"><svg viewBox="0 0 16 16" fill="none"><path d="M8 2a4 4 0 014 4v3l1.5 2h-11L4 9V6a4 4 0 014-4z" stroke="currentColor" stroke-width="1.3"/><path d="M6.5 12.5a1.5 1.5 0 003 0" stroke="currentColor" stroke-width="1.3"/></svg><span id="nl-notifications">Notifications</span><span id="admin-todo-badge" class="nav-badge" style="display:none">0</span></button>
     <button class="nav-item" data-page="ai"><svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="5" stroke="currentColor" stroke-width="1.3"/><path d="M6 6.5c.5-1.5 3.5-1.5 3 .5-.5 1.5-3 1-3 2.5M8 12v.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg><span id="nl-ai">AI Features</span></button>
     <button class="nav-item" data-page="backup"><svg viewBox="0 0 16 16" fill="none"><path d="M8 2v7M5 6l3 3 3-3M2 11v2a1 1 0 001 1h10a1 1 0 001-1v-2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg><span id="nl-backup">Backup & Sync</span></button>
     <button class="nav-item" data-page="teaching"><svg viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="10" rx="1.5" stroke="#0369a1" stroke-width="1.3"/><path d="M5 6h6M5 8.5h4" stroke="#0369a1" stroke-width="1.2" stroke-linecap="round"/><path d="M5 13l3-1.5 3 1.5" stroke="#0369a1" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Teaching Log</span></button>
@@ -666,7 +667,7 @@ tbody tr:hover td{background:var(--bg)}
     <div class="stat" onclick="navTo('students')" style="cursor:pointer" title="Go to Students"><div class="stat-icon dm-green-box" style="background:#dcfce7"><svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="3" stroke="#16a34a" stroke-width="1.4"/><path d="M2 14c0-3.3 2.7-5 6-5s6 1.7 6 5" stroke="#16a34a" stroke-width="1.4" stroke-linecap="round"/></svg></div><div class="stat-lbl" id="sl-1">Total Students</div><div class="stat-val" id="sv-students">0</div><div class="stat-sub" id="ss-students">Active enrolled</div></div>
     <div class="stat" onclick="navTo('fees')" style="cursor:pointer" title="Go to Fees"><div class="stat-icon dm-green-box" style="background:#dcfce7"><svg viewBox="0 0 16 16" fill="none"><rect x="2" y="4" width="12" height="9" rx="1.5" stroke="#16a34a" stroke-width="1.4"/><path d="M2 7h12M7 10h2" stroke="#16a34a" stroke-width="1.3" stroke-linecap="round"/></svg></div><div class="stat-lbl" id="sl-2">Monthly Income</div><div class="stat-val" style="color:#16a34a" id="sv-income">₹0</div><div class="stat-sub" id="ss-income">This month only</div></div>
     <div class="stat" onclick="navTo('fees')" style="cursor:pointer" title="Go to Pending Fees"><div class="stat-icon dm-red-box" style="background:#fee2e2"><svg viewBox="0 0 16 16" fill="none"><path d="M8 5v4M8 10.5v.5" stroke="#dc2626" stroke-width="1.6" stroke-linecap="round"/><path d="M2 13L8 2l6 11H2z" stroke="#dc2626" stroke-width="1.3" stroke-linejoin="round"/></svg></div><div class="stat-lbl" id="sl-3">Pending Fees</div><div class="stat-val" style="color:#dc2626" id="sv-pending">₹0</div><div class="stat-sub" id="ss-pending">Outstanding</div></div>
-    <div class="stat"><div class="stat-icon dm-blue-box" style="background:#dbeafe"><svg viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="1.5" stroke="#2563eb" stroke-width="1.4"/><path d="M5 2v2M11 2v2M2 7h12M5.5 10.5l1.5 1.5 3-3" stroke="#2563eb" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="stat-lbl" id="sl-4">Attendance Today</div><div class="stat-val" style="color:#2563eb" id="sv-att">—%</div><div class="stat-sub" id="ss-att">☀️ — · 🌙 —</div></div>
+    <div class="stat"><div class="stat-icon dm-blue-box" style="background:#dbeafe"><svg viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="1.5" stroke="#2563eb" stroke-width="1.4"/><path d="M5 2v2M11 2v2M2 7h12M5.5 10.5l1.5 1.5 3-3" stroke="#2563eb" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="stat-lbl" id="sl-4">Attendance Today</div><div class="stat-val" style="color:#2563eb" id="sv-att">—%</div><div class="stat-sub" id="ss-att">Present today</div></div>
   </div>
 
   <!-- Income Summary Card (Income - Expense) -->
@@ -2072,6 +2073,21 @@ tbody tr:hover td{background:var(--bg)}
       <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:.5px solid var(--br)"><div><div style="font-size:13px;font-weight:500;color:var(--tx)" id="pref-dark">Dark Mode</div><div style="font-size:11px;color:var(--tx2);margin-top:2px" id="pref-dark-sub">Currently off</div></div><button class="btn btn-sm" onclick="toggleDark()">Toggle</button></div>
       <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0"><div><div style="font-size:13px;font-weight:500;color:var(--tx)" id="pref-lang">Language</div><div style="font-size:11px;color:var(--tx2);margin-top:2px">English / தமிழ்</div></div><button class="btn btn-sm" onclick="toggleLang()" id="lang-toggle-btn">Switch to தமிழ்</button></div>
     </div>
+    <div class="card" style="margin-bottom:12px">
+      <div class="card-title" style="margin-bottom:12px">📱 10th Class WhatsApp Groups</div>
+      <div class="fg" style="margin-bottom:8px">
+        <label class="fl">👦 Boys Group — Invite/Chat Link</label>
+        <input class="fi" id="set-10th-wa-link-boys" placeholder="https://chat.whatsapp.com/XXXXXXXXXXXX">
+      </div>
+      <div class="fg" style="margin-bottom:8px">
+        <label class="fl">👧 Girls Group — Invite/Chat Link</label>
+        <input class="fi" id="set-10th-wa-link-girls" placeholder="https://chat.whatsapp.com/XXXXXXXXXXXX">
+      </div>
+      <div style="display:flex;justify-content:flex-end">
+        <button class="btn btn-p btn-sm" onclick="save10thWAGroupLink()">💾 Save Links</button>
+      </div>
+      <div style="font-size:10.5px;color:var(--tx3);margin-top:8px">Used by the Class Time Stop Clock (Time Table page) to notify the 10th class boys/girls groups when class time is up.</div>
+    </div>
     <div class="card">
       <div class="card-title" style="margin-bottom:10px">About</div>
       <div style="font-size:12px;color:var(--tx2);line-height:2">
@@ -2240,6 +2256,38 @@ tbody tr:hover td{background:var(--bg)}
     <div style="text-align:right;flex-shrink:0">
       <div style="font-size:10px;color:rgba(255,255,255,.7);margin-bottom:4px">Today's Day Order</div>
       <div id="tt-today-day" style="font-size:28px;font-weight:800;color:#fff">D-1</div>
+    </div>
+  </div>
+
+  <!-- Class Time — Stop Clock (manual, 10th class WA notify) -->
+  <div class="card" style="margin-bottom:14px" id="class-stopclock-card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <span class="card-title">⏱ Class Time — Stop Clock <span style="font-weight:500;color:var(--tx3);font-size:11px">(10th class)</span></span>
+      <span id="csc-status-badge" style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;background:#f1f5f9;color:#64748b">Idle</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:12px">
+      <div class="fg" style="margin-bottom:0">
+        <label class="fl">Duration (minutes)</label>
+        <input type="number" class="fi" id="csc-duration" value="45" min="1" max="180" style="width:100px" oninput="cscSyncDisplay()">
+      </div>
+      <div style="font-size:36px;font-weight:800;color:var(--pr);font-variant-numeric:tabular-nums;margin-left:auto" id="csc-display">45:00</div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-p btn-sm" id="csc-start-btn" onclick="cscStart()">▶ Start</button>
+      <button class="btn btn-sm" id="csc-stop-btn" onclick="cscStopNow()" style="display:none;background:#dc2626;color:#fff;border-color:#dc2626">⏹ Stop &amp; Notify Now</button>
+      <button class="btn btn-sm" id="csc-reset-btn" onclick="cscReset()" style="display:none">↺ Reset</button>
+    </div>
+    <div style="font-size:10.5px;color:var(--tx3);margin-top:9px">Start it manually when the 10th class period begins. When time is up (or you tap "Stop &amp; Notify"), an alert sounds, the message is copied automatically, and the boys/girls group chats (saved in <b>Settings</b>) open on their own — just tap Send inside WhatsApp.</div>
+
+    <!-- Fallback row — only appears if the browser's popup blocker stopped the group tabs from auto-opening -->
+    <div id="csc-notify-panel" style="display:none;margin-top:12px;padding-top:12px;border-top:.5px solid var(--br)">
+      <div id="csc-no-link-warn" style="display:none;font-size:11px;color:#dc2626;background:#fef2f2;border:.5px solid #fecaca;border-radius:8px;padding:8px 10px;margin-bottom:8px">⚠️ No WhatsApp group link saved yet. Add it in <b>Settings → 10th Class WhatsApp Groups</b> first.</div>
+      <div id="csc-blocked-warn" style="display:none;font-size:11px;color:#92400e;background:#fff3cd;border:.5px solid #fbbf24;border-radius:8px;padding:8px 10px;margin-bottom:8px">⚠️ Your browser blocked the auto-open. Message is already copied — tap below to open the group(s) and paste it.</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <a class="btn btn-wa" id="csc-open-boys" href="#" target="_blank" rel="noopener" style="display:none">👦 Open Boys Group</a>
+        <a class="btn btn-wa" id="csc-open-girls" href="#" target="_blank" rel="noopener" style="display:none">👧 Open Girls Group</a>
+        <button class="btn btn-sm" onclick="cscCopyMsg()">📋 Copy Message Again</button>
+      </div>
     </div>
   </div>
 
@@ -3174,7 +3222,7 @@ function navTo(id) {
   if (id === 'backup') { renderBkHistory(); updateBkCount(); }
   if (id === 'ai') { renderAICards(); initAI(); }
   if (id === 'admissions') { initAdmissions(); }
-  if (id === 'settings') { updateLatesDisplay(); initFeeReceiptTemplate(); }
+  if (id === 'settings') { updateLatesDisplay(); initFeeReceiptTemplate(); if (typeof load10thWAGroupLink === 'function') load10thWAGroupLink(); }
   if (id === 'dashboard') {
     updateDashStats();
     setTimeout(function() {
@@ -3204,9 +3252,9 @@ function navTo(id) {
   if (id === 'teaching') { initTeachingLogPage(); }
   if (id === 'summary') { if (typeof renderSummaryCards === 'function') renderSummaryCards(); }
   if (id === 'marks') { if (typeof ewInit === 'function') ewInit(); }
-  if (id === 'timetable') { if (typeof initTimetablePage === 'function') initTimetablePage(); }
+  if (id === 'timetable') { if (typeof initTimetablePage === 'function') initTimetablePage(); if (typeof cscRestoreIfRunning === 'function') cscRestoreIfRunning(); }
   if (id === 'recovery') { if (typeof initRecoveryPage === 'function') initRecoveryPage(); }
-  if (id === 'notifications') { if (typeof renderAdminPanel === 'function') renderAdminPanel(); }}
+  if (id === 'notifications') { if (typeof renderAdminPanel === 'function') renderAdminPanel(); if (typeof renderAdminTodoList === 'function') renderAdminTodoList(); }}
 
 function tbAddAction() {
   const active = document.querySelector('.page.active');
@@ -3635,6 +3683,320 @@ function showModal(type) {
 }
 function closeModal() { document.getElementById('modal-root').innerHTML = ''; }
 function openUpgrade() { showModal('upgrade'); }
+
+/* ═══════════════════════════════════════════════════════
+   DAILY ADMIN TO-DO — auto-shown in Notifications, resets daily
+   ═══════════════════════════════════════════════════════ */
+const DEFAULT_ADMIN_TASKS = [
+  {id:'att',    text:"✅ Mark today's attendance"},
+  {id:'fee',    text:'💰 Follow up pending fee dues'},
+  {id:'absent', text:"📞 Call/message today's absentees"},
+  {id:'log',    text:"📖 Log today's teaching entry"},
+  {id:'wa',     text:'📱 Reply to parent WhatsApp messages'}
+];
+function getAdminTodoTemplate() {
+  try {
+    const raw = localStorage.getItem('_erp_admin_todo_template');
+    if (raw) return JSON.parse(raw);
+  } catch(e) {}
+  saveAdminTodoTemplate(DEFAULT_ADMIN_TASKS);
+  return DEFAULT_ADMIN_TASKS.slice();
+}
+function saveAdminTodoTemplate(arr) {
+  try { localStorage.setItem('_erp_admin_todo_template', JSON.stringify(arr)); } catch(e) {}
+}
+function getAdminTodoDoneMap() {
+  try { return JSON.parse(localStorage.getItem('_erp_admin_todo_done_' + _todayISO()) || '{}'); }
+  catch(e) { return {}; }
+}
+function saveAdminTodoDoneMap(map) {
+  try { localStorage.setItem('_erp_admin_todo_done_' + _todayISO(), JSON.stringify(map)); } catch(e) {}
+}
+function renderAdminTodoList() {
+  const wrap = document.getElementById('adm-todo-list');
+  const tasks = getAdminTodoTemplate();
+  const done  = getAdminTodoDoneMap();
+  const doneCount = tasks.filter(tk => done[tk.id]).length;
+  if (wrap) {
+    wrap.innerHTML = tasks.map(tk => `
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 4px;border-bottom:.5px solid var(--br)">
+        <input type="checkbox" ${done[tk.id] ? 'checked' : ''} onchange="toggleAdminTodo('${tk.id}')" style="width:16px;height:16px;flex-shrink:0;cursor:pointer">
+        <span style="flex:1;font-size:12.5px;color:${done[tk.id] ? 'var(--tx3)' : 'var(--tx)'};${done[tk.id] ? 'text-decoration:line-through' : ''}">${escHtml(tk.text)}</span>
+        <button onclick="deleteAdminTodo('${tk.id}')" title="Remove" style="background:none;border:none;color:var(--tx3);cursor:pointer;font-size:12px">✕</button>
+      </div>`).join('') +
+      `<div style="display:flex;gap:6px;padding:9px 4px 2px">
+        <input class="fi" id="adm-todo-new" placeholder="+ Add a task…" style="font-size:12px;padding:6px 10px" onkeydown="if(event.key==='Enter'){event.preventDefault();addAdminTodo();}">
+        <button class="btn btn-sm btn-p" onclick="addAdminTodo()">Add</button>
+      </div>`;
+    const ring = document.getElementById('todo-ring-count');
+    if (ring) ring.textContent = doneCount + ' / ' + tasks.length;
+    const bar = document.getElementById('todo-prog-bar');
+    if (bar) bar.style.width = (tasks.length ? Math.round(doneCount / tasks.length * 100) : 0) + '%';
+    const pd = document.getElementById('todo-prog-done'); if (pd) pd.textContent = doneCount + ' done';
+    const pl = document.getElementById('todo-prog-left'); if (pl) pl.textContent = (tasks.length - doneCount) + ' remaining';
+    const allDone = document.getElementById('todo-all-done');
+    if (allDone) allDone.style.display = (tasks.length > 0 && doneCount === tasks.length) ? '' : 'none';
+  }
+  updateAdminTodoBadge(tasks.length - doneCount);
+}
+function toggleAdminTodo(id) {
+  const done = getAdminTodoDoneMap();
+  done[id] = !done[id];
+  saveAdminTodoDoneMap(done);
+  renderAdminTodoList();
+}
+function addAdminTodo() {
+  const inp = document.getElementById('adm-todo-new');
+  const text = (inp && inp.value || '').trim();
+  if (!text) return;
+  const tasks = getAdminTodoTemplate();
+  tasks.push({id: 't' + Date.now(), text});
+  saveAdminTodoTemplate(tasks);
+  renderAdminTodoList();
+  showToast('✅ Task added');
+}
+function deleteAdminTodo(id) {
+  const tasks = getAdminTodoTemplate().filter(tk => tk.id !== id);
+  saveAdminTodoTemplate(tasks);
+  const done = getAdminTodoDoneMap();
+  delete done[id];
+  saveAdminTodoDoneMap(done);
+  renderAdminTodoList();
+}
+function resetDailyTasks() {
+  saveAdminTodoDoneMap({});
+  renderAdminTodoList();
+  showToast('↺ Daily tasks reset');
+}
+function updateAdminTodoBadge(pendOverride) {
+  let pending = pendOverride;
+  if (pending === undefined) {
+    const tasks = getAdminTodoTemplate();
+    const done  = getAdminTodoDoneMap();
+    pending = tasks.filter(tk => !done[tk.id]).length;
+  }
+  const badge = document.getElementById('admin-todo-badge');
+  if (!badge) return;
+  if (pending > 0) { badge.textContent = pending; badge.style.display = ''; }
+  else badge.style.display = 'none';
+}
+
+/* ═══════════════════════════════════════════════════════
+   CLASS TIME — STOP CLOCK (manual, 10th class WA notify)
+   ═══════════════════════════════════════════════════════ */
+window._cscInterval = null;
+window._cscEndTs = null;
+window._cscRunning = false;
+
+function save10thWAGroupLink() {
+  const boysEl  = document.getElementById('set-10th-wa-link-boys');
+  const girlsEl = document.getElementById('set-10th-wa-link-girls');
+  const boys  = (boysEl  && boysEl.value  || '').trim();
+  const girls = (girlsEl && girlsEl.value || '').trim();
+  if (!boys && !girls) { showToast('Enter at least one WhatsApp group link'); return; }
+  localStorage.setItem('_erp_10th_wa_group_link_boys', boys);
+  localStorage.setItem('_erp_10th_wa_group_link_girls', girls);
+  showToast('✅ 10th class WA group links saved');
+}
+function load10thWAGroupLink() {
+  const boysEl  = document.getElementById('set-10th-wa-link-boys');
+  const girlsEl = document.getElementById('set-10th-wa-link-girls');
+  if (boysEl)  boysEl.value  = localStorage.getItem('_erp_10th_wa_group_link_boys')  || '';
+  if (girlsEl) girlsEl.value = localStorage.getItem('_erp_10th_wa_group_link_girls') || '';
+}
+
+function cscSyncDisplay() {
+  if (window._cscRunning) return;
+  const mins = Math.max(1, parseInt((document.getElementById('csc-duration')||{}).value) || 45);
+  const disp = document.getElementById('csc-display');
+  if (disp) disp.textContent = String(mins).padStart(2,'0') + ':00';
+}
+function cscSetBadge(text, bg, fg) {
+  const badge = document.getElementById('csc-status-badge');
+  if (badge) { badge.textContent = text; badge.style.background = bg; badge.style.color = fg; }
+}
+function cscStart() {
+  if (window._cscRunning) return;
+  const durEl = document.getElementById('csc-duration');
+  const mins = Math.max(1, parseInt(durEl && durEl.value) || 45);
+  window._cscEndTs = Date.now() + mins * 60000;
+  window._cscRunning = true;
+  cscDismissNotifyPanel();
+  try {
+    localStorage.setItem('_erp_csc_end', String(window._cscEndTs));
+    localStorage.setItem('_erp_csc_running', '1');
+    localStorage.removeItem('_erp_csc_notified');
+  } catch(e) {}
+  if (durEl) durEl.disabled = true;
+  const sb = document.getElementById('csc-start-btn'); if (sb) sb.style.display = 'none';
+  const stb = document.getElementById('csc-stop-btn'); if (stb) stb.style.display = '';
+  const rb = document.getElementById('csc-reset-btn'); if (rb) rb.style.display = 'none';
+  cscSetBadge('Running', '#dcfce7', '#166534');
+  clearInterval(window._cscInterval);
+  window._cscInterval = setInterval(cscTick, 1000);
+  cscTick();
+}
+function cscTick() {
+  const disp = document.getElementById('csc-display');
+  if (!window._cscEndTs) return;
+  const remain = window._cscEndTs - Date.now();
+  if (remain <= 0) {
+    if (disp) disp.textContent = '00:00';
+    cscFinish();
+    return;
+  }
+  const totalSec = Math.ceil(remain / 1000);
+  const m = Math.floor(totalSec / 60), s = totalSec % 60;
+  if (disp) disp.textContent = String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+}
+function cscStopNow() { cscFinish(); }
+function cscFinish() {
+  clearInterval(window._cscInterval);
+  window._cscInterval = null;
+  window._cscRunning = false;
+  const alreadyNotified = (function(){ try { return localStorage.getItem('_erp_csc_notified') === '1'; } catch(e){ return false; } })();
+  try {
+    localStorage.removeItem('_erp_csc_end');
+    localStorage.removeItem('_erp_csc_running');
+  } catch(e) {}
+  const durEl = document.getElementById('csc-duration');
+  if (durEl) durEl.disabled = false;
+  const sb = document.getElementById('csc-start-btn'); if (sb) sb.style.display = '';
+  const stb = document.getElementById('csc-stop-btn'); if (stb) stb.style.display = 'none';
+  const rb = document.getElementById('csc-reset-btn'); if (rb) rb.style.display = '';
+  cscSetBadge('Time Up!', '#fee2e2', '#991b1b');
+  if (!alreadyNotified) {
+    try { localStorage.setItem('_erp_csc_notified', '1'); } catch(e) {}
+    cscPlayAlert();
+    cscOpenNotifyModal();
+  }
+}
+function cscReset() {
+  const durEl = document.getElementById('csc-duration');
+  const mins = Math.max(1, parseInt(durEl && durEl.value) || 45);
+  const disp = document.getElementById('csc-display');
+  if (disp) disp.textContent = String(mins).padStart(2,'0') + ':00';
+  cscSetBadge('Idle', '#f1f5f9', '#64748b');
+  const rb = document.getElementById('csc-reset-btn'); if (rb) rb.style.display = 'none';
+  cscDismissNotifyPanel();
+  try { localStorage.removeItem('_erp_csc_notified'); } catch(e) {}
+}
+function cscRestoreIfRunning() {
+  let running = false, endTs = null;
+  try {
+    running = localStorage.getItem('_erp_csc_running') === '1';
+    endTs = parseInt(localStorage.getItem('_erp_csc_end') || '0') || null;
+  } catch(e) {}
+  if (!running || !endTs) return;
+  window._cscEndTs = endTs;
+  window._cscRunning = true;
+  const durEl = document.getElementById('csc-duration');
+  if (durEl) durEl.disabled = true;
+  const sb = document.getElementById('csc-start-btn'); if (sb) sb.style.display = 'none';
+  const stb = document.getElementById('csc-stop-btn'); if (stb) stb.style.display = '';
+  const rb = document.getElementById('csc-reset-btn'); if (rb) rb.style.display = 'none';
+  if (endTs - Date.now() <= 0) {
+    cscSetBadge('Time Up!', '#fee2e2', '#991b1b');
+    cscFinish();
+  } else {
+    cscSetBadge('Running', '#dcfce7', '#166534');
+    clearInterval(window._cscInterval);
+    window._cscInterval = setInterval(cscTick, 1000);
+    cscTick();
+  }
+}
+function cscPlayAlert() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    let t = ctx.currentTime;
+    for (let i = 0; i < 3; i++) {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine'; osc.frequency.value = 880;
+      gain.gain.setValueAtTime(0.001, t);
+      gain.gain.exponentialRampToValueAtTime(0.3, t + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(t); osc.stop(t + 0.4);
+      t += 0.5;
+    }
+  } catch(e) {}
+}
+function cscOpenNotifyModal() {
+  const now = new Date();
+  const timeStr = now.toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'});
+  const msg = '⏰ *10th Class — Time Up!*\nClass period has ended at ' + timeStr + '.\nPlease wrap up and move to the next session.\n\n— Kalam Tuition Center';
+  window._cscLastMsg = msg;
+
+  const boysLink  = (localStorage.getItem('_erp_10th_wa_group_link_boys')  || '').trim();
+  const girlsLink = (localStorage.getItem('_erp_10th_wa_group_link_girls') || '').trim();
+
+  const panel    = document.getElementById('csc-notify-panel');
+  const warn     = document.getElementById('csc-no-link-warn');
+  const blocked  = document.getElementById('csc-blocked-warn');
+  const boysBtn  = document.getElementById('csc-open-boys');
+  const girlsBtn = document.getElementById('csc-open-girls');
+
+  if (!boysLink && !girlsLink) {
+    showToast('⚠️ No WA group link saved — add it in Settings');
+    if (panel) panel.style.display = '';
+    if (warn) warn.style.display = '';
+    if (blocked) blocked.style.display = 'none';
+    return;
+  }
+
+  // Copy the message to the clipboard automatically — no click needed
+  cscCopyToClipboard(msg);
+
+  // Auto-open both group chats — works instantly when triggered by the
+  // "Stop & Notify Now" click; if the timer finished on its own the browser
+  // may block tabs opened without a direct click, so we detect that and
+  // fall back to one-tap buttons instead of a popup/modal.
+  let anyBlocked = false;
+  if (boysLink) {
+    const w = window.open(boysLink, '_blank');
+    if (!w) anyBlocked = true; else if (boysBtn) boysBtn.href = boysLink;
+  }
+  if (girlsLink) {
+    const w2 = window.open(girlsLink, '_blank');
+    if (!w2) anyBlocked = true; else if (girlsBtn) girlsBtn.href = girlsLink;
+  }
+
+  if (anyBlocked) {
+    if (boysBtn)  { boysBtn.href  = boysLink;  boysBtn.style.display  = boysLink  ? '' : 'none'; }
+    if (girlsBtn) { girlsBtn.href = girlsLink; girlsBtn.style.display = girlsLink ? '' : 'none'; }
+    if (panel) panel.style.display = '';
+    if (warn) warn.style.display = 'none';
+    if (blocked) blocked.style.display = '';
+    showToast('📋 Message copied — tap to open the group(s)');
+  } else {
+    if (panel) panel.style.display = 'none';
+    showToast('📋 Message copied & groups opened — just tap Send');
+  }
+}
+function cscDismissNotifyPanel() {
+  const panel = document.getElementById('csc-notify-panel');
+  if (panel) panel.style.display = 'none';
+}
+function cscCopyToClipboard(text) {
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text);
+      return;
+    }
+  } catch(e) {}
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+  } catch(e) {}
+}
+function cscCopyMsg() {
+  cscCopyToClipboard(window._cscLastMsg || '');
+  showToast('📋 Message copied');
+}
 
 /* ═══════════════════════════════════════════════════════
    STUDENTS
@@ -13492,53 +13854,6 @@ function renderClassStrength() {
   if (totEl) totEl.textContent = 'Total ' + active.length + ' active students' + sessStr;
 }
 
-/* ── Compute today's attendance %, split by session, from ACTUAL saved
-   attendance records (scans the `_erp_att_index` of localStorage keys for
-   today's date across every batch) rather than whatever batch/session
-   happens to be selected on the live Attendance tab. This is what the
-   dashboard's "Attendance Today" card was buggy about before: it only ever
-   reflected one specific batch+session combo (or showed "—%" if the
-   Attendance tab hadn't been opened yet this session). Falls back to
-   merging in any not-yet-saved edits currently open on the Attendance page,
-   but only if that page is showing this same date. ── */
-function _dashAttendanceStats(date) {
-  const d = date || new Date().toISOString().slice(0,10);
-  const merged = {};
-  try {
-    const idx = JSON.parse(localStorage.getItem('_erp_att_index') || '[]');
-    idx.forEach(sk => {
-      if (!sk.startsWith('_erp_att_' + d + '_')) return;
-      try { Object.assign(merged, JSON.parse(localStorage.getItem(sk) || '{}')); } catch(e) {}
-    });
-  } catch(e) {}
-  try {
-    const liveDate = document.getElementById('att-date')?.value;
-    if (liveDate === d && typeof attState === 'object') Object.assign(merged, attState);
-  } catch(e) {}
-
-  const buckets = { morning: {p:0,a:0,l:0}, evening: {p:0,a:0,l:0} };
-  Object.entries(merged).forEach(([k, v]) => {
-    if (v !== 'P' && v !== 'A' && v !== 'L') return;
-    const parts = k.split('|');
-    const session = parts[parts.length - 1] === 'evening' ? 'evening' : 'morning';
-    if (v === 'P') buckets[session].p++;
-    else if (v === 'A') buckets[session].a++;
-    else buckets[session].l++;
-  });
-  const summarize = b => {
-    const total = b.p + b.a + b.l;
-    return { pct: total > 0 ? Math.round(b.p / total * 100) : null, total, present: b.p, absent: b.a, late: b.l };
-  };
-  const morning = summarize(buckets.morning);
-  const evening = summarize(buckets.evening);
-  const overall = summarize({
-    p: buckets.morning.p + buckets.evening.p,
-    a: buckets.morning.a + buckets.evening.a,
-    l: buckets.morning.l + buckets.evening.l,
-  });
-  return { morning, evening, overall };
-}
-
 /* ── updateDashStats (called on dashboard open + after changes) ── */
 function updateDashStats() {
   const now       = new Date();
@@ -13570,20 +13885,15 @@ function updateDashStats() {
   if (el2) el2.textContent = '\u20B9' + thisMonthPaid.toLocaleString('en-IN');
   if (el3) el3.textContent = '\u20B9' + totalPending.toLocaleString('en-IN');
 
-  // Attendance % — session-wise, from actual saved attendance records
-  const attStats = _dashAttendanceStats();
-  const ssAttEl  = document.getElementById('ss-att');
-  const ov = attStats.overall;
-  if (el4) el4.textContent = ov.total > 0 ? ov.pct + '%' : '\u2014%';
-  if (ssAttEl) {
-    if (ov.total > 0) {
-      const mLbl = attStats.morning.total > 0 ? `\u2600\ufe0f ${attStats.morning.pct}%` : '\u2600\ufe0f \u2014';
-      const eLbl = attStats.evening.total > 0 ? `\ud83c\udf19 ${attStats.evening.pct}%` : '\ud83c\udf19 \u2014';
-      ssAttEl.textContent = `${mLbl}  ·  ${eLbl}  (${ov.present}/${ov.total} present)`;
-    } else {
-      ssAttEl.textContent = 'No attendance marked today yet';
-    }
-  }
+  // Attendance %
+  const batchId = document.getElementById('att-batch')?.value || '';
+  const session = document.getElementById('att-session')?.value || 'morning';
+  const bStu    = (typeof _getBatchStudents === 'function') ? _getBatchStudents(batchId) : [];
+  const suffix  = '|' + (batchId||'all') + '|' + session;
+  const attVals = bStu.map(s => attState[s.id + suffix] || '');
+  const pCount  = attVals.filter(v => v === 'P').length;
+  const marked  = attVals.filter(v => v !== '').length;
+  if (el4) el4.textContent = marked > 0 ? Math.round(pCount / marked * 100) + '%' : '\u2014%';
 
   // Day-1 reset + carry-over + income summary
   checkAndDoMonthlyReset();
@@ -15844,6 +16154,10 @@ function _safeInit() {
     } catch(e) {}
   }, 3000);
   // Dark mode already applied from localStorage at top of _safeInit
+  // Daily Admin To-Do badge — shows pending work automatically, re-checks every minute
+  // so it rolls over to a fresh empty checklist right after midnight without a reload.
+  if (typeof updateAdminTodoBadge === 'function') updateAdminTodoBadge();
+  setInterval(function() { if (typeof updateAdminTodoBadge === 'function') updateAdminTodoBadge(); }, 60000);
 }
 
 if (document.readyState === 'loading') {

@@ -666,7 +666,7 @@ tbody tr:hover td{background:var(--bg)}
     <div class="stat" onclick="navTo('students')" style="cursor:pointer" title="Go to Students"><div class="stat-icon dm-green-box" style="background:#dcfce7"><svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="3" stroke="#16a34a" stroke-width="1.4"/><path d="M2 14c0-3.3 2.7-5 6-5s6 1.7 6 5" stroke="#16a34a" stroke-width="1.4" stroke-linecap="round"/></svg></div><div class="stat-lbl" id="sl-1">Total Students</div><div class="stat-val" id="sv-students">0</div><div class="stat-sub" id="ss-students">Active enrolled</div></div>
     <div class="stat" onclick="navTo('fees')" style="cursor:pointer" title="Go to Fees"><div class="stat-icon dm-green-box" style="background:#dcfce7"><svg viewBox="0 0 16 16" fill="none"><rect x="2" y="4" width="12" height="9" rx="1.5" stroke="#16a34a" stroke-width="1.4"/><path d="M2 7h12M7 10h2" stroke="#16a34a" stroke-width="1.3" stroke-linecap="round"/></svg></div><div class="stat-lbl" id="sl-2">Monthly Income</div><div class="stat-val" style="color:#16a34a" id="sv-income">₹0</div><div class="stat-sub" id="ss-income">This month only</div></div>
     <div class="stat" onclick="navTo('fees')" style="cursor:pointer" title="Go to Pending Fees"><div class="stat-icon dm-red-box" style="background:#fee2e2"><svg viewBox="0 0 16 16" fill="none"><path d="M8 5v4M8 10.5v.5" stroke="#dc2626" stroke-width="1.6" stroke-linecap="round"/><path d="M2 13L8 2l6 11H2z" stroke="#dc2626" stroke-width="1.3" stroke-linejoin="round"/></svg></div><div class="stat-lbl" id="sl-3">Pending Fees</div><div class="stat-val" style="color:#dc2626" id="sv-pending">₹0</div><div class="stat-sub" id="ss-pending">Outstanding</div></div>
-    <div class="stat"><div class="stat-icon dm-blue-box" style="background:#dbeafe"><svg viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="1.5" stroke="#2563eb" stroke-width="1.4"/><path d="M5 2v2M11 2v2M2 7h12M5.5 10.5l1.5 1.5 3-3" stroke="#2563eb" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="stat-lbl" id="sl-4">Attendance Today</div><div class="stat-val" style="color:#2563eb" id="sv-att">—%</div><div class="stat-sub" id="ss-att">Present today</div></div>
+    <div class="stat"><div class="stat-icon dm-blue-box" style="background:#dbeafe"><svg viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="1.5" stroke="#2563eb" stroke-width="1.4"/><path d="M5 2v2M11 2v2M2 7h12M5.5 10.5l1.5 1.5 3-3" stroke="#2563eb" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="stat-lbl" id="sl-4">Attendance Today</div><div class="stat-val" style="color:#2563eb" id="sv-att">—%</div><div class="stat-sub" id="ss-att">☀️ — · 🌙 —</div></div>
   </div>
 
   <!-- Income Summary Card (Income - Expense) -->
@@ -13492,6 +13492,53 @@ function renderClassStrength() {
   if (totEl) totEl.textContent = 'Total ' + active.length + ' active students' + sessStr;
 }
 
+/* ── Compute today's attendance %, split by session, from ACTUAL saved
+   attendance records (scans the `_erp_att_index` of localStorage keys for
+   today's date across every batch) rather than whatever batch/session
+   happens to be selected on the live Attendance tab. This is what the
+   dashboard's "Attendance Today" card was buggy about before: it only ever
+   reflected one specific batch+session combo (or showed "—%" if the
+   Attendance tab hadn't been opened yet this session). Falls back to
+   merging in any not-yet-saved edits currently open on the Attendance page,
+   but only if that page is showing this same date. ── */
+function _dashAttendanceStats(date) {
+  const d = date || new Date().toISOString().slice(0,10);
+  const merged = {};
+  try {
+    const idx = JSON.parse(localStorage.getItem('_erp_att_index') || '[]');
+    idx.forEach(sk => {
+      if (!sk.startsWith('_erp_att_' + d + '_')) return;
+      try { Object.assign(merged, JSON.parse(localStorage.getItem(sk) || '{}')); } catch(e) {}
+    });
+  } catch(e) {}
+  try {
+    const liveDate = document.getElementById('att-date')?.value;
+    if (liveDate === d && typeof attState === 'object') Object.assign(merged, attState);
+  } catch(e) {}
+
+  const buckets = { morning: {p:0,a:0,l:0}, evening: {p:0,a:0,l:0} };
+  Object.entries(merged).forEach(([k, v]) => {
+    if (v !== 'P' && v !== 'A' && v !== 'L') return;
+    const parts = k.split('|');
+    const session = parts[parts.length - 1] === 'evening' ? 'evening' : 'morning';
+    if (v === 'P') buckets[session].p++;
+    else if (v === 'A') buckets[session].a++;
+    else buckets[session].l++;
+  });
+  const summarize = b => {
+    const total = b.p + b.a + b.l;
+    return { pct: total > 0 ? Math.round(b.p / total * 100) : null, total, present: b.p, absent: b.a, late: b.l };
+  };
+  const morning = summarize(buckets.morning);
+  const evening = summarize(buckets.evening);
+  const overall = summarize({
+    p: buckets.morning.p + buckets.evening.p,
+    a: buckets.morning.a + buckets.evening.a,
+    l: buckets.morning.l + buckets.evening.l,
+  });
+  return { morning, evening, overall };
+}
+
 /* ── updateDashStats (called on dashboard open + after changes) ── */
 function updateDashStats() {
   const now       = new Date();
@@ -13523,15 +13570,20 @@ function updateDashStats() {
   if (el2) el2.textContent = '\u20B9' + thisMonthPaid.toLocaleString('en-IN');
   if (el3) el3.textContent = '\u20B9' + totalPending.toLocaleString('en-IN');
 
-  // Attendance %
-  const batchId = document.getElementById('att-batch')?.value || '';
-  const session = document.getElementById('att-session')?.value || 'morning';
-  const bStu    = (typeof _getBatchStudents === 'function') ? _getBatchStudents(batchId) : [];
-  const suffix  = '|' + (batchId||'all') + '|' + session;
-  const attVals = bStu.map(s => attState[s.id + suffix] || '');
-  const pCount  = attVals.filter(v => v === 'P').length;
-  const marked  = attVals.filter(v => v !== '').length;
-  if (el4) el4.textContent = marked > 0 ? Math.round(pCount / marked * 100) + '%' : '\u2014%';
+  // Attendance % — session-wise, from actual saved attendance records
+  const attStats = _dashAttendanceStats();
+  const ssAttEl  = document.getElementById('ss-att');
+  const ov = attStats.overall;
+  if (el4) el4.textContent = ov.total > 0 ? ov.pct + '%' : '\u2014%';
+  if (ssAttEl) {
+    if (ov.total > 0) {
+      const mLbl = attStats.morning.total > 0 ? `\u2600\ufe0f ${attStats.morning.pct}%` : '\u2600\ufe0f \u2014';
+      const eLbl = attStats.evening.total > 0 ? `\ud83c\udf19 ${attStats.evening.pct}%` : '\ud83c\udf19 \u2014';
+      ssAttEl.textContent = `${mLbl}  ·  ${eLbl}  (${ov.present}/${ov.total} present)`;
+    } else {
+      ssAttEl.textContent = 'No attendance marked today yet';
+    }
+  }
 
   // Day-1 reset + carry-over + income summary
   checkAndDoMonthlyReset();

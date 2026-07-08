@@ -10680,7 +10680,7 @@ function getAIFilteredStudents() {
 
 function getAICtx() {
   const filtered = getAIFilteredStudents();
-  const attVals = filtered.map(s => attState[s.id] || '').filter(Boolean);
+  const attVals = filtered.map(s => getStudentAtt(s.id)).filter(Boolean);
   const p = attVals.filter(v=>v==='P').length;
   const tot = filtered.length || 1;
   const filteredIds = new Set(filtered.map(s=>s.id));
@@ -18358,6 +18358,7 @@ function renderTeachingLog() {
             <span style="font-size:10px;background:#dbeafe;color:#1d4ed8;border-radius:5px;padding:2px 7px;font-weight:600">${escHtml(log.grade||'')}</span>
             ${log.batch?`<span style="font-size:10px;background:#ede9fe;color:#7c3aed;border-radius:5px;padding:2px 7px;font-weight:600">${escHtml(log.batch)}</span>`:''}
             <span style="font-size:10px;background:${log.session==='evening'?'#fef3c7':'#f0fdf4'};color:${log.session==='evening'?'#92400e':'#15803d'};border-radius:5px;padding:2px 7px;font-weight:600">${log.session==='evening'?'🌙 Evening':'☀️ Morning'}</span>
+            ${log.dayOrder?`<span style="font-size:10px;background:#ede9fe;color:#5b21b6;border-radius:5px;padding:2px 7px;font-weight:600">📅 Day ${escHtml(String(log.dayOrder))}</span>`:''}
             ${subjectsArr.filter(s=>s.subject).length > 1 ? `<span style="font-size:9px;background:#f1f5f9;color:#475569;border-radius:5px;padding:2px 6px;font-weight:600">${subjectsArr.filter(s=>s.subject).length} subjects</span>` : ''}
           </div>
           ${subjsHtml}
@@ -18444,7 +18445,7 @@ function openAddTeachingLog() {
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
       <div class="fg"><label class="fl">Session</label>
-        <select class="fi" id="tl-f-session">
+        <select class="fi" id="tl-f-session" onchange="tlFormOnBatchChange()">
           <option value="morning">☀️ Morning</option>
           <option value="evening">🌙 Evening</option>
         </select>
@@ -18528,11 +18529,20 @@ function openEditTeachingLog(id) {
       <div class="fg"><label class="fl">Grade *</label><select class="fi" id="tl-f-grade" onchange="tlFormOnGradeChange()"><option value="">Select…</option>${_tlGradeOptions(log.grade)}</select></div>
       <div class="fg"><label class="fl">Batch</label><select class="fi" id="tl-f-batch" onchange="tlFormOnBatchChange()"><option value="">All / Any</option>${_tlBatchOptions(log.batch, log.grade)}</select></div>
     </div>
-    <div class="fg"><label class="fl">Session</label>
-      <select class="fi" id="tl-f-session">
-        <option value="morning" ${(log.session||'morning')==='morning'?'selected':''}>☀️ Morning</option>
-        <option value="evening" ${log.session==='evening'?'selected':''}>🌙 Evening</option>
-      </select>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="fg"><label class="fl">Session</label>
+        <select class="fi" id="tl-f-session">
+          <option value="morning" ${(log.session||'morning')==='morning'?'selected':''}>☀️ Morning</option>
+          <option value="evening" ${log.session==='evening'?'selected':''}>🌙 Evening</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label class="fl" style="display:flex;align-items:center;gap:5px">Day Order <span style="font-size:10px;color:var(--tx3);font-weight:400">(change if needed)</span></label>
+        <select class="fi" id="tl-f-dayorder" onchange="tlFormOnDayOrderChange()">
+          <option value="">Select Day Order…</option>
+          ${_tlDayOrderOptions(log.dayOrder || _tlFindAttDayOrder(log.date, log.batch, log.session), log.batch)}
+        </select>
+      </div>
     </div>
     <div style="margin-bottom:6px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
@@ -18551,6 +18561,15 @@ function openEditTeachingLog(id) {
       <button class="btn btn-sm" onclick="closeModal()">Cancel</button>
       <button class="btn btn-p" onclick="saveTeachingLog('${id}')">💾 Update</button>
     </div>`);
+
+  // Remember which batch the Day Order select currently reflects, so that if
+  // the teacher switches Batch afterwards, tlFormOnBatchChange() knows this
+  // is a genuine batch change (and won't keep this class's saved Day Order
+  // stuck on whatever the new batch happens to show).
+  setTimeout(() => {
+    const doSel = document.getElementById('tl-f-dayorder');
+    if (doSel) doSel.dataset.tlBatch = log.batch || '';
+  }, 0);
 }
 
 function saveTeachingLog(editId) {
@@ -18558,6 +18577,7 @@ function saveTeachingLog(editId) {
   const grade   = (document.getElementById('tl-f-grade')||{}).value || '';
   const batch   = (document.getElementById('tl-f-batch')||{}).value || '';
   const session = (document.getElementById('tl-f-session')||{}).value || 'morning';
+  const dayOrder = (document.getElementById('tl-f-dayorder')||{}).value || '';
   const absSel  = document.getElementById('tl-f-absent');
   const absentIds = absSel ? [...absSel.selectedOptions].map(o=>o.value) : [];
 
@@ -18579,7 +18599,7 @@ function saveTeachingLog(editId) {
   const logs = _tlLoad();
   const entry = {
     id: editId || ('tl_' + Date.now()),
-    date, grade, batch, session,
+    date, grade, batch, session, dayOrder,
     // Primary subject fields (backward compat)
     subject: primarySubj.subject,
     topic:   primarySubj.topic   || '',
@@ -18599,6 +18619,18 @@ function saveTeachingLog(editId) {
   }
   _tlSave(logs);
   closeModal();
+
+  // Sync the page's Class/Batch filter to the entry just saved, so
+  // "Send Today's Lesson to Absent" (and everything else below) is
+  // automatically scoped to this class instead of staying on "All Classes".
+  const gSel = document.getElementById('tl-grade-sel');
+  const bSel = document.getElementById('tl-batch-sel');
+  if (gSel && grade && [...gSel.options].some(o => o.value === grade)) gSel.value = grade;
+  if (bSel) {
+    if (batch && [...bSel.options].some(o => o.value === batch)) bSel.value = batch;
+    else bSel.value = 'all';
+  }
+
   renderTeachingLog();
   showToast('✅ Teaching log saved!');
 }
@@ -18735,23 +18767,44 @@ function _tlDayOrderOptions(sel, batchName) {
    Attendance keys by batch ID, so we map name→id via the global `batches` list
    before checking. Falls back to the 'all' batch record, then to the plain
    last-used-day-order-for-that-date key. Returns '' if nothing found. ── */
-function _tlFindAttDayOrder(date, courseName) {
+function _tlFindAttDayOrder(date, courseName, session) {
   if (!date) return '';
-  const candidates = [];
   const barr = (typeof batches !== 'undefined' && Array.isArray(batches)) ? batches : [];
+  const sess = session || 'morning';
+
+  // Resolve batch id(s) matching courseName. Prefer an EXACT match first —
+  // only fall back to the loose "startsWith" match when nothing matches
+  // exactly, so a batch whose name happens to be a text-prefix of another
+  // batch's name (e.g. "Class 9" vs "Class 9 - A") can't silently steal
+  // that other batch's Day Order.
+  let candidates = [];
   if (courseName) {
-    barr.forEach(b => {
-      const full = b.name + ' – ' + b.time;
-      if (full === courseName || b.name === courseName || courseName.startsWith(b.name)) candidates.push(b.id);
-    });
+    const exact = barr.filter(b => (b.name + ' – ' + b.time) === courseName || b.name === courseName);
+    candidates = (exact.length ? exact : barr.filter(b => courseName.startsWith(b.name))).map(b => b.id);
   }
   candidates.push('all');
+
+  // 1) Exact date + batch — the Day Order actually recorded in Attendance
+  //    for this class on this exact date.
   for (const bid of candidates) {
     try {
       const v = localStorage.getItem('_erp_att_dayorder_' + date + '_' + bid);
       if (v) return v;
     } catch(e) {}
   }
+  // 2) This batch's last KNOWN working Day Order for the matching session —
+  //    carries forward correctly when attendance for this exact date hasn't
+  //    been taken yet (or was a holiday), instead of falling straight to a
+  //    generic global guess.
+  for (const bid of candidates) {
+    if (bid === 'all') continue;
+    try {
+      const v = localStorage.getItem('_erp_last_working_dayorder_' + bid + '_' + sess);
+      if (v) return v;
+    } catch(e) {}
+  }
+  // 3) Global last-used Day Order for this date (any batch) — best-effort
+  //    final fallback only.
   try { return localStorage.getItem('_erp_last_dayorder_' + date) || ''; } catch(e) { return ''; }
 }
 
@@ -18779,10 +18832,20 @@ function tlFormOnBatchChange() {
   const doSel    = document.getElementById('tl-f-dayorder');
   const batchName = batchSel ? (batchSel.value || '') : '';
   if (doSel) {
-    const dateVal = (document.getElementById('tl-f-date')||{}).value || '';
-    const autoDO  = _tlFindAttDayOrder(dateVal, batchName);
-    doSel.innerHTML = '<option value="">Select Day Order…</option>' + _tlDayOrderOptions(autoDO || doSel.value, batchName);
-    if (autoDO) doSel.value = autoDO;
+    const dateVal    = (document.getElementById('tl-f-date')||{}).value || '';
+    const sessionVal = (document.getElementById('tl-f-session')||{}).value || 'morning';
+    const autoDO = _tlFindAttDayOrder(dateVal, batchName, sessionVal);
+    // Only reuse whatever was already picked in the dropdown if we're still
+    // looking at the SAME batch (e.g. only the date/session changed).
+    // Previously this fell back to the select's leftover value even after
+    // switching to a DIFFERENT batch/class — so a class with no attendance
+    // match of its own would silently inherit the previous class's Day
+    // Order, which is why some classes always looked stuck on "Day Order 1".
+    const sameBatch = doSel.dataset.tlBatch === batchName;
+    const sel = autoDO || (sameBatch ? doSel.value : '');
+    doSel.innerHTML = '<option value="">Select Day Order…</option>' + _tlDayOrderOptions(sel, batchName);
+    doSel.value = sel || '';
+    doSel.dataset.tlBatch = batchName;
     tlFormOnDayOrderChange();
   }
   tlRefreshAbsentList();
@@ -19619,9 +19682,18 @@ async function tlRunMonthlyGrowthWA() {
   const isLastWD   = _tlIsLastWorkingDay();
 
   const stArr = (typeof students !== 'undefined' && Array.isArray(students)) ? students : [];
-  const activeStudents = stArr.filter(s => s && s.name && s.status === 'active' && (s.phone || s.pphone));
+  const grade = (document.getElementById('tl-grade-sel')||{}).value || 'all';
+  const batch = (document.getElementById('tl-batch-sel')||{}).value || 'all';
+  const activeStudents = stArr.filter(s => {
+    if (!s || !s.name || s.status !== 'active') return false;
+    if (!(s.phone || s.pphone)) return false;
+    if (grade !== 'all' && String(s.grade||'').trim() !== grade) return false;
+    if (batch !== 'all' && (s.batch||s.course||'') !== batch) return false;
+    return true;
+  });
+  const filterTag = grade !== 'all' ? ` (Class ${grade}${batch !== 'all' ? '/' + batch : ''})` : '';
 
-  if (activeStudents.length === 0) { showToast('⚠️ No active students with phone numbers found'); return; }
+  if (activeStudents.length === 0) { showToast('⚠️ No active students with phone numbers found' + filterTag); return; }
 
   // Show the panel
   const panel    = document.getElementById('tl-monthly-panel');
@@ -19632,7 +19704,7 @@ async function tlRunMonthlyGrowthWA() {
   if (!panel) return;
   panel.style.display = '';
   if (progWrap) progWrap.style.display = '';
-  if (subtitle) subtitle.textContent = `${isLastWD ? '🔔 Last Working Day! ' : ''}Generating ${activeStudents.length} reports for ${monthLabel}…`;
+  if (subtitle) subtitle.textContent = `${isLastWD ? '🔔 Last Working Day! ' : ''}Generating ${activeStudents.length} reports for ${monthLabel}${filterTag}…`;
   if (qList) qList.innerHTML = activeStudents.map(s =>
     `<div id="tlmq-${s.id}" style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-bottom:.5px solid var(--br)">
       <div class="av" style="background:${s.color||'#7c3aed'};width:28px;height:28px;font-size:11px;flex-shrink:0">${(s.name||'?')[0]}</div>
@@ -19683,13 +19755,13 @@ async function tlRunMonthlyGrowthWA() {
   }
 
   // Update UI
-  if (subtitle) subtitle.textContent = `✅ ${_tlMonthlyWAQueue.length} reports ready for ${monthLabel} — tap Send Next to send one-by-one`;
+  if (subtitle) subtitle.textContent = `✅ ${_tlMonthlyWAQueue.length} reports ready for ${monthLabel}${filterTag} — tap Send Next to send one-by-one`;
   const sendBtn = document.getElementById('tl-send-next-btn');
   if (sendBtn) sendBtn.style.display = '';
 
   // Refresh queue list to show send buttons
   _tlRenderMonthlyQueueList();
-  showToast(`✅ ${_tlMonthlyWAQueue.length} growth reports generated! Tap 📲 Send Next to start sending.`);
+  showToast(`✅ ${_tlMonthlyWAQueue.length} growth reports generated${filterTag}! Tap 📲 Send Next to start sending.`);
 
   // Auto-save report key to prevent duplicate generation this month
   try { localStorage.setItem('_erp_tl_monthly_report_' + yr + '_' + String(mo+1).padStart(2,'0'), '1'); } catch(e) {}

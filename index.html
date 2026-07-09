@@ -676,9 +676,8 @@ tbody tr:hover td{background:var(--bg)}
       <span class="card-title">📅 Today's Day Order &amp; Class Summary</span>
       <div id="dash-dayorder-date" style="margin-left:auto;font-size:11px;color:var(--tx2);font-weight:600"></div>
     </div>
-    <div style="font-size:11px;color:var(--tx2);padding:0 16px 10px">Which Day Order &amp; subjects each class is on today, pulled from Attendance / Time Table records.</div>
-    <div id="dash-dayorder-picker" style="padding:0 16px 12px;display:flex;align-items:center;gap:6px;flex-wrap:wrap"></div>
-    <div id="dash-dayorder-grid" class="qa-grid" style="padding:0 16px 14px"></div>
+    <div style="font-size:11px;color:var(--tx2);padding:0 16px 10px">Set today's Day Order once — it applies to every batch automatically.</div>
+    <div id="dash-dayorder-picker" style="padding:0 16px 14px;display:flex;align-items:center;gap:6px;flex-wrap:wrap"></div>
   </div>
 
   <!-- Income Summary Card (Income - Expense) -->
@@ -9720,11 +9719,12 @@ function setTodayDayOrder(num) {
   if (typeof showToast === 'function') showToast('✅ Day Order ' + num + ' set for today — applies to every class');
 }
 
-function renderDayOrderSummary(dateElId, gridElId, pickerElId) {
+function renderDayOrderSummary(dateElId, gridElId, pickerElId, showGrid) {
+  if (showGrid === undefined) showGrid = true;
   const dateEl   = document.getElementById(dateElId);
-  const grid     = document.getElementById(gridElId);
+  const grid     = gridElId ? document.getElementById(gridElId) : null;
   const pickerEl = pickerElId ? document.getElementById(pickerElId) : null;
-  if (!grid) return;
+  if (!grid && !pickerEl) return;
 
   const now       = new Date();
   const todayStr  = now.toISOString().slice(0,10);
@@ -9754,6 +9754,10 @@ function renderDayOrderSummary(dateElId, gridElId, pickerElId) {
       + (todaysDayOrder ? '' : '<span style="font-size:10.5px;color:#dc2626;font-weight:600;margin-left:4px">⚠️ not set yet</span>');
   }
 
+  // Some views (e.g. Dashboard) only want the single Day Order picker —
+  // no per-batch card grid underneath it.
+  if (!showGrid || !grid) { if (grid) grid.innerHTML = ''; return; }
+
   const barr = (typeof batches !== 'undefined' && Array.isArray(batches)) ? batches : [];
   if (!barr.length) {
     grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:16px;color:var(--tx3);font-size:12px">No batches set up yet — add batches in the Batches page.</div>';
@@ -9775,8 +9779,8 @@ function renderDayOrderSummary(dateElId, gridElId, pickerElId) {
       + '</div>';
   }).join('');
 }
-function renderAdminDayOrderSummary() { renderDayOrderSummary('adm-dayorder-date', 'adm-dayorder-grid', 'adm-dayorder-picker'); }
-function renderDashDayOrderSummary()  { renderDayOrderSummary('dash-dayorder-date', 'dash-dayorder-grid', 'dash-dayorder-picker'); }
+function renderAdminDayOrderSummary() { renderDayOrderSummary('adm-dayorder-date', 'adm-dayorder-grid', 'adm-dayorder-picker', true); }
+function renderDashDayOrderSummary()  { renderDayOrderSummary('dash-dayorder-date', null, 'dash-dayorder-picker', false); }
 
 /* ── 🚨 Danger Zone: students at CRITICAL risk (any prediction score ≥70) ──
    Shown on the Admin Panel so staff can see at a glance who needs
@@ -12293,9 +12297,14 @@ function overwriteSht(ss, name, headers, rows) {
   // Set / overwrite header
   s.getRange(1, 1, 1, headers.length).setValues([headers])
     .setFontWeight('bold').setBackground('#1a56db').setFontColor('#fff');
-  // Clear existing data rows
+  // Clear existing data rows (clearContent, not deleteRows — deleteRows
+  // throws "Sorry, it is not possible to delete all non-frozen rows"
+  // whenever the deletion would remove every remaining unfrozen row,
+  // e.g. right after the header row was frozen. clearContent has no
+  // such restriction and achieves the same "wipe old data" result.)
   const last = s.getLastRow();
-  if (last > 1) s.deleteRows(2, last - 1);
+  const lastCol = Math.max(s.getLastColumn(), headers.length);
+  if (last > 1) s.getRange(2, 1, last - 1, lastCol).clearContent();
   if (!rows || rows.length === 0) return;
   // Write in batches of 500 rows to avoid Apps Script timeout on large datasets
   const BATCH = 500;

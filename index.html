@@ -2073,21 +2073,6 @@ tbody tr:hover td{background:var(--bg)}
       <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:.5px solid var(--br)"><div><div style="font-size:13px;font-weight:500;color:var(--tx)" id="pref-dark">Dark Mode</div><div style="font-size:11px;color:var(--tx2);margin-top:2px" id="pref-dark-sub">Currently off</div></div><button class="btn btn-sm" onclick="toggleDark()">Toggle</button></div>
       <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0"><div><div style="font-size:13px;font-weight:500;color:var(--tx)" id="pref-lang">Language</div><div style="font-size:11px;color:var(--tx2);margin-top:2px">English / தமிழ்</div></div><button class="btn btn-sm" onclick="toggleLang()" id="lang-toggle-btn">Switch to தமிழ்</button></div>
     </div>
-    <div class="card" style="margin-bottom:12px">
-      <div class="card-title" style="margin-bottom:12px">📱 10th Class WhatsApp Groups</div>
-      <div class="fg" style="margin-bottom:8px">
-        <label class="fl">👦 Boys Group — Invite/Chat Link</label>
-        <input class="fi" id="set-10th-wa-link-boys" placeholder="https://chat.whatsapp.com/XXXXXXXXXXXX">
-      </div>
-      <div class="fg" style="margin-bottom:8px">
-        <label class="fl">👧 Girls Group — Invite/Chat Link</label>
-        <input class="fi" id="set-10th-wa-link-girls" placeholder="https://chat.whatsapp.com/XXXXXXXXXXXX">
-      </div>
-      <div style="display:flex;justify-content:flex-end">
-        <button class="btn btn-p btn-sm" onclick="save10thWAGroupLink()">💾 Save Links</button>
-      </div>
-      <div style="font-size:10.5px;color:var(--tx3);margin-top:8px">Used by the Class Time Stop Clock (Time Table page) to notify the 10th class boys/girls groups when class time is up.</div>
-    </div>
     <div class="card">
       <div class="card-title" style="margin-bottom:10px">About</div>
       <div style="font-size:12px;color:var(--tx2);line-height:2">
@@ -2256,38 +2241,6 @@ tbody tr:hover td{background:var(--bg)}
     <div style="text-align:right;flex-shrink:0">
       <div style="font-size:10px;color:rgba(255,255,255,.7);margin-bottom:4px">Today's Day Order</div>
       <div id="tt-today-day" style="font-size:28px;font-weight:800;color:#fff">D-1</div>
-    </div>
-  </div>
-
-  <!-- Class Time — Stop Clock (manual, 10th class WA notify) -->
-  <div class="card" style="margin-bottom:14px" id="class-stopclock-card">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-      <span class="card-title">⏱ Class Time — Stop Clock <span style="font-weight:500;color:var(--tx3);font-size:11px">(10th class)</span></span>
-      <span id="csc-status-badge" style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;background:#f1f5f9;color:#64748b">Idle</span>
-    </div>
-    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:12px">
-      <div class="fg" style="margin-bottom:0">
-        <label class="fl">Duration (minutes)</label>
-        <input type="number" class="fi" id="csc-duration" value="45" min="1" max="180" style="width:100px" oninput="cscSyncDisplay()">
-      </div>
-      <div style="font-size:36px;font-weight:800;color:var(--pr);font-variant-numeric:tabular-nums;margin-left:auto" id="csc-display">45:00</div>
-    </div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <button class="btn btn-p btn-sm" id="csc-start-btn" onclick="cscStart()">▶ Start</button>
-      <button class="btn btn-sm" id="csc-stop-btn" onclick="cscStopNow()" style="display:none;background:#dc2626;color:#fff;border-color:#dc2626">⏹ Stop &amp; Notify Now</button>
-      <button class="btn btn-sm" id="csc-reset-btn" onclick="cscReset()" style="display:none">↺ Reset</button>
-    </div>
-    <div style="font-size:10.5px;color:var(--tx3);margin-top:9px">Start it manually when the 10th class period begins. When time is up (or you tap "Stop &amp; Notify"), an alert sounds, the message is copied automatically, and the boys/girls group chats (saved in <b>Settings</b>) open on their own — just tap Send inside WhatsApp.</div>
-
-    <!-- Fallback row — only appears if the browser's popup blocker stopped the group tabs from auto-opening -->
-    <div id="csc-notify-panel" style="display:none;margin-top:12px;padding-top:12px;border-top:.5px solid var(--br)">
-      <div id="csc-no-link-warn" style="display:none;font-size:11px;color:#dc2626;background:#fef2f2;border:.5px solid #fecaca;border-radius:8px;padding:8px 10px;margin-bottom:8px">⚠️ No WhatsApp group link saved yet. Add it in <b>Settings → 10th Class WhatsApp Groups</b> first.</div>
-      <div id="csc-blocked-warn" style="display:none;font-size:11px;color:#92400e;background:#fff3cd;border:.5px solid #fbbf24;border-radius:8px;padding:8px 10px;margin-bottom:8px">⚠️ Your browser blocked the auto-open. Message is already copied — tap below to open the group(s) and paste it.</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <a class="btn btn-wa" id="csc-open-boys" href="#" target="_blank" rel="noopener" style="display:none">👦 Open Boys Group</a>
-        <a class="btn btn-wa" id="csc-open-girls" href="#" target="_blank" rel="noopener" style="display:none">👧 Open Girls Group</a>
-        <button class="btn btn-sm" onclick="cscCopyMsg()">📋 Copy Message Again</button>
-      </div>
     </div>
   </div>
 
@@ -3222,7 +3175,7 @@ function navTo(id) {
   if (id === 'backup') { renderBkHistory(); updateBkCount(); }
   if (id === 'ai') { renderAICards(); initAI(); }
   if (id === 'admissions') { initAdmissions(); }
-  if (id === 'settings') { updateLatesDisplay(); initFeeReceiptTemplate(); if (typeof load10thWAGroupLink === 'function') load10thWAGroupLink(); }
+  if (id === 'settings') { updateLatesDisplay(); initFeeReceiptTemplate(); }
   if (id === 'dashboard') {
     updateDashStats();
     setTimeout(function() {
@@ -3252,7 +3205,7 @@ function navTo(id) {
   if (id === 'teaching') { initTeachingLogPage(); }
   if (id === 'summary') { if (typeof renderSummaryCards === 'function') renderSummaryCards(); }
   if (id === 'marks') { if (typeof ewInit === 'function') ewInit(); }
-  if (id === 'timetable') { if (typeof initTimetablePage === 'function') initTimetablePage(); if (typeof cscRestoreIfRunning === 'function') cscRestoreIfRunning(); }
+  if (id === 'timetable') { if (typeof initTimetablePage === 'function') initTimetablePage(); }
   if (id === 'recovery') { if (typeof initRecoveryPage === 'function') initRecoveryPage(); }
   if (id === 'notifications') { if (typeof renderAdminPanel === 'function') renderAdminPanel(); if (typeof renderAdminTodoList === 'function') renderAdminTodoList(); }}
 
@@ -3779,223 +3732,6 @@ function updateAdminTodoBadge(pendOverride) {
   if (!badge) return;
   if (pending > 0) { badge.textContent = pending; badge.style.display = ''; }
   else badge.style.display = 'none';
-}
-
-/* ═══════════════════════════════════════════════════════
-   CLASS TIME — STOP CLOCK (manual, 10th class WA notify)
-   ═══════════════════════════════════════════════════════ */
-window._cscInterval = null;
-window._cscEndTs = null;
-window._cscRunning = false;
-
-function save10thWAGroupLink() {
-  const boysEl  = document.getElementById('set-10th-wa-link-boys');
-  const girlsEl = document.getElementById('set-10th-wa-link-girls');
-  const boys  = (boysEl  && boysEl.value  || '').trim();
-  const girls = (girlsEl && girlsEl.value || '').trim();
-  if (!boys && !girls) { showToast('Enter at least one WhatsApp group link'); return; }
-  localStorage.setItem('_erp_10th_wa_group_link_boys', boys);
-  localStorage.setItem('_erp_10th_wa_group_link_girls', girls);
-  showToast('✅ 10th class WA group links saved');
-}
-function load10thWAGroupLink() {
-  const boysEl  = document.getElementById('set-10th-wa-link-boys');
-  const girlsEl = document.getElementById('set-10th-wa-link-girls');
-  if (boysEl)  boysEl.value  = localStorage.getItem('_erp_10th_wa_group_link_boys')  || '';
-  if (girlsEl) girlsEl.value = localStorage.getItem('_erp_10th_wa_group_link_girls') || '';
-}
-
-function cscSyncDisplay() {
-  if (window._cscRunning) return;
-  const mins = Math.max(1, parseInt((document.getElementById('csc-duration')||{}).value) || 45);
-  const disp = document.getElementById('csc-display');
-  if (disp) disp.textContent = String(mins).padStart(2,'0') + ':00';
-}
-function cscSetBadge(text, bg, fg) {
-  const badge = document.getElementById('csc-status-badge');
-  if (badge) { badge.textContent = text; badge.style.background = bg; badge.style.color = fg; }
-}
-function cscStart() {
-  if (window._cscRunning) return;
-  const durEl = document.getElementById('csc-duration');
-  const mins = Math.max(1, parseInt(durEl && durEl.value) || 45);
-  window._cscEndTs = Date.now() + mins * 60000;
-  window._cscRunning = true;
-  cscDismissNotifyPanel();
-  try {
-    localStorage.setItem('_erp_csc_end', String(window._cscEndTs));
-    localStorage.setItem('_erp_csc_running', '1');
-    localStorage.removeItem('_erp_csc_notified');
-  } catch(e) {}
-  if (durEl) durEl.disabled = true;
-  const sb = document.getElementById('csc-start-btn'); if (sb) sb.style.display = 'none';
-  const stb = document.getElementById('csc-stop-btn'); if (stb) stb.style.display = '';
-  const rb = document.getElementById('csc-reset-btn'); if (rb) rb.style.display = 'none';
-  cscSetBadge('Running', '#dcfce7', '#166534');
-  clearInterval(window._cscInterval);
-  window._cscInterval = setInterval(cscTick, 1000);
-  cscTick();
-}
-function cscTick() {
-  const disp = document.getElementById('csc-display');
-  if (!window._cscEndTs) return;
-  const remain = window._cscEndTs - Date.now();
-  if (remain <= 0) {
-    if (disp) disp.textContent = '00:00';
-    cscFinish();
-    return;
-  }
-  const totalSec = Math.ceil(remain / 1000);
-  const m = Math.floor(totalSec / 60), s = totalSec % 60;
-  if (disp) disp.textContent = String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
-}
-function cscStopNow() { cscFinish(); }
-function cscFinish() {
-  clearInterval(window._cscInterval);
-  window._cscInterval = null;
-  window._cscRunning = false;
-  const alreadyNotified = (function(){ try { return localStorage.getItem('_erp_csc_notified') === '1'; } catch(e){ return false; } })();
-  try {
-    localStorage.removeItem('_erp_csc_end');
-    localStorage.removeItem('_erp_csc_running');
-  } catch(e) {}
-  const durEl = document.getElementById('csc-duration');
-  if (durEl) durEl.disabled = false;
-  const sb = document.getElementById('csc-start-btn'); if (sb) sb.style.display = '';
-  const stb = document.getElementById('csc-stop-btn'); if (stb) stb.style.display = 'none';
-  const rb = document.getElementById('csc-reset-btn'); if (rb) rb.style.display = '';
-  cscSetBadge('Time Up!', '#fee2e2', '#991b1b');
-  if (!alreadyNotified) {
-    try { localStorage.setItem('_erp_csc_notified', '1'); } catch(e) {}
-    cscPlayAlert();
-    cscOpenNotifyModal();
-  }
-}
-function cscReset() {
-  const durEl = document.getElementById('csc-duration');
-  const mins = Math.max(1, parseInt(durEl && durEl.value) || 45);
-  const disp = document.getElementById('csc-display');
-  if (disp) disp.textContent = String(mins).padStart(2,'0') + ':00';
-  cscSetBadge('Idle', '#f1f5f9', '#64748b');
-  const rb = document.getElementById('csc-reset-btn'); if (rb) rb.style.display = 'none';
-  cscDismissNotifyPanel();
-  try { localStorage.removeItem('_erp_csc_notified'); } catch(e) {}
-}
-function cscRestoreIfRunning() {
-  let running = false, endTs = null;
-  try {
-    running = localStorage.getItem('_erp_csc_running') === '1';
-    endTs = parseInt(localStorage.getItem('_erp_csc_end') || '0') || null;
-  } catch(e) {}
-  if (!running || !endTs) return;
-  window._cscEndTs = endTs;
-  window._cscRunning = true;
-  const durEl = document.getElementById('csc-duration');
-  if (durEl) durEl.disabled = true;
-  const sb = document.getElementById('csc-start-btn'); if (sb) sb.style.display = 'none';
-  const stb = document.getElementById('csc-stop-btn'); if (stb) stb.style.display = '';
-  const rb = document.getElementById('csc-reset-btn'); if (rb) rb.style.display = 'none';
-  if (endTs - Date.now() <= 0) {
-    cscSetBadge('Time Up!', '#fee2e2', '#991b1b');
-    cscFinish();
-  } else {
-    cscSetBadge('Running', '#dcfce7', '#166534');
-    clearInterval(window._cscInterval);
-    window._cscInterval = setInterval(cscTick, 1000);
-    cscTick();
-  }
-}
-function cscPlayAlert() {
-  try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    let t = ctx.currentTime;
-    for (let i = 0; i < 3; i++) {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sine'; osc.frequency.value = 880;
-      gain.gain.setValueAtTime(0.001, t);
-      gain.gain.exponentialRampToValueAtTime(0.3, t + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
-      osc.connect(gain); gain.connect(ctx.destination);
-      osc.start(t); osc.stop(t + 0.4);
-      t += 0.5;
-    }
-  } catch(e) {}
-}
-function cscOpenNotifyModal() {
-  const now = new Date();
-  const timeStr = now.toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'});
-  const msg = '⏰ *10th Class — Time Up!*\nClass period has ended at ' + timeStr + '.\nPlease wrap up and move to the next session.\n\n— Kalam Tuition Center';
-  window._cscLastMsg = msg;
-
-  const boysLink  = (localStorage.getItem('_erp_10th_wa_group_link_boys')  || '').trim();
-  const girlsLink = (localStorage.getItem('_erp_10th_wa_group_link_girls') || '').trim();
-
-  const panel    = document.getElementById('csc-notify-panel');
-  const warn     = document.getElementById('csc-no-link-warn');
-  const blocked  = document.getElementById('csc-blocked-warn');
-  const boysBtn  = document.getElementById('csc-open-boys');
-  const girlsBtn = document.getElementById('csc-open-girls');
-
-  if (!boysLink && !girlsLink) {
-    showToast('⚠️ No WA group link saved — add it in Settings');
-    if (panel) panel.style.display = '';
-    if (warn) warn.style.display = '';
-    if (blocked) blocked.style.display = 'none';
-    return;
-  }
-
-  // Copy the message to the clipboard automatically — no click needed
-  cscCopyToClipboard(msg);
-
-  // Auto-open both group chats — works instantly when triggered by the
-  // "Stop & Notify Now" click; if the timer finished on its own the browser
-  // may block tabs opened without a direct click, so we detect that and
-  // fall back to one-tap buttons instead of a popup/modal.
-  let anyBlocked = false;
-  if (boysLink) {
-    const w = window.open(boysLink, '_blank');
-    if (!w) anyBlocked = true; else if (boysBtn) boysBtn.href = boysLink;
-  }
-  if (girlsLink) {
-    const w2 = window.open(girlsLink, '_blank');
-    if (!w2) anyBlocked = true; else if (girlsBtn) girlsBtn.href = girlsLink;
-  }
-
-  if (anyBlocked) {
-    if (boysBtn)  { boysBtn.href  = boysLink;  boysBtn.style.display  = boysLink  ? '' : 'none'; }
-    if (girlsBtn) { girlsBtn.href = girlsLink; girlsBtn.style.display = girlsLink ? '' : 'none'; }
-    if (panel) panel.style.display = '';
-    if (warn) warn.style.display = 'none';
-    if (blocked) blocked.style.display = '';
-    showToast('📋 Message copied — tap to open the group(s)');
-  } else {
-    if (panel) panel.style.display = 'none';
-    showToast('📋 Message copied & groups opened — just tap Send');
-  }
-}
-function cscDismissNotifyPanel() {
-  const panel = document.getElementById('csc-notify-panel');
-  if (panel) panel.style.display = 'none';
-}
-function cscCopyToClipboard(text) {
-  try {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text);
-      return;
-    }
-  } catch(e) {}
-  try {
-    const ta = document.createElement('textarea');
-    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
-    document.body.appendChild(ta); ta.select();
-    document.execCommand('copy');
-    document.body.removeChild(ta);
-  } catch(e) {}
-}
-function cscCopyMsg() {
-  cscCopyToClipboard(window._cscLastMsg || '');
-  showToast('📋 Message copied');
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -14665,7 +14401,18 @@ function getFeeReceiptTemplate() {
     const saved = localStorage.getItem('_erp_fee_rcpt_template');
     if (saved) return saved;
   } catch(e) {}
-  return FEE_RECEIPT_TEMPLATES.en;
+  // BUG FIX: previously this always fell back to the ENGLISH default
+  // whenever no custom template had been saved yet (e.g. a fresh device/
+  // browser, or right after a data restore), regardless of the receipt
+  // language the admin had actually chosen in WA Templates settings —
+  // which is why fee-paid receipts sometimes went out in English
+  // unexpectedly. Now it honours the saved language preference (defaulting
+  // to Tamil, the primary parent-facing language for this product) instead.
+  let savedLang = 'ta';
+  try { savedLang = localStorage.getItem('_erp_fee_rcpt_lang') || 'ta'; } catch(e) {}
+  if (savedLang === 'en')   return FEE_RECEIPT_TEMPLATES.en;
+  if (savedLang === 'both') return FEE_RECEIPT_TEMPLATES.en + '\n\n─────────────\n\n' + FEE_RECEIPT_TEMPLATES.ta;
+  return FEE_RECEIPT_TEMPLATES.ta;
 }
 
 function saveFeeReceiptTemplate() {
@@ -14675,7 +14422,7 @@ function saveFeeReceiptTemplate() {
 }
 
 function resetFeeReceiptTemplate() {
-  const lang = document.getElementById('fee-rcpt-lang')?.value || 'en';
+  const lang = document.getElementById('fee-rcpt-lang')?.value || 'ta';
   const tmplEl = document.getElementById('fee-rcpt-template');
   let tpl;
   if (lang === 'ta')   tpl = FEE_RECEIPT_TEMPLATES.ta;
@@ -14688,7 +14435,7 @@ function resetFeeReceiptTemplate() {
 }
 
 function refreshFeeReceiptPreview() {
-  const lang   = document.getElementById('fee-rcpt-lang')?.value || 'en';
+  const lang   = document.getElementById('fee-rcpt-lang')?.value || 'ta';
   const tmplEl = document.getElementById('fee-rcpt-template');
   const prevEl = document.getElementById('fee-rcpt-preview');
   if (!tmplEl || !prevEl) return;
@@ -14727,12 +14474,12 @@ function initFeeReceiptTemplate() {
   if (!tmplEl) return;
   try {
     const saved     = localStorage.getItem('_erp_fee_rcpt_template');
-    const savedLang = localStorage.getItem('_erp_fee_rcpt_lang') || 'en';
+    const savedLang = localStorage.getItem('_erp_fee_rcpt_lang') || 'ta';
     const langSel   = document.getElementById('fee-rcpt-lang');
     if (langSel) langSel.value = savedLang;
-    tmplEl.value = saved || FEE_RECEIPT_TEMPLATES.en;
+    tmplEl.value = saved || (savedLang === 'en' ? FEE_RECEIPT_TEMPLATES.en : savedLang === 'both' ? (FEE_RECEIPT_TEMPLATES.en + '\n\n─────────────\n\n' + FEE_RECEIPT_TEMPLATES.ta) : FEE_RECEIPT_TEMPLATES.ta);
   } catch(e) {
-    tmplEl.value = FEE_RECEIPT_TEMPLATES.en;
+    tmplEl.value = FEE_RECEIPT_TEMPLATES.ta;
   }
   refreshFeeReceiptPreview();
 }
@@ -14763,7 +14510,9 @@ function initAdmissions() {
     if (langSel) langSel.value = savedLang;
     const tmplEl = document.getElementById('adm-wa-template');
     if (tmplEl) {
-      tmplEl.value = saved || (savedLang === 'ta' ? ADM_TEMPLATES.ta : ADM_TEMPLATES.en);
+      tmplEl.value = _admEnsureTimetablePlaceholder(saved) || (savedLang === 'ta' ? ADM_TEMPLATES.ta : ADM_TEMPLATES.en);
+      // Persist the repaired version so it stays fixed going forward.
+      if (saved && tmplEl.value !== saved) { try { localStorage.setItem('_erp_adm_template', tmplEl.value); } catch(e) {} }
     }
   } catch(e){}
   refreshAdmPreview();
@@ -15090,8 +14839,29 @@ function toggleAdmSubject(btn, subj) {
    welcome message, from the selected batch's saved Day Order table. ── */
 function buildTimetableWAText(batch) {
   if (typeof ttLoadBatch !== 'function') return '';
-  const data = ttLoadBatch(batch || 'all');
-  if (!data.days || data.days.length === 0) return '';
+  // BUG FIX: the admission form's batch value includes the session suffix
+  // (e.g. "Maths Group – Evening"), but the Time Table page saves data
+  // keyed only by the PLAIN batch name (e.g. "Maths Group" — see
+  // initTimetablePage(), which populates tt-batch-sel with b.name only).
+  // Looking the full "Name – Session" string up directly always missed,
+  // so buildTimetableWAText() silently returned '' and no timetable was
+  // ever attached to admission messages. Try the value as given first,
+  // then the base name with the session/time suffix stripped, then 'all'.
+  const candidates = [];
+  if (batch) {
+    candidates.push(batch);
+    const baseName = batch.replace(/\s*[–-].*$/, '').trim();
+    if (baseName && baseName !== batch) candidates.push(baseName);
+  }
+  candidates.push('all');
+
+  let data = null;
+  for (const key of candidates) {
+    const d = ttLoadBatch(key);
+    if (d.days && d.days.some(day => (day.subjects||[]).some(s => s && s.trim()))) { data = d; break; }
+  }
+  if (!data) return '';
+
   const periods = data.periods || [];
   const lines = data.days.map(day => {
     const rows = (day.subjects || []).map((subj, i) => {
@@ -15102,7 +14872,19 @@ function buildTimetableWAText(batch) {
     }).filter(Boolean);
     return `• *${day.name}*\n` + (rows.length > 0 ? rows.join('\n') : '   —');
   });
-  return `\n📅 *Class Time Table (${batch === 'all' || !batch ? 'General' : batch})*\n` + lines.join('\n') + '\n';
+  return `\n📅 *Class Time Table — All Day Orders (${batch === 'all' || !batch ? 'General' : batch})*\n` + lines.join('\n') + '\n';
+}
+
+// Older saved custom admission templates (from before the timetable
+// auto-attach feature existed) may not contain the {timetable} placeholder
+// at all — in which case buildTimetableWAText()'s output would just be
+// silently discarded. Repair those templates by inserting the placeholder
+// so the class's full day-order timetable always gets included.
+function _admEnsureTimetablePlaceholder(tmpl) {
+  if (!tmpl) return tmpl;
+  if (tmpl.indexOf('{timetable}') !== -1) return tmpl;
+  if (/\{fee\}/.test(tmpl)) return tmpl.replace(/(\{fee\}[^\n]*)/, '$1\n{timetable}');
+  return tmpl + '\n{timetable}';
 }
 
 function fillAdmTemplate(template, data) {
@@ -15230,7 +15012,7 @@ function submitAdmission() {
   saveStudents();
 
   // Save custom template
-  const tmpl = document.getElementById('adm-wa-template')?.value || '';
+  const tmpl = _admEnsureTimetablePlaceholder(document.getElementById('adm-wa-template')?.value || '');
   try { localStorage.setItem('_erp_adm_template', tmpl); } catch(e) {}
 
   // Build WA message (with class timetable, if enabled) and open WhatsApp

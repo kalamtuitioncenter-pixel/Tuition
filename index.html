@@ -12043,7 +12043,7 @@ function doPost(e) {
     overwriteSht(ss, 'Students',
       ['Time','ID','Adm No','Name','Grade','Parent','Phone','Course','Subjects','Fee','Adm Date','Status'],
       (data.students||[]).map(s=>[ts,s.id||'',s.admNo||'',s.name||'',s.grade||'',
-        s.parent||'',s.phone||'',s.course||'',(s.subjects||[]).join?s.subjects.join(','):s.subjects||'',
+        s.parent||'',s.phone||'',s.course||'',(Array.isArray(s.subjects)?s.subjects.join(','):(s.subjects||'')),
         s.fee||0,s.admDate||'',s.status||'active']));
 
     // ── Fees ──────────────────────────────────────────────────

@@ -2603,6 +2603,30 @@ function recordMissedSubjects(studentId, status, date, dayOrderNum) {
   try { localStorage.setItem(key, JSON.stringify(data)); } catch(e) {}
 }
 
+/* Get subjects a student missed TODAY for a specific date+batch+session,
+   by verifying the Day Order set for that exact session (WhatsApp absent/late alerts).
+   Returns a comma-joined string, or '' if not absent/late or no Day Order data. */
+function _getMissedSubjectsForWA(studentId, date, batchId, session) {
+  if (typeof attState === 'undefined') return '';
+  const status = attState[_attKey(studentId, batchId, session)] || '';
+  if (status !== 'A' && status !== 'L') return '';
+
+  // Verify Day Order for this exact date+batch (Day Order is set per date+batch,
+  // shared across morning/evening sessions of that batch — same as saveAttendance()).
+  let dayNum = document.getElementById('att-day-order')?.value || '';
+  if (!dayNum) {
+    try { dayNum = localStorage.getItem('_erp_att_dayorder_' + date + '_' + batchId) || ''; } catch(e) {}
+  }
+  if (!dayNum) return '';
+
+  const allSubjects = getSubjectsForDayOrder(dayNum);
+  if (!allSubjects.length) return '';
+
+  // Absent → missed ALL of that day's subjects; Late → missed only the 1st period subject
+  const subjects = status === 'L' ? allSubjects.slice(0, 1) : allSubjects;
+  return subjects.join(', ');
+}
+
 /* Get missed subject summary for a student */
 function getMissedSubjects(studentId) {
   try {
@@ -2820,7 +2844,7 @@ const WA_TEMPLATES = {
     ta: [`அன்பான {parent_name} அவர்களுக்கு,
 
 உங்கள் பிள்ளை *{student_name}* (வகுப்பு {grade}) இன்று {center_name}-ல் *வரவில்லை*.
-
+{missed_subjects_line}
 தொடர்ந்து வருகை தர வேண்டும். வருகை குறைந்தால் கற்றல் பாதிக்கும்.
 
 நன்றி,
@@ -2834,7 +2858,7 @@ const WA_TEMPLATES = {
 உங்கள் பிள்ளை *{student_name}* (வகுப்பு {grade}) இன்று {center_name}-ல் *தாமதமாக* வந்தார்.
 
 📅 தேதி: {date}
-
+{missed_subjects_line}
 சரியான நேரத்தில் வருவது மிக முக்கியம். நாளை சரியான நேரத்தில் அனுப்பவும்.
 
 தொடர்புக்கு: 📞 {center_phone}
@@ -5249,6 +5273,10 @@ function updateWAPreview() {
     percentage: '87', grade_letter: 'A', remarks: 'Excellent',
     holiday_name: 'Holiday', holiday_date: 'Today', resume_date: 'Monday',
     overdue_note: '', att_pct: '85', present_days: '20', absent_days: '4', att_status: '✅ Good',
+    missed_subjects: 'Maths, Physics',
+    missed_subjects_line: (waType === 'late')
+      ? '\n📚 தவறிய பாடம் (1st Period): *Maths*\n'
+      : '\n📚 இன்று தவறிய பாடங்கள்: *Maths, Physics*\n',
   };
   let preview = tmpl;
   Object.entries(sample).forEach(([k,v]) => { preview = preview.replace(new RegExp('{'+k+'}','g'), v); });
@@ -5285,6 +5313,12 @@ function buildWAQueue() {
     });
   }
 
+  // For absent/late alerts, resolve the exact date+batch+session so missed
+  // subjects are looked up against the correctly-verified Day Order.
+  const waDate    = document.getElementById('att-date')?.value || new Date().toISOString().split('T')[0];
+  const waBatchId = document.getElementById('att-batch')?.value || '';
+  const waSession = document.getElementById('att-session')?.value || 'morning';
+
   waQueue = targetStudents.map(s => {
     const saved = (typeof getWTSaved === 'function') ? getWTSaved(waType, 'ta') : null;
     const tmplArr = saved ? [saved] : (WA_TEMPLATES[waType] ? (WA_TEMPLATES[waType].ta || []) : []);
@@ -5292,6 +5326,17 @@ function buildWAQueue() {
     let tmpl = customMsg || (tmplArr[0] || '');
     const stFees = fees.filter(f => f.studentId === s.id || f.student === s.name);
     const pendFee = stFees.find(f => f.status !== 'paid' && f.balance > 0);
+
+    // Missed subjects — only meaningful for absent/late alerts
+    let missedSubjectsStr = '';
+    if (waType === 'absent' || waType === 'late') {
+      missedSubjectsStr = _getMissedSubjectsForWA(s.id, waDate, waBatchId, waSession);
+    }
+    const missedLabel = waType === 'late' ? '📚 தவறிய பாடம் (1st Period)' : '📚 இன்று தவறிய பாடங்கள்';
+    const missedSubjectsLine = missedSubjectsStr
+      ? `\n${missedLabel}: *${missedSubjectsStr}*\n`
+      : '';
+
     const vars = {
       parent_name: s.parent || 'Parent', student_name: s.name || 'Student',
       grade: s.grade === 'KG' ? 'KG' : s.grade + 'ஆம் வகுப்பு',
@@ -5304,6 +5349,7 @@ function buildWAQueue() {
       att_pct: '—', present_days: '—', absent_days: '—', att_status: '—',
       exam_name: '—', subject: '—', marks: '—', max_marks: '—', percentage: '—',
       grade_letter: '—', remarks: '—', holiday_name: '—', holiday_date: '—', resume_date: '—',
+      missed_subjects: missedSubjectsStr || '—', missed_subjects_line: missedSubjectsLine,
     };
     Object.entries(vars).forEach(([k,v]) => { tmpl = tmpl.replace(new RegExp('{'+k+'}','g'), String(v)); });
     return { student: s, msg: tmpl };
@@ -5628,13 +5674,22 @@ function sendLateWA() {
     const tmplArr  = WA_TEMPLATES.late?.[lang] || WA_TEMPLATES.late?.ta || [''];
     const saved    = getWTSaved ? getWTSaved('late', lang) : '';
     const template = saved || tmplArr[0] || '';
+    // Verify Day Order for today's date+batch+session to find the missed (1st period) subject
+    const _batchId = document.getElementById('att-batch')?.value || '';
+    const _session = document.getElementById('att-session')?.value || 'morning';
+    const _dateVal = document.getElementById('att-date')?.value || new Date().toISOString().split('T')[0];
+    const missedSubj = (typeof _getMissedSubjectsForWA === 'function')
+      ? _getMissedSubjectsForWA(s.id, _dateVal, _batchId, _session) : '';
+    const missedLine = missedSubj ? `\n📚 தவறிய பாடம் (1st Period): *${missedSubj}*\n` : '';
     return template
       .replace(/{parent_name}/g,  s.parent  || 'Parent')
       .replace(/{student_name}/g, s.name    || 'Student')
       .replace(/{grade}/g,        s.grade   || '—')
       .replace(/{date}/g,         today)
       .replace(/{center_name}/g,  ctr.name  || '')
-      .replace(/{center_phone}/g, ctr.phone || '');
+      .replace(/{center_phone}/g, ctr.phone || '')
+      .replace(/{missed_subjects}/g, missedSubj || '—')
+      .replace(/{missed_subjects_line}/g, missedLine);
   }
 
   root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()">
@@ -14147,8 +14202,8 @@ Warm regards,
    WA TEMPLATES PAGE — full customisation for all types
 ═══════════════════════════════════════════════════════ */
 const WT_VARS = {
-  absent:   '{parent_name} · {student_name} · {grade} · {center_name} · {center_phone}',
-  late:     '{parent_name} · {student_name} · {grade} · {center_name} · {center_phone}',
+  absent:   '{parent_name} · {student_name} · {grade} · {missed_subjects} · {missed_subjects_line} · {center_name} · {center_phone}',
+  late:     '{parent_name} · {student_name} · {grade} · {missed_subjects} · {missed_subjects_line} · {center_name} · {center_phone}',
   monthly:  '{parent_name} · {student_name} · {att_pct} · {present_days} · {absent_days} · {att_status} · {center_name} · {center_phone}',
   marks:    '{parent_name} · {student_name} · {grade} · {exam_name} · {subject} · {marks} · {max_marks} · {percentage} · {grade_letter} · {pass_status} · {remarks} · {center_name} · {center_phone}',
   holiday:  '{holiday_name} · {holiday_date} · {holiday_reason} · {resume_date} · {center_name}',

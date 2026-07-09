@@ -670,6 +670,17 @@ tbody tr:hover td{background:var(--bg)}
     <div class="stat"><div class="stat-icon dm-blue-box" style="background:#dbeafe"><svg viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="1.5" stroke="#2563eb" stroke-width="1.4"/><path d="M5 2v2M11 2v2M2 7h12M5.5 10.5l1.5 1.5 3-3" stroke="#2563eb" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="stat-lbl" id="sl-4">Attendance Today</div><div class="stat-val" style="color:#2563eb" id="sv-att">—%</div><div class="stat-sub" id="ss-att">Present today</div></div>
   </div>
 
+  <!-- 📅 Today's Day Order & Class Summary -->
+  <div class="card" style="margin-bottom:14px" id="dash-dayorder-card">
+    <div class="card-hd" style="flex-wrap:wrap;gap:8px;margin-bottom:6px">
+      <span class="card-title">📅 Today's Day Order &amp; Class Summary</span>
+      <div id="dash-dayorder-date" style="margin-left:auto;font-size:11px;color:var(--tx2);font-weight:600"></div>
+    </div>
+    <div style="font-size:11px;color:var(--tx2);padding:0 16px 10px">Which Day Order &amp; subjects each class is on today, pulled from Attendance / Time Table records.</div>
+    <div id="dash-dayorder-picker" style="padding:0 16px 12px;display:flex;align-items:center;gap:6px;flex-wrap:wrap"></div>
+    <div id="dash-dayorder-grid" class="qa-grid" style="padding:0 16px 14px"></div>
+  </div>
+
   <!-- Income Summary Card (Income - Expense) -->
   <!-- ── Today's Fees Collection Card ── -->
   <div class="card" style="margin-bottom:14px;cursor:pointer" id="dash-today-fees-card" onclick="showTodayFeesModal()">
@@ -1794,6 +1805,17 @@ tbody tr:hover td{background:var(--bg)}
 
   <!-- Today's Summary Cards -->
   <div id="adm-summary-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:12px"></div>
+
+  <!-- 📅 Today's Day Order & Class Summary -->
+  <div class="card" style="margin-bottom:12px" id="adm-dayorder-card">
+    <div class="card-hd" style="flex-wrap:wrap;gap:8px;margin-bottom:6px">
+      <span class="card-title">📅 Today's Day Order &amp; Class Summary</span>
+      <div id="adm-dayorder-date" style="margin-left:auto;font-size:11px;color:var(--tx2);font-weight:600"></div>
+    </div>
+    <div style="font-size:11px;color:var(--tx2);padding:0 16px 10px">Which Day Order &amp; subjects each class is on today, pulled from Attendance / Time Table records.</div>
+    <div id="adm-dayorder-picker" style="padding:0 16px 12px;display:flex;align-items:center;gap:6px;flex-wrap:wrap"></div>
+    <div id="adm-dayorder-grid" class="qa-grid" style="padding:0 16px 14px"></div>
+  </div>
 
   <!-- 🚨 Individual Concentration — Danger Zone -->
   <div class="card" style="margin-bottom:12px;border:1.5px solid #fecaca" id="adm-danger-zone-card">
@@ -3178,6 +3200,7 @@ function navTo(id) {
   if (id === 'settings') { updateLatesDisplay(); initFeeReceiptTemplate(); }
   if (id === 'dashboard') {
     updateDashStats();
+    renderDashDayOrderSummary();
     setTimeout(function() {
       if (window.Chart) {
         initCharts();
@@ -9613,7 +9636,92 @@ function renderAdminPanel() {
 
   renderAdminStaffSummary();
   renderAdminDangerZone();
+  renderAdminDayOrderSummary();
 }
+
+/* ═══════════════════════════════════════════════════════
+   📅 TODAY'S DAY ORDER & CLASS SUMMARY (reusable widget)
+   All classes/sessions run on the SAME Day Order — so it's
+   picked ONCE per day here (or in Attendance) and everything
+   else (Attendance's dropdown, Teaching Log, this summary, the
+   Calendar) reads that single value automatically. Subjects
+   shown per class still come from that class's own Time Table
+   for whichever Day Order is active, since subjects legitimately
+   differ per class even though the Day Order number doesn't.
+   ═══════════════════════════════════════════════════════ */
+function setTodayDayOrder(num) {
+  const todayStr = new Date().toISOString().slice(0,10);
+  try { localStorage.setItem('_erp_last_dayorder_' + todayStr, String(num)); } catch(e) {}
+  // Refresh every widget that reads this value, on whichever page(s) are
+  // currently in the DOM (Dashboard and Admin Panel each have their own).
+  if (typeof renderDashDayOrderSummary === 'function') renderDashDayOrderSummary();
+  if (typeof renderAdminDayOrderSummary === 'function') renderAdminDayOrderSummary();
+  // If Attendance's Day Order dropdown is on-screen right now, sync it too.
+  if (typeof _populateDayOrderDropdown === 'function' && document.getElementById('att-day-order')) {
+    const batchId = document.getElementById('att-batch')?.value || '';
+    const batch   = (typeof batches !== 'undefined' ? batches.find(b => b.id === batchId) : null);
+    _populateDayOrderDropdown(document.getElementById('att-date')?.value || todayStr, batch);
+  }
+  if (typeof showToast === 'function') showToast('✅ Day Order ' + num + ' set for today — applies to every class');
+}
+
+function renderDayOrderSummary(dateElId, gridElId, pickerElId) {
+  const dateEl   = document.getElementById(dateElId);
+  const grid     = document.getElementById(gridElId);
+  const pickerEl = pickerElId ? document.getElementById(pickerElId) : null;
+  if (!grid) return;
+
+  const now       = new Date();
+  const todayStr  = now.toISOString().slice(0,10);
+  const dayName   = now.toLocaleDateString('en-IN', { weekday: 'long' });
+  const dateLabel = now.toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' });
+  if (dateEl) dateEl.textContent = dayName + ' · ' + dateLabel;
+
+  // The single Day Order for today — same one Attendance reads/writes.
+  let todaysDayOrder = '';
+  try { todaysDayOrder = localStorage.getItem('_erp_last_dayorder_' + todayStr) || ''; } catch(e) {}
+
+  // Which Day Order numbers exist to pick from (same source as the
+  // Attendance/Setup pages: dayOrderMap, falling back to 1–6).
+  let dayNums = (typeof dayOrderMap === 'object' && dayOrderMap) ? Object.keys(dayOrderMap).sort((a,b)=>parseInt(a)-parseInt(b)) : [];
+  if (!dayNums.length) dayNums = ['1','2','3','4','5','6'];
+
+  if (pickerEl) {
+    pickerEl.innerHTML = '<span style="font-size:11px;color:var(--tx2);font-weight:600;margin-right:2px">Set today\'s Day Order:</span>'
+      + dayNums.map(n => {
+          const on = String(n) === String(todaysDayOrder);
+          return '<button type="button" onclick="setTodayDayOrder(\'' + n + '\')" style="'
+            + 'font-size:11px;font-weight:700;padding:4px 12px;border-radius:8px;cursor:pointer;font-family:inherit;'
+            + 'border:1.5px solid ' + (on ? '#7c3aed' : 'var(--br)') + ';'
+            + 'background:' + (on ? '#7c3aed' : 'var(--bg2)') + ';'
+            + 'color:' + (on ? '#fff' : 'var(--tx2)') + '">Day ' + escHtml(String(n)) + '</button>';
+        }).join('')
+      + (todaysDayOrder ? '' : '<span style="font-size:10.5px;color:#dc2626;font-weight:600;margin-left:4px">⚠️ not set yet</span>');
+  }
+
+  const barr = (typeof batches !== 'undefined' && Array.isArray(batches)) ? batches : [];
+  if (!barr.length) {
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:16px;color:var(--tx3);font-size:12px">No batches set up yet — add batches in the Batches page.</div>';
+    return;
+  }
+
+  grid.innerHTML = barr.map(b => {
+    const courseName = b.name + ' – ' + b.time;
+    const sessIcon = b.time === 'Evening' ? '🌙' : b.time === 'Both' ? '☀️🌙' : '☀️';
+    const subjs = (todaysDayOrder && typeof _tlGetSubjectsForBatchDayOrder === 'function')
+      ? _tlGetSubjectsForBatchDayOrder(courseName, todaysDayOrder)
+      : [];
+    const tooltip = subjs.length ? (b.name + ' — ' + subjs.join(', ')) : (b.name + ' — no subjects set for this Day Order');
+    return '<div class="qa-card" style="cursor:default" title="' + escHtml(tooltip) + '">'
+      + (todaysDayOrder
+          ? '<div style="font-size:15px;font-weight:800;color:#7c3aed;line-height:1">D' + escHtml(String(todaysDayOrder)) + '</div>'
+          : '<div style="font-size:13px;font-weight:800;color:#dc2626;line-height:1">—</div>')
+      + '<span style="text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%">' + sessIcon + ' ' + escHtml(b.name) + '</span>'
+      + '</div>';
+  }).join('');
+}
+function renderAdminDayOrderSummary() { renderDayOrderSummary('adm-dayorder-date', 'adm-dayorder-grid', 'adm-dayorder-picker'); }
+function renderDashDayOrderSummary()  { renderDayOrderSummary('dash-dayorder-date', 'dash-dayorder-grid', 'dash-dayorder-picker'); }
 
 /* ── 🚨 Danger Zone: students at CRITICAL risk (any prediction score ≥70) ──
    Shown on the Admin Panel so staff can see at a glance who needs
@@ -15910,6 +16018,7 @@ function _safeInit() {
   renderWATypes();
   document.getElementById('tb-add-btn').style.display='none';
   updateDashStats();
+  if (typeof renderDashDayOrderSummary === 'function') renderDashDayOrderSummary();
   renderBatchSelect();
   loadAllCustomWATemplates();
   setTimeout(function(){ if(window.Chart) initCharts(); }, 300);
@@ -18543,14 +18652,24 @@ function _tlDayOrderOptions(sel, batchName) {
   return opts.join('');
 }
 
-/* ── Look up the Day Order that was ACTUALLY recorded in Attendance for a
-   given date + batch (saveAttendance writes '_erp_att_dayorder_{date}_{batchId}').
-   Teaching Log's Batch field stores a batch NAME (e.g. student.course), while
-   Attendance keys by batch ID, so we map name→id via the global `batches` list
-   before checking. Falls back to the 'all' batch record, then to the plain
-   last-used-day-order-for-that-date key. Returns '' if nothing found. ── */
+/* ── Look up the Day Order for a given date + batch. All classes and
+   sessions run on the SAME Day Order, picked ONCE per day (via Attendance's
+   Day Order dropdown or the "Set today's Day Order" picker on Dashboard /
+   Admin Panel) and stored under the single '_erp_last_dayorder_{date}' key
+   — so that's checked FIRST here. Per-batch keys are only used as a
+   fallback for legacy data recorded before this simplification, or for the
+   rare case a specific class's date+batch record disagrees. Returns ''
+   if nothing found. ── */
 function _tlFindAttDayOrder(date, courseName, session) {
   if (!date) return '';
+
+  // 1) The single Day Order for the whole day — same value Attendance's
+  //    dropdown auto-restores and the Dashboard/Admin picker sets.
+  try {
+    const v = localStorage.getItem('_erp_last_dayorder_' + date);
+    if (v) return v;
+  } catch(e) {}
+
   const barr = (typeof batches !== 'undefined' && Array.isArray(batches)) ? batches : [];
   const sess = session || 'morning';
 
@@ -18566,18 +18685,15 @@ function _tlFindAttDayOrder(date, courseName, session) {
   }
   candidates.push('all');
 
-  // 1) Exact date + batch — the Day Order actually recorded in Attendance
-  //    for this class on this exact date.
+  // 2) Legacy per-batch/date record — from before Day Order was unified.
   for (const bid of candidates) {
     try {
       const v = localStorage.getItem('_erp_att_dayorder_' + date + '_' + bid);
       if (v) return v;
     } catch(e) {}
   }
-  // 2) This batch's last KNOWN working Day Order for the matching session —
-  //    carries forward correctly when attendance for this exact date hasn't
-  //    been taken yet (or was a holiday), instead of falling straight to a
-  //    generic global guess.
+  // 3) That batch's last KNOWN working Day Order for the matching session —
+  //    carries forward when nothing else is found (e.g. holiday gaps).
   for (const bid of candidates) {
     if (bid === 'all') continue;
     try {
@@ -18585,9 +18701,7 @@ function _tlFindAttDayOrder(date, courseName, session) {
       if (v) return v;
     } catch(e) {}
   }
-  // 3) Global last-used Day Order for this date (any batch) — best-effort
-  //    final fallback only.
-  try { return localStorage.getItem('_erp_last_dayorder_' + date) || ''; } catch(e) { return ''; }
+  return '';
 }
 
 /* ── Refresh Batch list when Grade changes, so only batches that actually

@@ -2575,10 +2575,45 @@ function getSubjectsForDayOrder(dayNum) {
   return dayOrderMap[String(dayNum)] || [];
 }
 
-/* Called when marking attendance — record missed subjects for absent/late students */
-function recordMissedSubjects(studentId, status, date, dayOrderNum) {
+/* ── How many Day Order numbers exist, GLOBALLY, across every batch's Time
+   Table plus the legacy dayOrderMap. Day Order NUMBER is a shared, single
+   concept for the whole day (e.g. "Day 3" set once on the Dashboard applies
+   to every class) — only the SUBJECTS behind that number differ per batch.
+   So every picker (Dashboard, Attendance, Teaching Log) must offer/restore
+   the SAME set of numbers, regardless of whether the currently-selected
+   batch happens to have fewer rows in its own Time Table than another
+   batch does. Without this, a Day Order chosen elsewhere could silently
+   fail to appear/restore for a batch with a shorter Time Table, and the
+   dropdown would fall back to its first entry ("Day 1") instead. ── */
+function _erpMaxDayOrderNum() {
+  let maxDays = 0;
+  try {
+    Object.keys(localStorage).forEach(k => {
+      if (k.startsWith('_erp_tt_')) {
+        try {
+          const data = JSON.parse(localStorage.getItem(k) || 'null');
+          if (data && data.days && data.days.length > maxDays) maxDays = data.days.length;
+        } catch(e) {}
+      }
+    });
+  } catch(e) {}
+  if (typeof dayOrderMap === 'object' && dayOrderMap) {
+    Object.keys(dayOrderMap).forEach(n => { const v = parseInt(n, 10); if (v > maxDays) maxDays = v; });
+  }
+  if (maxDays < 6) maxDays = 6; // sensible minimum so the picker never looks empty
+  return maxDays;
+}
+
+/* Called when marking attendance — record missed subjects for absent/late students.
+   batchName scopes the subject lookup to THIS batch's own Time Table (which is how
+   Morning vs Evening batches — each their own batch record — get their own subject
+   list for the same Day Order number) instead of the shared/global dayOrderMap,
+   which only ever reflects whichever batch was last opened in Attendance. */
+function recordMissedSubjects(studentId, status, date, dayOrderNum, batchName) {
   if (status !== 'A' && status !== 'L') return; // track absences AND late arrivals
-  const allSubjects = getSubjectsForDayOrder(dayOrderNum);
+  const allSubjects = (typeof _tlGetSubjectsForBatchDayOrder === 'function')
+    ? _tlGetSubjectsForBatchDayOrder(batchName || '', dayOrderNum)
+    : getSubjectsForDayOrder(dayOrderNum);
   if (!allSubjects.length) return;
 
   // Absent → missed ALL subjects; Late → missed only the FIRST period subject
@@ -2618,7 +2653,15 @@ function _getMissedSubjectsForWA(studentId, date, batchId, session) {
   }
   if (!dayNum) return '';
 
-  const allSubjects = getSubjectsForDayOrder(dayNum);
+  // Resolve the batch's own name so subjects come from THIS batch's Time
+  // Table (Morning and Evening are separate batch records, so this is what
+  // keeps a Morning absence from pulling in Evening-only subjects, and vice
+  // versa) instead of the shared/global dayOrderMap.
+  const batchObj = (typeof batches !== 'undefined' && Array.isArray(batches))
+    ? batches.find(b => b.id === batchId) : null;
+  const allSubjects = (typeof _tlGetSubjectsForBatchDayOrder === 'function')
+    ? _tlGetSubjectsForBatchDayOrder(batchObj ? batchObj.name : '', dayNum)
+    : getSubjectsForDayOrder(dayNum);
   if (!allSubjects.length) return '';
 
   // Absent → missed ALL of that day's subjects; Late → missed only the 1st period subject
@@ -4058,39 +4101,33 @@ function _populateDayOrderDropdown(date, batch) {
   }
   batchKeys.push('all');
 
-  let days = [];
-  batchKeys.forEach(key => {
-    try {
-      const raw = localStorage.getItem('_erp_tt_' + key);
-      if (raw) {
+  // Try to pick up a custom day NAME (e.g. "Monday") from whichever
+  // timetable defines it, for display purposes only.
+  function _dayLabel(num) {
+    for (const key of batchKeys) {
+      try {
+        const raw = localStorage.getItem('_erp_tt_' + key);
+        if (!raw) continue;
         const data = JSON.parse(raw);
-        if (data && data.days && data.days.length > 0) {
-          data.days.forEach((d, i) => {
-            const label = d.name || ('Day ' + (i + 1));
-            const num   = String(i + 1);
-            if (!days.find(x => x.num === num)) {
-              // Collect subjects from all periods of this day
-              const subjs = (d.subjects || []).filter(s => s && s.trim()).map(s => s.trim());
-              const unique = [...new Set(subjs)];
-              days.push({ num, label, subjs: unique });
-              // Sync into dayOrderMap so getSubjectsForDayOrder works correctly for this batch
-              if (unique.length > 0) dayOrderMap[num] = unique;
-            }
-          });
-        }
-      }
-    } catch(e) {}
-  });
-
-  // Fallback: use dayOrderMap keys if timetable empty
-  if (days.length === 0) {
-    const nums = Object.keys(dayOrderMap).sort((a, b) => parseInt(a) - parseInt(b));
-    if (nums.length > 0) {
-      nums.forEach(n => days.push({ num: n, label: 'Day Order ' + n }));
-    } else {
-      // Ultimate fallback: Day Order 1–6
-      for (let i = 1; i <= 6; i++) days.push({ num: String(i), label: 'Day Order ' + i });
+        const d = data && data.days ? data.days[parseInt(num, 10) - 1] : null;
+        if (d && d.name) return d.name;
+      } catch(e) {}
     }
+    return 'Day ' + num;
+  }
+
+  // Build the FULL, global list of Day Order numbers (see _erpMaxDayOrderNum),
+  // with subjects resolved for THIS specific batch via the same batch-scoped
+  // lookup Teaching Log uses — so the number list is always complete/shared,
+  // while the subjects shown stay correct per batch.
+  const maxDays = _erpMaxDayOrderNum();
+  let days = [];
+  for (let i = 1; i <= maxDays; i++) {
+    const num = String(i);
+    const subjs = (typeof _tlGetSubjectsForBatchDayOrder === 'function')
+      ? _tlGetSubjectsForBatchDayOrder(batch ? batch.name : '', num)
+      : getSubjectsForDayOrder(num);
+    days.push({ num, label: _dayLabel(num), subjs });
   }
 
   // Rebuild options
@@ -4627,16 +4664,18 @@ function saveAttendance() {
     try { localStorage.setItem('_erp_att_dayorder_' + date + '_' + batchId, String(dayNum)); } catch(e) {}
   }
 
-  if (dayNum && getSubjectsForDayOrder(dayNum).length > 0) {
+  if (dayNum && (typeof _tlGetSubjectsForBatchDayOrder === 'function'
+        ? _tlGetSubjectsForBatchDayOrder(batch ? batch.name : '', dayNum).length > 0
+        : getSubjectsForDayOrder(dayNum).length > 0)) {
     const bStu = _getBatchStudents(batchId);
     let missCount = 0, lateCount = 0;
     bStu.forEach(s => {
       const status = attState[_attKey(s.id, batchId, session)] || '';
       if (status === 'A') {
-        recordMissedSubjects(s.id, 'A', date, dayNum);
+        recordMissedSubjects(s.id, 'A', date, dayNum, batch ? batch.name : '');
         missCount++;
       } else if (status === 'L') {
-        recordMissedSubjects(s.id, 'L', date, dayNum);
+        recordMissedSubjects(s.id, 'L', date, dayNum, batch ? batch.name : '');
         lateCount++;
       }
     });
@@ -9736,21 +9775,24 @@ function renderDayOrderSummary(dateElId, gridElId, pickerElId, showGrid) {
   let todaysDayOrder = '';
   try { todaysDayOrder = localStorage.getItem('_erp_last_dayorder_' + todayStr) || ''; } catch(e) {}
 
-  // Which Day Order numbers exist to pick from (same source as the
-  // Attendance/Setup pages: dayOrderMap, falling back to 1–6).
-  let dayNums = (typeof dayOrderMap === 'object' && dayOrderMap) ? Object.keys(dayOrderMap).sort((a,b)=>parseInt(a)-parseInt(b)) : [];
-  if (!dayNums.length) dayNums = ['1','2','3','4','5','6'];
+  // Which Day Order numbers exist to pick from — same canonical, global list
+  // Attendance and Teaching Log use (see _erpMaxDayOrderNum), so this picker
+  // never shows stale/corrupted entries from the legacy dayOrderMap (e.g. a
+  // batch name that got saved under the wrong key) and always stays in sync.
+  const maxDays = (typeof _erpMaxDayOrderNum === 'function') ? _erpMaxDayOrderNum() : 6;
+  const dayNums = [];
+  for (let i = 1; i <= maxDays; i++) dayNums.push(String(i));
 
   if (pickerEl) {
     pickerEl.innerHTML = '<span style="font-size:11px;color:var(--tx2);font-weight:600;margin-right:2px">Set today\'s Day Order:</span>'
-      + dayNums.map(n => {
-          const on = String(n) === String(todaysDayOrder);
-          return '<button type="button" onclick="setTodayDayOrder(\'' + n + '\')" style="'
-            + 'font-size:11px;font-weight:700;padding:4px 12px;border-radius:8px;cursor:pointer;font-family:inherit;'
-            + 'border:1.5px solid ' + (on ? '#7c3aed' : 'var(--br)') + ';'
-            + 'background:' + (on ? '#7c3aed' : 'var(--bg2)') + ';'
-            + 'color:' + (on ? '#fff' : 'var(--tx2)') + '">Day ' + escHtml(String(n)) + '</button>';
-        }).join('')
+      + '<select onchange="setTodayDayOrder(this.value)" style="'
+        + 'font-size:12px;font-weight:700;padding:5px 10px;border-radius:8px;cursor:pointer;font-family:inherit;'
+        + 'border:1.5px solid ' + (todaysDayOrder ? '#7c3aed' : '#dc2626') + ';'
+        + 'background:' + (todaysDayOrder ? '#7c3aed' : '#fff1f2') + ';'
+        + 'color:' + (todaysDayOrder ? '#fff' : '#dc2626') + '">'
+        + '<option value="" ' + (todaysDayOrder ? '' : 'selected') + ' disabled>Select…</option>'
+        + dayNums.map(n => '<option value="' + n + '" ' + (String(n) === String(todaysDayOrder) ? 'selected' : '') + '>Day ' + escHtml(String(n)) + '</option>').join('')
+      + '</select>'
       + (todaysDayOrder ? '' : '<span style="font-size:10.5px;color:#dc2626;font-weight:600;margin-left:4px">⚠️ not set yet</span>');
   }
 
@@ -16250,7 +16292,12 @@ function getStudentAttStats(student, year, month) {
       // Check if day order was stored for this date+batch
       const doKey = '_erp_att_dayorder_' + date + '_' + batchId;
       const dayNum = localStorage.getItem(doKey);
-      const subjs  = dayNum ? (getSubjectsForDayOrder(dayNum) || []) : [];
+      const _b     = batches.find(b => b.id === batchId);
+      const subjs  = dayNum
+        ? (((typeof _tlGetSubjectsForBatchDayOrder === 'function')
+            ? _tlGetSubjectsForBatchDayOrder(_b ? _b.name : '', dayNum)
+            : getSubjectsForDayOrder(dayNum)) || [])
+        : [];
 
       // Also try timetable directly by batch name
       if (subjs.length === 0) {
@@ -16298,7 +16345,12 @@ function getStudentAttStats(student, year, month) {
         if (!hasStudent) continue;
         const doKey  = '_erp_att_dayorder_' + datePart + '_' + batchId;
         const dayNum = localStorage.getItem(doKey);
-        const subjs  = dayNum ? (getSubjectsForDayOrder(dayNum) || []) : [];
+        const _b2    = batches.find(b => b.id === batchId);
+        const subjs  = dayNum
+          ? (((typeof _tlGetSubjectsForBatchDayOrder === 'function')
+              ? _tlGetSubjectsForBatchDayOrder(_b2 ? _b2.name : '', dayNum)
+              : getSubjectsForDayOrder(dayNum)) || [])
+          : [];
         subjs.forEach(subj => {
           subjectTaughtMap[subj] = (subjectTaughtMap[subj] || 0) + 1;
         });
@@ -17639,13 +17691,15 @@ function _rpGetAbsentDatesInRange(student, startDate, endDate) {
 function _rpGetSubjectsForAbsence(date, batchId) {
   let dayNum = null;
   try { dayNum = localStorage.getItem('_erp_att_dayorder_' + date + '_' + batchId); } catch(e) {}
-  let subjs = dayNum ? (getSubjectsForDayOrder(dayNum) || []) : [];
-  if (subjs.length === 0 && typeof batches !== 'undefined') {
-    const batch = batches.find(b => b.id === batchId);
-    if (batch && typeof ttLoadBatch === 'function') {
-      const ttData = ttLoadBatch(batch.name);
-      (ttData.days || []).forEach(day => (day.subjects || []).filter(Boolean).forEach(s => subjs.push(s)));
-    }
+  const batch = (typeof batches !== 'undefined') ? batches.find(b => b.id === batchId) : null;
+  let subjs = dayNum
+    ? (((typeof _tlGetSubjectsForBatchDayOrder === 'function')
+        ? _tlGetSubjectsForBatchDayOrder(batch ? batch.name : '', dayNum)
+        : getSubjectsForDayOrder(dayNum)) || [])
+    : [];
+  if (subjs.length === 0 && batch && typeof ttLoadBatch === 'function') {
+    const ttData = ttLoadBatch(batch.name);
+    (ttData.days || []).forEach(day => (day.subjects || []).filter(Boolean).forEach(s => subjs.push(s)));
   }
   return [...new Set(subjs)];
 }
@@ -18463,11 +18517,9 @@ function openEditTeachingLog(id) {
       style="border:.5px solid ${isOther?'#fbbf24':'var(--br)'};border-radius:10px;overflow:hidden;background:${isOther?'#fffbeb':'var(--bg2)'}">
       <div style="display:flex;align-items:center;gap:10px;padding:9px 12px">
         <span style="font-size:12px">${isOther?'📝':'📅'}</span>
-        ${isOther
-          ? `<input class="fi" data-field="subject" value="${escHtml(s.subject)}" style="flex:1;border:none;background:transparent;padding:0;font-weight:600;font-size:12px">`
-          : `<span style="font-size:12px;font-weight:600;color:var(--tx);flex:1">${escHtml(s.subject)}</span>`}
-        <span style="font-size:10px;${isOther?'color:#92400e;background:#fef3c7':'color:var(--tx3);background:#ede9fe'};padding:2px 8px;border-radius:10px;font-weight:600">${isOther?'Other':'Timetable'}</span>
-        ${i>0||isOther?`<button type="button" onclick="this.closest('.tl-subj-row').remove()" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:16px;line-height:1;padding:0 2px">×</button>`:''}
+        <input class="fi" data-field="subject" value="${escHtml(s.subject)}" style="flex:1;border:none;background:transparent;padding:0;font-weight:600;font-size:12px">
+        <span style="font-size:10px;${isOther?'color:#92400e;background:#fef3c7':'color:var(--tx3);background:#ede9fe'};padding:2px 8px;border-radius:10px;font-weight:600;flex-shrink:0">${isOther?'Other':'Timetable'}</span>
+        <button type="button" title="Remove" onclick="this.closest('.tl-subj-row').remove()" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:16px;line-height:1;padding:0 2px;flex-shrink:0">×</button>
       </div>
       <div style="padding:0 12px 10px;border-top:.5px solid ${isOther?'#fde68a':'var(--br)'}">
         <input class="fi" placeholder="Topic / Chapter" value="${escHtml(s.topic||'')}" style="margin-top:8px;margin-bottom:6px" data-field="topic">
@@ -18682,36 +18734,31 @@ function _tlDayOrderOptions(sel, batchName) {
   }
   batchKeys.push('all');
 
-  let days = [];
-  for (const key of batchKeys) {
-    try {
-      const raw = localStorage.getItem('_erp_tt_' + key);
-      if (!raw) continue;
-      const data = JSON.parse(raw);
-      if (data && data.days && data.days.length > 0) {
-        days = data.days.map((d, i) => {
-          const subjs = (d.subjects || []).filter(s => s && s.trim()).map(s => s.trim());
-          return { num: String(i + 1), label: d.name || ('Day ' + (i + 1)), subjs: [...new Set(subjs)] };
-        });
-        break; // found a real timetable for this batch (or 'all') — stop here
-      }
-    } catch(e) {}
+  function _dayLabel(num) {
+    for (const key of batchKeys) {
+      try {
+        const raw = localStorage.getItem('_erp_tt_' + key);
+        if (!raw) continue;
+        const data = JSON.parse(raw);
+        const d = data && data.days ? data.days[parseInt(num, 10) - 1] : null;
+        if (d && d.name) return d.name;
+      } catch(e) {}
+    }
+    return 'Day Order ' + num;
   }
 
-  if (days.length > 0) {
-    days.forEach(d => {
-      const subjStr = d.subjs.length > 0 ? ' — ' + d.subjs.slice(0,3).join(', ') + (d.subjs.length>3?'…':'') : '';
-      opts.push(`<option value="${d.num}" ${sel==d.num?'selected':''}>📅 ${d.label}${subjStr}</option>`);
-    });
-  } else if (typeof dayOrderMap === 'object' && Object.keys(dayOrderMap).length > 0) {
-    // Legacy fallback — no per-batch Time Table saved yet for this batch
-    const nums = Object.keys(dayOrderMap).sort((a,b)=>parseInt(a)-parseInt(b));
-    nums.forEach(num => {
-      const subjs = dayOrderMap[num] || [];
-      opts.push(`<option value="${num}" ${sel==num?'selected':''}>Day Order ${num}${subjs.length ? ' — ' + subjs.slice(0,3).join(', ')+(subjs.length>3?'…':'') : ''}</option>`);
-    });
-  } else {
-    for (let i = 1; i <= 6; i++) opts.push(`<option value="${i}" ${sel==String(i)?'selected':''}>Day Order ${i}</option>`);
+  // Use the SAME global Day Order number list as Attendance (see
+  // _erpMaxDayOrderNum), so whichever Day Order was auto-derived from
+  // Attendance/Dashboard for this date+batch is guaranteed to exist as an
+  // option here and actually get marked `selected` — instead of this
+  // batch's own (possibly shorter) Time Table silently truncating the list
+  // and leaving the dropdown to default to its first entry, "Day 1".
+  const maxDays = _erpMaxDayOrderNum();
+  for (let i = 1; i <= maxDays; i++) {
+    const num = String(i);
+    const subjs = _tlGetSubjectsForBatchDayOrder(batchName, num);
+    const subjStr = subjs.length > 0 ? ' — ' + subjs.slice(0,3).join(', ') + (subjs.length>3?'…':'') : '';
+    opts.push(`<option value="${num}" ${sel==num?'selected':''}>📅 ${_dayLabel(num)}${subjStr}</option>`);
   }
   return opts.join('');
 }
@@ -18838,15 +18885,17 @@ function tlFormOnDayOrderChange() {
     const row = document.createElement('div');
     row.className = 'tl-subj-row';
     row.dataset.type = 'tt';
-    row.dataset.subject = subj;
+    row.dataset.subject = subj;      // original timetable subject (for the ↺ reset button)
     row.style.cssText = 'border:.5px solid var(--br);border-radius:10px;overflow:hidden;background:var(--bg2)';
     row.innerHTML = `
-      <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;cursor:pointer;user-select:none" onclick="tlToggleSubjRow(this)">
-        <div style="width:18px;height:18px;border-radius:5px;border:1.5px solid #7c3aed;background:#7c3aed;display:flex;align-items:center;justify-content:center;flex-shrink:0" class="tl-chk">
+      <div style="display:flex;align-items:center;gap:10px;padding:9px 12px">
+        <div style="width:18px;height:18px;border-radius:5px;border:1.5px solid #7c3aed;background:#7c3aed;display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer" class="tl-chk" onclick="tlToggleSubjRow(this)">
           <svg width="10" height="10" viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke="#fff" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </div>
-        <span style="font-size:12px;font-weight:600;color:var(--tx);flex:1">${escHtml(subj)}</span>
-        <span style="font-size:10px;color:var(--tx3);background:#ede9fe;padding:2px 8px;border-radius:10px;font-weight:600">📅 Timetable</span>
+        <input class="fi" data-field="subject" value="${escHtml(subj)}" style="flex:1;border:none;background:transparent;padding:0;font-weight:600;font-size:12px;color:var(--tx)">
+        <span style="font-size:10px;color:var(--tx3);background:#ede9fe;padding:2px 8px;border-radius:10px;font-weight:600;flex-shrink:0">📅 Timetable</span>
+        <button type="button" title="Reset to timetable subject" onclick="tlResetSubjRow(this)" style="background:none;border:none;color:#7c3aed;cursor:pointer;font-size:13px;line-height:1;padding:0 2px;flex-shrink:0">↺</button>
+        <button type="button" title="Remove" onclick="this.closest('.tl-subj-row').remove();_tlCheckSubjectsPlaceholder()" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:16px;line-height:1;padding:0 2px;flex-shrink:0">×</button>
       </div>
       <div class="tl-subj-fields" style="padding:0 12px 10px;border-top:.5px solid var(--br)">
         <input class="fi" placeholder="Topic / Chapter" style="margin-top:8px;margin-bottom:6px" data-field="topic">
@@ -18858,9 +18907,23 @@ function tlFormOnDayOrderChange() {
   });
 }
 
-function tlToggleSubjRow(header) {
-  const row    = header.closest('.tl-subj-row');
-  const chk    = header.querySelector('.tl-chk');
+/* ── Revert a timetable subject row's editable name back to what the
+   Time Table actually says, in case the teacher typed over it and wants
+   to undo (e.g. picked the wrong Day Order subject to swap out). ── */
+function tlResetSubjRow(btn) {
+  const row = btn.closest('.tl-subj-row');
+  const input = row?.querySelector('[data-field="subject"]');
+  if (row && input) input.value = row.dataset.subject || '';
+}
+
+function tlToggleSubjRow(chkOrHeader) {
+  // Accept either the checkbox div itself (new: only the checkbox toggles
+  // now, since the row header also contains an editable subject input) or
+  // a wrapping header element (legacy call sites), so both keep working.
+  const chk    = chkOrHeader.classList && chkOrHeader.classList.contains('tl-chk')
+    ? chkOrHeader
+    : chkOrHeader.querySelector('.tl-chk');
+  const row    = chk.closest('.tl-subj-row');
   const fields = row.querySelector('.tl-subj-fields');
   const on     = chk.style.background === 'rgb(124, 58, 237)' || chk.style.background === '#7c3aed' || !chk.dataset.off;
   if (on) {
@@ -18919,9 +18982,10 @@ function _tlCollectSubjects() {
     const chk = row.querySelector('.tl-chk');
     // Skip unchecked timetable rows
     if (row.dataset.type === 'tt' && chk && chk.dataset.off) return;
-    const subj = row.dataset.type === 'tt'
-      ? row.dataset.subject
-      : (row.querySelector('[data-field="subject"]')?.value?.trim() || '');
+    // Subject name is now editable for BOTH timetable and "other" rows, so
+    // always read the live input value — falling back to the original
+    // timetable subject only if the input was somehow removed.
+    const subj = (row.querySelector('[data-field="subject"]')?.value?.trim()) || row.dataset.subject || '';
     if (!subj) return;
     result.push({
       subject: subj,

@@ -930,6 +930,28 @@ tbody tr:hover td{background:var(--bg)}
         </div>
       </div>
 
+      <!-- Other Courses (optional add-ons) — Robotics, NEET, NMMS, Photography, etc. -->
+      <div class="fg" id="adm-other-courses-row">
+        <label class="fl" style="color:#c026d3;font-weight:700">🎨 Other Courses (Optional Add-ons)</label>
+        <div style="font-size:11px;color:var(--tx3);margin-bottom:8px">Robotics, NEET, NMMS, Photography, etc. — fee & class time come from Fees → Other Courses.</div>
+        <div style="position:relative">
+          <button type="button" id="adm-oc-dropdown-btn" onclick="toggleAdmOcDropdown()" style="width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 12px;border:1.5px solid #f0abfc;border-radius:8px;background:var(--card);color:var(--tx);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">
+            <span style="display:flex;align-items:center;gap:6px"><span style="color:#c026d3">＋</span> Add Other Course</span>
+            <svg id="adm-oc-caret" viewBox="0 0 10 6" fill="none" width="10" style="transition:.15s"><path d="M1 1l4 4 4-4" stroke="#c026d3" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div id="adm-oc-dropdown-panel" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:20;background:var(--card);border:1.5px solid #f0abfc;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);max-height:220px;overflow-y:auto">
+            <!-- rendered by JS -->
+          </div>
+        </div>
+        <div id="adm-oc-selected" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px">
+          <!-- rendered by JS -->
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding:9px 12px;background:#fdf4ff;border-radius:8px;border:.5px solid #f0abfc">
+          <span style="font-size:12px;font-weight:600;color:#86198f">Other Courses Fee</span>
+          <span style="font-size:18px;font-weight:800;color:#c026d3" id="adm-other-courses-total">₹0</span>
+        </div>
+      </div>
+
       <!-- Parent & contact -->
       <div class="frow">
         <div class="fg"><label class="fl">Parent / Guardian Name *</label><input class="fi" id="adm-parent" placeholder="e.g. Suresh Kumar"></div>
@@ -952,6 +974,10 @@ tbody tr:hover td{background:var(--bg)}
         <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:.5px dashed var(--br)">
           <span style="font-size:12px;color:var(--tx2)">Monthly / Subject Fee</span>
           <span style="font-size:13px;font-weight:600;color:var(--tx)" id="adm-fee-display">₹0</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:.5px dashed var(--br)">
+          <span style="font-size:12px;color:var(--tx2)">Other Courses Fee</span>
+          <span style="font-size:13px;font-weight:600;color:var(--tx)" id="adm-other-courses-display">₹0</span>
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0">
           <span style="font-size:12px;color:var(--tx2)">Admission Fee (one-time)</span>
@@ -1300,6 +1326,7 @@ tbody tr:hover td{background:var(--bg)}
       <button class="seg-b" data-tab="overdue" onclick="setFeeTab('overdue',this)" id="ft-over">Overdue</button>
     </div>
     <button class="btn" onclick="showModal('feeStructure')" style="gap:5px"><svg viewBox="0 0 14 14" fill="none" width="12" height="12"><rect x="1" y="1" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.3"/><path d="M3 4h8M3 7h5M3 10h6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>Fee Structure</button>
+    <button class="btn" onclick="showModal('otherCourses')" style="gap:5px"><svg viewBox="0 0 14 14" fill="none" width="12" height="12"><path d="M2 7l5-3.5L12 7l-5 3.5L2 7z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><path d="M4 8.5v2.5l3 1.7 3-1.7V8.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/></svg>Other Courses</button>
     <button class="btn" onclick="openFeeMonthReport()" style="gap:5px;background:#0891b2;color:#fff;border-color:#0891b2">
       <svg viewBox="0 0 14 14" fill="none" width="12" height="12"><rect x="1" y="1" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.3"/><path d="M3 4h4M3 7h8M3 10h6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>Fee Report
     </button>
@@ -2770,6 +2797,15 @@ let feeStructure = [
   },
 ];
 
+// Other Courses We Can Teach — editable list (Robotics, NEET, NMMS, Photography, etc.)
+// Each course has its own fee and class-time/schedule, independent of the KG–12 grade fee table above.
+let otherCourses = [
+  {id:1, name:'Robotics',    fee:1500, schedule:'Weekend'},
+  {id:2, name:'NEET',        fee:2500, schedule:'Mon, Wed, Fri'},
+  {id:3, name:'NMMS',        fee:1200, schedule:'Weekend'},
+  {id:4, name:'Photography', fee:1500, schedule:'Weekend'},
+];
+
 const BK_KEY = 'erp_bk';
 const BK_HIST_KEY = 'erp_bk_hist';
 const AI_HIST_KEY = 'erp_ai_hist';
@@ -3703,6 +3739,56 @@ const MODALS = {
     </div>
     <div class="modal-foot">
       <button class="btn btn-p" onclick="saveFeeStructure()">💾 Save All</button>
+      <button class="btn" onclick="closeModal()">Close</button>
+    </div>`;
+  },
+
+  otherCourses: () => {
+    const scheduleOpts = ['Weekend','Mon, Wed, Fri','Tue, Thu, Sat','Daily (Mon-Sat)','Custom'];
+    const rows = otherCourses.map((c, i) => {
+      const isKnownSchedule = scheduleOpts.includes(c.schedule);
+      return `
+      <tr style="border-bottom:.5px solid var(--br)">
+        <td style="padding:8px 12px">
+          <input type="text" class="fi" style="padding:5px 8px;font-size:12px" placeholder="e.g. Robotics" value="${c.name||''}" oninput="updateOtherCourse(${i},'name',this.value)">
+        </td>
+        <td style="padding:8px 12px">
+          <input type="number" class="fi" style="padding:5px 8px;font-size:12px" value="${c.fee||0}" oninput="updateOtherCourse(${i},'fee',this.value)">
+        </td>
+        <td style="padding:8px 12px">
+          <select class="fi" style="padding:5px 8px;font-size:12px" onchange="updateOtherCourse(${i},'schedule',this.value)">
+            ${scheduleOpts.map(o=>`<option value="${o}" ${c.schedule===o?'selected':''}>${o}</option>`).join('')}
+          </select>
+          ${(!isKnownSchedule || c.schedule==='Custom') ? `<input type="text" class="fi" style="padding:5px 8px;font-size:12px;margin-top:5px" placeholder="Custom class time e.g. Fri 5-6 PM" value="${isKnownSchedule?'':(c.schedule||'')}" oninput="updateOtherCourse(${i},'schedule',this.value)">` : ''}
+        </td>
+        <td style="padding:6px 10px;text-align:center">
+          <button class="btn btn-sm" style="font-size:10px;padding:3px 8px;color:#dc2626;border-color:#fecaca" onclick="removeOtherCourse(${i})">🗑️</button>
+        </td>
+      </tr>`;
+    }).join('');
+    return `<div class="modal-title">🎨 Other Courses We Can Teach</div>
+    <div style="font-size:12px;color:var(--tx2);margin-bottom:12px;padding:8px 12px;background:var(--bg);border-radius:8px">
+      Add courses outside the regular KG–12 curriculum — Robotics, NEET, NMMS, Photography, etc. Each course has its own editable fee and class time (weekend, Mon/Wed/Fri, or custom).
+    </div>
+    <div style="max-height:52vh;overflow-y:auto;overflow-x:hidden;border:.5px solid var(--br);border-radius:10px">
+      <table style="width:100%;border-collapse:collapse">
+        <thead style="background:var(--bg);position:sticky;top:0">
+          <tr>
+            <th style="padding:9px 12px;text-align:left;font-size:10px;font-weight:600;color:var(--tx2);text-transform:uppercase;border-bottom:.5px solid var(--br);width:30%">Course Name</th>
+            <th style="padding:9px 12px;text-align:left;font-size:10px;font-weight:600;color:var(--tx2);text-transform:uppercase;border-bottom:.5px solid var(--br);width:18%">Fee ₹</th>
+            <th style="padding:9px 12px;text-align:left;font-size:10px;font-weight:600;color:var(--tx2);text-transform:uppercase;border-bottom:.5px solid var(--br)">Class Time</th>
+            <th style="padding:9px 12px;border-bottom:.5px solid var(--br)"></th>
+          </tr>
+        </thead>
+        <tbody>${rows || `<tr><td colspan="4" style="padding:16px;text-align:center;font-size:12px;color:var(--tx3)">No courses added yet</td></tr>`}</tbody>
+      </table>
+    </div>
+    <button class="btn" style="margin-top:10px;width:100%;justify-content:center" onclick="addOtherCourse()">
+      <svg viewBox="0 0 14 14" fill="none" width="12" height="12"><path d="M7 2v10M2 7h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      Add Another Course
+    </button>
+    <div class="modal-foot">
+      <button class="btn btn-p" onclick="saveOtherCourses()">💾 Save All</button>
       <button class="btn" onclick="closeModal()">Close</button>
     </div>`;
   },
@@ -12494,6 +12580,7 @@ function getSnapshot() {
 
     // Fee config
     feeStructure:     ls('_erp_fee_structure') || {},
+    otherCourses:     ls('_erp_other_courses') || [],
     feeRcptTemplate:  lsStr('_erp_fee_rcpt_template'),
     feeRcptLang:      lsStr('_erp_fee_rcpt_lang'),
 
@@ -12605,6 +12692,7 @@ function restoreBackup(input) {
 
       // Restore fee config
       if (data.feeStructure)    try { localStorage.setItem('_erp_fee_structure',       JSON.stringify(data.feeStructure)); } catch(e) {}
+      if (data.otherCourses)    try { localStorage.setItem('_erp_other_courses',       JSON.stringify(data.otherCourses)); } catch(e) {}
       if (data.feeRcptTemplate) try { localStorage.setItem('_erp_fee_rcpt_template',   data.feeRcptTemplate); } catch(e) {}
       if (data.feeRcptLang)     try { localStorage.setItem('_erp_fee_rcpt_lang',        data.feeRcptLang); } catch(e) {}
       if (data.admTemplate)     try { localStorage.setItem('_erp_adm_template',         data.admTemplate); } catch(e) {}
@@ -12724,6 +12812,7 @@ async function syncSheets(silent) {
       marks:            snapshot.marks            || {},
       marksIndex:       snapshot.marksIndex       || [],
       feeStructure:     snapshot.feeStructure     || {},
+      otherCourses:     snapshot.otherCourses     || [],
       feeRcptTemplate:  snapshot.feeRcptTemplate  || '',
       admTemplate:      snapshot.admTemplate      || '',
       waTemplates:      snapshot.waTemplates      || {},
@@ -12937,6 +13026,7 @@ async function restoreFromSheets() {
 
     // ── Fee config ────────────────────────────────────────────
     if (data.feeStructure)   localStorage.setItem('_erp_fee_structure',     JSON.stringify(data.feeStructure));
+    if (data.otherCourses)   localStorage.setItem('_erp_other_courses',     JSON.stringify(data.otherCourses));
     if (data.feeRcptTemplate) localStorage.setItem('_erp_fee_rcpt_template', data.feeRcptTemplate);
     if (data.feeRcptLang)    localStorage.setItem('_erp_fee_rcpt_lang',     data.feeRcptLang);
     if (data.admTemplate)    localStorage.setItem('_erp_adm_template',      data.admTemplate);
@@ -13408,6 +13498,34 @@ function toggleExtraFeePanel(i) {
 }
 function getFeeForClass(grade) {
   return feeStructure.find(f=>f.class===grade) || {admFee:500, monthlyFee:1500};
+}
+
+/* ═══════════════════════════════════════════════════════
+   OTHER COURSES (Robotics, NEET, NMMS, Photography, etc.)
+═══════════════════════════════════════════════════════ */
+function addOtherCourse() {
+  const nextId = (otherCourses.reduce((m,c)=>Math.max(m,c.id||0),0)) + 1;
+  otherCourses.push({id:nextId, name:'', fee:0, schedule:'Weekend'});
+  showModal('otherCourses');
+}
+function removeOtherCourse(i) {
+  otherCourses.splice(i,1);
+  showModal('otherCourses');
+}
+function updateOtherCourse(i, field, val) {
+  if (!otherCourses[i]) return;
+  otherCourses[i][field] = (field === 'fee') ? (parseFloat(val)||0) : val;
+}
+function saveOtherCourses() {
+  try { localStorage.setItem('_erp_other_courses', JSON.stringify(otherCourses)); } catch(e){}
+  closeModal();
+  showToast('✅ Other courses saved!');
+}
+function loadOtherCourses() {
+  try {
+    const v = localStorage.getItem('_erp_other_courses');
+    if (v) { const p=JSON.parse(v); if(Array.isArray(p)&&p.length>0){otherCourses.length=0;p.forEach(c=>otherCourses.push(c));} }
+  } catch(e){}
 }
 
 /* ═══ MONTHLY RESET HELPERS ════════════════════════════ */
@@ -14732,6 +14850,9 @@ function initAdmissions() {
   refreshAdmPreview();
   renderAdmRecent();
   updateAdmCounter();
+  admSelectedOtherCourseIds = [];
+  renderAdmOcChips();
+  toggleAdmOcDropdown(false);
   recalcAdmFees();
 }
 
@@ -14982,16 +15103,94 @@ function recalc10thFees() {
   recalcAdmFees();
 }
 
+/* ── Other Courses add-on picker (Robotics, NEET, NMMS, Photography, etc.) ──
+   Click button opens a dropdown of available courses; picking one adds it
+   as a removable chip and closes the dropdown. ── */
+let admSelectedOtherCourseIds = [];
+
+function toggleAdmOcDropdown(forceState) {
+  const panel = document.getElementById('adm-oc-dropdown-panel');
+  const caret = document.getElementById('adm-oc-caret');
+  if (!panel) return;
+  const willShow = (typeof forceState === 'boolean') ? forceState : panel.style.display === 'none';
+  if (willShow) renderAdmOcDropdownOptions();
+  panel.style.display = willShow ? 'block' : 'none';
+  if (caret) caret.style.transform = willShow ? 'rotate(180deg)' : 'rotate(0deg)';
+}
+
+function renderAdmOcDropdownOptions() {
+  const panel = document.getElementById('adm-oc-dropdown-panel');
+  if (!panel) return;
+  const available = otherCourses.filter(c => !admSelectedOtherCourseIds.includes(c.id));
+  if (!available.length) {
+    panel.innerHTML = `<div style="padding:12px 14px;font-size:11px;color:var(--tx3)">${otherCourses.length ? 'All courses added' : 'No other courses set up yet — add some from Fees → Other Courses'}</div>`;
+    return;
+  }
+  panel.innerHTML = available.map((c, i) => {
+    const bg = i % 2 === 0 ? 'var(--card)' : 'var(--bg)';
+    return `
+    <div onclick="addAdmOtherCourse(${c.id})" style="display:flex;align-items:center;gap:10px;padding:9px 14px;cursor:pointer;background:${bg};transition:.12s" onmouseover="this.style.background='#fae8ff'" onmouseout="this.style.background='${bg}'">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;font-weight:600;color:var(--tx)">${c.name || '(unnamed course)'}</div>
+        <div style="font-size:10px;color:var(--tx3)">${c.schedule||''}</div>
+      </div>
+      <span style="font-size:12px;font-weight:700;color:#c026d3;flex-shrink:0">₹${(c.fee||0).toLocaleString('en-IN')}</span>
+    </div>`;
+  }).join('');
+}
+
+function addAdmOtherCourse(id) {
+  if (!admSelectedOtherCourseIds.includes(id)) admSelectedOtherCourseIds.push(id);
+  toggleAdmOcDropdown(false);
+  renderAdmOcChips();
+  recalcAdmFees();
+}
+
+function removeAdmOtherCourse(id) {
+  admSelectedOtherCourseIds = admSelectedOtherCourseIds.filter(x => x !== id);
+  renderAdmOcChips();
+  recalcAdmFees();
+}
+
+function renderAdmOcChips() {
+  const wrap = document.getElementById('adm-oc-selected');
+  if (!wrap) return;
+  const selected = getSelectedAdmOtherCourses();
+  wrap.innerHTML = selected.map(c => `
+    <span style="display:inline-flex;align-items:center;gap:6px;padding:5px 10px;background:#fae8ff;border:1px solid #f0abfc;border-radius:20px;font-size:11px;font-weight:600;color:#86198f">
+      ${c.name} · ₹${(c.fee||0).toLocaleString('en-IN')}
+      <button type="button" onclick="removeAdmOtherCourse(${c.id})" style="border:none;background:none;color:#a21caf;font-size:13px;line-height:1;cursor:pointer;padding:0;font-family:inherit">×</button>
+    </span>`).join('');
+}
+
+function getSelectedAdmOtherCourses() {
+  return otherCourses.filter(c => admSelectedOtherCourseIds.includes(c.id));
+}
+
+// Close the dropdown when clicking anywhere outside it
+document.addEventListener('click', function(e) {
+  const panel = document.getElementById('adm-oc-dropdown-panel');
+  const btn   = document.getElementById('adm-oc-dropdown-btn');
+  if (!panel || panel.style.display === 'none') return;
+  if (panel.contains(e.target) || (btn && btn.contains(e.target))) return;
+  toggleAdmOcDropdown(false);
+});
+
 /* ── Recalculate admission fee summary ───────────────────── */
 function recalcAdmFees() {
-  const fee = parseFloat(document.getElementById('adm-fee')?.value) || 0;
+  const fee    = parseFloat(document.getElementById('adm-fee')?.value) || 0;
   const admFee = parseFloat(document.getElementById('adm-admfee')?.value) || 0;
+  const ocFee  = getSelectedAdmOtherCourses().reduce((sum,c)=>sum+(parseFloat(c.fee)||0),0);
   const dEl = document.getElementById('adm-fee-display');
   const aEl = document.getElementById('adm-admfee-display');
+  const oEl = document.getElementById('adm-other-courses-display');
+  const oTotalEl = document.getElementById('adm-other-courses-total');
   const gEl = document.getElementById('adm-grand-total');
   if (dEl) dEl.textContent = '₹'+fee.toLocaleString('en-IN');
   if (aEl) aEl.textContent = '₹'+admFee.toLocaleString('en-IN');
-  if (gEl) gEl.textContent = '₹'+(fee+admFee).toLocaleString('en-IN');
+  if (oEl) oEl.textContent = '₹'+ocFee.toLocaleString('en-IN');
+  if (oTotalEl) oTotalEl.textContent = '₹'+ocFee.toLocaleString('en-IN');
+  if (gEl) gEl.textContent = '₹'+(fee+admFee+ocFee).toLocaleString('en-IN');
 }
 
 /* ── "No fee collected at admission" toggle ──────────────
@@ -15199,6 +15398,11 @@ function submitAdmission() {
   const selectedSubjects = getSelectedAdmSubjects();
   const subjects = selectedSubjects.join(', ') || '';
 
+  // Optional add-on courses (Robotics, NEET, NMMS, Photography, etc.)
+  const selectedOtherCourses = getSelectedAdmOtherCourses();
+  const otherCoursesFee   = selectedOtherCourses.reduce((s,c)=>s+(parseFloat(c.fee)||0),0);
+  const otherCoursesNames = selectedOtherCourses.map(c=>c.name).join(', ');
+
   const yr = new Date().getFullYear();
   const prefix = CFG.APP?.studentIdPrefix || 'KLM';
   const COLORS = ['#185FA5','#1D9E75','#854F0B','#993556','#534AB7','#993C1D','#0891B2','#B45309'];
@@ -15219,6 +15423,8 @@ function submitAdmission() {
     status: 'active', color: COLORS[students.length % COLORS.length],
     admDate: new Date().toLocaleDateString('en-IN'),
     noFeeAtAdmission: noFeeNow,
+    otherCourses: selectedOtherCourses.map(c=>({name:c.name, fee:c.fee, schedule:c.schedule})),
+    otherCoursesFee,
   };
 
   // Add to students array
@@ -15283,7 +15489,24 @@ function submitAdmission() {
         paidOn    : '',
       });
     }
-    if (monthlyAmt > 0 || admAmt > 0) saveFees();
+    // Other courses fee record (pending) — Robotics / NEET / NMMS / Photography etc. picked at admission
+    if (otherCoursesFee > 0) {
+      fees.unshift({
+        rcpt      : 'RCP-OC-' + Date.now().toString().slice(-5) + Math.random().toString(36).slice(-3),
+        student   : name,
+        studentId : newStudent.id,
+        month     : curMonth,
+        total     : otherCoursesFee,
+        paid      : 0,
+        balance   : otherCoursesFee,
+        mode      : 'Cash',
+        status    : 'pending',
+        type      : 'other_courses',
+        note      : otherCoursesNames,
+        paidOn    : '',
+      });
+    }
+    if (monthlyAmt > 0 || admAmt > 0 || otherCoursesFee > 0) saveFees();
   })();
 
   showToast(noFeeNow ? ('✅ ' + name + ' admitted — no fee collected now') : ('✅ ' + name + ' admitted successfully!'));
@@ -15459,6 +15682,10 @@ function resetAdmForm() {
   });
   const subjRow = document.getElementById('adm-subj-row');
   if (subjRow) subjRow.style.display = 'none';
+  // Reset other-courses add-on selections
+  admSelectedOtherCourseIds = [];
+  renderAdmOcChips();
+  toggleAdmOcDropdown(false);
   // Reset "no fee at admission" toggle back to default (fees expected)
   const noFeeEl = document.getElementById('adm-no-fee-now');
   if (noFeeEl) { noFeeEl.checked = false; toggleAdmNoFee(); }
@@ -15993,6 +16220,7 @@ function loadAllData() {
   loadBatches();
   // Fee structure
   loadFeeStructure();
+  loadOtherCourses();
   loadDayOrder();
   // ── Sync existing timetable data into dayOrderMap on startup ──
   // This ensures timetable-saved subjects are available for attendance tracking

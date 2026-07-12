@@ -849,8 +849,19 @@ tbody tr:hover td{background:var(--bg)}
         <input class="fi" id="adm-name" placeholder="e.g. Arjun Kumar">
       </div>
 
-      <!-- Class chips -->
+      <!-- Admission type -->
       <div class="fg">
+        <label class="fl">Admission Type *</label>
+        <div style="display:flex;gap:8px;margin-top:4px">
+          <button type="button" id="adm-type-class" onclick="setAdmType('class')" style="flex:1;padding:10px;border-radius:8px;border:1.5px solid var(--pr);background:var(--pr);color:#fff;cursor:pointer;font-size:12px;font-weight:700;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;transition:.12s">🏫 Class Admission</button>
+          <button type="button" id="adm-type-course" onclick="setAdmType('course')" style="flex:1;padding:10px;border-radius:8px;border:1.5px solid var(--br);background:var(--card);color:var(--tx2);cursor:pointer;font-size:12px;font-weight:700;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;transition:.12s">🎨 Course Admission</button>
+        </div>
+        <div style="font-size:10px;color:var(--tx3);margin-top:5px">Class Admission = regular KG–12 grade. Course Admission = only Robotics / NEET / NMMS / Photography etc, no class.</div>
+        <input type="hidden" id="adm-type" value="class">
+      </div>
+
+      <!-- Class chips -->
+      <div class="fg" id="adm-class-chips-row">
         <label class="fl">Class *</label>
         <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px" id="adm-class-chips">
           <button type="button" id="adm-chip-KG" onclick="selectAdmClass('KG')" style="padding:6px 13px;border-radius:20px;border:1.5px solid var(--br);background:var(--card);color:var(--tx);cursor:pointer;font-size:12px;font-weight:500;font-family:inherit;transition:.12s">KG</button>
@@ -932,8 +943,8 @@ tbody tr:hover td{background:var(--bg)}
 
       <!-- Other Courses (optional add-ons) — Robotics, NEET, NMMS, Photography, etc. -->
       <div class="fg" id="adm-other-courses-row">
-        <label class="fl" style="color:#c026d3;font-weight:700">🎨 Other Courses (Optional Add-ons)</label>
-        <div style="font-size:11px;color:var(--tx3);margin-bottom:8px">Robotics, NEET, NMMS, Photography, etc. — fee & class time come from Fees → Other Courses.</div>
+        <label class="fl" id="adm-oc-label" style="color:#c026d3;font-weight:700">🎨 Other Courses (Optional Add-ons)</label>
+        <div style="font-size:11px;color:var(--tx3);margin-bottom:8px" id="adm-oc-hint">Robotics, NEET, NMMS, Photography, etc. — fee & class time come from Fees → Other Courses.</div>
         <div style="position:relative">
           <button type="button" id="adm-oc-dropdown-btn" onclick="toggleAdmOcDropdown()" style="width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 12px;border:1.5px solid #f0abfc;border-radius:8px;background:var(--card);color:var(--tx);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">
             <span style="display:flex;align-items:center;gap:6px"><span style="color:#c026d3">＋</span> Add Other Course</span>
@@ -971,7 +982,7 @@ tbody tr:hover td{background:var(--bg)}
       <!-- Fees summary -->
       <div style="background:var(--bg);border-radius:10px;padding:12px 14px;border:.5px solid var(--br);margin-bottom:10px">
         <div style="font-size:11px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Fee Summary</div>
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:.5px dashed var(--br)">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:.5px dashed var(--br)" id="adm-fee-summary-row">
           <span style="font-size:12px;color:var(--tx2)">Monthly / Subject Fee</span>
           <span style="font-size:13px;font-weight:600;color:var(--tx)" id="adm-fee-display">₹0</span>
         </div>
@@ -993,7 +1004,7 @@ tbody tr:hover td{background:var(--bg)}
         🆓 இந்த மாணவருக்கு இப்போது கட்டணம் இல்லை (No fee collected at admission — arranged later)
       </label>
       <div class="frow">
-        <div class="fg"><label class="fl">Monthly Fee ₹ <span style="color:#7c3aed;font-size:10px">(auto-filled)</span></label><input class="fi" id="adm-fee" type="number" placeholder="0" oninput="recalcAdmFees()"></div>
+        <div class="fg" id="adm-monthlyfee-fg"><label class="fl">Monthly Fee ₹ <span style="color:#7c3aed;font-size:10px">(auto-filled)</span></label><input class="fi" id="adm-fee" type="number" placeholder="0" oninput="recalcAdmFees()"></div>
         <div class="fg"><label class="fl">Admission Fee ₹</label><input class="fi" id="adm-admfee" type="number" placeholder="500" oninput="recalcAdmFees()"></div>
       </div>
 
@@ -3942,8 +3953,9 @@ function renderStudents(data) {
       <code style="font-size:10px;background:var(--bg);padding:2px 5px;border-radius:4px;color:${s.color}">${s.id}</code>
     </td>
     <td style="font-size:11px">
-      <span style="font-weight:600">${s.grade==='KG'?'KG':'Gr.'+s.grade}</span>
+      <span style="font-weight:600">${s.grade==='KG'?'KG':(s.grade==='COURSE'?'🎨 Course':'Gr.'+s.grade)}</span>
       ${s.subjects?`<div style="font-size:9px;color:var(--tx3);margin-top:2px">${s.subjects.slice(0,20)}${s.subjects.length>20?'…':''}</div>`:''}
+      ${s.otherCourses&&s.otherCourses.length?`<div style="font-size:9px;color:#c026d3;margin-top:2px">${s.otherCourses.map(c=>c.name).join(', ').slice(0,24)}</div>`:''}
     </td>
     <td><div style="font-size:11px;font-weight:500">${s.parent}</div></td>
     <td><span class="badge ${colors[s.status]||'ba'}">${s.status}</span></td>
@@ -4217,7 +4229,7 @@ function _populateDayOrderDropdown(date, batch) {
   }
 
   // Rebuild options
-  sel.innerHTML = '<option value="">⚠️ Day Order தேர்வு செய்யவும் *</option>';
+  sel.innerHTML = '<option value="">⚠️ Day Order தேர்வு செய்யவும் *</option><option value="HOLIDAY">🏖 Holiday — mark this session off</option>';
   days.forEach(d => {
     const subjs  = (d.subjs && d.subjs.length > 0) ? d.subjs : getSubjectsForDayOrder(d.num);
     const subjStr = subjs.length > 0 ? ' — ' + subjs.slice(0, 3).join(', ') + (subjs.length > 3 ? '…' : '') : '';
@@ -4542,6 +4554,24 @@ function openQRScan() {
 function onDayOrderChange() {
   const sel = document.getElementById('att-day-order');
   const num = sel?.value || '';
+
+  // Selecting "🏖 Holiday" directly from the Day Order dropdown is a shortcut
+  // for the existing Mark Holiday flow — it snaps the dropdown back to the
+  // real day order (or blank) and opens the same session-picker, so
+  // attendance auto-dims / Save gets blocked exactly like the toolbar button.
+  if (num === 'HOLIDAY') {
+    const today = document.getElementById('att-date')?.value || new Date().toISOString().split('T')[0];
+    let realDayNum = '';
+    try { realDayNum = localStorage.getItem('_erp_last_dayorder_' + today) || ''; } catch(e) {}
+    if (sel) {
+      const hasReal = realDayNum && Array.from(sel.options).some(o => o.value === realDayNum);
+      sel.value = hasReal ? realDayNum : '';
+    }
+    onDayOrderChange(); // re-run with the corrected value to refresh styling/panel
+    markHoliday();      // open the session picker (Morning/Evening/Both)
+    return;
+  }
+
   currentDayOrder = num;
 
   // Style the dropdown: red if not selected, green if selected
@@ -9828,6 +9858,51 @@ function renderAdminPanel() {
    for whichever Day Order is active, since subjects legitimately
    differ per class even though the Day Order number doesn't.
    ═══════════════════════════════════════════════════════ */
+/* ── Dashboard-wide "Today is a Holiday" flag ─────────────────────────
+   Separate, simpler layer on top of the per-batch/session holiday flags
+   used in Attendance: marking holiday here mirrors it into every batch's
+   morning+evening flags for today, so Attendance auto-dims/blocks Save
+   without the user having to repeat it per batch. ── */
+function _todayHolidayKey(dateStr) { return '_erp_today_holiday_' + dateStr; }
+function isTodayHoliday(dateStr) {
+  try { return localStorage.getItem(_todayHolidayKey(dateStr)) === '1'; } catch(e) { return false; }
+}
+function setTodayHoliday() {
+  const todayStr = new Date().toISOString().slice(0,10);
+  try { localStorage.setItem(_todayHolidayKey(todayStr), '1'); } catch(e) {}
+  const barr = (typeof batches !== 'undefined' && Array.isArray(batches)) ? batches : [];
+  let dayNum = '';
+  try { dayNum = localStorage.getItem('_erp_last_dayorder_' + todayStr) || ''; } catch(e) {}
+  barr.forEach(b => {
+    ['morning','evening'].forEach(s => {
+      try { localStorage.setItem(_holidayKey(todayStr, b.id, s), '1'); } catch(e) {}
+      if (dayNum) { try { localStorage.setItem('_erp_pending_dayorder_' + b.id + '_' + s, dayNum); } catch(e) {} }
+    });
+  });
+  _refreshAfterTodayHolidayChange(todayStr);
+  showToast('🏖 Today marked as Holiday for every batch');
+}
+function clearTodayHoliday() {
+  const todayStr = new Date().toISOString().slice(0,10);
+  try { localStorage.removeItem(_todayHolidayKey(todayStr)); } catch(e) {}
+  const barr = (typeof batches !== 'undefined' && Array.isArray(batches)) ? batches : [];
+  barr.forEach(b => {
+    ['morning','evening'].forEach(s => { try { localStorage.removeItem(_holidayKey(todayStr, b.id, s)); } catch(e) {} });
+  });
+  _refreshAfterTodayHolidayChange(todayStr);
+  showToast('✅ Holiday removed for today');
+}
+function _refreshAfterTodayHolidayChange(todayStr) {
+  if (typeof renderDashDayOrderSummary === 'function') renderDashDayOrderSummary();
+  if (typeof renderAdminDayOrderSummary === 'function') renderAdminDayOrderSummary();
+  if (typeof _refreshHolidayBanner === 'function' && document.getElementById('att-holiday-banner')) {
+    const batchId = document.getElementById('att-batch')?.value || '';
+    const session = document.getElementById('att-session')?.value || 'morning';
+    _refreshHolidayBanner(todayStr, batchId, session);
+  }
+  if (typeof renderAttList === 'function' && document.getElementById('att-wrap')) renderAttList();
+}
+
 function setTodayDayOrder(num) {
   const todayStr = new Date().toISOString().slice(0,10);
   try { localStorage.setItem('_erp_last_dayorder_' + todayStr, String(num)); } catch(e) {}
@@ -9870,16 +9945,24 @@ function renderDayOrderSummary(dateElId, gridElId, pickerElId, showGrid) {
   for (let i = 1; i <= maxDays; i++) dayNums.push(String(i));
 
   if (pickerEl) {
-    pickerEl.innerHTML = '<span style="font-size:11px;color:var(--tx2);font-weight:600;margin-right:2px">Set today\'s Day Order:</span>'
-      + '<select onchange="setTodayDayOrder(this.value)" style="'
-        + 'font-size:12px;font-weight:700;padding:5px 10px;border-radius:8px;cursor:pointer;font-family:inherit;'
-        + 'border:1.5px solid ' + (todaysDayOrder ? '#7c3aed' : '#dc2626') + ';'
-        + 'background:' + (todaysDayOrder ? '#7c3aed' : '#fff1f2') + ';'
-        + 'color:' + (todaysDayOrder ? '#fff' : '#dc2626') + '">'
-        + '<option value="" ' + (todaysDayOrder ? '' : 'selected') + ' disabled>Select…</option>'
-        + dayNums.map(n => '<option value="' + n + '" ' + (String(n) === String(todaysDayOrder) ? 'selected' : '') + '>Day ' + escHtml(String(n)) + '</option>').join('')
-      + '</select>'
-      + (todaysDayOrder ? '' : '<span style="font-size:10.5px;color:#dc2626;font-weight:600;margin-left:4px">⚠️ not set yet</span>');
+    if (isTodayHoliday(todayStr)) {
+      pickerEl.innerHTML = '<span style="display:inline-flex;align-items:center;gap:8px;padding:6px 12px;background:#fef3c7;border:1.5px solid #fde68a;border-radius:8px;font-size:12px;font-weight:700;color:#92400e">'
+        + '🏖 Today is a Holiday for every batch'
+        + '<button onclick="clearTodayHoliday()" style="font-size:10px;padding:3px 9px;border-radius:6px;border:.5px solid #d97706;background:#fff7ed;color:#92400e;cursor:pointer;font-weight:700;font-family:inherit">✕ Remove</button>'
+        + '</span>';
+    } else {
+      pickerEl.innerHTML = '<span style="font-size:11px;color:var(--tx2);font-weight:600;margin-right:2px">Set today\'s Day Order:</span>'
+        + '<select onchange="this.value===\'HOLIDAY\'?setTodayHoliday():setTodayDayOrder(this.value)" style="'
+          + 'font-size:12px;font-weight:700;padding:5px 10px;border-radius:8px;cursor:pointer;font-family:inherit;'
+          + 'border:1.5px solid ' + (todaysDayOrder ? '#7c3aed' : '#dc2626') + ';'
+          + 'background:' + (todaysDayOrder ? '#7c3aed' : '#fff1f2') + ';'
+          + 'color:' + (todaysDayOrder ? '#fff' : '#dc2626') + '">'
+          + '<option value="" ' + (todaysDayOrder ? '' : 'selected') + ' disabled>Select…</option>'
+          + dayNums.map(n => '<option value="' + n + '" ' + (String(n) === String(todaysDayOrder) ? 'selected' : '') + '>Day ' + escHtml(String(n)) + '</option>').join('')
+          + '<option value="HOLIDAY">🏖 Holiday</option>'
+        + '</select>'
+        + (todaysDayOrder ? '' : '<span style="font-size:10.5px;color:#dc2626;font-weight:600;margin-left:4px">⚠️ not set yet</span>');
+    }
   }
 
   // Some views (e.g. Dashboard) only want the single Day Order picker —
@@ -14853,6 +14936,57 @@ function initAdmissions() {
   admSelectedOtherCourseIds = [];
   renderAdmOcChips();
   toggleAdmOcDropdown(false);
+  setAdmType('class');
+  recalcAdmFees();
+}
+
+/* ── Admission Type: Class Admission vs Course Admission ── */
+function setAdmType(type) {
+  const typeEl = document.getElementById('adm-type');
+  if (typeEl) typeEl.value = type;
+  const isClass = type === 'class';
+
+  const classBtn  = document.getElementById('adm-type-class');
+  const courseBtn = document.getElementById('adm-type-course');
+  if (classBtn) {
+    classBtn.style.background  = isClass ? 'var(--pr)' : 'var(--card)';
+    classBtn.style.color       = isClass ? '#fff' : 'var(--tx2)';
+    classBtn.style.borderColor = isClass ? 'var(--pr)' : 'var(--br)';
+  }
+  if (courseBtn) {
+    courseBtn.style.background  = !isClass ? '#c026d3' : 'var(--card)';
+    courseBtn.style.color       = !isClass ? '#fff' : 'var(--tx2)';
+    courseBtn.style.borderColor = !isClass ? '#c026d3' : 'var(--br)';
+  }
+
+  const classChipsRow = document.getElementById('adm-class-chips-row');
+  const monthlyFeeFg  = document.getElementById('adm-monthlyfee-fg');
+  const feeSummaryRow = document.getElementById('adm-fee-summary-row');
+  const subjRow       = document.getElementById('adm-subj-row');
+  const tenthRow      = document.getElementById('adm-10th-row');
+  const ocLabel        = document.getElementById('adm-oc-label');
+  const ocHint         = document.getElementById('adm-oc-hint');
+
+  if (classChipsRow) classChipsRow.style.display = isClass ? '' : 'none';
+  if (monthlyFeeFg)  monthlyFeeFg.style.display  = isClass ? '' : 'none';
+  if (feeSummaryRow) feeSummaryRow.style.display = isClass ? '' : 'none';
+
+  if (isClass) {
+    document.getElementById('adm-grade').value = '';
+    if (ocLabel) ocLabel.textContent = '🎨 Other Courses (Optional Add-ons)';
+    if (ocHint)  ocHint.textContent  = 'Robotics, NEET, NMMS, Photography, etc. — fee & class time come from Fees → Other Courses.';
+  } else {
+    // Course-only admission: no class, no class-linked fee/subject grids.
+    document.getElementById('adm-grade').value = 'COURSE';
+    document.getElementById('adm-fee').value = 0;
+    document.querySelectorAll('#adm-class-chips button').forEach(b => {
+      b.style.background='var(--card)'; b.style.color='var(--tx)'; b.style.borderColor='var(--br)';
+    });
+    if (subjRow)  subjRow.style.display = 'none';
+    if (tenthRow) tenthRow.style.display = 'none';
+    if (ocLabel) ocLabel.textContent = '🎨 Select Course(s) *';
+    if (ocHint)  ocHint.textContent  = 'Pick at least one course — Robotics, NEET, NMMS, Photography, etc. No class is assigned for this admission.';
+  }
   recalcAdmFees();
 }
 
@@ -15304,10 +15438,14 @@ function fillAdmTemplate(template, data) {
   const feeDisplay = data.noFee
     ? 'பின்னர் ஏற்பாடு செய்யப்படும் (To be arranged later)'
     : ('₹' + (data.fee || '0'));
+  const classDisplay = !data.grade ? ''
+    : data.grade === 'KG' ? 'KG'
+    : data.grade === 'COURSE' ? (data.courseNames || 'Course')
+    : 'Class ' + data.grade;
   return template
     .replace(/{student_name}/g, data.name || '')
     .replace(/{parent_name}/g,  data.parent || '')
-    .replace(/{class}/g,        data.grade ? (data.grade === 'KG' ? 'KG' : 'Class ' + data.grade) : '')
+    .replace(/{class}/g,        classDisplay)
     .replace(/{batch}/g,        data.batch || 'General Batch')
     .replace(/{admission_no}/g, data.admNo || '')
     .replace(/{center_name}/g,  CFG.CENTER.name || 'Tuition Center')
@@ -15347,6 +15485,7 @@ function refreshAdmPreview() {
     name:   document.getElementById('adm-name')?.value  || 'Student Name',
     parent: document.getElementById('adm-parent')?.value|| 'Parent',
     grade:  document.getElementById('adm-grade')?.value || '10',
+    courseNames: getSelectedAdmOtherCourses().map(c=>c.name).join(', '),
     batch:  batchVal,
     admNo:  document.getElementById('adm-no')?.value    || 'ADM-2024-001',
     fee:    document.getElementById('adm-fee')?.value   || '2500',
@@ -15366,13 +15505,18 @@ function resetAdmTemplate() {
 }
 
 function submitAdmission() {
-  const name   = document.getElementById('adm-name')?.value.trim();
-  const parent = document.getElementById('adm-parent')?.value.trim();
-  const phone  = document.getElementById('adm-phone')?.value.trim();
-  const grade  = document.getElementById('adm-grade')?.value;
+  const name    = document.getElementById('adm-name')?.value.trim();
+  const parent  = document.getElementById('adm-parent')?.value.trim();
+  const phone   = document.getElementById('adm-phone')?.value.trim();
+  const grade   = document.getElementById('adm-grade')?.value;
+  const admType = document.getElementById('adm-type')?.value || 'class';
 
   if (!name)   { showToast('Enter student name'); document.getElementById('adm-name')?.focus(); return; }
-  if (!grade)  { showToast('Select a class'); return; }
+  if (admType === 'class') {
+    if (!grade) { showToast('Select a class'); return; }
+  } else {
+    if (getSelectedAdmOtherCourses().length === 0) { showToast('Select at least one course'); return; }
+  }
   if (!parent) { showToast('Enter parent name'); document.getElementById('adm-parent')?.focus(); return; }
   if (!phone)  { showToast('Enter WhatsApp number'); document.getElementById('adm-phone')?.focus(); return; }
 
@@ -15437,7 +15581,7 @@ function submitAdmission() {
 
   // Build WA message (with class timetable, if enabled) and open WhatsApp
   const message = fillAdmTemplate(tmpl, {
-    name, parent, grade, batch: course || 'General Batch', admNo, fee,
+    name, parent, grade, courseNames: otherCoursesNames, batch: course || 'General Batch', admNo, fee,
     noFee: noFeeNow,
     timetable: includeTT ? buildTimetableWAText(course) : '',
   });
@@ -15682,6 +15826,8 @@ function resetAdmForm() {
   });
   const subjRow = document.getElementById('adm-subj-row');
   if (subjRow) subjRow.style.display = 'none';
+  // Reset admission type back to Class Admission
+  setAdmType('class');
   // Reset other-courses add-on selections
   admSelectedOtherCourseIds = [];
   renderAdmOcChips();

@@ -680,6 +680,13 @@ tbody tr:hover td{background:var(--bg)}
     <div id="dash-dayorder-picker" style="padding:0 16px 14px;display:flex;align-items:center;gap:6px;flex-wrap:wrap"></div>
   </div>
 
+  <!-- 📆 Admin Calendar — Quick Task Reference -->
+  <div class="card" style="margin-bottom:14px;padding:10px 16px" id="dash-admin-calendar">
+    <div id="dash-calendar-widget" style="font-size:11px;color:var(--tx)">
+      <!-- rendered by renderAdminCalendar() -->
+    </div>
+  </div>
+
   <!-- Income Summary Card (Income - Expense) -->
   <!-- ── Today's Fees Collection Card ── -->
   <div class="card" style="margin-bottom:14px;cursor:pointer" id="dash-today-fees-card" onclick="showTodayFeesModal()">
@@ -3488,13 +3495,20 @@ const MODALS = {
     <div class="modal-foot"><button class="btn btn-p" onclick="saveStudent()">${t('saveStudent')}</button><button class="btn" onclick="closeModal()">${t('cancel')}</button></div>`,
 
   addFee: () => {
-    // Exclude students where ALL their fee records are paid (fully settled)
+    // BUGFIX: previously this hid a student only if ALL their fee records,
+    // ever, were marked 'paid' — so a student fully paid for the CURRENT
+    // month but with some unrelated old pending balance kept showing up
+    // here (looking like a "paid student in the new-entry list"). The
+    // actual intent of this dropdown is "who still needs THIS month's fee
+    // entered" — so only check this month's monthly fee record.
+    const curMonth = _feeMonthLabel();
     const list = students.filter(s => {
       if (s.status !== 'active') return false;
-      const studentFees = fees.filter(f => f.studentId === s.id || f.student === s.name);
-      if (studentFees.length === 0) return true; // new student, no fees yet — include
-      // Include if ANY fee is not fully paid
-      return studentFees.some(f => f.status !== 'paid');
+      const thisMonthFee = fees.find(f =>
+        (f.studentId === s.id || f.student === s.name) &&
+        f.month === curMonth && f.type === 'monthly' && !f._deleted);
+      // Hide only if this month's monthly fee already exists and is fully paid
+      return !(thisMonthFee && thisMonthFee.status === 'paid');
     });
     const display = list.length > 0 ? list : students.filter(s => s.status === 'active');
     const info = list.length < students.filter(s=>s.status==='active').length
@@ -6171,15 +6185,6 @@ function _renderFeesFiltered(tabVal, month) {
   else if (tabVal === 'pending') source = source.filter(f => f.status === 'pending' || f.status === 'partial');
   else if (tabVal === 'overdue') source = source.filter(f => f.status === 'overdue');
 
-  if (source.length === 0) {
-    const isFiltered = month || tabVal !== 'all' || grade !== 'all';
-    document.getElementById('fee-body').innerHTML = `<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--tx3);font-size:13px">
-      ${tabVal==='pending' ? '🎉 No pending fees for ' + (month||'this period') + '! All caught up.' :
-        isFiltered ? 'No records match the selected filter.' : 'No fee records found.'}
-    </td></tr>`;
-    return;
-  }
-
   // Group by student
   const groups = {}, order = [];
   source.forEach(f => {
@@ -6187,6 +6192,31 @@ function _renderFeesFiltered(tabVal, month) {
     if (!groups[key]) { groups[key] = []; order.push(key); }
     groups[key].push(f);
   });
+
+  // BUGFIX: previously, active students with zero matching fee records
+  // (e.g. admitted with "No Fee Now" ticked, or a ₹0 course admission)
+  // simply never appeared anywhere on this page — they looked "missing".
+  // Surface them too (only on the unfiltered "All"/"Pending" view, since a
+  // month/grade filter is inherently about fee records) with a prompt to
+  // add their first fee entry, so no active student silently disappears.
+  let noFeeStudents = [];
+  if (!month && (tabVal === 'all' || tabVal === 'pending')) {
+    const covered = new Set();
+    order.forEach(k => covered.add(String(k)));
+    allValid.forEach(f => { if (f.studentId) covered.add(String(f.studentId)); if (f.student) covered.add(String(f.student)); });
+    noFeeStudents = students.filter(s => s && s.status === 'active' && s.name
+      && !covered.has(String(s.id)) && !covered.has(String(s.name))
+      && (grade === 'all' || String(s.grade||'').trim() === grade));
+  }
+
+  if (source.length === 0 && noFeeStudents.length === 0) {
+    const isFiltered = month || tabVal !== 'all' || grade !== 'all';
+    document.getElementById('fee-body').innerHTML = `<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--tx3);font-size:13px">
+      ${tabVal==='pending' ? '🎉 No pending fees for ' + (month||'this period') + '! All caught up.' :
+        isFiltered ? 'No records match the selected filter.' : 'No fee records found.'}
+    </td></tr>`;
+    return;
+  }
 
   let html = '';
   order.forEach(key => {
@@ -6263,6 +6293,28 @@ function _renderFeesFiltered(tabVal, month) {
         </td>
       </tr>`;
     });
+  });
+
+  noFeeStudents.forEach(s => {
+    const av = s.color || '#6366f1';
+    const gradeTxt = s.grade === 'KG' ? 'KG' : (s.grade === 'COURSE' ? '🎨 Course' : (s.grade ? 'Gr.'+s.grade : ''));
+    html += `<tr style="background:var(--bg);border-top:2px solid var(--br)">
+      <td colspan="5" style="padding:7px 12px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="width:28px;height:28px;border-radius:8px;background:${av};color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">${s.name[0]}</div>
+          <div>
+            <span style="font-size:13px;font-weight:700;color:var(--tx)">${s.name}</span>
+            ${gradeTxt ? `<span style="font-size:10px;color:var(--tx3);margin-left:6px">${gradeTxt}</span>` : ''}
+          </div>
+          <div style="margin-left:auto">
+            <span style="font-size:11px;color:var(--tx3);font-style:italic">No fee record yet</span>
+          </div>
+        </div>
+      </td>
+      <td style="padding:7px 12px;text-align:right">
+        <button onclick="showModal('addFee')" style="background:var(--pr);color:#fff;border:none;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">+ Add Fee</button>
+      </td>
+    </tr>`;
   });
 
   document.getElementById('fee-body').innerHTML = html;
@@ -14006,6 +14058,47 @@ function renderClassStrength() {
 }
 
 /* ── updateDashStats (called on dashboard open + after changes) ── */
+/* ═══════════════════════════════════════════════════════
+   ADMIN CALENDAR — Ultra-Compact Single Line
+═══════════════════════════════════════════════════════ */
+function renderAdminCalendar() {
+  const day = new Date().getDate();
+  const tasks = [
+    { days:[1,2,3,4,5,6,7], icon:'📧', bg:'#2563eb' },
+    { days:[8,9,10], icon:'📞', bg:'#d97706' },
+    { days:[9,10], icon:'🏠', bg:'#dc2626' },
+    { days:[15,16,17,18,19,20,21,22,23,24,25], icon:'✅', bg:'#16a34a' },
+    { days:[25,26,27], icon:'📋', bg:'#7c3aed' },
+    { days:[28], icon:'💳', bg:'#ca8a04' },
+    { days:[29], icon:'💰', bg:'#4f46e5' },
+  ];
+
+  const todayTasks = tasks.filter(t => t.days.includes(day));
+  let html = `<div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap">
+    <span style="font-size:10px;color:var(--tx2);font-weight:700">Day ${day}:</span>`;
+
+  if (todayTasks.length > 0) {
+    todayTasks.forEach(t => {
+      html += `<span style="
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+        width:22px;
+        height:22px;
+        background:${t.bg};
+        border-radius:5px;
+        font-size:12px;
+        cursor:pointer;
+      " title="Task scheduled">${t.icon}</span>`;
+    });
+  } else {
+    html += `<span style="font-size:10px;color:var(--tx3)">No tasks</span>`;
+  }
+
+  html += `</div>`;
+  document.getElementById('dash-calendar-widget').innerHTML = html;
+}
+
 function updateDashStats() {
   const now       = new Date();
   const curLbl    = _feeMonthLabel(now);
@@ -14016,6 +14109,8 @@ function updateDashStats() {
   const el4 = document.getElementById('sv-att');
 
   if (el1) el1.textContent = students.filter(s => s && s.status === 'active').length;
+
+  renderAdminCalendar();
 
   const _CM3 = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const thisMonthPaid = fees.filter(f => {
@@ -14036,15 +14131,35 @@ function updateDashStats() {
   if (el2) el2.textContent = '\u20B9' + thisMonthPaid.toLocaleString('en-IN');
   if (el3) el3.textContent = '\u20B9' + totalPending.toLocaleString('en-IN');
 
-  // Attendance %
-  const batchId = document.getElementById('att-batch')?.value || '';
-  const session = document.getElementById('att-session')?.value || 'morning';
-  const bStu    = (typeof _getBatchStudents === 'function') ? _getBatchStudents(batchId) : [];
-  const suffix  = '|' + (batchId||'all') + '|' + session;
-  const attVals = bStu.map(s => attState[s.id + suffix] || '');
-  const pCount  = attVals.filter(v => v === 'P').length;
-  const marked  = attVals.filter(v => v !== '').length;
-  if (el4) el4.textContent = marked > 0 ? Math.round(pCount / marked * 100) + '%' : '\u2014%';
+  // Attendance % — BUGFIX: this used to read `attState` (an in-memory
+  // buffer that only ever holds whichever ONE batch+session was last
+  // opened on the Attendance page) filtered by the Attendance page's own
+  // <select> elements — which don't even exist in the DOM while you're on
+  // the Dashboard. That silently defaulted to batchId='' + session='morning'
+  // every time, so the % shown had nothing to do with "today" overall.
+  // Fix: read every batch's saved morning+evening attendance for today
+  // directly from storage and aggregate across all of them.
+  (function () {
+    const todayStr = new Date().toISOString().slice(0,10);
+    const barr = (typeof batches !== 'undefined' && Array.isArray(batches) && batches.length) ? batches : [{id:''}];
+    let pCount = 0, marked = 0;
+    barr.forEach(b => {
+      ['morning','evening'].forEach(sess => {
+        try {
+          const sk = (typeof _attStorageKey === 'function') ? _attStorageKey(todayStr, b.id, sess) : null;
+          if (!sk) return;
+          const saved = localStorage.getItem(sk);
+          if (!saved) return;
+          const parsed = JSON.parse(saved);
+          Object.keys(parsed).forEach(k => {
+            const v = parsed[k];
+            if (v) { marked++; if (v === 'P') pCount++; }
+          });
+        } catch(e) {}
+      });
+    });
+    if (el4) el4.textContent = marked > 0 ? Math.round(pCount / marked * 100) + '%' : '\u2014%';
+  })();
 
   // Day-1 reset + carry-over + income summary
   checkAndDoMonthlyReset();

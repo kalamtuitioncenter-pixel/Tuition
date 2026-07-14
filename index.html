@@ -305,24 +305,6 @@ tbody tr:hover td{background:var(--bg)}
 /* pf-preview WA modal */
 .dark #pf-preview{background:#064e3b!important;color:#6ee7b7!important;border-color:#166534!important}
 
-/* Income net box — pos/neg via data-state */
-.dark #income-sum-net-box{background:#1e3a8a!important;border-color:#1d4ed8!important}
-.dark #income-sum-net-box *{color:#93c5fd!important}
-.dark #income-sum-net{color:#93c5fd!important}
-.dark #income-sum-net-box[data-state="neg"]{background:#7f1d1d!important;border-color:#991b1b!important}
-.dark #income-sum-net-box[data-state="neg"] *{color:#fca5a5!important}
-.dark #income-sum-net[data-state="neg"]{color:#fca5a5!important}
-
-/* Income summary green/red/blue sub-cards */
-.dark #dash-income-summary [style*="background:#dcfce7"]{background:#064e3b!important;border-color:#166534!important}
-.dark #dash-income-summary [style*="background:#fee2e2"]{background:#7f1d1d!important;border-color:#991b1b!important}
-.dark #dash-income-summary [style*="background:#dbeafe"]{background:#1e3a8a!important;border-color:#1d4ed8!important}
-.dark #dash-income-summary [style*="color:#166534"]{color:#6ee7b7!important}
-.dark #dash-income-summary [style*="color:#16a34a"]{color:#6ee7b7!important}
-.dark #dash-income-summary [style*="color:#991b1b"]{color:#fca5a5!important}
-.dark #dash-income-summary [style*="color:#dc2626"]{color:#fca5a5!important}
-.dark #dash-income-summary [style*="color:#1d4ed8"]{color:#93c5fd!important}
-
 /* Pending carry-over card */
 .dark #dash-pending-carryover>div{background:#78350f!important;border-color:#92400e!important}
 .dark #dash-pending-carryover [style*="color:#92400e"]{color:#fcd34d!important}
@@ -701,30 +683,17 @@ tbody tr:hover td{background:var(--bg)}
     </div>
   </div>
 
-  <div id="dash-income-summary" style="margin-bottom:14px">
-    <div style="background:var(--card);border:.5px solid var(--br);border-radius:12px;padding:14px 16px;box-shadow:var(--shadow)">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-        <div style="font-size:13px;font-weight:700;color:var(--tx)" id="income-summary-title">📊 This Month — Income Summary</div>
-        <span style="font-size:10px;color:var(--tx3)" id="income-summary-month"></span>
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
-        <div style="background:#dcfce7;border-radius:10px;padding:11px 13px;border:.5px solid #bbf7d0">
-          <div style="font-size:10px;color:#166534;margin-bottom:4px">💰 Fees Collected</div>
-          <div style="font-size:20px;font-weight:800;color:#16a34a" id="income-sum-collected">₹0</div>
-          <div style="font-size:9px;color:#166534;margin-top:2px" id="income-sum-collected-sub">This month</div>
-        </div>
-        <div style="background:#fee2e2;border-radius:10px;padding:11px 13px;border:.5px solid #fecdd3">
-          <div style="font-size:10px;color:#991b1b;margin-bottom:4px">📤 Staff Salary (Expense)</div>
-          <div style="font-size:20px;font-weight:800;color:#dc2626" id="income-sum-expense">₹0</div>
-          <div style="font-size:9px;color:#991b1b;margin-top:2px" id="income-sum-expense-sub">This month</div>
-        </div>
-        <div id="income-sum-net-box" style="background:#dbeafe;border-radius:10px;padding:11px 13px;border:.5px solid #bfdbfe">
-          <div style="font-size:10px;color:#1d4ed8;margin-bottom:4px">📈 Net Income</div>
-          <div style="font-size:20px;font-weight:800;color:#2563eb" id="income-sum-net">₹0</div>
-          <div style="font-size:9px;color:#1d4ed8;margin-top:2px">Income − Expense</div>
-        </div>
+  <!-- 💹 Class-wise Income Summary — This Month / All Time toggle (vertical bar chart) -->
+  <div class="card" style="margin-bottom:14px" id="dash-class-income-card">
+    <div class="card-hd" style="margin-bottom:6px;flex-wrap:wrap;gap:8px">
+      <span class="card-title">💹 Class-wise Income Summary</span>
+      <div id="dash-class-income-toggle" class="seg" style="margin-left:auto;display:flex;gap:4px;background:var(--bg);border-radius:9px;padding:3px">
+        <button class="seg-b on" id="dci-tab-month" onclick="setClassIncomePeriod('month',this)">This Month</button>
+        <button class="seg-b" id="dci-tab-all" onclick="setClassIncomePeriod('all',this)">All Time</button>
       </div>
     </div>
+    <div id="dash-class-income-total" style="font-size:11px;color:var(--tx3);font-weight:600;margin-bottom:10px"></div>
+    <div id="dash-class-income-bars" style="display:flex;align-items:flex-end;gap:12px;overflow-x:auto;padding:4px 2px 6px"></div>
   </div>
 
   <!-- ── Expected Income Next Month Card ── -->
@@ -765,19 +734,6 @@ tbody tr:hover td{background:var(--bg)}
       <span id="dash-class-total" style="font-size:11px;color:var(--tx3);font-weight:600"></span>
     </div>
     <div id="dash-class-bars" style="display:flex;flex-direction:column;gap:7px"></div>
-  </div>
-
-  <!-- 💹 Class-wise Income Summary — This Month / All Time toggle -->
-  <div class="card" style="margin-bottom:14px" id="dash-class-income-card">
-    <div class="card-hd" style="margin-bottom:6px;flex-wrap:wrap;gap:8px">
-      <span class="card-title">💹 Class-wise Income Summary</span>
-      <div id="dash-class-income-toggle" class="seg" style="margin-left:auto;display:flex;gap:4px;background:var(--bg);border-radius:9px;padding:3px">
-        <button class="seg-b on" id="dci-tab-month" onclick="setClassIncomePeriod('month',this)">This Month</button>
-        <button class="seg-b" id="dci-tab-all" onclick="setClassIncomePeriod('all',this)">All Time</button>
-      </div>
-    </div>
-    <div id="dash-class-income-total" style="font-size:11px;color:var(--tx3);font-weight:600;margin-bottom:8px"></div>
-    <div id="dash-class-income-bars" style="display:flex;flex-direction:column;gap:7px"></div>
   </div>
 
   <!-- 🎓 11th/12th Salary Readiness — fees collected vs senior-staff salary due -->
@@ -9390,18 +9346,18 @@ function renderClassIncomeSummary() {
   var sorted = Object.entries(gradeMap).sort(function(a,b){ return gradeOrder(a[0]) - gradeOrder(b[0]); });
   var max = Math.max.apply(null, sorted.map(function(e){ return e[1]; }).concat([1]));
   var COLORS = ['#185FA5','#7c3aed','#16a34a','#ca8a04','#dc2626','#0891b2','#be185d','#d97706','#4f46e5','#059669','#0d9488','#c026d3','#ea580c'];
+  var BAR_MAX_H = 100; // px — tallest bar height
   if (totEl) totEl.textContent = (_classIncomePeriod === 'all' ? 'All-time total: ' : 'This month: ') + '₹' + grandTotal.toLocaleString('en-IN');
   barsEl.innerHTML = sorted.map(function(entry, i) {
     var g = entry[0], amt = entry[1];
     var label = g === 'KG' ? 'KG' : (g === 'COURSE' ? '🎨 Courses' : (g === 'Unknown' ? 'Unknown' : 'Class ' + g));
-    var pct = Math.round(amt / max * 100);
+    var pct = amt / max;
+    var h = Math.max(6, Math.round(pct * BAR_MAX_H));
     var color = COLORS[i % COLORS.length];
-    return '<div style="display:flex;align-items:center;gap:8px">'
-      + '<div style="width:66px;font-size:11px;font-weight:600;color:var(--tx2);flex-shrink:0">' + label + '</div>'
-      + '<div style="flex:1;background:var(--bg);border-radius:6px;height:18px;overflow:hidden">'
-      + '<div style="width:' + pct + '%;height:100%;background:' + color + ';border-radius:6px"></div>'
-      + '</div>'
-      + '<div style="width:84px;text-align:right;font-size:11px;font-weight:700;color:var(--tx);flex-shrink:0">₹' + amt.toLocaleString('en-IN') + '</div>'
+    return '<div style="display:flex;flex-direction:column;align-items:center;flex:0 0 auto;width:56px">'
+      + '<div style="font-size:10px;font-weight:700;color:var(--tx);margin-bottom:5px;white-space:nowrap">₹' + amt.toLocaleString('en-IN') + '</div>'
+      + '<div style="width:30px;height:' + h + 'px;background:' + color + ';border-radius:6px 6px 3px 3px;transition:height .3s"></div>'
+      + '<div style="font-size:10px;font-weight:600;color:var(--tx2);margin-top:6px;text-align:center;line-height:1.2">' + label + '</div>'
       + '</div>';
   }).join('');
 }
@@ -13886,9 +13842,8 @@ function checkAndDoMonthlyReset() {
   const curYM  = _feeMonthYM(now);          // "2026-06"
   const curLbl = _feeMonthLabel(now);        // "Jun 2026"
 
-  // Always refresh the pending carry-over and income summary
+  // Always refresh the pending carry-over
   renderPendingCarryOver();
-  renderIncomeSummary();
 
   // Only auto-generate on Day 1 and only once per month
   if (now.getDate() !== 1) return;
@@ -14009,7 +13964,7 @@ function _todayFeesList() {
 function renderTodayFeeCard() {
   const list  = _todayFeesList();
   // Sum what was collected today — for records fully paid in one go this equals f.paid;
-  // matches how the rest of the app already reports collections (e.g. renderIncomeSummary),
+  // matches how the rest of the app already reports collections elsewhere on the dashboard,
   // since the fee model doesn't keep a separate per-installment ledger.
   const totalToday = list.reduce((s, f) => s + (f.paid || 0), 0);
   const amtEl = document.getElementById('dash-today-fees-amt');
@@ -14065,63 +14020,6 @@ function showTodayFeesModal() {
       </div>
     </div>
   </div>`;
-}
-
-/* ── Income Summary card on Dashboard ────────────────────*/
-function renderIncomeSummary() {
-  const now        = new Date();
-  const curLbl     = _feeMonthLabel(now);
-  const curYM      = _feeMonthYM(now);
-  const curDisplay = _feeMonthLabel(now);
-
-  // Match by f.month label (regular fees) OR paidOn date falling in this month (adm fees)
-  const _CM2 = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  function _paidInCurMonth(f) {
-    if (f.month === curLbl) return true; // regular monthly fee
-    if (f.type === 'admission' && f.paidOn) {
-      try {
-        const parts = f.paidOn.includes('/') ? f.paidOn.split('/') : null;
-        const d = parts ? new Date(+parts[2], +parts[1]-1, +parts[0]) : new Date(f.paidOn);
-        if (!isNaN(d)) return _CM2[d.getMonth()] + ' ' + d.getFullYear() === curLbl;
-      } catch(e) {}
-    }
-    return false;
-  }
-  const thisMonthFees = fees.filter(f => f && f.rcpt && f.status === 'paid' && _paidInCurMonth(f));
-  const collected     = thisMonthFees.reduce((s,f) => s + (f.paid||0), 0);
-
-  // Staff salary paid this month
-  let expense = 0;
-  if (typeof salaryPayments !== 'undefined') {
-    Object.keys(salaryPayments).forEach(k => {
-      if (k.endsWith('|' + curYM) && salaryPayments[k]?.paid) expense += (salaryPayments[k].amount || 0);
-    });
-  }
-
-  const net = collected - expense;
-
-  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-  set('income-summary-month',    curDisplay);
-  set('income-sum-collected',    '\u20B9' + collected.toLocaleString('en-IN'));
-  set('income-sum-expense',      '\u20B9' + expense.toLocaleString('en-IN'));
-  set('income-sum-net',          (net < 0 ? '\u2212\u20B9' : '\u20B9') + Math.abs(net).toLocaleString('en-IN'));
-  set('income-sum-collected-sub', thisMonthFees.length + ' payment' + (thisMonthFees.length !== 1 ? 's' : '') + ' · ' + curLbl);
-  set('income-sum-expense-sub',  expense > 0 ? 'Salary paid this month' : 'No salary paid yet');
-
-  const netEl  = document.getElementById('income-sum-net');
-  const netBox = document.getElementById('income-sum-net-box');
-  // Use data attribute — CSS handles actual colors (dark mode safe)
-  if (netBox) netBox.dataset.state = net >= 0 ? 'pos' : 'neg';
-  if (netEl)  netEl.dataset.state  = net >= 0 ? 'pos' : 'neg';
-  // Also set inline for light mode (CSS !important overrides for dark mode)
-  if (netEl)  netEl.style.color    = net >= 0 ? '#2563eb' : '#dc2626';
-  if (netBox) {
-    netBox.style.background  = net >= 0 ? '#dbeafe' : '#fee2e2';
-    netBox.style.borderColor = net >= 0 ? '#bfdbfe' : '#fecdd3';
-    const lbl = netBox.querySelector('[style*="font-size:10px"]');
-    if (lbl) lbl.style.color = net >= 0 ? '#1d4ed8' : '#991b1b';
-  }
-  if (typeof renderExpectedIncome === 'function') renderExpectedIncome();
 }
 
 /* ── Expected Income — Next Month — dashboard card ── */

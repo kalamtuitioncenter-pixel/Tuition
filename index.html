@@ -557,6 +557,7 @@ tbody tr:hover td{background:var(--bg)}
     <button class="nav-item" data-page="admissions"><svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="3" stroke="currentColor" stroke-width="1.3"/><path d="M2 14c0-3.3 2.7-5 6-5s6 1.7 6 5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M12 8v4M10 10h4" stroke="#25d366" stroke-width="1.4" stroke-linecap="round"/></svg><span id="nl-admissions">Admissions</span></button>
     <button class="nav-item" data-page="batches"><svg viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="5" height="5" rx="1" stroke="#7c3aed" stroke-width="1.3"/><rect x="9" y="2" width="5" height="5" rx="1" stroke="#7c3aed" stroke-width="1.3"/><rect x="2" y="9" width="5" height="5" rx="1" stroke="#7c3aed" stroke-width="1.3"/><rect x="9" y="9" width="5" height="5" rx="1" stroke="#7c3aed" stroke-width="1.3"/></svg><span id="nl-batches">Batches</span></button>
     <button class="nav-item" data-page="attendance"><svg viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5 2v2M11 2v2M2 7h12M5.5 10.5l1.5 1.5 3-3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg><span id="nl-attendance">Attendance</span></button>
+    <button class="nav-item" data-page="commute"><svg viewBox="0 0 16 16" fill="none"><circle cx="4.5" cy="12" r="2" stroke="#0f766e" stroke-width="1.3"/><circle cx="12.5" cy="12" r="2" stroke="#0f766e" stroke-width="1.3"/><path d="M6.5 12h4l-2-5.5H7M4.5 12L7 6.5h2.2M9 6.5h2l1.5 5.5" stroke="#0f766e" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span id="nl-commute">Commute</span></button>
     <button class="nav-item" data-page="fees"><svg viewBox="0 0 16 16" fill="none"><rect x="2" y="4" width="12" height="9" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M2 7h12M6 10h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg><span id="nl-fees">Fees</span></button>
     <button class="nav-item" data-page="marks"><svg viewBox="0 0 16 16" fill="none"><path d="M3 12V4l5-2 5 2v8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M6 8h4M6 10.5h2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg><span id="nl-marks">Marks & Exams</span></button>
     <div class="nav-sec" id="ns-mgmt">Management</div>
@@ -726,6 +727,47 @@ tbody tr:hover td{background:var(--bg)}
       </div>
     </div>
   </div>
+
+  <!-- ── Expected Expense Next Month Card (Staff Salary as per Payroll logic) ── -->
+  <div id="dash-expected-expense" style="margin-bottom:14px">
+    <div style="background:var(--card);border:.5px solid var(--br);border-radius:12px;padding:14px 16px;box-shadow:var(--shadow)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div style="font-size:13px;font-weight:700;color:var(--tx)">📤 Expected Expense — Next Month</div>
+        <span style="font-size:10px;color:var(--tx3);background:var(--bg);border-radius:6px;padding:2px 8px;border:.5px solid var(--br)" id="exp-expense-month-label"></span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+        <div style="background:#fee2e2;border-radius:10px;padding:11px 13px;border:.5px solid #fecaca">
+          <div style="font-size:10px;color:#991b1b;margin-bottom:4px">👥 Staff Salary (as per logic)</div>
+          <div style="font-size:20px;font-weight:800;color:#b91c1c" id="exp-expense-salary">₹0</div>
+          <div style="font-size:9px;color:#991b1b;margin-top:2px" id="exp-expense-staffcount">0 staff</div>
+        </div>
+        <div style="background:#fef9c3;border-radius:10px;padding:11px 13px;border:.5px solid #fde68a">
+          <div style="font-size:10px;color:#854d0e;margin-bottom:4px">🎁 Bonuses (if set)</div>
+          <div style="font-size:20px;font-weight:800;color:#ca8a04" id="exp-expense-bonus">₹0</div>
+          <div style="font-size:9px;color:#854d0e;margin-top:2px">Included in payroll setup</div>
+        </div>
+        <div style="background:linear-gradient(135deg,#ede9fe,#f5f3ff);border-radius:10px;padding:11px 13px;border:.5px solid #c4b5fd">
+          <div style="font-size:10px;color:#5b21b6;margin-bottom:4px">💸 Total Expected Expense</div>
+          <div style="font-size:20px;font-weight:800;color:#7c3aed" id="exp-expense-total">₹0</div>
+          <div style="font-size:9px;color:#5b21b6;margin-top:2px">Full-attendance staff salary</div>
+        </div>
+      </div>
+      <div style="margin-top:10px;padding:8px 12px;background:var(--bg);border-radius:8px;font-size:11px;color:var(--tx2);display:flex;align-items:center;gap:6px">
+        <svg viewBox="0 0 14 14" fill="none" width="12" height="12"><circle cx="7" cy="7" r="5.5" stroke="#dc2626" stroke-width="1.3"/><path d="M7 4.5v3l2 1.5" stroke="#dc2626" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span id="exp-expense-note">Same base pay + bonus logic used in Staff → Payroll (before any LOP/attendance deductions).</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Commute Overview Card ── -->
+  <div class="card" style="margin-bottom:14px" id="dash-commute-overview" onclick="navTo('commute')" title="Go to Commute Management">
+    <div class="card-hd" style="margin-bottom:10px">
+      <span class="card-title">🚲 Commute Overview</span>
+      <span style="font-size:11px;color:var(--tx3);font-weight:600" id="dash-commute-total"></span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px" id="dash-commute-cards"></div>
+  </div>
+
 
   <!-- ── Class-wise Strength Card ── -->
   <div class="card" style="margin-bottom:14px" id="dash-class-strength">
@@ -961,6 +1003,16 @@ tbody tr:hover td{background:var(--bg)}
         <label class="fl">Course / Batch</label>
         <select class="fi" id="adm-course">
           <option value="">— Select batch —</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label class="fl">🚲 Commute to Tuition</label>
+        <select class="fi" id="adm-commute">
+          <option value="">— Select —</option>
+          <option value="Walking">🚶 Walking</option>
+          <option value="Parent">👨‍👩‍👧 Parent Drop</option>
+          <option value="Cycle">🚲 Cycle</option>
+          <option value="Bike">🏍️ Bike</option>
         </select>
       </div>
 
@@ -1219,6 +1271,13 @@ tbody tr:hover td{background:var(--bg)}
       <span id="att-pct-lbl">—%</span>
     </div>
   </div>
+  <div id="att-commute-summary" style="display:none;margin-bottom:8px;padding:8px 14px;border-radius:8px;font-size:12px;font-weight:600;align-items:center;gap:14px;background:#f0fdfa;color:#0f766e;border:.5px solid #99f6e4">
+    <span>🅿️ Parked Today (Present Students):</span>
+    <span id="att-cycle-count">🚲 0 Cycles</span>
+    <span id="att-bike-count">🏍️ 0 Bikes</span>
+    <span id="att-walk-count" style="color:var(--tx2);font-weight:500">🚶 0 Walking</span>
+    <span id="att-parent-count" style="color:var(--tx2);font-weight:500">👨‍👩‍👧 0 Parent Drop</span>
+  </div>
   <!-- Day Order panel — always visible, inline editable -->
   <div id="att-dayorder-banner" style="margin-bottom:8px;border-radius:10px;background:#ede9fe;border:1.5px solid #c4b5fd;overflow:hidden">
     <!-- Row 1: label + subject chips -->
@@ -1268,6 +1327,42 @@ tbody tr:hover td{background:var(--bg)}
     <button class="btn btn-wa" onclick="sendLateWA()" style="padding:9px 14px;background:#ca8a04;border-color:#a16207"><svg viewBox="0 0 16 16" fill="none" width="14" height="14"><circle cx="8" cy="8" r="5" stroke="currentColor" stroke-width="1.3"/><path d="M8 5v3l2 1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>Alert Late</button>
     <button class="btn" onclick="showMonthlyAttSummary()" style="padding:9px 14px"><svg viewBox="0 0 16 16" fill="none" width="14" height="14"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.3"/><path d="M5 8h6M5 5h4M5 11h6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>Monthly Report</button>
   </div>
+</div>
+
+<!-- ═══════════════ COMMUTE ═══════════════ -->
+<div class="page" id="pg-commute">
+  <!-- Header -->
+  <div style="background:linear-gradient(135deg,#0f766e,#14b8a6);border-radius:12px;padding:16px 20px;margin-bottom:16px;display:flex;align-items:center;gap:14px">
+    <div style="width:44px;height:44px;background:rgba(255,255,255,.15);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">🚲</div>
+    <div style="flex:1">
+      <div style="font-size:16px;font-weight:700;color:#fff">Commute Management</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.75);margin-top:2px">Track how every student travels to tuition — Walking, Parent Drop, Cycle, or Bike</div>
+    </div>
+    <div style="background:rgba(255,255,255,.12);border-radius:8px;padding:8px 14px;text-align:right;flex-shrink:0">
+      <div style="font-size:10px;color:#ccfbf1">Active Students</div>
+      <div style="font-size:20px;font-weight:700;color:#fff" id="commute-total-count">0</div>
+    </div>
+  </div>
+
+  <!-- Summary cards -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px" id="commute-summary-cards"></div>
+
+  <!-- Toolbar -->
+  <div class="toolbar" style="margin-bottom:12px">
+    <div class="search-box"><svg viewBox="0 0 16 16" fill="none"><circle cx="6.5" cy="6.5" r="4" stroke="currentColor" stroke-width="1.3"/><path d="M11 11l2.5 2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg><input id="commute-search" placeholder="Search name, ID, class…" oninput="renderCommutePage()"></div>
+    <select class="fi" style="width:auto" id="commute-filter" onchange="renderCommutePage()">
+      <option value="all">🚲 All Commute Types</option>
+      <option value="Walking">🚶 Walking</option>
+      <option value="Parent">👨‍👩‍👧 Parent Drop</option>
+      <option value="Cycle">🚲 Cycle</option>
+      <option value="Bike">🏍️ Bike</option>
+      <option value="">— Not Set —</option>
+    </select>
+    <button class="btn" style="margin-left:auto" onclick="showToast('Exporting…');exportCommuteCSV()"><svg viewBox="0 0 14 14" fill="none"><path d="M7 2v8M4 7l3 3 3-3M2 11h10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Export</button>
+  </div>
+
+  <!-- Student commute table -->
+  <div class="tbl-wrap"><table><thead><tr><th style="width:30%">Student</th><th style="width:13%">ID</th><th style="width:10%">Class</th><th style="width:22%">Parent Phone</th><th style="width:25%">Commute Mode</th></tr></thead><tbody id="commute-body"></tbody></table></div>
 </div>
 
 <!-- ═══════════════ FEES ═══════════════ -->
@@ -2865,6 +2960,7 @@ const T = {
     cancel:'Cancel',
     admissions:'Admissions',
     batches:'Batch Management',
+    commute:'Commute Management',
     recovery:'Weekend Recovery Planner',
   },
   ta:{
@@ -2884,6 +2980,7 @@ const T = {
     newFee:'கட்டண உள்ளீடு',saveFee:'சேமி & ரசீது',
     exams:'தேர்வுகள்',marksPlaceholder:'← மதிப்பெண் உள்ளிட தேர்வை தேர்ந்தெடுக்கவும்',
     batches:'குழு மேலாண்மை',
+    commute:'பயண மேலாண்மை',
     recovery:'வார இறுதி ஈடுசெய் திட்டம்',
     addStaff:'ஊழியர் சேர்',sendNotif:'அறிவிப்பு அனுப்பு',
     aiFeatures:'AI அம்சங்கள்',backupSync:'காப்புப் பிரதி & ஒத்திசைவு',
@@ -3312,6 +3409,7 @@ function navTo(id) {
     }, 150);
   }
   if (id === 'batches') { renderBatchesPage(); }
+  if (id === 'commute') { renderCommutePage(); }
   if (id === 'fees') {
     const now = new Date();
     window._feeSelectedMonth = _feeMonthLabel(now);
@@ -3470,6 +3568,15 @@ const MODALS = {
     <div class="frow"><div class="fg"><label class="fl">${t('pname')}</label><input class="fi" id="m-pname" placeholder="Parent name"></div>
     <div class="fg"><label class="fl">${t('pphone')}</label><input class="fi" id="m-pphone" placeholder="9876543210" type="tel"></div></div>
     <div class="fg"><label class="fl">${t('course')}</label><select class="fi" id="m-course">${batches.map(b=>`<option value="${b.name}">${b.name} – ${b.time==='Morning'?'☀️ Morning':'🌙 Evening'}</option>`).join('')}</select></div>
+    <div class="fg"><label class="fl">🚲 Commute to Tuition</label>
+      <select class="fi" id="m-commute">
+        <option value="">— Select —</option>
+        <option value="Walking">🚶 Walking</option>
+        <option value="Parent">👨‍👩‍👧 Parent Drop</option>
+        <option value="Cycle">🚲 Cycle</option>
+        <option value="Bike">🏍️ Bike</option>
+      </select>
+    </div>
     <div class="modal-foot"><button class="btn btn-p" onclick="saveStudent()">${t('saveStudent')}</button><button class="btn" onclick="closeModal()">${t('cancel')}</button></div>`,
 
   addFee: () => {
@@ -3996,6 +4103,7 @@ function saveStudent() {
   const dob    = document.getElementById('m-dob')?.value || '';
   const school = document.getElementById('m-school')?.value.trim() || '';
   const course = document.getElementById('m-course')?.value || '';
+  const commute = document.getElementById('m-commute')?.value || '';
   // Collect subjects from chips + manual input
   const chipSubs = Array.from(document.querySelectorAll('#subject-chips button[data-sel="1"]')).map(b=>b.textContent).join(', ');
   const manualSubs = document.getElementById('m-subjects')?.value.trim() || '';
@@ -4013,6 +4121,7 @@ function saveStudent() {
   students.unshift({
     id: _qSafeId, admNo, name, parent, phone,
     grade, dob, school, course, subjects, status:'active',
+    commute,
     admDate: new Date().toLocaleDateString('en-IN'),
     color: COLORS[students.length % COLORS.length]
   });
@@ -4047,6 +4156,110 @@ function waStudent(id) {
   if (!s) return;
   const msg = `Dear ${s.parent},\n\nThis is ${CFG.CENTER.name}.\nStudent: *${s.name}* (${s.id})\n\nPlease contact us for any queries.\n📞 ${CFG.CENTER.phone}`;
   openWA(s.phone, msg);
+}
+
+/* ═══════════════════════════════════════════════════════
+   COMMUTE — how students travel to tuition
+   Field used: student.commute ∈ {'', 'Walking','Parent','Cycle','Bike'}
+═══════════════════════════════════════════════════════ */
+const COMMUTE_MODES = [
+  { v:'Walking', label:'Walking',     emoji:'🚶',  bg:'#f1f5f9', fg:'#475569' },
+  { v:'Parent',  label:'Parent Drop', emoji:'👨‍👩‍👧', bg:'#dbeafe', fg:'#1d4ed8' },
+  { v:'Cycle',   label:'Cycle',       emoji:'🚲',  bg:'#dcfce7', fg:'#166534' },
+  { v:'Bike',    label:'Bike',        emoji:'🏍️', bg:'#fef3c7', fg:'#92400e' }
+];
+
+function setStudentCommute(id, value) {
+  const s = students.find(st => st.id === id);
+  if (!s) return;
+  s.commute = value;
+  saveStudents();
+  runBackup('change');
+  renderCommutePage();
+  if (typeof renderCommuteDashCard === 'function') renderCommuteDashCard();
+  showToast('✅ Commute updated: ' + s.name);
+}
+
+function renderCommutePage() {
+  const body = document.getElementById('commute-body');
+  if (!body) return;
+  const active = students.filter(s => s && s.status === 'active');
+  document.getElementById('commute-total-count').textContent = active.length;
+
+  // Summary cards
+  const counts = { Walking:0, Parent:0, Cycle:0, Bike:0, unset:0 };
+  active.forEach(s => {
+    if (s.commute && counts.hasOwnProperty(s.commute)) counts[s.commute]++;
+    else counts.unset++;
+  });
+  const cardsEl = document.getElementById('commute-summary-cards');
+  if (cardsEl) {
+    cardsEl.innerHTML = COMMUTE_MODES.map(m => `
+      <div style="background:${m.bg};border-radius:10px;padding:12px 14px;border:.5px solid ${m.fg}22">
+        <div style="font-size:11px;color:${m.fg};margin-bottom:4px">${m.emoji} ${m.label}</div>
+        <div style="font-size:22px;font-weight:800;color:${m.fg}">${counts[m.v]}</div>
+      </div>`).join('');
+  }
+
+  // Filters
+  const q = (document.getElementById('commute-search')?.value || '').toLowerCase().trim();
+  const filterVal = document.getElementById('commute-filter')?.value || 'all';
+  let list = active;
+  if (q) list = list.filter(s => (s.name||'').toLowerCase().includes(q) || (s.id||'').toLowerCase().includes(q) || String(s.grade||'').toLowerCase().includes(q));
+  if (filterVal !== 'all') list = list.filter(s => (s.commute||'') === filterVal);
+
+  if (!list.length) {
+    body.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--tx3)">No students found</td></tr>';
+    return;
+  }
+
+  body.innerHTML = list.map(s => {
+    const opts = COMMUTE_MODES.map(m => `<option value="${m.v}" ${s.commute===m.v?'selected':''}>${m.emoji} ${m.label}</option>`).join('');
+    return `<tr>
+      <td><div class="flex-c"><div class="av" style="background:${s.color}">${(s.name||'?')[0]}</div><div style="font-weight:500;font-size:12px">${s.name}</div></div></td>
+      <td style="font-size:11px;color:var(--tx3)">${s.id}</td>
+      <td>${s.grade==='KG'?'KG':'Class '+s.grade}</td>
+      <td style="font-size:12px">${s.phone||'—'}</td>
+      <td><select class="fi" style="font-size:12px" onchange="setStudentCommute('${s.id}', this.value)">
+        <option value="" ${!s.commute?'selected':''}>— Not Set —</option>
+        ${opts}
+      </select></td>
+    </tr>`;
+  }).join('');
+}
+
+function exportCommuteCSV() {
+  const active = students.filter(s => s && s.status === 'active');
+  const rows = [['Student','ID','Class','Parent Phone','Commute Mode']];
+  active.forEach(s => rows.push([s.name, s.id, s.grade, s.phone||'', s.commute||'Not Set']));
+  const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type:'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'commute-list.csv';
+  a.click();
+  showToast('✅ Commute list exported!');
+}
+
+/* Dashboard overview card — total students per commute mode (all active students,
+   not just those present today; see the Commute page for the live daily breakdown). */
+function renderCommuteDashCard() {
+  const cardsEl = document.getElementById('dash-commute-cards');
+  if (!cardsEl) return;
+  const active = students.filter(s => s && s.status === 'active');
+  const counts = { Walking:0, Parent:0, Cycle:0, Bike:0, unset:0 };
+  active.forEach(s => {
+    if (s.commute && counts.hasOwnProperty(s.commute)) counts[s.commute]++;
+    else counts.unset++;
+  });
+  const totalEl = document.getElementById('dash-commute-total');
+  if (totalEl) totalEl.textContent = active.length + ' active students';
+  cardsEl.innerHTML = COMMUTE_MODES.map(m => `
+    <div style="background:${m.bg};border-radius:9px;padding:10px 11px;border:.5px solid ${m.fg}22">
+      <div style="font-size:10px;color:${m.fg};margin-bottom:3px">${m.emoji} ${m.label}</div>
+      <div style="font-size:18px;font-weight:800;color:${m.fg}">${counts[m.v]}</div>
+    </div>`).join('') + (counts.unset > 0 ? `
+    <div style="grid-column:1/-1;font-size:10px;color:var(--tx3);margin-top:2px">⚠️ ${counts.unset} student${counts.unset!==1?'s':''} without a commute mode set — <span style="text-decoration:underline">click here</span> to update.</div>` : '');
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -4518,13 +4731,31 @@ function updateAttCounts(batchStudents, batchId, session) {
     session  = document.getElementById('att-session')?.value || 'morning';
   }
   let p = 0, a = 0, l = 0;
+  let cycleCnt = 0, bikeCnt = 0, walkCnt = 0, parentCnt = 0;
   batchStudents.forEach(s => {
     const v = attState[_attKey(s.id, batchId, session)] || '';
     if (v === 'P') p++;
     else if (v === 'A') a++;
     else if (v === 'L') l++;
     // unmarked = not yet marked (don't count as present in totals)
+    // Commute — only count for students physically present today
+    if (v === 'P' || v === 'L') {
+      if (s.commute === 'Cycle') cycleCnt++;
+      else if (s.commute === 'Bike') bikeCnt++;
+      else if (s.commute === 'Walking') walkCnt++;
+      else if (s.commute === 'Parent') parentCnt++;
+    }
   });
+  const commuteBanner = document.getElementById('att-commute-summary');
+  if (commuteBanner) {
+    const anyPresent = (p + l) > 0;
+    commuteBanner.style.display = anyPresent ? 'flex' : 'none';
+    const setC = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    setC('att-cycle-count',  '🚲 ' + cycleCnt + ' Cycle' + (cycleCnt!==1?'s':''));
+    setC('att-bike-count',   '🏍️ ' + bikeCnt + ' Bike' + (bikeCnt!==1?'s':''));
+    setC('att-walk-count',   '🚶 ' + walkCnt + ' Walking');
+    setC('att-parent-count', '👨‍👩‍👧 ' + parentCnt + ' Parent Drop');
+  }
   const tot = batchStudents.length;
   const marked = p + a + l;
   document.getElementById('att-pc-lbl').textContent = p + ' Present';
@@ -9591,6 +9822,34 @@ function saveSalaryPayments() {
   try { localStorage.setItem('_erp_salary_payments', JSON.stringify(salaryPayments)); } catch(e) {}
 }
 
+/* ── Convert salaryPayments back from array format (Sheets/backup JSON) to the
+   {staffId|monthVal: {...}} object format the app reads via getSalaryPayKey().
+   Without this, every restore (local JSON or Google Sheets) silently wiped every
+   staff member's "Salary Paid" status because the raw array has numeric indices
+   instead of "staffId|month" keys. ── */
+function _salaryArrayToObj(input) {
+  if (!input) return {};
+  if (!Array.isArray(input)) return (typeof input === 'object') ? input : {};
+  const obj = {};
+  input.forEach(function(item) {
+    if (!item) return;
+    const monthVal = item.monthVal || item.month || '';
+    const staffId  = item.staffId || (item.key ? String(item.key).split('|')[0] : '');
+    const key      = item.key || (staffId && monthVal ? staffId + '|' + monthVal : '');
+    if (!key) return;
+    obj[key] = {
+      paid:     item.paid !== undefined ? item.paid : true, // presence in sheet/backup implies it was paid
+      amount:   item.amount || 0,
+      mode:     item.mode || 'Cash',
+      date:     item.date || item.paidOn || '',
+      note:     item.note || '',
+      staffId:  staffId,
+      monthVal: monthVal
+    };
+  });
+  return obj;
+}
+
 function getSalaryPayKey(staffId, monthVal) {
   return staffId + '|' + monthVal; // e.g. "s_abc|2026-05"
 }
@@ -9717,6 +9976,7 @@ function confirmSalaryPaid(staffId, monthVal, netPay) {
 
   salaryPayments[key] = { paid: true, amount, mode, note, date: dateStr, staffId, monthVal };
   saveSalaryPayments();
+  runBackup('change');
 
   // Build WA slip message
   const [yr, mo] = monthVal.split('-').map(Number);
@@ -12812,10 +13072,15 @@ function getSnapshot() {
   } catch(e) {}
 
   // salaryPayments is stored as an object {staffId|month: {...}} — convert to array
+  // NOTE: source objects use `monthVal` (e.g. "2026-07"), but the Apps Script / Salary
+  // sheet expects `month` + `name` columns — add them here so sync round-trips correctly.
   const salaryPaymentsRaw = ls('_erp_salary_payments') || {};
   const salaryPaymentsArr = Array.isArray(salaryPaymentsRaw)
     ? salaryPaymentsRaw
-    : Object.entries(salaryPaymentsRaw).map(([k, v]) => ({ key: k, ...v }));
+    : Object.entries(salaryPaymentsRaw).map(([k, v]) => {
+        const st = (typeof staffData !== 'undefined' ? staffData : []).find(x => x && x.id === v.staffId);
+        return { key: k, ...v, month: v.monthVal || v.month || '', name: st ? st.name : '' };
+      });
 
   return {
     version:          '3.0',
@@ -12955,7 +13220,7 @@ function restoreBackup(input) {
       try { localStorage.setItem('_erp_exams',           JSON.stringify(data.exams           || [])); } catch(e) {}
       try { localStorage.setItem('_erp_batches',         JSON.stringify(data.batches         || [])); } catch(e) {}
       try { localStorage.setItem('_erp_notifs',          JSON.stringify(data.notifications   || [])); } catch(e) {}
-      try { localStorage.setItem('_erp_salary_payments', JSON.stringify(data.salaryPayments  || [])); } catch(e) {}
+      try { localStorage.setItem('_erp_salary_payments', JSON.stringify(_salaryArrayToObj(data.salaryPayments))); } catch(e) {}
       if (data.staffAdvances) try { localStorage.setItem('_erp_staff_advances', JSON.stringify(data.staffAdvances)); } catch(e) {}
       if (data.staffAttendance) try { localStorage.setItem('_erp_staff_att', JSON.stringify(data.staffAttendance)); } catch(e) {}
 
@@ -13263,7 +13528,7 @@ async function restoreFromSheets() {
     localStorage.setItem('_erp_exams',           JSON.stringify(safe(data.exams, [])));
     localStorage.setItem('_erp_batches',         JSON.stringify(safe(data.batches, [])));
     localStorage.setItem('_erp_notifs',          JSON.stringify(safe(data.notifications, [])));
-    localStorage.setItem('_erp_salary_payments', JSON.stringify(safe(data.salaryPayments, [])));
+    localStorage.setItem('_erp_salary_payments', JSON.stringify(_salaryArrayToObj(data.salaryPayments)));
     if (data.staffAdvances) localStorage.setItem('_erp_staff_advances', JSON.stringify(safe(data.staffAdvances, [])));
 
     // ── Attendance ────────────────────────────────────────────
@@ -14060,6 +14325,41 @@ function renderExpectedIncome() {
   }
 }
 
+/* ── Expected Expense — Next Month — dashboard card ──────────────
+   Uses the SAME base-pay + bonus logic as Staff → Payroll (generatePayroll /
+   _calcStaffPay), but WITHOUT attendance-based deductions (LOP/lates), since
+   next month's attendance hasn't happened yet. This gives a "full pay"
+   projection so it's directly comparable to Expected Income. */
+function renderExpectedExpense() {
+  const now    = new Date();
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const nxDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  const nxLabel = MONTHS[nxDate.getMonth()] + ' ' + nxDate.getFullYear();
+
+  const staffList = (typeof staffData !== 'undefined' ? staffData : []).filter(s => s && s.name && s.status !== 'inactive');
+  let salaryTotal = 0, bonusTotal = 0;
+  staffList.forEach(s => {
+    salaryTotal += (s.consolidatedPay || s.baseSalary || 0);
+    bonusTotal  += (s.bonus || 0);
+  });
+  const grandTotal = salaryTotal + bonusTotal;
+
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  set('exp-expense-month-label', nxLabel);
+  set('exp-expense-salary',      '₹' + salaryTotal.toLocaleString('en-IN'));
+  set('exp-expense-staffcount',  staffList.length + ' staff member' + (staffList.length !== 1 ? 's' : ''));
+  set('exp-expense-bonus',       '₹' + bonusTotal.toLocaleString('en-IN'));
+  set('exp-expense-total',       '₹' + grandTotal.toLocaleString('en-IN'));
+  const noteEl2 = document.getElementById('exp-expense-note');
+  if (noteEl2) {
+    if (salaryTotal === 0 && staffList.length > 0) {
+      noteEl2.textContent = '⚠️ Set Consolidated Pay for staff (Staff page) to see projected salary expense.';
+    } else {
+      noteEl2.textContent = 'Same base pay + bonus logic used in Staff → Payroll (before any LOP/attendance deductions), for ' + staffList.length + ' staff.';
+    }
+  }
+}
+
 /* ── Class-wise Strength — dashboard card ── */
 function renderClassStrength() {
   const barsEl = document.getElementById('dash-class-bars');
@@ -14254,6 +14554,12 @@ function updateDashStats() {
 
   // Expected Income Next Month card
   renderExpectedIncome();
+
+  // Expected Expense Next Month card (Staff Salary as per Payroll logic)
+  if (typeof renderExpectedExpense === 'function') renderExpectedExpense();
+
+  // Commute overview card (Walking / Parent / Cycle / Bike)
+  if (typeof renderCommuteDashCard === 'function') renderCommuteDashCard();
 
   // Charts
   if (window.Chart && document.getElementById('chart-income')) setTimeout(initCharts, 50);
@@ -15729,6 +16035,7 @@ function submitAdmission() {
   const school   = document.getElementById('adm-school')?.value.trim() || '';
   const dob      = document.getElementById('adm-dob')?.value || '';
   const course   = document.getElementById('adm-course')?.value || '';
+  const commute  = document.getElementById('adm-commute')?.value || '';
   const fee      = document.getElementById('adm-fee')?.value || '0';
   const admFee   = document.getElementById('adm-admfee')?.value || '0';
   const admNo    = document.getElementById('adm-no')?.value || genAdmNo();
@@ -15760,7 +16067,7 @@ function submitAdmission() {
 
   const newStudent = {
     id: _safeId, admNo, name, parent, phone,
-    grade, dob, school, course, subjects, fee,
+    grade, dob, school, course, subjects, fee, commute,
     status: 'active', color: COLORS[students.length % COLORS.length],
     admDate: new Date().toLocaleDateString('en-IN'),
     noFeeAtAdmission: noFeeNow,
@@ -16013,6 +16320,8 @@ function resetAdmForm() {
   });
   document.getElementById('adm-grade').value = '';
   document.getElementById('adm-course').value = '';
+  const commuteEl = document.getElementById('adm-commute');
+  if (commuteEl) commuteEl.value = '';
   document.querySelectorAll('#adm-class-chips button').forEach(b => {
     b.style.background='var(--card)'; b.style.color='var(--tx)';
     b.style.borderColor='var(--br)'; b.style.fontWeight='500';
@@ -16169,6 +16478,15 @@ function editStudent(idx) {
       ${s.course ? `<div style="font-size:11px;color:#7c3aed;margin-top:4px;padding:4px 8px;background:#ede9fe;border-radius:6px">Currently: ${s.course}</div>` : '<div style="font-size:11px;color:var(--tx3);margin-top:4px">No batch assigned yet. Select one above.</div>'}
     </div>
     <div class="fg"><label class="fl">School</label><input class="fi" id="edit-school" value="${s.school||''}"></div>
+    <div class="fg"><label class="fl">🚲 Commute to Tuition</label>
+      <select class="fi" id="edit-commute">
+        <option value="" ${!s.commute?'selected':''}>— Select —</option>
+        <option value="Walking" ${s.commute==='Walking'?'selected':''}>🚶 Walking</option>
+        <option value="Parent" ${s.commute==='Parent'?'selected':''}>👨‍👩‍👧 Parent Drop</option>
+        <option value="Cycle" ${s.commute==='Cycle'?'selected':''}>🚲 Cycle</option>
+        <option value="Bike" ${s.commute==='Bike'?'selected':''}>🏍️ Bike</option>
+      </select>
+    </div>
     <div class="fg"><label class="fl">Status</label>
       <select class="fi" id="edit-status">
         <option value="active" ${s.status==='active'?'selected':''}>Active</option>
@@ -16194,6 +16512,7 @@ function saveEditStudent(idx) {
   s.grade    = document.getElementById('edit-grade')?.value || s.grade;
   s.subjects = document.getElementById('edit-subjects')?.value.trim() || '';
   s.school   = document.getElementById('edit-school')?.value.trim() || s.school;
+  s.commute  = document.getElementById('edit-commute')?.value || '';
   s.status   = document.getElementById('edit-status')?.value || s.status;
   const newCourse = document.getElementById('edit-course')?.value || '';
   if (newCourse !== undefined) s.course = newCourse;

@@ -767,6 +767,28 @@ tbody tr:hover td{background:var(--bg)}
     <div id="dash-class-bars" style="display:flex;flex-direction:column;gap:7px"></div>
   </div>
 
+  <!-- 💹 Class-wise Income Summary — This Month / All Time toggle -->
+  <div class="card" style="margin-bottom:14px" id="dash-class-income-card">
+    <div class="card-hd" style="margin-bottom:6px;flex-wrap:wrap;gap:8px">
+      <span class="card-title">💹 Class-wise Income Summary</span>
+      <div id="dash-class-income-toggle" class="seg" style="margin-left:auto;display:flex;gap:4px;background:var(--bg);border-radius:9px;padding:3px">
+        <button class="seg-b on" id="dci-tab-month" onclick="setClassIncomePeriod('month',this)">This Month</button>
+        <button class="seg-b" id="dci-tab-all" onclick="setClassIncomePeriod('all',this)">All Time</button>
+      </div>
+    </div>
+    <div id="dash-class-income-total" style="font-size:11px;color:var(--tx3);font-weight:600;margin-bottom:8px"></div>
+    <div id="dash-class-income-bars" style="display:flex;flex-direction:column;gap:7px"></div>
+  </div>
+
+  <!-- 🎓 11th/12th Salary Readiness — fees collected vs senior-staff salary due -->
+  <div class="card" style="margin-bottom:14px" id="dash-senior-salary-card">
+    <div class="card-hd" style="margin-bottom:10px">
+      <span class="card-title">🎓 11th/12th Salary Readiness</span>
+      <span id="dash-senior-month" style="font-size:11px;color:var(--tx3);font-weight:600"></span>
+    </div>
+    <div id="dash-senior-body"></div>
+  </div>
+
   <div class="row2">
     <div class="card">
       <div class="card-hd"><span class="card-title" id="ct-income">Income Trend (6 months)</span></div>
@@ -3572,6 +3594,10 @@ const MODALS = {
     <div class="frow">
       <div class="fg"><label class="fl">Join Date</label><input class="fi" id="m-sfjoin" type="date"></div>
       <div class="fg"><label class="fl">Experience</label><input class="fi" id="m-sfexp" placeholder="e.g. 5 yrs"></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;margin:4px 0 8px;padding:10px 12px;background:var(--bg);border-radius:8px;border:.5px solid var(--br)">
+      <input type="checkbox" id="m-sfsenior" style="width:16px;height:16px;cursor:pointer;flex-shrink:0">
+      <label for="m-sfsenior" style="font-size:12px;font-weight:600;color:var(--tx);cursor:pointer">🎓 Handles 11th / 12th (Senior Batch) — salary tracked against Class 11-12 fee collection</label>
     </div>
     <div style="background:var(--bg);border-radius:8px;padding:12px;margin:8px 0">
       <div style="font-size:11px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">💰 Consolidated Pay (₹/month)</div>
@@ -8760,6 +8786,7 @@ function saveStaff() {
     joinDate: document.getElementById('m-sfjoin')?.value || '',
     exp: document.getElementById('m-sfexp')?.value.trim() || '0 yrs',
     consolidatedPay: basic, extraDed: other, extraDedNote: otherNote,
+    seniorHandler: document.getElementById('m-sfsenior')?.checked || false,
     color: COLORS[staffData.length % COLORS.length]
   });
   saveStaffData(); renderStaff(); closeModal(); showToast(`✅ ${name} added to staff!`); runBackup('change');
@@ -8921,6 +8948,11 @@ function editStaffMember(idx) {
       <div class="fg"><label class="fl">Experience</label><input class="fi" id="esf-exp" value="${s.exp||''}"></div>
     </div>
 
+    <div style="display:flex;align-items:center;gap:8px;margin:4px 0 10px;padding:10px 12px;background:${s.seniorHandler?'#ede9fe':'var(--bg)'};border-radius:8px;border:.5px solid ${s.seniorHandler?'#c4b5fd':'var(--br)'}">
+      <input type="checkbox" id="esf-senior" ${s.seniorHandler?'checked':''} style="width:16px;height:16px;cursor:pointer;flex-shrink:0">
+      <label for="esf-senior" style="font-size:12px;font-weight:600;color:var(--tx);cursor:pointer">🎓 Handles 11th / 12th (Senior Batch) — salary tracked against Class 11-12 fee collection</label>
+    </div>
+
     <!-- ── Salary Section ── -->
     <div style="background:var(--bg);border-radius:10px;padding:14px;margin:10px 0;border:.5px solid var(--br)">
       <div style="font-size:11px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px">💰 Salary Structure</div>
@@ -9064,6 +9096,7 @@ function saveEditStaff(idx) {
   s.bonusNote    = document.getElementById('esf-bonusNote')?.value.trim() || '';
   s.extraDed     = parseFloat(document.getElementById('esf-other')?.value) || 0;
   s.extraDedNote = document.getElementById('esf-otherNote')?.value.trim() || '';
+  s.seniorHandler = document.getElementById('esf-senior')?.checked || false;
   saveStaffData(); renderStaff(); closeModal(); showToast(`✅ ${s.name} updated!`); runBackup('change');
 }
 
@@ -9267,6 +9300,160 @@ function saveStaffAtt() {
 }
 
 /* ── Payroll ──────────────────────────────────────────── */
+/* ── Shared per-staff net pay calc (used by Payroll + Dashboard cards) ── */
+function _calcStaffPay(s, yr, mo, daysInMonth, latesToLeave) {
+  var lopDays=0, clDays=0, hDays=0, lateDays=0;
+  for (var d=1; d<=daysInMonth; d++) {
+    var dt = yr+'-'+String(mo).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    var v  = staffAtt[s.id+'|'+dt] || '';
+    if (v==='LOP') lopDays++;
+    if (v==='CL')  clDays++;
+    if (v==='H')   hDays++;
+    if (v==='L')   lateDays++;
+  }
+  var lateAsLop = latesToLeave > 0 ? Math.floor(lateDays / latesToLeave) : 0;
+  var pay        = s.consolidatedPay || s.baseSalary || 0;
+  var dailyRate  = pay / 26;
+  var extraDed   = s.extraDed || 0;
+  var bonus      = s.bonus || 0;
+  var effectiveLop = lopDays + lateAsLop;
+  var lopDed = Math.round(effectiveLop * dailyRate);
+  var net = Math.max(0, pay + bonus - lopDed - extraDed);
+  return { s:s, pay:pay, bonus:bonus, lopDays:lopDays, clDays:clDays, hDays:hDays, lateDays:lateDays, lateAsLop:lateAsLop, lopDed:lopDed, extraDed:extraDed, net:net, dailyRate:dailyRate };
+}
+
+/* ── Senior Batch (Class 11-12) fee collection & salary readiness ──────
+   Staff flagged s.seniorHandler are paid once enough fee has come in
+   from Class 11 & 12 students for that month. These helpers compute
+   both sides so Dashboard + Payroll can show a "Ready to Pay" signal. */
+function _srClassFeeCollected(monthLabel) {
+  return fees.filter(function(f) { return f && !f._deleted && (f.paid||0) > 0 && f.month === monthLabel; })
+    .reduce(function(sum, f) {
+      var stu = students.find(function(s){ return s.id === f.studentId; }) ||
+                students.find(function(s){ return s.name === f.student; });
+      var g = stu ? String(stu.grade||'').trim() : '';
+      return (g === '11' || g === '12') ? sum + (f.paid||0) : sum;
+    }, 0);
+}
+function _srStaffSummary(ymStr) {
+  // ymStr = "YYYY-MM". Returns { staff:[{s,net,paid}], totalNet, totalPending, collected, monthLabel }
+  var parts = (ymStr || _feeMonthYM()).split('-');
+  var yr = parseInt(parts[0]), mo = parseInt(parts[1]);
+  var daysInMonth = new Date(yr, mo, 0).getDate();
+  var latesToLeave = CFG.ATTENDANCE?.latesToLeave || 10;
+  var MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var monthLabel = MONTHS[mo-1] + ' ' + yr;
+  var seniors = staffData.filter(function(s) { return s && s.seniorHandler; });
+  var totalNet = 0, totalPending = 0;
+  var list = seniors.map(function(s) {
+    var calc = _calcStaffPay(s, yr, mo, daysInMonth, latesToLeave);
+    var salPaid = salaryPayments[getSalaryPayKey(s.id, ymStr)];
+    var isPaid = !!(salPaid && salPaid.paid);
+    totalNet += calc.net;
+    if (!isPaid) totalPending += calc.net;
+    return { s:s, net:calc.net, isPaid:isPaid };
+  });
+  return { staff:list, totalNet:totalNet, totalPending:totalPending, collected:_srClassFeeCollected(monthLabel), monthLabel:monthLabel };
+}
+
+/* ── Class-wise Income Summary — dashboard card ── */
+var _classIncomePeriod = 'month';
+function setClassIncomePeriod(mode, btn) {
+  _classIncomePeriod = mode;
+  var wrap = document.getElementById('dash-class-income-toggle');
+  if (wrap) wrap.querySelectorAll('.seg-b').forEach(function(b){ b.classList.remove('on'); });
+  if (btn) btn.classList.add('on');
+  renderClassIncomeSummary();
+}
+function renderClassIncomeSummary() {
+  var barsEl = document.getElementById('dash-class-income-bars');
+  var totEl  = document.getElementById('dash-class-income-total');
+  if (!barsEl) return;
+  var curLbl = _feeMonthLabel();
+  var paidFees = fees.filter(function(f) {
+    return f && !f._deleted && (f.paid||0) > 0 && (_classIncomePeriod === 'all' || f.month === curLbl);
+  });
+  if (!paidFees.length) {
+    barsEl.innerHTML = '<div style="font-size:12px;color:var(--tx3);text-align:center;padding:10px">No fee collections yet</div>';
+    if (totEl) totEl.textContent = '';
+    return;
+  }
+  var gradeMap = {}, grandTotal = 0;
+  paidFees.forEach(function(f) {
+    var stu = students.find(function(s){ return s.id === f.studentId; }) ||
+              students.find(function(s){ return s.name === f.student; });
+    var g = stu ? String(stu.grade || 'Unknown').trim() : 'Unknown';
+    gradeMap[g] = (gradeMap[g] || 0) + (f.paid || 0);
+    grandTotal += (f.paid || 0);
+  });
+  var gradeOrder = function(g) { if (g==='KG') return -1; if (g==='COURSE') return 998; if (g==='Unknown') return 999; var n=parseInt(g); return isNaN(n)?997:n; };
+  var sorted = Object.entries(gradeMap).sort(function(a,b){ return gradeOrder(a[0]) - gradeOrder(b[0]); });
+  var max = Math.max.apply(null, sorted.map(function(e){ return e[1]; }).concat([1]));
+  var COLORS = ['#185FA5','#7c3aed','#16a34a','#ca8a04','#dc2626','#0891b2','#be185d','#d97706','#4f46e5','#059669','#0d9488','#c026d3','#ea580c'];
+  if (totEl) totEl.textContent = (_classIncomePeriod === 'all' ? 'All-time total: ' : 'This month: ') + '₹' + grandTotal.toLocaleString('en-IN');
+  barsEl.innerHTML = sorted.map(function(entry, i) {
+    var g = entry[0], amt = entry[1];
+    var label = g === 'KG' ? 'KG' : (g === 'COURSE' ? '🎨 Courses' : (g === 'Unknown' ? 'Unknown' : 'Class ' + g));
+    var pct = Math.round(amt / max * 100);
+    var color = COLORS[i % COLORS.length];
+    return '<div style="display:flex;align-items:center;gap:8px">'
+      + '<div style="width:66px;font-size:11px;font-weight:600;color:var(--tx2);flex-shrink:0">' + label + '</div>'
+      + '<div style="flex:1;background:var(--bg);border-radius:6px;height:18px;overflow:hidden">'
+      + '<div style="width:' + pct + '%;height:100%;background:' + color + ';border-radius:6px"></div>'
+      + '</div>'
+      + '<div style="width:84px;text-align:right;font-size:11px;font-weight:700;color:var(--tx);flex-shrink:0">₹' + amt.toLocaleString('en-IN') + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+/* ── 11th/12th Salary Readiness — dashboard card ── */
+function renderSeniorSalaryReadiness() {
+  var body = document.getElementById('dash-senior-body');
+  var monthTag = document.getElementById('dash-senior-month');
+  if (!body) return;
+  var ym = _feeMonthYM();
+  var sum = _srStaffSummary(ym);
+  if (monthTag) monthTag.textContent = sum.monthLabel;
+
+  if (!sum.staff.length) {
+    body.innerHTML = '<div style="font-size:12px;color:var(--tx3);padding:6px 2px;line-height:1.6">No staff tagged as 11th/12th handlers yet. Open a staff member in <b>Staff → Edit</b> and check "Handles 11th / 12th" to enable this.</div>'
+      + '<button class="btn btn-sm" style="margin-top:6px" onclick="navTo(\'staff\')">Go to Staff →</button>';
+    return;
+  }
+
+  var ready = sum.collected >= sum.totalPending;
+  var shortfall = Math.max(0, sum.totalPending - sum.collected);
+
+  var topBoxes = '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:10px">'
+    + '<div style="background:#ede9fe;border-radius:10px;padding:11px 13px;border:.5px solid #c4b5fd">'
+    + '  <div style="font-size:10px;color:#5b21b6;margin-bottom:4px">🎓 Fees Collected — Class 11 &amp; 12</div>'
+    + '  <div style="font-size:19px;font-weight:800;color:#7c3aed">₹' + sum.collected.toLocaleString('en-IN') + '</div>'
+    + '  <div style="font-size:9px;color:#5b21b6;margin-top:2px">' + sum.monthLabel + '</div>'
+    + '</div>'
+    + '<div style="background:' + (ready ? '#dcfce7' : '#fff7ed') + ';border-radius:10px;padding:11px 13px;border:.5px solid ' + (ready ? '#bbf7d0' : '#fed7aa') + '">'
+    + '  <div style="font-size:10px;color:' + (ready ? '#166534' : '#9a3412') + ';margin-bottom:4px">💰 Senior Staff Salary Pending</div>'
+    + '  <div style="font-size:19px;font-weight:800;color:' + (ready ? '#16a34a' : '#c2410c') + '">₹' + sum.totalPending.toLocaleString('en-IN') + '</div>'
+    + '  <div style="font-size:9px;color:' + (ready ? '#166534' : '#9a3412') + ';margin-top:2px">' + (ready ? '✅ Ready to pay' : '⏳ Short by ₹' + shortfall.toLocaleString('en-IN')) + '</div>'
+    + '</div></div>';
+
+  var rows = sum.staff.map(function(item) {
+    var s = item.s;
+    var badge = item.isPaid
+      ? '<span style="font-size:9px;background:#dcfce7;color:#166534;padding:2px 8px;border-radius:20px;font-weight:700">✓ PAID</span>'
+      : (sum.collected >= item.net
+          ? '<span style="font-size:9px;background:#ede9fe;color:#5b21b6;padding:2px 8px;border-radius:20px;font-weight:700">✅ READY</span>'
+          : '<span style="font-size:9px;background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:20px;font-weight:700">⏳ WAITING</span>');
+    return '<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-top:.5px solid var(--br)">'
+      + '<div class="av" style="background:' + s.color + ';width:28px;height:28px;font-size:12px;font-weight:700;flex-shrink:0">' + (s.name||'?')[0] + '</div>'
+      + '<div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600;color:var(--tx)">' + s.name + '</div><div style="font-size:10px;color:var(--tx3)">Net Pay ₹' + item.net.toLocaleString('en-IN') + '</div></div>'
+      + badge
+      + '</div>';
+  }).join('');
+
+  body.innerHTML = topBoxes + rows
+    + '<button class="btn btn-sm" style="margin-top:10px" onclick="navTo(\'staff\');setTimeout(()=>{const b=document.getElementById(\'sf-tab-pay\');if(b)switchStaffTab(\'pay\',b)},120)">Open Payroll →</button>';
+}
+
 function generatePayroll() {
   var monthEl = document.getElementById('sf-pay-month');
   if (!monthEl || !monthEl.value) {
@@ -9280,28 +9467,7 @@ function generatePayroll() {
   var monthLabel = months[mo-1] + ' ' + yr;
 
   var latesToLeave = CFG.ATTENDANCE?.latesToLeave || 10;
-  var payData = staffData.map(function(s) {
-    var lopDays=0, clDays=0, hDays=0, lateDays=0;
-    for (var d=1; d<=daysInMonth; d++) {
-      var dt = yr+'-'+String(mo).padStart(2,'0')+'-'+String(d).padStart(2,'0');
-      var v  = staffAtt[s.id+'|'+dt] || '';
-      if (v==='LOP') lopDays++;
-      if (v==='CL')  clDays++;
-      if (v==='H')   hDays++;
-      if (v==='L')   lateDays++;
-    }
-    // Convert lates to leave days per setting
-    var lateAsLop = latesToLeave > 0 ? Math.floor(lateDays / latesToLeave) : 0;
-    var pay        = s.consolidatedPay || s.baseSalary || 0;
-    var dailyRate  = pay / 26;
-    var lopDed     = Math.round(lopDays * dailyRate);
-    var extraDed   = s.extraDed || 0;
-    var bonus      = s.bonus || 0;
-    var effectiveLop = lopDays + lateAsLop;
-    lopDed = Math.round(effectiveLop * dailyRate);
-    var net = Math.max(0, pay + bonus - lopDed - extraDed);
-    return { s:s, pay:pay, bonus:bonus, lopDays:lopDays, clDays:clDays, hDays:hDays, lateDays:lateDays, lateAsLop:lateAsLop, lopDed:lopDed, extraDed:extraDed, net:net, dailyRate:dailyRate };
-  });
+  var payData = staffData.map(function(s) { return _calcStaffPay(s, yr, mo, daysInMonth, latesToLeave); });
 
   var totalNet = payData.reduce(function(a,b){return a+b.net;}, 0);
 
@@ -9399,6 +9565,17 @@ function generatePayroll() {
       + '</div>'
       : '';
 
+    // Senior Batch (Class 11-12) fee-vs-salary readiness banner
+    var seniorBanner = '';
+    if (s.seniorHandler) {
+      var srCollected = (typeof _srClassFeeCollected === 'function') ? _srClassFeeCollected(monthLabel) : 0;
+      var srReady = srCollected >= item.net;
+      seniorBanner = '<div style="background:'+(srReady?'#ede9fe':'#fff7ed')+';border:.5px solid '+(srReady?'#c4b5fd':'#fed7aa')+';border-radius:8px;padding:7px 12px;margin:8px 0;font-size:11px;color:'+(srReady?'#5b21b6':'#9a3412')+'">'
+        + '🎓 <b>Senior Batch (11-12)</b> — Fees collected this month: &#8377;'+srCollected.toLocaleString('en-IN')
+        + (srReady ? ' · ✅ Enough collected to pay' : ' · ⏳ Short by &#8377;'+(item.net-srCollected).toLocaleString('en-IN'))
+        + '</div>';
+    }
+
     cards +=
       '<div class="card" style="margin-bottom:10px;padding:0;overflow:hidden;border-left:3px solid '+(salPaid&&salPaid.paid?'#16a34a':'var(--br)')+';">'
       // Header
@@ -9427,6 +9604,7 @@ function generatePayroll() {
       +extraRow
       +advRow
       +paidBanner
+      +seniorBanner
       // Add deduction row
       +'  <div style="display:flex;align-items:center;gap:8px;margin-top:8px;padding-top:8px;border-top:.5px solid var(--br)">'
       +'    <input type="number" placeholder="Extra &#8377;" id="xtra-amt-'+s.id+'" value="'+(s.extraDed||'')+'" '
@@ -14169,6 +14347,12 @@ function updateDashStats() {
 
   // Class-wise Strength card
   renderClassStrength();
+
+  // Class-wise Income Summary card
+  if (typeof renderClassIncomeSummary === 'function') renderClassIncomeSummary();
+
+  // 11th/12th Senior Salary Readiness card
+  if (typeof renderSeniorSalaryReadiness === 'function') renderSeniorSalaryReadiness();
 
   // Expected Income Next Month card
   renderExpectedIncome();

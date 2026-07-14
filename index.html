@@ -14000,7 +14000,7 @@ function _todayFeesList() {
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
   const todayEnd   = todayStart + 24 * 60 * 60 * 1000;
   return fees
-    .filter(f => f && f.rcpt && f.paidOn && (f.status === 'paid' || f.status === 'partial') && (f.paid || 0) > 0)
+    .filter(f => f && f.rcpt && !f._deleted && f.paidOn && (f.status === 'paid' || f.status === 'partial') && (f.paid || 0) > 0)
     .filter(f => { const ts = _feeParsePaidOn(f); return ts >= todayStart && ts < todayEnd; })
     .sort((a, b) => _feeParsePaidOn(b) - _feeParsePaidOn(a)); // most recent payment first
 }
@@ -14292,7 +14292,7 @@ function updateDashStats() {
 
   const _CM3 = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const thisMonthPaid = fees.filter(f => {
-    if (!f || f.status !== 'paid') return false;
+    if (!f || f._deleted || f.status !== 'paid') return false;
     if (f.month === curLbl) return true;
     if (f.type === 'admission' && f.paidOn) {
       try {
@@ -14303,7 +14303,7 @@ function updateDashStats() {
     }
     return false;
   }).reduce((s,f) => s + (f.paid||0), 0);
-  const totalPending  = fees.filter(f => f.status !== 'paid' && f.balance > 0)
+  const totalPending  = fees.filter(f => f && !f._deleted && f.status !== 'paid' && f.balance > 0)
                              .reduce((s,f) => s + (f.balance||0), 0);
 
   if (el2) el2.textContent = '\u20B9' + thisMonthPaid.toLocaleString('en-IN');

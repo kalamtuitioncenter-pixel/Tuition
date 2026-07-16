@@ -12469,7 +12469,7 @@ function initAI(){initAIFilter();renderAICards();renderPredictCards();renderStud
 /* ═══════════════════════════════════════════════════════
    BACKUP
 ═══════════════════════════════════════════════════════ */
-const BK_GS_CODE = `// ═══ Kalam Tuition ERP — Google Apps Script v3.3 ════════════
+const BK_GS_CODE = `// ═══ Kalam Tuition ERP — Google Apps Script v3.4 ════════════
 // 1. Open Google Sheet → Extensions → Apps Script
 // 2. Paste this entire code, replace SPREADSHEET_ID below
 // 3. Deploy → New Deployment → Web App → Execute as: Me → Who has access: Anyone → Deploy
@@ -12510,7 +12510,8 @@ function doGet(e) {
       id:r['ID']||'', admNo:r['Adm No']||'', name:r['Name']||'',
       grade:r['Grade']||'', parent:r['Parent']||'', phone:r['Phone']||'',
       course:r['Course']||'', subjects:r['Subjects']?r['Subjects'].toString().split(','):[],
-      fee:Number(r['Fee'])||0, admDate:r['Adm Date']||'', status:r['Status']||'active'
+      fee:Number(r['Fee'])||0, admDate:r['Adm Date']||'', status:r['Status']||'active',
+      commute:r['Commute']||''
     }));
 
     // Fees
@@ -12575,6 +12576,13 @@ function doGet(e) {
       mode:r['Mode']||'Cash', paidOn:r['Paid On']||'', note:r['Note']||''
     }));
 
+    // Staff Advances / Loans
+    const staffAdvances = readSht('StaffAdvances').map(r => ({
+      id:r['ID']||'', staffId:r['Staff ID']||'', type:r['Type']||'advance',
+      amount:Number(r['Amount'])||0, date:r['Date']||'', mode:r['Mode']||'',
+      note:r['Note']||'', createdAt:r['Created At']||''
+    }));
+
     // Staff Attendance
     const staffAttendance = {};
     readSht('StaffAttendance').forEach(r => {
@@ -12618,6 +12626,11 @@ function doGet(e) {
         lateFee:Number(r['Late Fee'])||0, subjectFee:Number(r['Subject Fee'])||0
       };
     });
+
+    // Other Courses (catalog)
+    const otherCourses = readSht('OtherCourses').map(r => ({
+      id:Number(r['ID'])||0, name:r['Name']||'', fee:Number(r['Fee'])||0, schedule:r['Schedule']||''
+    }));
 
     // Student Summary
     const studentSummary = {};
@@ -12666,11 +12679,12 @@ function doGet(e) {
     return ContentService.createTextOutput(JSON.stringify({
       status: 'ok',
       data: {
-        version: '3.3', timestamp: new Date().toISOString(), source: 'google_sheets',
+        version: '3.4', timestamp: new Date().toISOString(), source: 'google_sheets',
         center, students, fees, staff, exams, batches, notifications, salaryPayments,
+        staffAdvances,
         attState, attendanceFull, timetables, dayOrder,
         marks, marksIndex: Object.keys(marks),
-        feeStructure,
+        feeStructure, otherCourses,
         feeRcptTemplate: feeRow ? feeRow['Template Text']||'' : '',
         admTemplate:     admRow ? admRow['Template Text']||'' : '',
         feeRcptLang: settingsMap['fee_rcpt_lang']||'',
@@ -12698,10 +12712,10 @@ function doPost(e) {
 
     // ── Students ──────────────────────────────────────────────
     overwriteSht(ss, 'Students',
-      ['Time','ID','Adm No','Name','Grade','Parent','Phone','Course','Subjects','Fee','Adm Date','Status'],
+      ['Time','ID','Adm No','Name','Grade','Parent','Phone','Course','Subjects','Fee','Adm Date','Status','Commute'],
       (data.students||[]).map(s=>[ts,s.id||'',s.admNo||'',s.name||'',s.grade||'',
         s.parent||'',s.phone||'',s.course||'',(Array.isArray(s.subjects)?s.subjects.join(','):(s.subjects||'')),
-        s.fee||0,s.admDate||'',s.status||'active']));
+        s.fee||0,s.admDate||'',s.status||'active',s.commute||'']));
 
     // ── Fees ──────────────────────────────────────────────────
     overwriteSht(ss, 'Fees',
@@ -12825,6 +12839,15 @@ function doPost(e) {
       salArr.map(p=>[ts,p.key||'',p.staffId||'',p.name||'',
         p.month||'',p.amount||0,p.mode||'Cash',p.paidOn||p.date||'',p.note||'']));
 
+    // ── Staff Advances / Loans ───────────────────────────────────
+    overwriteSht(ss,'StaffAdvances',
+      ['Time','ID','Staff ID','Staff Name','Type','Amount','Date','Mode','Note','Created At'],
+      (data.staffAdvances||[]).map(a=>{
+        const stf = (data.staff||[]).find(s=>s.id===a.staffId)||{};
+        return [ts,a.id||'',a.staffId||'',stf.name||'',a.type||'advance',
+          a.amount||0,a.date||'',a.mode||'',a.note||'',a.createdAt||''];
+      }));
+
     // ── Staff Attendance ───────────────────────────────────────
     const staffAttRows = [];
     Object.entries(data.staffAttendance||{}).forEach(([key,status])=>{
@@ -12853,6 +12876,11 @@ function doPost(e) {
       overwriteSht(ss,'FeeStructure',
         ['Time','Grade','Monthly Fee','Adm Fee','Late Fee','Subject Fee'],
         fsRows);
+
+    // ── Other Courses (catalog: Robotics / NEET / NMMS / Photography etc.) ──
+    overwriteSht(ss,'OtherCourses',
+      ['Time','ID','Name','Fee','Schedule'],
+      (data.otherCourses||[]).map(c=>[ts,c.id||'',c.name||'',c.fee||0,c.schedule||'']));
 
     // ── Student Summary ───────────────────────────────────────
     const sumRows = [];
@@ -12913,7 +12941,7 @@ function doPost(e) {
         [ts,'dark_mode',      data.darkMode  ||''],
         [ts,'lates_to_leave', data.latesToLeave||''],
         [ts,'last_monthly_reset',data.lastMonthlyReset||''],
-        [ts,'backup_version', '3.3'],
+        [ts,'backup_version', '3.4'],
         [ts,'sync_time',      ts],
       ]);
 

@@ -15953,6 +15953,17 @@ function buildTimetableWAText(batch) {
   return `\n📅 *Class Time Table — All Day Orders (${batch === 'all' || !batch ? 'General' : batch})*\n` + lines.join('\n') + '\n';
 }
 
+/* ── Build a WhatsApp-ready schedule block for selected Other Courses
+   (Robotics / NEET / NMMS / Photography etc). Course Admission students
+   have no class batch, so buildTimetableWAText() above always returns ''
+   for them — this is the missing piece that was causing "no timetable in
+   welcome message" for Course Admission (and mixed) new admissions. ── */
+function buildOtherCoursesWAText(courses) {
+  if (!courses || !courses.length) return '';
+  const lines = courses.map(c => `• *${c.name}*${c.schedule ? ' — ' + c.schedule : ' (schedule: contact center)'}`);
+  return `\n📅 *Course Schedule*\n` + lines.join('\n') + '\n';
+}
+
 // Older saved custom admission templates (from before the timetable
 // auto-attach feature existed) may not contain the {timetable} placeholder
 // at all — in which case buildTimetableWAText()'s output would just be
@@ -16012,16 +16023,20 @@ function refreshAdmPreview() {
   const batchVal  = document.getElementById('adm-course')?.value || 'Evening Batch';
   const includeTT = document.getElementById('adm-include-tt')?.checked !== false;
   const noFeeNow  = document.getElementById('adm-no-fee-now')?.checked || false;
+  const selectedOC = getSelectedAdmOtherCourses();
+  const timetableText = includeTT
+    ? (buildTimetableWAText(batchVal) + buildOtherCoursesWAText(selectedOC))
+    : '';
   const preview = fillAdmTemplate(tmplEl.value, {
     name:   document.getElementById('adm-name')?.value  || 'Student Name',
     parent: document.getElementById('adm-parent')?.value|| 'Parent',
     grade:  document.getElementById('adm-grade')?.value || '10',
-    courseNames: getSelectedAdmOtherCourses().map(c=>c.name).join(', '),
+    courseNames: selectedOC.map(c=>c.name).join(', '),
     batch:  batchVal,
     admNo:  document.getElementById('adm-no')?.value    || 'ADM-2024-001',
     fee:    document.getElementById('adm-fee')?.value   || '2500',
     noFee:  noFeeNow,
-    timetable: includeTT ? buildTimetableWAText(batchVal) : '',
+    timetable: timetableText,
   });
   prevEl.textContent = preview;
 }
@@ -16111,11 +16126,13 @@ function submitAdmission() {
   const tmpl = _admEnsureTimetablePlaceholder(document.getElementById('adm-wa-template')?.value || '');
   try { localStorage.setItem('_erp_adm_template', tmpl); } catch(e) {}
 
-  // Build WA message (with class timetable, if enabled) and open WhatsApp
+  // Build WA message (with class timetable and/or course schedule, if enabled) and open WhatsApp
   const message = fillAdmTemplate(tmpl, {
     name, parent, grade, courseNames: otherCoursesNames, batch: course || 'General Batch', admNo, fee,
     noFee: noFeeNow,
-    timetable: includeTT ? buildTimetableWAText(course) : '',
+    timetable: includeTT
+      ? (buildTimetableWAText(course) + buildOtherCoursesWAText(selectedOtherCourses))
+      : '',
   });
 
   // Add to recent admissions
@@ -20092,8 +20109,9 @@ function _tlFillMonthlyMsg(student, data, monthLabel) {
 
 /* ── Send today's teaching content to absent students via WhatsApp ──
    Source of absent list: Attendance page state, filtered by selected class/batch.
-   All today's teaching logs for that class are bundled into ONE message per student.
-   Morning + Evening subjects appear together. No popup — sends directly. ── */
+   Each student only gets the subject(s) from the session(s) they were ACTUALLY
+   marked absent for — a student absent only in the morning will NOT receive
+   evening subjects, and vice versa. No popup — sends directly. ── */
 function tlSendTodayContentToAbsent() {
   const stArr  = (typeof students !== 'undefined' && Array.isArray(students)) ? students : [];
   const today  = new Date().toISOString().slice(0, 10);
@@ -20114,19 +20132,27 @@ function tlSendTodayContentToAbsent() {
     return;
   }
 
-  // ── Get absent student IDs from Attendance state, filtered by class ──
-  const absentIdSet = new Set();
+  // ── Get absent student IDs + WHICH session(s) they missed, from Attendance state ──
+  // (Previously this only tracked "absent today" as a flat set, so a student absent
+  // ONLY in the morning session still got both morning + evening subjects bundled
+  // into their message. Now we track sessions per student and only send what they
+  // actually missed.)
+  const absentMap = new Map(); // sid -> Set of sessions ('morning'/'evening')
+  function _tlMarkAbsent(sid, session) {
+    const s = stArr.find(x => x.id === sid);
+    if (!s) return;
+    if (grade !== 'all' && s.grade !== grade) return;
+    if (batch !== 'all' && (s.batch || s.course || '') !== batch) return;
+    if (!absentMap.has(sid)) absentMap.set(sid, new Set());
+    absentMap.get(sid).add(session || 'morning');
+  }
 
   // From live attState (current session in memory)
   if (typeof attState === 'object') {
     Object.keys(attState).forEach(k => {
       if (attState[k] !== 'A') return;
-      const sid = k.split('|')[0];
-      const s = stArr.find(x => x.id === sid);
-      if (!s) return;
-      if (grade !== 'all' && s.grade !== grade) return;
-      if (batch !== 'all' && (s.batch || s.course || '') !== batch) return;
-      absentIdSet.add(sid);
+      const parts = k.split('|'); // {studentId}|{batchId}|{session}
+      _tlMarkAbsent(parts[0], parts[2]);
     });
   }
 
@@ -20139,48 +20165,41 @@ function tlSendTodayContentToAbsent() {
         const saved = JSON.parse(localStorage.getItem(sk) || '{}');
         Object.keys(saved).forEach(k => {
           if (saved[k] !== 'A') return;
-          const sid = k.split('|')[0];
-          const s = stArr.find(x => x.id === sid);
-          if (!s) return;
-          if (grade !== 'all' && s.grade !== grade) return;
-          if (batch !== 'all' && (s.batch || s.course || '') !== batch) return;
-          absentIdSet.add(sid);
+          const parts = k.split('|');
+          _tlMarkAbsent(parts[0], parts[2]);
         });
       } catch(e2) {}
     });
   } catch(e) {}
 
   // Fallback: also include students marked absent in the teaching log entries themselves
-  todayLogs.forEach(l => (l.absentStudentIds || []).forEach(id => {
-    const s = stArr.find(x => x.id === id);
-    if (!s) return;
-    if (grade !== 'all' && s.grade !== grade) return;
-    if (batch !== 'all' && (s.batch || s.course || '') !== batch) return;
-    absentIdSet.add(id);
-  }));
+  // — session comes from that specific log entry, not a blanket "absent today"
+  todayLogs.forEach(l => (l.absentStudentIds || []).forEach(id => _tlMarkAbsent(id, l.session)));
 
   const filterLabel = grade !== 'all' ? ` (Class ${grade}${batch !== 'all' ? '/' + batch : ''})` : '';
 
-  if (!absentIdSet.size) {
+  if (!absentMap.size) {
     showToast('✅ No absent students in today\'s attendance' + filterLabel + '.');
     return;
   }
 
-  // ── Build the send queue — one WA per absent student with ALL subjects bundled ──
+  // ── Build the send queue — one WA per absent student, ONLY the session(s) they missed ──
   const queue = [];
   let noPhoneCount = 0;
-  [...absentIdSet].forEach(sid => {
+  [...absentMap.entries()].forEach(([sid, sessionsSet]) => {
     const s = stArr.find(x => x.id === sid);
     if (!s) return;
     const phone = (s.phone || s.pphone || s.parentPhone || '').replace(/\D/g, '').replace(/^91/, '');
     if (!phone) { noPhoneCount++; return; }
-    // Pass ALL today's class logs — morning + evening bundled into one message
-    const msg = _tlFillDailyMsg(s, todayLogs);
+    // Only pass logs for the session(s) this student actually missed
+    const relevantLogs = todayLogs.filter(l => sessionsSet.has(l.session || 'morning'));
+    if (!relevantLogs.length) return; // nothing logged yet for the session they missed
+    const msg = _tlFillDailyMsg(s, relevantLogs);
     queue.push({ student: s, phone, msg });
   });
 
   if (!queue.length) {
-    showToast('⚠️ ' + absentIdSet.size + ' absent student(s) found but none have phone numbers.');
+    showToast('⚠️ ' + absentMap.size + ' absent student(s) found but none have phone numbers.');
     return;
   }
 

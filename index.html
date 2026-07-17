@@ -12469,7 +12469,7 @@ function initAI(){initAIFilter();renderAICards();renderPredictCards();renderStud
 /* ═══════════════════════════════════════════════════════
    BACKUP
 ═══════════════════════════════════════════════════════ */
-const BK_GS_CODE = `// ═══ Kalam Tuition ERP — Google Apps Script v3.4 ════════════
+const BK_GS_CODE = `// ═══ Kalam Tuition ERP — Google Apps Script v3.5 ════════════
 // 1. Open Google Sheet → Extensions → Apps Script
 // 2. Paste this entire code, replace SPREADSHEET_ID below
 // 3. Deploy → New Deployment → Web App → Execute as: Me → Who has access: Anyone → Deploy
@@ -12531,9 +12531,15 @@ function doGet(e) {
 
     // Batches
     const batches = readSht('Batches').map(r => ({
-      id:r['ID']||'', name:r['Name']||'', grade:r['Grade']||'',
-      time:r['Time']||'', days:r['Days']?r['Days'].toString().split(','):[],
-      teacher:r['Teacher']||'', strength:Number(r['Strength'])||0, status:r['Status']||'active'
+      id:r['ID']||'', name:r['Name']||'', time:r['Session']||'Morning',
+      days:r['Days']||'', maxStudents:Number(r['Max Students'])||30,
+      subjects:r['Subjects']||'', desc:r['Description']||'',
+      startTime:r['Start Time']||'', endTime:r['End Time']||'',
+      morningStart:r['Morning Start']||'', morningEnd:r['Morning End']||'',
+      morningMax:Number(r['Morning Max'])||0,
+      eveningStart:r['Evening Start']||'', eveningEnd:r['Evening End']||'',
+      eveningMax:Number(r['Evening Max'])||0,
+      enrolled:Number(r['Enrolled'])||0
     }));
 
     // Exams
@@ -12679,7 +12685,7 @@ function doGet(e) {
     return ContentService.createTextOutput(JSON.stringify({
       status: 'ok',
       data: {
-        version: '3.4', timestamp: new Date().toISOString(), source: 'google_sheets',
+        version: '3.5', timestamp: new Date().toISOString(), source: 'google_sheets',
         center, students, fees, staff, exams, batches, notifications, salaryPayments,
         staffAdvances,
         attState, attendanceFull, timetables, dayOrder,
@@ -12731,10 +12737,25 @@ function doPost(e) {
         s.phone||'',s.baseSalary||0,s.consolidatedPay||s.baseSalary||0,s.status||'active']));
 
     // ── Batches ───────────────────────────────────────────────
+    // NOTE: batches are actually stored client-side as
+    // {id, name, time, days, maxStudents, subjects, desc, startTime, endTime,
+    //  morningStart/End/Max, eveningStart/End/Max, enrolled} -- 'days' and
+    // 'subjects' are plain STRINGS, not arrays. The old code assumed
+    // 'b.days' was an array and called (b.days||[]).join(',') on it, which
+    // crashed with "TypeError: (b.days || []).join is not a function"
+    // whenever a batch actually had a days string filled in.
     overwriteSht(ss, 'Batches',
-      ['Time','ID','Name','Grade','Session','Days','Fee','Teacher'],
-      (data.batches||[]).map(b=>[ts,b.id||'',b.name||'',b.grade||'',
-        b.session||'',(b.days||[]).join(','),b.fee||0,b.teacher||'']));
+      ['Time','ID','Name','Session','Days','Max Students','Subjects','Description',
+       'Start Time','End Time','Morning Start','Morning End','Morning Max',
+       'Evening Start','Evening End','Evening Max','Enrolled'],
+      (data.batches||[]).map(b=>[ts,b.id||'',b.name||'',b.time||'',
+        (Array.isArray(b.days) ? b.days.join(',') : (b.days||'')),
+        b.maxStudents||0,
+        (Array.isArray(b.subjects) ? b.subjects.join(',') : (b.subjects||'')),
+        b.desc||'', b.startTime||'', b.endTime||'',
+        b.morningStart||'', b.morningEnd||'', b.morningMax||'',
+        b.eveningStart||'', b.eveningEnd||'', b.eveningMax||'',
+        b.enrolled||0]));
 
     // ── Exams ─────────────────────────────────────────────────
     overwriteSht(ss, 'Exams',
@@ -12941,7 +12962,7 @@ function doPost(e) {
         [ts,'dark_mode',      data.darkMode  ||''],
         [ts,'lates_to_leave', data.latesToLeave||''],
         [ts,'last_monthly_reset',data.lastMonthlyReset||''],
-        [ts,'backup_version', '3.4'],
+        [ts,'backup_version', '3.5'],
         [ts,'sync_time',      ts],
       ]);
 

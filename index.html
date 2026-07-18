@@ -663,6 +663,16 @@ tbody tr:hover td{background:var(--bg)}
     <div id="dash-dayorder-picker" style="padding:0 16px 14px;display:flex;align-items:center;gap:6px;flex-wrap:wrap"></div>
   </div>
 
+  <!-- ✅ Staff Compliance Today — who has/hasn't marked attendance & teaching log -->
+  <div class="card" style="margin-bottom:14px" id="dash-compliance-card">
+    <div class="card-hd" style="flex-wrap:wrap;gap:8px;margin-bottom:6px">
+      <span class="card-title">✅ Staff Compliance — Today</span>
+      <button onclick="renderStaffComplianceToday()" style="margin-left:auto;background:none;border:none;color:var(--tx2);font-size:11px;cursor:pointer;font-family:inherit">🔄 Refresh</button>
+    </div>
+    <div style="font-size:11px;color:var(--tx2);padding:0 16px 10px">Which assigned-class staff have marked attendance / added a teaching log entry today. Refresh after a Sheets restore to see the latest.</div>
+    <div id="dash-compliance-list" style="padding:0 16px 14px"></div>
+  </div>
+
   <!-- 📆 Admin Calendar — Quick Task Reference -->
   <div class="card" style="margin-bottom:14px;padding:10px 16px" id="dash-admin-calendar">
     <div id="dash-calendar-widget" style="font-size:11px;color:var(--tx)">
@@ -3396,6 +3406,7 @@ function navTo(id) {
   if (id === 'dashboard') {
     updateDashStats();
     renderDashDayOrderSummary();
+    renderStaffComplianceToday();
     setTimeout(function() {
       if (window.Chart) {
         initCharts();
@@ -9093,6 +9104,14 @@ function useAdvanceAsDeduction(staffId) {
   showToast('Filled ₹'+outstanding.toLocaleString('en-IN')+' — click Apply to confirm this month\'s deduction');
 }
 
+function esfToggleClass(btn, g) {
+  const on = btn.getAttribute('data-sel') === '1';
+  btn.setAttribute('data-sel', on ? '0' : '1');
+  btn.style.background  = on ? 'var(--card)' : 'var(--pr)';
+  btn.style.color       = on ? 'var(--tx2)'  : '#fff';
+  btn.style.borderColor = on ? 'var(--br)'   : 'var(--pr)';
+}
+
 function waStaff(phone, name) {
   var msg = 'Dear ' + name + ', this is ' + CFG.CENTER.name + '. Please note important information regarding your work. Thank you.';
   openWA(phone, msg);
@@ -9138,6 +9157,23 @@ function editStaffMember(idx) {
     <div style="display:flex;align-items:center;gap:8px;margin:4px 0 10px;padding:10px 12px;background:${s.seniorHandler?'#ede9fe':'var(--bg)'};border-radius:8px;border:.5px solid ${s.seniorHandler?'#c4b5fd':'var(--br)'}">
       <input type="checkbox" id="esf-senior" ${s.seniorHandler?'checked':''} style="width:16px;height:16px;cursor:pointer;flex-shrink:0">
       <label for="esf-senior" style="font-size:12px;font-weight:600;color:var(--tx);cursor:pointer">🎓 Handles 11th / 12th (Senior Batch) — salary tracked against Class 11-12 fee collection</label>
+    </div>
+
+    <!-- ── Staff App Access (separate lightweight app — Attendance + Teaching Log only) ── -->
+    <div style="background:var(--bg);border-radius:10px;padding:14px;margin:10px 0;border:.5px solid var(--br)">
+      <div style="font-size:11px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">📱 Staff App Access</div>
+      <div style="font-size:11px;color:var(--tx3);margin-bottom:10px">Gives this staff member a login to the separate Staff App — Attendance &amp; Teaching Log only, no fees/salary/other-student data visible. Leave PIN blank to keep app access disabled for them.</div>
+      <div class="frow">
+        <div class="fg"><label class="fl">Staff ID (for login)</label><input class="fi" value="${s.id}" readonly style="opacity:.7"></div>
+        <div class="fg"><label class="fl">Login PIN (4–6 digit)</label><input class="fi" id="esf-pin" value="${s.pin||''}" placeholder="e.g. 1234" maxlength="6" inputmode="numeric"></div>
+      </div>
+      <label class="fl" style="margin-top:6px;display:block">Assigned Classes (attendance/teaching log access limited to these)</label>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px" id="esf-class-chips">
+        ${['KG','1','2','3','4','5','6','7','8','9','10','11','12'].map(g => {
+          const on = (s.assignedClasses||[]).includes(g);
+          return `<button type="button" onclick="esfToggleClass(this,'${g}')" data-sel="${on?1:0}" style="padding:6px 12px;border-radius:20px;border:1.5px solid ${on?'var(--pr)':'var(--br)'};background:${on?'var(--pr)':'var(--card)'};color:${on?'#fff':'var(--tx2)'};cursor:pointer;font-size:12px;font-weight:600;font-family:inherit">${g}</button>`;
+        }).join('')}
+      </div>
     </div>
 
     <!-- ── Salary Section ── -->
@@ -9284,6 +9320,10 @@ function saveEditStaff(idx) {
   s.extraDed     = parseFloat(document.getElementById('esf-other')?.value) || 0;
   s.extraDedNote = document.getElementById('esf-otherNote')?.value.trim() || '';
   s.seniorHandler = document.getElementById('esf-senior')?.checked || false;
+  s.pin = document.getElementById('esf-pin')?.value.trim() || '';
+  s.assignedClasses = [...document.querySelectorAll('#esf-class-chips button')]
+    .filter(b => b.getAttribute('data-sel') === '1')
+    .map(b => b.textContent.trim());
   saveStaffData(); renderStaff(); closeModal(); showToast(`✅ ${s.name} updated!`); runBackup('change');
 }
 
@@ -12469,7 +12509,7 @@ function initAI(){initAIFilter();renderAICards();renderPredictCards();renderStud
 /* ═══════════════════════════════════════════════════════
    BACKUP
 ═══════════════════════════════════════════════════════ */
-const BK_GS_CODE = `// ═══ Kalam Tuition ERP — Google Apps Script v3.5 ════════════
+const BK_GS_CODE = `// ═══ Kalam Tuition ERP — Google Apps Script v3.7 ════════════
 // 1. Open Google Sheet → Extensions → Apps Script
 // 2. Paste this entire code, replace SPREADSHEET_ID below
 // 3. Deploy → New Deployment → Web App → Execute as: Me → Who has access: Anyone → Deploy
@@ -12483,10 +12523,213 @@ function doOptions(e) {
     .setMimeType(ContentService.MimeType.TEXT);
 }
 
+/* ═══════════════════════════════════════════════════════
+   STAFF APP — lightweight real-time endpoints for the
+   separate staff-facing app (Attendance + Teaching Log only).
+   These read/write ONLY the Students/Staff/Attendance/TeachingLog
+   sheets directly (append-only for writes) — they never touch
+   Fees, Salary, or overwrite the full sheet like the main sync does.
+═══════════════════════════════════════════════════════ */
+function _staffJson(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
+}
+
+function _staffReadSht(ss, name) {
+  const s = ss.getSheetByName(name);
+  if (!s || s.getLastRow() < 2) return [];
+  const rows = s.getRange(2, 1, s.getLastRow() - 1, s.getLastColumn()).getValues();
+  const hdrs = s.getRange(1, 1, 1, s.getLastColumn()).getValues()[0];
+  return rows.map(function(r) {
+    const o = {};
+    hdrs.forEach(function(h, i) { o[h] = r[i]; });
+    return o;
+  });
+}
+
+// Verify Staff ID + PIN, return the matching Staff row (or null). A blank
+// PIN on the staff record means app access is disabled for them.
+function _staffAuth(ss, staffId, pin) {
+  if (!staffId || !pin) return null;
+  const rows = _staffReadSht(ss, 'Staff');
+  const row = rows.find(function(r) {
+    return String(r['ID'] || '') === String(staffId) &&
+           String(r['PIN'] || '') !== '' &&
+           String(r['PIN'] || '') === String(pin);
+  });
+  return row || null;
+}
+
+function _staffAssignedClasses(row) {
+  return row['Assigned Classes']
+    ? String(row['Assigned Classes']).split(',').map(function(x) { return x.trim(); }).filter(Boolean)
+    : [];
+}
+
+// Auto-marks the staff member "Present" in StaffAttendance for today's
+// session, on login — a simple check-in. Session is inferred from current
+// IST time (before 2 PM = morning, else evening). Skips if an entry for
+// this staffId+date+session already exists, so repeat logins / page
+// reloads in the same session don't create duplicate rows.
+// NOTE: this appends directly to the sheet (like staffMarkAttendance /
+// staffAddTeachingLog do) — it does NOT touch local storage on the admin's
+// phone. If the admin runs "Sync Now" (push) BEFORE first pulling this via
+// "Restore from Google Sheets", their local (older) data will overwrite
+// the whole StaffAttendance sheet and this check-in row will be lost —
+// same caveat that already applies to attendance/teaching log.
+function _staffAutoCheckIn(ss, staffId, staffName) {
+  try {
+    const now     = new Date();
+    const dateStr = Utilities.formatDate(now, 'Asia/Kolkata', 'yyyy-MM-dd');
+    const hourStr = Utilities.formatDate(now, 'Asia/Kolkata', 'HH');
+    const session = Number(hourStr) < 14 ? 'morning' : 'evening';
+
+    let sh = ss.getSheetByName('StaffAttendance');
+    if (!sh) {
+      sh = ss.insertSheet('StaffAttendance');
+      sh.appendRow(['Time','Staff ID','Staff Name','Date','Session','Status']);
+    }
+    const existing = _staffReadSht(ss, 'StaffAttendance').some(function(r) {
+      return String(r['Staff ID']||'') === String(staffId) &&
+             String(r['Date']||'') === dateStr &&
+             String(r['Session']||'') === session;
+    });
+    if (existing) return { checkedIn: false, session: session, already: true };
+
+    sh.appendRow([now.toISOString(), staffId, staffName, dateStr, session, 'P']);
+    return { checkedIn: true, session: session, already: false };
+  } catch (err) {
+    return { checkedIn: false, session: '', already: false, error: err.toString() };
+  }
+}
+
+// action=staffLogin&staffId=..&pin=..
+function staffAppLogin(e) {
+  try {
+    const staffId = ((e.parameter.staffId || '') + '').trim();
+    const pin     = ((e.parameter.pin || '') + '').trim();
+    if (!staffId || !pin) return _staffJson({status:'error', msg:'Staff ID and PIN required'});
+
+    const ss  = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const row = _staffAuth(ss, staffId, pin);
+    if (!row) return _staffJson({status:'error', msg:'Invalid Staff ID or PIN'});
+
+    const assignedClasses = _staffAssignedClasses(row);
+    if (!assignedClasses.length) return _staffJson({status:'error', msg:'No classes assigned yet. Contact admin.'});
+
+    // Self check-in — mark this staff member Present for today's session
+    const checkIn = _staffAutoCheckIn(ss, row['ID'] || staffId, row['Name'] || '');
+
+    // Only students in this staff member's assigned classes — minimal
+    // fields only (no phone, no fee, no parent name).
+    const students = _staffReadSht(ss, 'Students')
+      .filter(function(r) { return assignedClasses.indexOf(String(r['Grade'] || '')) !== -1 && String(r['Status']||'active') === 'active'; })
+      .map(function(r) { return { id:r['ID']||'', name:r['Name']||'', grade:r['Grade']||'', course:r['Course']||'' }; });
+
+    return _staffJson({
+      status: 'ok',
+      staffId: row['ID'] || '',
+      staffName: row['Name'] || '',
+      assignedClasses: assignedClasses,
+      students: students,
+      checkIn: checkIn
+    });
+  } catch (err) {
+    return _staffJson({status:'error', msg: err.toString()});
+  }
+}
+
+// action=staffMarkAttendance&staffId=..&pin=..&date=YYYY-MM-DD&batch=..&session=morning|evening&records=[{"studentId":"..","status":"P|A|L"}]
+function staffAppMarkAttendance(e) {
+  try {
+    const staffId = ((e.parameter.staffId || '') + '').trim();
+    const pin     = ((e.parameter.pin || '') + '').trim();
+    const ss  = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const row = _staffAuth(ss, staffId, pin);
+    if (!row) return _staffJson({status:'error', msg:'Invalid Staff ID or PIN'});
+    const assignedClasses = _staffAssignedClasses(row);
+
+    const date    = ((e.parameter.date || '') + '').trim();
+    const batch   = ((e.parameter.batch || '') + '').trim();
+    const session = ((e.parameter.session || 'morning') + '').trim();
+    let records = [];
+    try { records = JSON.parse(e.parameter.records || '[]'); } catch (pe) { records = []; }
+    if (!date || !records.length) return _staffJson({status:'error', msg:'Date and at least one attendance record required'});
+
+    const studentsById = {};
+    _staffReadSht(ss, 'Students').forEach(function(r) { studentsById[r['ID']] = r; });
+
+    const ts = new Date().toISOString();
+    const newRows = [];
+    let skipped = 0;
+    records.forEach(function(rec) {
+      const stu = studentsById[rec.studentId];
+      if (!stu) { skipped++; return; }
+      // Enforce class permission server-side too — never trust the client
+      if (assignedClasses.indexOf(String(stu['Grade'] || '')) === -1) { skipped++; return; }
+      newRows.push([ts, date, batch, session, rec.studentId, stu['Name'] || '', rec.status || 'P']);
+    });
+
+    if (newRows.length) {
+      let sh = ss.getSheetByName('Attendance');
+      if (!sh) {
+        sh = ss.insertSheet('Attendance');
+        sh.appendRow(['Time','Date','Batch','Session','Student ID','Student Name','Status']);
+      }
+      // Append-only — does NOT wipe existing attendance history like overwriteSht does.
+      sh.getRange(sh.getLastRow() + 1, 1, newRows.length, 7).setValues(newRows);
+    }
+    return _staffJson({status:'ok', saved: newRows.length, skipped: skipped});
+  } catch (err) {
+    return _staffJson({status:'error', msg: err.toString()});
+  }
+}
+
+// action=staffAddTeachingLog&staffId=..&pin=..&entry={"date":"..","grade":"..","batch":"..","session":"..","subject":"..","topic":"..","notes":"..","homework":"..","dayOrder":"..","absentStudentIds":[".."]}
+function staffAppAddTeachingLog(e) {
+  try {
+    const staffId = ((e.parameter.staffId || '') + '').trim();
+    const pin     = ((e.parameter.pin || '') + '').trim();
+    const ss  = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const row = _staffAuth(ss, staffId, pin);
+    if (!row) return _staffJson({status:'error', msg:'Invalid Staff ID or PIN'});
+    const assignedClasses = _staffAssignedClasses(row);
+
+    let entry = {};
+    try { entry = JSON.parse(e.parameter.entry || '{}'); } catch (pe) { entry = {}; }
+    if (!entry.date || !entry.grade || !entry.subject) return _staffJson({status:'error', msg:'Date, Grade and Subject are required'});
+    if (assignedClasses.indexOf(String(entry.grade)) === -1) return _staffJson({status:'error', msg:'Not assigned to this class'});
+
+    const ts = new Date().toISOString();
+    const newRow = [
+      ts, 'tl_' + Date.now(), entry.date || '', entry.grade || '', entry.batch || '',
+      entry.subject || '', entry.topic || '', entry.notes || '', entry.homework || '',
+      (entry.absentStudentIds || []).join(', '), entry.dayOrder || '', entry.session || '', ts
+    ];
+    let sh = ss.getSheetByName('TeachingLog');
+    if (!sh) {
+      sh = ss.insertSheet('TeachingLog');
+      sh.appendRow(['Time','ID','Date','Grade','Batch','Subject','Topic','Lesson Notes','Homework','Absent Student IDs','Day Order','Session','Created At']);
+    }
+    // Append-only — does NOT wipe existing teaching log history.
+    sh.getRange(sh.getLastRow() + 1, 1, 1, newRow.length).setValues([newRow]);
+    return _staffJson({status:'ok'});
+  } catch (err) {
+    return _staffJson({status:'error', msg: err.toString()});
+  }
+}
+
 // ── GET — restore: returns all data from the Sheet back to ERP ──
 function doGet(e) {
   try {
     const action = (e && e.parameter && e.parameter.action) || '';
+
+    // ── Staff App actions (separate lightweight app — real-time, scoped to
+    //    each staff member's Assigned Classes only. Does NOT touch/return
+    //    fees, salary, phone numbers, or other students' data.) ──
+    if (action === 'staffLogin')          return staffAppLogin(e);
+    if (action === 'staffMarkAttendance') return staffAppMarkAttendance(e);
+    if (action === 'staffAddTeachingLog') return staffAppAddTeachingLog(e);
+
     if (action !== 'getBackup') {
       return ContentService.createTextOutput(JSON.stringify({status:'ok',msg:'Kalam ERP Apps Script running'}))
         .setMimeType(ContentService.MimeType.JSON);
@@ -12524,9 +12767,10 @@ function doGet(e) {
 
     // Staff
     const staff = readSht('Staff').map(r => ({
-      id:r['ID']||'', name:r['Name']||'', role:r['Role']||'',
+      id:r['ID']||'', name:r['Name']||'', desg:r['Role']||'',
       phone:r['Phone']||'', baseSalary:Number(r['Base Salary'])||0,
-      consolidatedPay:Number(r['Consolidated Pay'])||0, status:r['Status']||'active'
+      consolidatedPay:Number(r['Consolidated Pay'])||0, status:r['Status']||'active',
+      pin:String(r['PIN']||''), assignedClasses:r['Assigned Classes']?String(r['Assigned Classes']).split(',').map(function(x){return x.trim();}).filter(Boolean):[]
     }));
 
     // Batches
@@ -12668,7 +12912,7 @@ function doGet(e) {
       subject:r['Subject']||'', topic:r['Topic']||'', lessonNotes:r['Lesson Notes']||'',
       homeworkGiven:r['Homework']||'',
       absentStudentIds:r['Absent Student IDs']?r['Absent Student IDs'].toString().split(', ').filter(Boolean):[],
-      dayOrder:r['Day Order']||'', sessionNo:r['Session No']||'', createdAt:r['Created At']||''
+      dayOrder:r['Day Order']||'', session:r['Session']||r['Session No']||'', createdAt:r['Created At']||''
     }));
 
     // Settings from Settings sheet
@@ -12685,7 +12929,7 @@ function doGet(e) {
     return ContentService.createTextOutput(JSON.stringify({
       status: 'ok',
       data: {
-        version: '3.5', timestamp: new Date().toISOString(), source: 'google_sheets',
+        version: '3.7', timestamp: new Date().toISOString(), source: 'google_sheets',
         center, students, fees, staff, exams, batches, notifications, salaryPayments,
         staffAdvances,
         attState, attendanceFull, timetables, dayOrder,
@@ -12732,9 +12976,10 @@ function doPost(e) {
 
     // ── Staff ─────────────────────────────────────────────────
     overwriteSht(ss, 'Staff',
-      ['Time','ID','Name','Role','Phone','Base Salary','Consolidated Pay','Status'],
-      (data.staff||[]).map(s=>[ts,s.id||'',s.name||'',s.role||'',
-        s.phone||'',s.baseSalary||0,s.consolidatedPay||s.baseSalary||0,s.status||'active']));
+      ['Time','ID','Name','Role','Phone','Base Salary','Consolidated Pay','Status','PIN','Assigned Classes'],
+      (data.staff||[]).map(s=>[ts,s.id||'',s.name||'',s.desg||s.role||'',
+        s.phone||'',s.baseSalary||0,s.consolidatedPay||s.baseSalary||0,s.status||'active',
+        s.pin||'', (Array.isArray(s.assignedClasses)?s.assignedClasses.join(','):(s.assignedClasses||''))]));
 
     // ── Batches ───────────────────────────────────────────────
     // NOTE: batches are actually stored client-side as
@@ -12938,15 +13183,18 @@ function doPost(e) {
       overwriteSht(ss,'AI_Data',['Time','Key','Data'],aiRows);
 
     // ── Teaching Log ──────────────────────────────────────────
+    // NOTE: was writing e.sessionNo (field doesn't exist client-side; real
+    // field is e.session = 'morning'/'evening') so the session tag never
+    // actually made it into the sheet — fixed to write e.session.
     const tlRows = (data.teachingLog||[]).map(e=>[
       ts, e.id||'', e.date||'', e.grade||'', e.batch||'',
       e.subject||'', e.topic||'', e.lessonNotes||'',
       e.homeworkGiven||'', (e.absentStudentIds||[]).join(', '),
-      e.dayOrder||'', e.sessionNo||'', e.createdAt||''
+      e.dayOrder||'', e.session||'', e.createdAt||''
     ]);
     if (tlRows.length > 0)
       overwriteSht(ss, 'TeachingLog',
-        ['Time','ID','Date','Grade','Batch','Subject','Topic','Lesson Notes','Homework','Absent Student IDs','Day Order','Session No','Created At'],
+        ['Time','ID','Date','Grade','Batch','Subject','Topic','Lesson Notes','Homework','Absent Student IDs','Day Order','Session','Created At'],
         tlRows);
 
     // ── Settings ──────────────────────────────────────────────
@@ -12962,7 +13210,7 @@ function doPost(e) {
         [ts,'dark_mode',      data.darkMode  ||''],
         [ts,'lates_to_leave', data.latesToLeave||''],
         [ts,'last_monthly_reset',data.lastMonthlyReset||''],
-        [ts,'backup_version', '3.5'],
+        [ts,'backup_version', '3.7'],
         [ts,'sync_time',      ts],
       ]);
 
@@ -14522,6 +14770,71 @@ function renderAdminCalendar() {
 
   html += `</div>`;
   document.getElementById('dash-calendar-widget').innerHTML = html;
+}
+
+/* ── Staff Compliance Today — Dashboard widget ──
+   For every staff member with Assigned Classes (set via Staff → Edit →
+   Staff App Access), shows whether TODAY's attendance was marked and a
+   teaching log entry was added, per class. Reads directly from
+   localStorage (not the in-memory attState buffer, which only ever holds
+   whichever single batch+session was last opened) so this stays accurate
+   even right after a "Restore from Google Sheets" pull of staff-submitted
+   data. ── */
+function renderStaffComplianceToday() {
+  const container = document.getElementById('dash-compliance-list');
+  if (!container) return;
+  const todayStr = new Date().toISOString().slice(0, 10);
+
+  // Student IDs with an attendance record for today, from ANY batch/session
+  const attendedStudentIds = new Set();
+  try {
+    const idx = JSON.parse(localStorage.getItem('_erp_att_index') || '[]');
+    idx.filter(k => k.indexOf('_erp_att_' + todayStr) === 0).forEach(k => {
+      try {
+        const saved = JSON.parse(localStorage.getItem(k) || '{}');
+        Object.keys(saved).forEach(key => attendedStudentIds.add(key.split('|')[0]));
+      } catch(e) {}
+    });
+  } catch(e) {}
+
+  // Grades with at least one teaching log entry today
+  const gradesWithTL = new Set();
+  try {
+    JSON.parse(localStorage.getItem('_erp_teaching_log') || '[]').forEach(l => {
+      if (l && l.date === todayStr && l.grade) gradesWithTL.add(String(l.grade).trim());
+    });
+  } catch(e) {}
+
+  // Grades with at least one attended student today
+  const gradesWithAtt = new Set();
+  (typeof students !== 'undefined' ? students : []).forEach(s => {
+    if (s && s.status === 'active' && attendedStudentIds.has(s.id)) gradesWithAtt.add(String(s.grade || '').trim());
+  });
+
+  const staffWithClasses = (typeof staffData !== 'undefined' ? staffData : [])
+    .filter(s => s && s.status !== 'inactive' && Array.isArray(s.assignedClasses) && s.assignedClasses.length);
+
+  if (!staffWithClasses.length) {
+    container.innerHTML = '<div style="text-align:center;padding:14px 4px;color:var(--tx3);font-size:12px">No staff have Assigned Classes set yet. Go to Staff → Edit → 📱 Staff App Access to set them up.</div>';
+    return;
+  }
+
+  container.innerHTML = staffWithClasses.map(s => {
+    const rows = s.assignedClasses.map(g => {
+      const attOk = gradesWithAtt.has(g);
+      const tlOk  = gradesWithTL.has(g);
+      const label = g === 'KG' ? 'KG' : 'Class ' + g;
+      return `<div style="display:flex;align-items:center;gap:14px;padding:5px 0;font-size:12px">
+        <span style="min-width:64px;color:var(--tx2);font-weight:600">${label}</span>
+        <span style="color:${attOk ? '#16a34a' : '#dc2626'};font-weight:600">${attOk ? '✅' : '❌'} Attendance</span>
+        <span style="color:${tlOk ? '#16a34a' : '#dc2626'};font-weight:600">${tlOk ? '✅' : '❌'} Teaching Log</span>
+      </div>`;
+    }).join('');
+    return `<div style="padding:9px 0;border-bottom:1px solid var(--br)">
+      <div style="font-weight:700;font-size:13px;margin-bottom:2px">${s.name}</div>
+      ${rows}
+    </div>`;
+  }).join('');
 }
 
 function updateDashStats() {

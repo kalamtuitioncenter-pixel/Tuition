@@ -1409,6 +1409,16 @@ tbody tr:hover td{background:var(--bg)}
     </div>
   </div>
 
+  <!-- ── Loss — Dropped/Inactive Students with unpaid dues ── -->
+  <div id="fee-loss-card" style="display:none;background:#fef2f2;border:.5px solid #fecaca;border-radius:11px;padding:11px 14px;margin-bottom:10px">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
+      <div style="font-size:12px;font-weight:700;color:#991b1b">📉 Loss — Dropped Students with Pending Dues</div>
+      <div style="font-size:14px;font-weight:800;color:#991b1b" id="fee-loss-amt">₹0</div>
+    </div>
+    <div style="font-size:9px;color:#b91c1c;margin-top:2px">Money owed by students marked Inactive — no longer billed automatically, so this won't collect on its own.</div>
+    <div id="fee-loss-list" style="margin-top:6px;font-size:11px;color:#7f1d1d;display:flex;flex-wrap:wrap;gap:6px"></div>
+  </div>
+
   <div class="toolbar">
     <div class="seg" id="fee-tabs">
       <button class="seg-b on" data-tab="all" onclick="setFeeTab('all',this)">All</button>
@@ -1922,6 +1932,19 @@ tbody tr:hover td{background:var(--bg)}
 
   <!-- Today's Summary Cards -->
   <div id="adm-summary-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:12px"></div>
+
+  <!-- 📊 Ops Reports — Daily / Weekly / Monthly, all data, sendable via WhatsApp -->
+  <div class="card" style="margin-bottom:12px" id="adm-reports-card">
+    <div class="card-hd" style="flex-wrap:wrap;gap:8px;margin-bottom:6px">
+      <span class="card-title">📊 Reports — Teaching Log, Fees, Attendance &amp; Commute</span>
+    </div>
+    <div style="font-size:11px;color:var(--tx2);padding:0 16px 10px">Builds a combined summary for the period and lets you send it straight to WhatsApp.</div>
+    <div style="padding:0 16px 14px;display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-sm" onclick="showOpsReport('daily')">📅 Daily Report</button>
+      <button class="btn btn-sm" onclick="showOpsReport('weekly')">🗓️ Weekly Report</button>
+      <button class="btn btn-sm" onclick="showOpsReport('monthly')">📆 Monthly Report</button>
+    </div>
+  </div>
 
   <!-- 📅 Today's Day Order & Class Summary -->
   <div class="card" style="margin-bottom:12px" id="adm-dayorder-card">
@@ -3413,12 +3436,17 @@ function navTo(id) {
   if (id === 'fees') {
     const now = new Date();
     window._feeSelectedMonth = _feeMonthLabel(now);
-    initFeeMonthFilter();
-    const pendBtn = document.getElementById('ft-pend');
-    if (pendBtn) {
+    // Auto-enable the "Pending" fee view on the 1st of the month — that's when the
+    // new month's dues start showing up, so pending fees need attention first.
+    // (Tab class must be set BEFORE initFeeMonthFilter(), since it reads the
+    // currently-"on" tab to decide what to render — otherwise the button looked
+    // selected but the table still showed "All".)
+    if (now.getDate() === 1) {
       document.querySelectorAll('#fee-tabs .seg-b').forEach(b => b.classList.remove('on'));
-      pendBtn.classList.add('on');
+      const pendBtn = document.getElementById('ft-pend');
+      if (pendBtn) pendBtn.classList.add('on');
     }
+    initFeeMonthFilter();
   }
   if (id === 'whatsapp') { renderWATypes(); setTimeout(()=>{ if(!window._waCurTab) switchWATab('messenger'); },50); }
   if (id === 'teaching') { initTeachingLogPage(); }
@@ -4042,7 +4070,7 @@ function renderStudents(data) {
   }
   const colors = {'active':'bg','inactive':'ba'};
   document.getElementById('st-body').innerHTML = (data||students).filter(s=>s&&s.name).map((s,i) => `<tr>
-    <td>
+    <td onclick="openStudentProfile('${s.id}')" style="cursor:pointer" title="View full profile">
       <div class="flex-c">
         <div class="av" style="background:${s.color}">${(s.name||'?')[0]}</div>
         <div>
@@ -4052,7 +4080,7 @@ function renderStudents(data) {
         </div>
       </div>
     </td>
-    <td>
+    <td onclick="openStudentProfile('${s.id}')" style="cursor:pointer">
       <code style="font-size:10px;background:var(--bg);padding:2px 5px;border-radius:4px;color:${s.color}">${s.id}</code>
     </td>
     <td style="font-size:11px">
@@ -4064,6 +4092,7 @@ function renderStudents(data) {
     <td><span class="badge ${colors[s.status]||'ba'}">${s.status}</span></td>
     <td>
       <div style="display:flex;flex-direction:column;gap:4px">
+        <button class="btn btn-sm" style="font-size:10px;padding:4px 8px;color:#1d4ed8;border-color:#bfdbfe;background:#eff6ff" onclick="openStudentProfile('${s.id}')">👁 Profile</button>
         <button class="btn btn-sm" style="font-size:10px;padding:4px 8px" onclick="editStudent(${students.indexOf(s)})">✏️ Edit</button>
         <button class="btn btn-sm btn-wa" style="font-size:10px;padding:4px 8px" onclick="waStudent('${s.id}')">📱 WA</button>
         <button class="btn btn-sm" style="font-size:10px;padding:4px 8px;color:#dc2626;border-color:#fecdd3;background:#fff1f2" onclick="deleteStudent(${students.indexOf(s)})">🗑 Delete</button>
@@ -4084,6 +4113,146 @@ function filterStudents(q) {
   ));
 }
 function filterStudentStatus(v) { renderStudents(v==='all' ? students : students.filter(s=>s.status===v)); }
+
+/* ═══════════════════════════════════════════════════════
+   STUDENT FULL PROFILE — Fees, Commute, Marks & Attendance history
+═══════════════════════════════════════════════════════ */
+function openStudentProfile(id) {
+  const s = students.find(x => x.id === id);
+  if (!s) { showToast('Student not found'); return; }
+  const root = document.getElementById('modal-root');
+  if (!root) return;
+
+  const now = new Date();
+
+  // Attendance (current month) — falls back gracefully if helper isn't loaded yet
+  let att = null;
+  try { if (typeof getStudentAttStats === 'function') att = getStudentAttStats(s, now.getFullYear(), now.getMonth()); } catch(e) {}
+
+  // Marks / exam history (auto-scan takes priority, falls back to index-only lookup)
+  let marksList = [];
+  try {
+    marksList = (typeof getStudentMarksAuto === 'function') ? getStudentMarksAuto(s.id)
+              : (typeof getStudentMarks === 'function' ? getStudentMarks(s.id) : []);
+  } catch(e) {}
+  marksList = (marksList || []).slice().sort((a,b) => new Date(b.date||0) - new Date(a.date||0));
+
+  // Fee history — every record tied to this student, most recent first
+  const feeList = fees.filter(f => f && !f._deleted && (f.studentId === s.id || f.student === s.name))
+    .slice().sort((a,b) => (b.paidAtTs||0) - (a.paidAtTs||0) || String(b.month||'').localeCompare(String(a.month||'')));
+  const totalPaid    = feeList.reduce((sum,f) => sum + (f.paid||0), 0);
+  const totalPending = feeList.filter(f => f.status !== 'paid').reduce((sum,f) => sum + (f.balance||0), 0);
+
+  const commuteOpts = (typeof COMMUTE_MODES !== 'undefined' ? COMMUTE_MODES : [])
+    .map(m => `<option value="${m.v}" ${s.commute===m.v?'selected':''}>${m.emoji} ${m.label}</option>`).join('');
+
+  const feeStatusBadge = st => st==='paid' ? '<span class="badge bg">Paid</span>'
+    : st==='overdue' ? '<span class="badge br2">Overdue</span>'
+    : st==='carried' ? '<span class="badge bb">Carried Fwd</span>'
+    : '<span class="badge ba">Pending</span>';
+
+  root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()">
+    <div class="modal" style="max-width:720px;height:90vh;display:flex;flex-direction:column">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-shrink:0">
+        <div class="flex-c">
+          <div class="av av-lg" style="background:${s.color}">${(s.name||'?')[0]}</div>
+          <div>
+            <div style="font-size:15px;font-weight:700;color:var(--tx)">${s.name}</div>
+            <div style="font-size:11px;color:var(--tx3)">${s.id} · ${s.grade==='KG'?'KG':(s.grade==='COURSE'?'Course':'Class '+s.grade)} · <span class="badge ${s.status==='active'?'bg':'ba'}">${s.status}</span></div>
+          </div>
+        </div>
+        <button onclick="closeModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--tx2)">×</button>
+      </div>
+
+      <div style="flex:1;overflow-y:auto;padding-right:2px">
+
+        <!-- Basic Details -->
+        <div style="background:var(--bg);border-radius:10px;padding:12px 14px;margin-bottom:12px">
+          <div style="font-size:12px;font-weight:700;color:var(--tx);margin-bottom:8px">👤 Basic Details</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:11px;color:var(--tx)">
+            <div><span style="color:var(--tx3)">Parent:</span> ${s.parent||'—'}</div>
+            <div><span style="color:var(--tx3)">Phone:</span> ${s.phone||'—'}</div>
+            <div><span style="color:var(--tx3)">DOB:</span> ${s.dob||'—'}</div>
+            <div><span style="color:var(--tx3)">School:</span> ${s.school||'—'}</div>
+            <div><span style="color:var(--tx3)">Admission No:</span> ${s.admNo||'—'}</div>
+            <div><span style="color:var(--tx3)">Admission Date:</span> ${s.admDate||'—'}</div>
+            <div style="grid-column:1/-1"><span style="color:var(--tx3)">Subjects:</span> ${s.subjects||'—'}</div>
+            ${s.otherCourses&&s.otherCourses.length?`<div style="grid-column:1/-1"><span style="color:var(--tx3)">Other Courses:</span> ${s.otherCourses.map(c=>c.name).join(', ')}</div>`:''}
+          </div>
+        </div>
+
+        <!-- Commute -->
+        <div style="background:var(--bg);border-radius:10px;padding:12px 14px;margin-bottom:12px">
+          <div style="font-size:12px;font-weight:700;color:var(--tx);margin-bottom:8px">🚲 Commute Mode</div>
+          <select class="fi" style="font-size:12px;width:auto" onchange="setStudentCommute('${s.id}', this.value); if(typeof renderCommutePage==='function') renderCommutePage();">
+            <option value="" ${!s.commute?'selected':''}>— Not Set —</option>
+            ${commuteOpts}
+          </select>
+        </div>
+
+        <!-- Fee History -->
+        <div style="background:var(--bg);border-radius:10px;padding:12px 14px;margin-bottom:12px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px">
+            <div style="font-size:12px;font-weight:700;color:var(--tx)">💰 Fee History</div>
+            <div style="font-size:10px"><span style="color:#16a34a;font-weight:700">Paid ₹${totalPaid.toLocaleString('en-IN')}</span> &nbsp; <span style="color:#dc2626;font-weight:700">Pending ₹${totalPending.toLocaleString('en-IN')}</span></div>
+          </div>
+          ${feeList.length ? `<div style="max-height:180px;overflow-y:auto;border:.5px solid var(--br);border-radius:8px">
+            <table style="width:100%;font-size:11px;border-collapse:collapse">
+              <thead style="position:sticky;top:0;background:var(--card)"><tr style="text-align:left;color:var(--tx3)">
+                <th style="padding:6px 8px">Month</th><th style="padding:6px 8px">Total</th><th style="padding:6px 8px">Paid</th><th style="padding:6px 8px">Balance</th><th style="padding:6px 8px">Status</th><th style="padding:6px 8px">Paid On</th>
+              </tr></thead>
+              <tbody>${feeList.map(f => `<tr style="border-top:.5px solid var(--br)">
+                <td style="padding:6px 8px">${f.month||'—'}${f.carriedForward>0?`<div style="font-size:9px;color:#dc2626;margin-top:2px">+₹${f.carriedForward.toLocaleString('en-IN')} carried from ${(f.carriedFromMonths||[]).join(', ')||'earlier'}</div>`:''}${f.status==='carried'&&f.carriedTo?`<div style="font-size:9px;color:var(--tx3);margin-top:2px">Folded into ${f.carriedTo}</div>`:''}</td>
+                <td style="padding:6px 8px">₹${(f.total||0).toLocaleString('en-IN')}</td>
+                <td style="padding:6px 8px">₹${(f.paid||0).toLocaleString('en-IN')}</td>
+                <td style="padding:6px 8px">₹${(f.balance||0).toLocaleString('en-IN')}</td>
+                <td style="padding:6px 8px">${feeStatusBadge(f.status)}</td>
+                <td style="padding:6px 8px;white-space:nowrap;font-size:10px;color:var(--tx3)">${f.paidOn || '—'}</td>
+              </tr>`).join('')}</tbody>
+            </table>
+          </div>` : `<div style="font-size:11px;color:var(--tx3);text-align:center;padding:10px">No fee records yet</div>`}
+        </div>
+
+        <!-- Attendance -->
+        <div style="background:var(--bg);border-radius:10px;padding:12px 14px;margin-bottom:12px">
+          <div style="font-size:12px;font-weight:700;color:var(--tx);margin-bottom:8px">📅 Attendance — This Month</div>
+          ${att ? `<div style="display:flex;gap:16px;font-size:11px;color:var(--tx);flex-wrap:wrap">
+            <div>✅ Present: <b>${att.present}</b></div>
+            <div>❌ Absent: <b>${att.absent}</b></div>
+            <div>⏰ Late: <b>${att.late}</b></div>
+            <div>📊 Attendance: <b>${att.pct}%</b></div>
+          </div>` : `<div style="font-size:11px;color:var(--tx3)">No attendance data for this month</div>`}
+        </div>
+
+        <!-- Marks / Exam History -->
+        <div style="background:var(--bg);border-radius:10px;padding:12px 14px;margin-bottom:4px">
+          <div style="font-size:12px;font-weight:700;color:var(--tx);margin-bottom:8px">📝 Exam / Marks History</div>
+          ${marksList.length ? `<div style="max-height:180px;overflow-y:auto;border:.5px solid var(--br);border-radius:8px">
+            <table style="width:100%;font-size:11px;border-collapse:collapse">
+              <thead style="position:sticky;top:0;background:var(--card)"><tr style="text-align:left;color:var(--tx3)">
+                <th style="padding:6px 8px">Exam</th><th style="padding:6px 8px">Subject</th><th style="padding:6px 8px">Marks</th><th style="padding:6px 8px">Result</th><th style="padding:6px 8px">Date</th>
+              </tr></thead>
+              <tbody>${marksList.map(m => `<tr style="border-top:.5px solid var(--br)">
+                <td style="padding:6px 8px">${m.examName||'—'}</td>
+                <td style="padding:6px 8px">${m.subject||'—'}</td>
+                <td style="padding:6px 8px">${m.absent ? 'AB' : ((m.marks!=null?m.marks:'—')+'/'+(m.maxMarks||100))}</td>
+                <td style="padding:6px 8px">${m.absent ? '—' : (m.pass ? '✅ Pass' : '❌ Fail')}</td>
+                <td style="padding:6px 8px">${m.date||'—'}</td>
+              </tr>`).join('')}</tbody>
+            </table>
+          </div>` : `<div style="font-size:11px;color:var(--tx3);text-align:center;padding:10px">No exam records yet</div>`}
+        </div>
+
+      </div>
+
+      <div class="modal-foot" style="flex-shrink:0">
+        <button class="btn btn-p" onclick="closeModal();editStudent(${students.indexOf(s)})">✏️ Edit Student</button>
+        <button class="btn btn-wa" onclick="waStudent('${s.id}')">📱 WhatsApp</button>
+        <button class="btn" onclick="closeModal()">Close</button>
+      </div>
+    </div>
+  </div>`;
+}
 
 function saveStudent() {
   const lic = window.__LIC__||{};
@@ -4203,7 +4372,10 @@ function renderCommutePage() {
 
   // Filters
   const q = (document.getElementById('commute-search')?.value || '').toLowerCase().trim();
-  const filterVal = document.getElementById('commute-filter')?.value || 'all';
+  // NOTE: don't use `|| 'all'` here — the "Not Set" option's value is '' (empty string),
+  // which is falsy and was always being coerced back to 'all', so that filter never applied.
+  const filterEl = document.getElementById('commute-filter');
+  const filterVal = filterEl ? filterEl.value : 'all';
   let list = active;
   if (q) list = list.filter(s => (s.name||'').toLowerCase().includes(q) || (s.id||'').toLowerCase().includes(q) || String(s.grade||'').toLowerCase().includes(q));
   if (filterVal !== 'all') list = list.filter(s => (s.commute||'') === filterVal);
@@ -6348,6 +6520,39 @@ function applyFeeMonthFilter() {
   const activeTab = document.querySelector('#fee-tabs .seg-b.on');
   const tabVal = activeTab ? (activeTab.getAttribute('data-tab') || 'all') : 'all';
   _renderFeesFiltered(tabVal, month);
+
+  renderDroppedLoss();
+}
+
+/* ── Loss — dropped/inactive students who still owe money.
+   They're no longer auto-billed (Day-1 reset only targets active students),
+   so any balance they have just sits there — this surfaces it clearly. ── */
+function renderDroppedLoss() {
+  const card = document.getElementById('fee-loss-card');
+  if (!card) return;
+  const amtEl  = document.getElementById('fee-loss-amt');
+  const listEl = document.getElementById('fee-loss-list');
+
+  const droppedIds = new Set(students.filter(s => s && s.status === 'inactive').map(s => s.id));
+  const byStudent = {};
+  fees.forEach(f => {
+    if (!f || f._deleted || f.status === 'paid' || f.status === 'carried' || !((f.balance||0) > 0)) return;
+    const stu = students.find(s => s.id === f.studentId || s.name === f.student);
+    if (!stu || stu.status !== 'inactive') return;
+    const key = stu.id;
+    if (!byStudent[key]) byStudent[key] = { name: stu.name, total: 0 };
+    byStudent[key].total += (f.balance || 0);
+  });
+
+  const entries = Object.values(byStudent).sort((a,b) => b.total - a.total);
+  if (entries.length === 0) { card.style.display = 'none'; return; }
+
+  card.style.display = '';
+  const totalLoss = entries.reduce((s,e) => s + e.total, 0);
+  if (amtEl) amtEl.textContent = '₹' + totalLoss.toLocaleString('en-IN');
+  if (listEl) listEl.innerHTML = entries.map(e =>
+    `<span style="background:#fff;border:.5px solid #fecaca;border-radius:6px;padding:2px 8px">${e.name}: <b>₹${e.total.toLocaleString('en-IN')}</b></span>`
+  ).join('');
 }
 
 /* Returns the grade/class for a fee record, looked up via its student */
@@ -10192,6 +10397,124 @@ function saveProduct() {
 /* ═══════════════════════════════════════════════════════
    ADMIN PANEL — daily summary, to-do, announcements
 ═══════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════
+   OPS REPORTS — Daily / Weekly / Monthly, combining Teaching Log,
+   Fees, Attendance & Commute into one WhatsApp-ready summary
+═══════════════════════════════════════════════════════ */
+function _opsDateStr(d) { return d.toISOString().slice(0,10); }
+
+function buildOpsReport(period) {
+  const now = new Date();
+  let fromDate, label;
+  if (period === 'daily') {
+    fromDate = new Date(now);
+    label = 'Daily Report — ' + now.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
+  } else if (period === 'weekly') {
+    fromDate = new Date(now); fromDate.setDate(fromDate.getDate() - 6);
+    label = 'Weekly Report — ' + fromDate.toLocaleDateString('en-IN',{day:'2-digit',month:'short'}) + ' to ' + now.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
+  } else {
+    fromDate = new Date(now.getFullYear(), now.getMonth(), 1);
+    label = 'Monthly Report — ' + now.toLocaleDateString('en-IN',{month:'long',year:'numeric'});
+  }
+  const fromStr = _opsDateStr(fromDate);
+  const toStr   = _opsDateStr(now);
+  const ctr     = CFG.CENTER || {};
+
+  // 1) Teaching Log — entries within the period
+  let logInRange = [];
+  try {
+    const tLog = (typeof _tlLoad === 'function') ? _tlLoad() : JSON.parse(localStorage.getItem('_erp_teaching_log') || '[]');
+    logInRange = (tLog || []).filter(e => e && e.date && e.date >= fromStr && e.date <= toStr);
+  } catch(e) {}
+
+  // 2) Fees — amount actually collected within the period (uses exact payment timestamp)
+  const feesPaidInRange = fees.filter(f => {
+    if (!f || f._deleted || !(f.paid > 0)) return false;
+    const ts = (typeof _feeParsePaidOn === 'function') ? _feeParsePaidOn(f) : 0;
+    if (!ts) return false;
+    const d = _opsDateStr(new Date(ts));
+    return d >= fromStr && d <= toStr;
+  });
+  const feesCollected  = feesPaidInRange.reduce((s,f) => s + (f.paid||0), 0);
+  const allTimePending = fees.filter(f => f && !f._deleted && f.status !== 'paid' && f.status !== 'carried' && (f.balance||0) > 0)
+    .reduce((s,f) => s + (f.balance||0), 0);
+
+  // 3) Attendance — scan raw attendance keys for the period
+  let present = 0, absent = 0, late = 0;
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (!k || !k.startsWith('_erp_att_') || k.startsWith('_erp_att_dayorder_')) continue;
+      const datePart = k.slice('_erp_att_'.length, '_erp_att_'.length + 10);
+      if (datePart < fromStr || datePart > toStr) continue;
+      try {
+        const rec = JSON.parse(localStorage.getItem(k)) || {};
+        Object.values(rec).forEach(v => { if (v==='P') present++; else if (v==='A') absent++; else if (v==='L') late++; });
+      } catch(e2) {}
+    }
+  } catch(e) {}
+  const totalMarks = present + absent + late;
+  const attPct = totalMarks > 0 ? Math.round(present / totalMarks * 100) : 0;
+
+  // 4) Commute — current snapshot of active students (mode isn't logged day-by-day)
+  const active = students.filter(s => s && s.status === 'active');
+  const commuteCounts = { Walking:0, Parent:0, Cycle:0, Bike:0, unset:0 };
+  active.forEach(s => { if (s.commute && commuteCounts.hasOwnProperty(s.commute)) commuteCounts[s.commute]++; else commuteCounts.unset++; });
+
+  const lines = [];
+  lines.push(`📊 *${ctr.name || 'Tuition Center'} — ${label}*`);
+  lines.push('─'.repeat(28));
+  lines.push('');
+  lines.push('📖 *Teaching Log*');
+  lines.push(logInRange.length
+    ? logInRange.map(e => `• ${e.date} — ${e.grade ? 'Gr.'+e.grade : ''}${e.batch ? ' ('+e.batch+')' : ''}: ${e.subject || '—'}${e.topic ? ' — '+e.topic : ''}`).join('\n')
+    : '  No entries recorded');
+  lines.push('');
+  lines.push('💰 *Fees*');
+  lines.push(`  Collected: ₹${feesCollected.toLocaleString('en-IN')} (${feesPaidInRange.length} payment${feesPaidInRange.length!==1?'s':''})`);
+  lines.push(`  Total Outstanding (all-time): ₹${allTimePending.toLocaleString('en-IN')}`);
+  lines.push('');
+  lines.push('📅 *Attendance*');
+  lines.push(totalMarks > 0
+    ? `  Present: ${present} · Absent: ${absent} · Late: ${late} · Attendance: ${attPct}%`
+    : '  No attendance marked for this period');
+  lines.push('');
+  lines.push('🚲 *Commute* (current)');
+  lines.push(`  Walking: ${commuteCounts.Walking} · Parent Drop: ${commuteCounts.Parent} · Cycle: ${commuteCounts.Cycle} · Bike: ${commuteCounts.Bike} · Not Set: ${commuteCounts.unset}`);
+  lines.push('');
+  lines.push(`Generated: ${new Date().toLocaleString('en-IN')}`);
+
+  return lines.join('\n');
+}
+
+function showOpsReport(period) {
+  const text = buildOpsReport(period);
+  window._lastOpsReport = text;
+  const root = document.getElementById('modal-root');
+  if (!root) return;
+  const titles = { daily:'📅 Daily Report', weekly:'🗓️ Weekly Report', monthly:'📆 Monthly Report' };
+  const defaultPhone = (CFG.CENTER && CFG.CENTER.phone) || '';
+  root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()">
+    <div class="modal" style="max-width:560px">
+      <div class="modal-title">${titles[period] || 'Report'}</div>
+      <div style="white-space:pre-wrap;font-size:11px;background:var(--bg);border-radius:8px;padding:12px;max-height:44vh;overflow-y:auto;font-family:monospace;color:var(--tx)">${text.replace(/</g,'&lt;')}</div>
+      <div class="fg" style="margin-top:10px"><label class="fl">Send To (WhatsApp Number)</label><input class="fi" id="ops-report-phone" value="${defaultPhone}" placeholder="e.g. 9876543210"></div>
+      <div class="modal-foot">
+        <button class="btn btn-wa" onclick="sendOpsReportWA()">📱 Send via WhatsApp</button>
+        <button class="btn" onclick="closeModal()">Close</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function sendOpsReportWA() {
+  const text  = window._lastOpsReport || '';
+  const phone = document.getElementById('ops-report-phone')?.value.trim() || '';
+  if (!text) { showToast('No report to send'); return; }
+  openWA(phone, text);
+}
+
 function _todayISO() {
   const d = new Date();
   return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
@@ -14164,31 +14487,64 @@ function checkAndDoMonthlyReset() {
   if (_getLastResetYM() === curYM) return;
   _setLastResetYM(curYM);
 
-  // Auto-generate pending fee records for active students who don't have one yet
+  // Auto-generate pending fee records for active students who don't have one yet.
+  // Also carry forward any still-unpaid balance from earlier months into the new
+  // month's bill, so a student's "this month" fee reflects what they actually owe.
   const activeStudents = students.filter(s => s.status === 'active');
   let generated = 0;
   activeStudents.forEach(s => {
+    // Every unpaid, non-carried, non-deleted record from a PRIOR month is old debt.
+    const oldPending = fees.filter(f => f && !f._deleted &&
+      (f.studentId === s.id || f.student === s.name) &&
+      f.status !== 'paid' && f.status !== 'carried' &&
+      (f.balance||0) > 0 && f.month !== curLbl
+    );
+    const carriedForward = oldPending.reduce((sum,f) => sum + (f.balance||0), 0);
+    const carriedFromMonths = [...new Set(oldPending.map(f => f.month).filter(Boolean))];
+
     const already = fees.find(f =>
       (f.studentId === s.id || f.student === s.name) &&
       f.month === curLbl && f.type !== 'admission'
     );
-    if (already) return;
+    if (already) {
+      // Rare (a record for the new month already exists) — fold the carry-forward
+      // into it once, instead of creating a duplicate monthly record.
+      if (carriedForward > 0 && !already._carriedApplied) {
+        already.total   = (already.total||0) + carriedForward;
+        already.balance = (already.balance||0) + carriedForward;
+        already.carriedForward = (already.carriedForward||0) + carriedForward;
+        already.carriedFromMonths = [...new Set([...(already.carriedFromMonths||[]), ...carriedFromMonths])];
+        already.status  = already.balance > 0 ? (already.paid > 0 ? 'partial' : 'pending') : 'paid';
+        already._carriedApplied = true;
+        oldPending.forEach(f => { f.status = 'carried'; f.balance = 0; f.carriedTo = curLbl; });
+      }
+      return;
+    }
     const fs  = (typeof getFeeForClass === 'function') ? getFeeForClass(s.grade) : {};
-    const amt = fs.monthlyFee || 0;
-    if (amt <= 0) return;
+    const baseAmt = fs.monthlyFee || 0;
+    if (baseAmt <= 0 && carriedForward <= 0) return; // nothing to bill this student
+    const total = baseAmt + carriedForward;
     fees.unshift({
       rcpt      : 'RCP-MF-' + Date.now().toString().slice(-5) + Math.random().toString(36).slice(-3),
       student   : s.name,
       studentId : s.id,
       month     : curLbl,
-      total     : amt,
+      total     : total,
       paid      : 0,
-      balance   : amt,
+      balance   : total,
       mode      : 'Cash',
       status    : 'pending',
       type      : 'monthly',
       paidOn    : '',
+      baseFee         : baseAmt,
+      carriedForward  : carriedForward,
+      carriedFromMonths,
     });
+    // Old records are now folded into this month's bill — zero their balance so
+    // they stop counting as separately outstanding, but keep them for history.
+    if (carriedForward > 0) {
+      oldPending.forEach(f => { f.status = 'carried'; f.balance = 0; f.carriedTo = curLbl; });
+    }
     generated++;
   });
 
@@ -14489,13 +14845,14 @@ function renderClassStrength() {
 function renderAdminCalendar() {
   const day = new Date().getDate();
   const tasks = [
-    { days:[1,2,3,4,5,6,7], icon:'📧', bg:'#2563eb' },
-    { days:[8,9,10], icon:'📞', bg:'#d97706' },
-    { days:[9,10], icon:'🏠', bg:'#dc2626' },
-    { days:[15,16,17,18,19,20,21,22,23,24,25], icon:'✅', bg:'#16a34a' },
-    { days:[25,26,27], icon:'📋', bg:'#7c3aed' },
-    { days:[28], icon:'💳', bg:'#ca8a04' },
-    { days:[29], icon:'💰', bg:'#4f46e5' },
+    { days:[1], icon:'💰', bg:'#dc2626', title:'New month — Fees Pending view enabled automatically', action:"navTo('fees')" },
+    { days:[1,2,3,4,5,6,7], icon:'📧', bg:'#2563eb', title:'Task scheduled' },
+    { days:[8,9,10], icon:'📞', bg:'#d97706', title:'Task scheduled' },
+    { days:[9,10], icon:'🏠', bg:'#dc2626', title:'Task scheduled' },
+    { days:[15,16,17,18,19,20,21,22,23,24,25], icon:'✅', bg:'#16a34a', title:'Task scheduled' },
+    { days:[25,26,27], icon:'📋', bg:'#7c3aed', title:'Task scheduled' },
+    { days:[28], icon:'💳', bg:'#ca8a04', title:'Task scheduled' },
+    { days:[29], icon:'💰', bg:'#4f46e5', title:'Task scheduled' },
   ];
 
   const todayTasks = tasks.filter(t => t.days.includes(day));
@@ -14504,7 +14861,7 @@ function renderAdminCalendar() {
 
   if (todayTasks.length > 0) {
     todayTasks.forEach(t => {
-      html += `<span style="
+      html += `<span onclick="${t.action||''}" style="
         display:inline-flex;
         align-items:center;
         justify-content:center;
@@ -14514,7 +14871,7 @@ function renderAdminCalendar() {
         border-radius:5px;
         font-size:12px;
         cursor:pointer;
-      " title="Task scheduled">${t.icon}</span>`;
+      " title="${t.title||'Task scheduled'}">${t.icon}</span>`;
     });
   } else {
     html += `<span style="font-size:10px;color:var(--tx3)">No tasks</span>`;

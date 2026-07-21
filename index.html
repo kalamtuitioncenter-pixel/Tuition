@@ -761,8 +761,13 @@ tbody tr:hover td{background:var(--bg)}
 
   <!-- ── Commute Overview Card ── -->
   <div class="card" style="margin-bottom:14px" id="dash-commute-overview" onclick="navTo('commute')" title="Go to Commute Management">
-    <div class="card-hd" style="margin-bottom:10px">
+    <div class="card-hd" style="margin-bottom:10px;flex-wrap:wrap;gap:6px">
       <span class="card-title">🚲 Commute Overview</span>
+      <select class="fi" id="dash-commute-session" style="width:auto;font-size:10px;padding:3px 8px;margin-left:auto" onclick="event.stopPropagation()" onchange="event.stopPropagation();renderCommuteDashCard()">
+        <option value="all">All Active Students</option>
+        <option value="morning">✅ Current — Morning Session</option>
+        <option value="evening">✅ Current — Evening Session</option>
+      </select>
       <span style="font-size:11px;color:var(--tx3);font-weight:600" id="dash-commute-total"></span>
     </div>
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px" id="dash-commute-cards"></div>
@@ -4413,25 +4418,62 @@ function exportCommuteCSV() {
   showToast('✅ Commute list exported!');
 }
 
-/* Dashboard overview card — total students per commute mode (all active students,
-   not just those present today; see the Commute page for the live daily breakdown). */
+/* Read today's attendance across all batches for one session, and return the
+   set of studentIds marked Present or Late (i.e. actually attending today). */
+function _todayAttPresentIds(session) {
+  const today = new Date().toISOString().slice(0,10);
+  const prefix = '_erp_att_' + today + '_';
+  const ids = new Set();
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (!k || !k.startsWith(prefix) || k.startsWith('_erp_att_dayorder_')) continue;
+      if (!k.endsWith('_' + session)) continue;
+      try {
+        const rec = JSON.parse(localStorage.getItem(k)) || {};
+        Object.entries(rec).forEach(([rk, v]) => {
+          if (v === 'P' || v === 'L') ids.add(rk.split('|')[0]);
+        });
+      } catch(e2) {}
+    }
+  } catch(e) {}
+  return ids;
+}
+
+/* Dashboard overview card — total students per commute mode. Defaults to all
+   active students; the session dropdown switches to "Current" mode, which
+   pulls today's Attendance for the chosen session and shows commute counts
+   for only the students actually marked present/late today. */
 function renderCommuteDashCard() {
   const cardsEl = document.getElementById('dash-commute-cards');
   if (!cardsEl) return;
-  const active = students.filter(s => s && s.status === 'active');
+  const totalEl = document.getElementById('dash-commute-total');
+  const sessSel = document.getElementById('dash-commute-session');
+  const mode = sessSel ? sessSel.value : 'all';
+
+  let pool = students.filter(s => s && s.status === 'active');
+  let label = pool.length + ' active students';
+  let noAttMsg = '';
+
+  if (mode === 'morning' || mode === 'evening') {
+    const presentIds = _todayAttPresentIds(mode);
+    pool = pool.filter(s => presentIds.has(s.id));
+    label = pool.length + ' present today (' + (mode === 'morning' ? 'Morning' : 'Evening') + ')';
+    if (presentIds.size === 0) noAttMsg = `<div style="grid-column:1/-1;font-size:10px;color:var(--tx3);margin-top:2px">⚠️ No attendance marked yet for the ${mode==='morning'?'Morning':'Evening'} session today.</div>`;
+  }
+
   const counts = { Walking:0, Parent:0, Cycle:0, Bike:0, unset:0 };
-  active.forEach(s => {
+  pool.forEach(s => {
     if (s.commute && counts.hasOwnProperty(s.commute)) counts[s.commute]++;
     else counts.unset++;
   });
-  const totalEl = document.getElementById('dash-commute-total');
-  if (totalEl) totalEl.textContent = active.length + ' active students';
+  if (totalEl) totalEl.textContent = label;
   cardsEl.innerHTML = COMMUTE_MODES.map(m => `
     <div style="background:${m.bg};border-radius:9px;padding:10px 11px;border:.5px solid ${m.fg}22">
       <div style="font-size:10px;color:${m.fg};margin-bottom:3px">${m.emoji} ${m.label}</div>
       <div style="font-size:18px;font-weight:800;color:${m.fg}">${counts[m.v]}</div>
     </div>`).join('') + (counts.unset > 0 ? `
-    <div style="grid-column:1/-1;font-size:10px;color:var(--tx3);margin-top:2px">⚠️ ${counts.unset} student${counts.unset!==1?'s':''} without a commute mode set — <span style="text-decoration:underline">click here</span> to update.</div>` : '');
+    <div style="grid-column:1/-1;font-size:10px;color:var(--tx3);margin-top:2px">⚠️ ${counts.unset} student${counts.unset!==1?'s':''} without a commute mode set — <span style="text-decoration:underline">click here</span> to update.</div>` : '') + noAttMsg;
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -5204,6 +5246,7 @@ function saveAttendance() {
   }
 
   renderAttList();
+  if (typeof renderCommuteDashCard === 'function') renderCommuteDashCard();
   runBackup('change');
 }
 /* ══════════════════════════════════════════════════════════

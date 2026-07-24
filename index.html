@@ -3649,6 +3649,7 @@ function smRenderTable() {
       <td style="padding:7px 6px;text-align:center"><input type="checkbox" id="sm-pd-${s.id}" ${tm.parentDeclared ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer"></td>
       <td style="padding:7px 6px;text-align:center"><input type="checkbox" id="sm-sd-${s.id}" ${tm.studentDeclared ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer"></td>
       <td style="padding:7px 6px;text-align:center">${smComputeGrowth(rec, subject)}</td>
+      <td style="padding:7px 6px;text-align:center"><button class="btn btn-sm" style="font-size:10px;padding:3px 8px;background:#4338ca;color:#fff;border-color:#4338ca" onclick="smPredictAndPlan('${s.id}')">🤖 Predict</button></td>
     </tr>`;
   }).join('');
 
@@ -3661,6 +3662,7 @@ function smRenderTable() {
       <th style="text-align:center;padding:6px;color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.03em">👪 Parent<br>Declared</th>
       <th style="text-align:center;padding:6px;color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.03em">🧑‍🎓 Student<br>Declared</th>
       <th style="text-align:center;padding:6px;color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.03em">Growth</th>
+      <th style="text-align:center;padding:6px;color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.03em">AI Plan</th>
     </tr></thead>
     <tbody>${rows}</tbody>
   </table></div>`;
@@ -3700,6 +3702,94 @@ function smSaveAll() {
   smRenderTable();
   const status = document.getElementById('sm-save-status');
   if (status) { status.textContent = '✅ Saved ' + count + ' student' + (count === 1 ? '' : 's'); setTimeout(() => { status.textContent = ''; }, 2500); }
+}
+
+// Pulls every saved term × subject mark for a student, oldest term first.
+function _smAllRows(studentId) {
+  const rec = _smLoad(studentId);
+  const rows = [];
+  SCHOOL_MARK_TERMS.forEach(t => {
+    const termObj = rec.terms && rec.terms[t.id];
+    if (!termObj) return;
+    SCHOOL_MARK_SUBJECTS.forEach(sub => {
+      const m = termObj[sub.id];
+      if (m && m.marks !== null && m.marks !== undefined && m.max) {
+        rows.push({ term: t.label, subject: sub.label, marks: m.marks, max: m.max, pct: Math.round(m.marks / m.max * 100) });
+      }
+    });
+  });
+  return rows;
+}
+
+// Simple trend projection per subject (last value + average delta across saved terms) — no AI needed for this part.
+function _smHeuristicPredict(rows) {
+  const bySubject = {};
+  rows.forEach(r => { (bySubject[r.subject] = bySubject[r.subject] || []).push(r.pct); });
+  const preds = {};
+  Object.keys(bySubject).forEach(sub => {
+    const arr = bySubject[sub];
+    if (arr.length === 1) { preds[sub] = arr[0]; return; }
+    const delta = (arr[arr.length - 1] - arr[0]) / (arr.length - 1);
+    preds[sub] = Math.max(0, Math.min(100, Math.round(arr[arr.length - 1] + delta)));
+  });
+  return preds;
+}
+
+// Opens a modal with a trend-based next-term prediction + an AI-written study plan, built entirely from School Marks history.
+async function smPredictAndPlan(studentId) {
+  const s = students.find(x => x.id === studentId);
+  if (!s) return;
+  const root = document.getElementById('modal-root');
+  if (!root) return;
+
+  const rows = _smAllRows(studentId);
+  const heuristic = _smHeuristicPredict(rows);
+  const predRows = Object.keys(heuristic).map(sub =>
+    `<div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0;border-bottom:.5px solid var(--br)"><span>${sub}</span><span style="font-weight:700;color:var(--tx)">~${heuristic[sub]}%</span></div>`
+  ).join('') || '<div style="font-size:11px;color:var(--tx3)">No marks recorded yet</div>';
+
+  root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()">
+    <div class="modal" style="max-width:520px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div style="font-size:14px;font-weight:700;color:var(--tx)">🤖 Predict &amp; Plan — ${s.name}</div>
+        <button onclick="closeModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--tx2)">×</button>
+      </div>
+      <div style="font-size:11px;font-weight:700;color:var(--tx2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.03em">📈 Predicted Next Term (from trend)</div>
+      <div style="background:var(--bg);border-radius:8px;padding:8px 10px;margin-bottom:12px">${predRows}</div>
+      <div style="font-size:11px;font-weight:700;color:var(--tx2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.03em">🧭 AI Study Plan</div>
+      <div id="sm-ai-plan-out" style="background:var(--bg);border-radius:8px;padding:10px;font-size:12px;color:var(--tx);white-space:pre-wrap;min-height:60px">🤖 Analysing school marks…</div>
+      <div style="margin-top:10px;text-align:right">
+        <button class="btn btn-sm" onclick="smPredictAndPlan('${studentId}')">🔄 Regenerate</button>
+      </div>
+    </div>
+  </div>`;
+
+  const outEl = document.getElementById('sm-ai-plan-out');
+  if (!rows.length) {
+    if (outEl) outEl.textContent = 'Not enough School Marks data yet — save at least one term/subject to generate a plan.';
+    return;
+  }
+
+  const dataStr = rows.map(r => `${r.term} · ${r.subject}: ${r.marks}/${r.max} (${r.pct}%)`).join('; ');
+  const prompt = `Tuition center student "${s.name}" (Class ${s.grade}) has these school marks recorded across terms and subjects: ${dataStr}. Based on the trend, write a short, practical study plan (4-6 bullet lines) for the next term — call out the weakest subject(s), a specific focus action, and a realistic target percentage. Keep it concise and actionable for a tutor to hand to the student.`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 500, messages: [{ role: 'user', content: prompt }] })
+    });
+    const data = await res.json();
+    const txt = (data.content || []).map(c => c.text || '').join('').trim() || 'Plan generation returned no content.';
+    const liveOut = document.getElementById('sm-ai-plan-out');
+    if (liveOut) liveOut.textContent = txt;
+    const rec = _smLoad(studentId);
+    rec.lastPlan = { text: txt, at: new Date().toISOString() };
+    _smSave(studentId, rec);
+  } catch (err) {
+    const liveOut = document.getElementById('sm-ai-plan-out');
+    if (liveOut) liveOut.textContent = '⚠️ Could not reach AI right now. Try again in a moment.';
+  }
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -3796,6 +3886,95 @@ function rsDeleteTest(id, idx) {
   renderRisingStarPage();
 }
 
+// Which tab (tests/tt/plans) each Rising Star card currently shows.
+let _rsActiveTab = {};
+function rsSetTab(id, tab) {
+  _rsActiveTab[id] = tab;
+  renderRisingStarPage();
+}
+
+function rsAddTT(id) {
+  const day = document.getElementById('rs-tt-day-' + id)?.value;
+  const time = document.getElementById('rs-tt-time-' + id)?.value.trim();
+  const subject = document.getElementById('rs-tt-subject-' + id)?.value.trim();
+  const notes = document.getElementById('rs-tt-notes-' + id)?.value.trim();
+  if (!time || !subject) { alert('Enter a time and subject for the slot.'); return; }
+  const data = _rsLoadAll();
+  if (!data[id]) return;
+  data[id].timetable = data[id].timetable || [];
+  data[id].timetable.push({ day: day || 'Monday', time, subject, notes });
+  _rsSaveAll(data);
+  renderRisingStarPage();
+}
+
+function rsDeleteTT(id, idx) {
+  const data = _rsLoadAll();
+  if (!data[id] || !data[id].timetable) return;
+  data[id].timetable.splice(idx, 1);
+  _rsSaveAll(data);
+  renderRisingStarPage();
+}
+
+function rsAddManualPlan(id) {
+  const el = document.getElementById('rs-plan-text-' + id);
+  const text = el?.value.trim();
+  if (!text) { alert('Write a plan first.'); return; }
+  const data = _rsLoadAll();
+  if (!data[id]) return;
+  data[id].plans = data[id].plans || [];
+  data[id].plans.unshift({ text, at: new Date().toISOString(), auto: false });
+  _rsSaveAll(data);
+  renderRisingStarPage();
+}
+
+function rsDeletePlan(id, idx) {
+  const data = _rsLoadAll();
+  if (!data[id] || !data[id].plans) return;
+  data[id].plans.splice(idx, 1);
+  _rsSaveAll(data);
+  renderRisingStarPage();
+}
+
+// Builds a Rising-Star-specific AI coaching plan from School Marks history + special-test scores.
+async function rsGenerateAIPlan(id) {
+  const s = students.find(x => x.id === id);
+  const data = _rsLoadAll();
+  const entry = data[id];
+  if (!s || !entry) return;
+
+  const smRows = _smAllRows(id).map(r => `${r.term} ${r.subject}: ${r.marks}/${r.max}`);
+  const testRows = (entry.tests || []).map(tt => `${tt.name} (${tt.date}): ${tt.marks}/${tt.max}`);
+
+  if (!smRows.length && !testRows.length) {
+    alert('Add some School Marks or Rising Star test scores for this student first, so the AI has something to work from.');
+    return;
+  }
+
+  const btn = document.querySelector(`button[onclick="rsGenerateAIPlan('${id}')"]`);
+  if (btn) { btn.disabled = true; btn.textContent = '🤖 Generating…'; }
+
+  const prompt = `Tuition center slow-learner student "${s.name}" (Class ${s.grade}) is on the Rising Stars special coaching track. School marks history: ${smRows.join('; ') || 'none yet'}. Special coaching test scores: ${testRows.join('; ') || 'none yet'}. Special coach: ${entry.coach || 'not assigned'}. Write a short, practical coaching plan (4-6 bullet lines) for the next few weeks — call out the weakest area(s), a specific focus action for the special coach, and a realistic target improvement. Keep it concise and actionable.`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 500, messages: [{ role: 'user', content: prompt }] })
+    });
+    const resData = await res.json();
+    const txt = (resData.content || []).map(c => c.text || '').join('').trim() || 'Plan generation returned no content.';
+    const freshData = _rsLoadAll();
+    if (!freshData[id]) return;
+    freshData[id].plans = freshData[id].plans || [];
+    freshData[id].plans.unshift({ text: txt, at: new Date().toISOString(), auto: true });
+    _rsSaveAll(freshData);
+    renderRisingStarPage();
+  } catch (err) {
+    alert('Could not reach AI right now. Try again in a moment.');
+    if (btn) { btn.disabled = false; btn.textContent = '🤖 Generate AI Plan'; }
+  }
+}
+
 // Combines School Marks term history (averaged across whatever subjects were entered
 // each term) + Rising Star special-test history, in order, into one growth read-out.
 function rsComputeGrowth(id, entry) {
@@ -3840,6 +4019,66 @@ function rsRenderRoster(data) {
         <td style="padding:5px 6px;font-size:11px;text-align:center;color:var(--tx)">${tt.marks}/${tt.max}</td>
         <td style="padding:5px 6px;text-align:center"><button class="btn btn-sm" style="padding:2px 7px;font-size:10px" onclick="rsDeleteTest('${id}',${i})">✕</button></td>
       </tr>`).join('');
+
+    const activeTab = _rsActiveTab[id] || 'tests';
+    const tabBtn = (key, label) => `<button onclick="rsSetTab('${id}','${key}')" style="padding:5px 12px;font-size:11px;font-weight:700;border-radius:6px;border:none;cursor:pointer;background:${activeTab === key ? 'var(--pr)' : 'var(--bg)'};color:${activeTab === key ? '#fff' : 'var(--tx2)'}">${label}</button>`;
+    const tabBar = `<div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">${tabBtn('tests', '🧪 Tests')}${tabBtn('tt', '🗓️ TT')}${tabBtn('plans', '🧭 Plans')}</div>`;
+
+    let tabContent = '';
+    if (activeTab === 'tests') {
+      tabContent = `
+        <div style="overflow-x:auto;margin-bottom:8px">
+          <table style="width:100%;border-collapse:collapse"><tbody>${testsRows || '<tr><td colspan="4" style="padding:8px;color:var(--tx3);font-size:11px;text-align:center">No tests recorded yet</td></tr>'}</tbody></table>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+          <input class="fi" id="rs-test-name-${id}" placeholder="Test name" style="font-size:11px;width:120px;padding:5px 7px">
+          <input class="fi" id="rs-test-date-${id}" type="date" style="font-size:11px;width:130px;padding:5px 7px">
+          <input class="fi" id="rs-test-marks-${id}" type="number" placeholder="Marks" style="font-size:11px;width:70px;padding:5px 7px">
+          <input class="fi" id="rs-test-max-${id}" type="number" placeholder="Out of" value="100" style="font-size:11px;width:70px;padding:5px 7px">
+          <button class="btn btn-sm" onclick="rsAddTest('${id}')" style="font-size:11px">+ Add Test</button>
+        </div>`;
+    } else if (activeTab === 'tt') {
+      const ttRows = (entry.timetable || []).map((tt, i) => `
+        <tr style="border-bottom:.5px solid var(--br)">
+          <td style="padding:5px 6px;font-size:11px;color:var(--tx)">${tt.day}</td>
+          <td style="padding:5px 6px;font-size:11px;color:var(--tx3)">${tt.time}</td>
+          <td style="padding:5px 6px;font-size:11px;color:var(--tx)">${tt.subject}</td>
+          <td style="padding:5px 6px;font-size:11px;color:var(--tx3)">${tt.notes || '—'}</td>
+          <td style="padding:5px 6px;text-align:center"><button class="btn btn-sm" style="padding:2px 7px;font-size:10px" onclick="rsDeleteTT('${id}',${i})">✕</button></td>
+        </tr>`).join('');
+      tabContent = `
+        <div style="overflow-x:auto;margin-bottom:8px">
+          <table style="width:100%;border-collapse:collapse"><tbody>${ttRows || '<tr><td colspan="5" style="padding:8px;color:var(--tx3);font-size:11px;text-align:center">No coaching sessions scheduled yet</td></tr>'}</tbody></table>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+          <select class="fi" id="rs-tt-day-${id}" style="font-size:11px;width:110px;padding:5px 7px">
+            <option>Monday</option><option>Tuesday</option><option>Wednesday</option><option>Thursday</option><option>Friday</option><option>Saturday</option><option>Sunday</option>
+          </select>
+          <input class="fi" id="rs-tt-time-${id}" placeholder="e.g. 5:00–6:00 PM" style="font-size:11px;width:130px;padding:5px 7px">
+          <input class="fi" id="rs-tt-subject-${id}" placeholder="Subject" style="font-size:11px;width:100px;padding:5px 7px">
+          <input class="fi" id="rs-tt-notes-${id}" placeholder="Notes (optional)" style="font-size:11px;width:140px;padding:5px 7px">
+          <button class="btn btn-sm" onclick="rsAddTT('${id}')" style="font-size:11px">+ Add Slot</button>
+        </div>`;
+    } else {
+      const plansRows = (entry.plans || []).map((p, i) => `
+        <div style="background:var(--bg);border-radius:8px;padding:8px 10px;margin-bottom:6px">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+            <div style="font-size:11px;color:var(--tx);white-space:pre-wrap;flex:1">${p.text}</div>
+            <button class="btn btn-sm" style="padding:2px 7px;font-size:10px;flex-shrink:0" onclick="rsDeletePlan('${id}',${i})">✕</button>
+          </div>
+          <div style="font-size:9px;color:var(--tx3);margin-top:4px">${p.auto ? '🤖 AI-generated' : '✍️ Manual'} · ${new Date(p.at).toLocaleDateString('en-IN')}</div>
+        </div>`).join('');
+      tabContent = `
+        <div style="margin-bottom:8px">${plansRows || '<div style="font-size:11px;color:var(--tx3);text-align:center;padding:10px">No plans yet — generate an AI plan or add one manually.</div>'}</div>
+        <div style="margin-bottom:6px">
+          <button class="btn btn-sm" style="background:#4338ca;color:#fff;border-color:#4338ca;font-size:11px" onclick="rsGenerateAIPlan('${id}')">🤖 Generate AI Plan</button>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+          <input class="fi" id="rs-plan-text-${id}" placeholder="Write a plan manually…" style="font-size:11px;flex:1;min-width:160px;padding:5px 7px">
+          <button class="btn btn-sm" onclick="rsAddManualPlan('${id}')" style="font-size:11px">+ Add</button>
+        </div>`;
+    }
+
     return `
     <div class="card" style="margin-bottom:12px">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
@@ -3860,19 +4099,8 @@ function rsRenderRoster(data) {
           <input class="fi" style="font-size:12px" value="${entry.material || ''}" onchange="rsUpdateField('${id}','material',this.value)">
         </div>
       </div>
-      <div style="font-size:11px;font-weight:700;color:var(--tx2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.03em">🧪 Special Tests</div>
-      <div style="overflow-x:auto;margin-bottom:8px">
-        <table style="width:100%;border-collapse:collapse">
-          <tbody>${testsRows || '<tr><td colspan="4" style="padding:8px;color:var(--tx3);font-size:11px;text-align:center">No tests recorded yet</td></tr>'}</tbody>
-        </table>
-      </div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-        <input class="fi" id="rs-test-name-${id}" placeholder="Test name" style="font-size:11px;width:120px;padding:5px 7px">
-        <input class="fi" id="rs-test-date-${id}" type="date" style="font-size:11px;width:130px;padding:5px 7px">
-        <input class="fi" id="rs-test-marks-${id}" type="number" placeholder="Marks" style="font-size:11px;width:70px;padding:5px 7px">
-        <input class="fi" id="rs-test-max-${id}" type="number" placeholder="Out of" value="100" style="font-size:11px;width:70px;padding:5px 7px">
-        <button class="btn btn-sm" onclick="rsAddTest('${id}')" style="font-size:11px">+ Add Test</button>
-      </div>
+      ${tabBar}
+      ${tabContent}
     </div>`;
   }).join('');
 }

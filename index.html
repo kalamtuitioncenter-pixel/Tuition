@@ -571,6 +571,8 @@ tbody tr:hover td{background:var(--bg)}
     <button class="nav-item" data-page="summary"><svg viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="#f59e0b" stroke-width="1.3"/><path d="M5 8l2 2 4-4" stroke="#f59e0b" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 5h2M5 11h6" stroke="#f59e0b" stroke-width="1.1" stroke-linecap="round"/></svg><span>Student Summary</span></button>
     <button class="nav-item" data-page="timetable"><svg viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="1.5" stroke="#0ea5e9" stroke-width="1.3"/><path d="M5 2v2M11 2v2M2 7h12" stroke="#0ea5e9" stroke-width="1.3" stroke-linecap="round"/><path d="M5 10h2M9 10h2M5 12.5h2M9 12.5h2" stroke="#0ea5e9" stroke-width="1.2" stroke-linecap="round"/></svg><span>Time Table</span></button>
     <button class="nav-item" data-page="recovery"><svg viewBox="0 0 16 16" fill="none"><path d="M8 2a6 6 0 106 6" stroke="#16a34a" stroke-width="1.3" stroke-linecap="round"/><path d="M8 2v0M12.5 2.5L14 4l-3.2 3.2" stroke="#16a34a" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 8.5l1.3 1.3L10.5 6.5" stroke="#16a34a" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Recovery Planner</span></button>
+    <button class="nav-item" data-page="schoolmarks"><svg viewBox="0 0 16 16" fill="none"><rect x="3" y="2.5" width="10" height="11" rx="1.3" stroke="#dc2626" stroke-width="1.3"/><path d="M5.3 5.5h5.4M5.3 8h5.4M5.3 10.5h3" stroke="#dc2626" stroke-width="1.2" stroke-linecap="round"/></svg><span>School Marks</span></button>
+    <button class="nav-item" data-page="risingstar"><svg viewBox="0 0 16 16" fill="none"><path d="M8 1.6l1.8 3.7 4 .58-2.9 2.85.7 4.02L8 10.85l-3.6 1.9.7-4.02-2.9-2.85 4-.58L8 1.6z" stroke="#ca8a04" stroke-width="1.2" stroke-linejoin="round"/></svg><span>Rising Stars</span></button>
     <button class="nav-item" data-page="settings"><svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.3"/><path d="M8 2v1.5M8 12.5V14M14 8h-1.5M3.5 8H2M12.2 3.8l-1.06 1.06M4.86 11.14L3.8 12.2M12.2 12.2l-1.06-1.06M4.86 4.86L3.8 3.8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg><span id="nl-settings">Settings</span></button>
   </nav>
 <div id="_save_status_bar" style="text-align:center;font-size:10px;padding:3px 10px;color:var(--tx3,#94a3b8);background:var(--bg2,#f8fafc);transition:all .3s;border-bottom:.5px solid var(--br,#e2e8f0)">Ready</div>
@@ -2510,6 +2512,91 @@ tbody tr:hover td{background:var(--bg)}
 </div>
 <!-- END WEEKEND RECOVERY PLANNER -->
 
+<!-- ═══════════════ SCHOOL MARKS ═══════════════ -->
+<div class="page" id="pg-schoolmarks">
+
+  <!-- Header Banner -->
+  <div style="background:linear-gradient(135deg,#7c2d12,#dc2626);border-radius:12px;padding:16px 20px;margin-bottom:16px;display:flex;align-items:center;gap:14px">
+    <div style="width:44px;height:44px;background:rgba(255,255,255,.15);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">📊</div>
+    <div style="flex:1">
+      <div style="font-size:16px;font-weight:700;color:#fff">School Marks</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.8);margin-top:2px">Record marks scored in school across every term, with Parent &amp; Student declaration sign-off</div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="card" style="margin-bottom:14px">
+    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px">
+      <div class="fg" style="margin:0">
+        <label class="fl">🎓 Class</label>
+        <select class="fi" id="sm-grade-sel" style="width:auto" onchange="smRenderTable()"></select>
+      </div>
+      <div class="fg" style="margin:0">
+        <label class="fl">📝 Term</label>
+        <select class="fi" id="sm-term-sel" style="width:auto" onchange="smRenderTable()">
+          <option value="school">School Mark</option>
+          <option value="mid1">1st Mid Term</option>
+          <option value="quarterly">Quarterly Exam</option>
+          <option value="mid2">2nd Mid Term</option>
+          <option value="halfyear">Half Yearly Exam</option>
+          <option value="mid3">3rd Mid Term</option>
+        </select>
+      </div>
+      <div class="fg" style="margin:0">
+        <label class="fl">📖 Subject</label>
+        <select class="fi" id="sm-subject-sel" style="width:auto" onchange="smRenderTable()">
+          <option value="tamil">Tamil</option>
+          <option value="english">English</option>
+          <option value="maths">Maths</option>
+          <option value="science">Science</option>
+          <option value="social">Social</option>
+        </select>
+      </div>
+      <button class="btn btn-p btn-sm" style="margin-left:auto;align-self:flex-end" onclick="smSaveAll()">💾 Save All</button>
+      <span id="sm-save-status" style="font-size:11px;color:#16a34a;font-weight:700;align-self:flex-end;padding-bottom:8px"></span>
+    </div>
+  </div>
+
+  <!-- Marks Table -->
+  <div class="card" style="padding:0">
+    <div style="padding:12px 14px 4px">
+      <div class="card-title">Student Marks</div>
+      <div style="font-size:10px;color:var(--tx3);margin-top:2px">Growth compares this student's earliest recorded term to their latest — save at least two terms to see a trend.</div>
+    </div>
+    <div id="sm-table-wrap" style="padding:8px 10px 12px"></div>
+  </div>
+</div>
+<!-- END SCHOOL MARKS -->
+
+<!-- ═══════════════ RISING STARS ═══════════════ -->
+<div class="page" id="pg-risingstar">
+
+  <!-- Header Banner -->
+  <div style="background:linear-gradient(135deg,#78350f,#ca8a04);border-radius:12px;padding:16px 20px;margin-bottom:16px;display:flex;align-items:center;gap:14px">
+    <div style="width:44px;height:44px;background:rgba(255,255,255,.15);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">🌟</div>
+    <div style="flex:1">
+      <div style="font-size:16px;font-weight:700;color:#fff">Rising Stars</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.8);margin-top:2px">Extra coaching track for slow learners — special coach, material &amp; tests, same regular class</div>
+    </div>
+  </div>
+
+  <!-- Add Student -->
+  <div class="card" style="margin-bottom:14px">
+    <div style="font-size:11px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px">➕ Add Student to Rising Stars</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+      <select class="fi" id="rs-add-select" style="width:auto;min-width:200px"></select>
+      <input class="fi" id="rs-add-coach" placeholder="Special Coach Name" style="width:auto;min-width:160px">
+      <input class="fi" id="rs-add-material" placeholder="Special Material" style="width:auto;min-width:160px">
+      <button class="btn btn-p btn-sm" onclick="risingStarAdd()">+ Add</button>
+    </div>
+    <div style="font-size:10px;color:var(--tx3);margin-top:6px">You can also tick "Rising Star" right on a student's profile — from any class. They stay in their normal class alongside this extra track.</div>
+  </div>
+
+  <!-- Roster -->
+  <div id="rs-roster-wrap"></div>
+</div>
+<!-- END RISING STARS -->
+
   </div><!-- /content -->
 </div><!-- /main -->
 </div><!-- /app -->
@@ -2990,6 +3077,7 @@ const T = {
     batches:'Batch Management',
     commute:'Commute Management',
     recovery:'Weekend Recovery Planner',
+    schoolmarks:'School Marks', risingstar:'Rising Stars',
   },
   ta:{
     dashboard:'டாஷ்போர்டு',students:'மாணவர்கள்',attendance:'வருகை பதிவு',fees:'கட்டணம்',
@@ -3020,6 +3108,7 @@ const T = {
     pref_dark:'இருண்ட பயன்முறை',dark_off:'தற்போது அணைவு',dark_on:'தற்போது இயக்கம்',
     cancel:'ரத்து',
     admissions:'சேர்க்கை',
+    schoolmarks:'பள்ளி மதிப்பெண்கள்', risingstar:'ரைசிங் ஸ்டார்ஸ்',
   }
 };
 const t = k => T[lang][k] || T.en[k] || k;
@@ -3459,7 +3548,334 @@ function navTo(id) {
   if (id === 'marks') { if (typeof ewInit === 'function') ewInit(); }
   if (id === 'timetable') { if (typeof initTimetablePage === 'function') initTimetablePage(); }
   if (id === 'recovery') { if (typeof initRecoveryPage === 'function') initRecoveryPage(); }
+  if (id === 'schoolmarks') { if (typeof renderSchoolMarksPage === 'function') renderSchoolMarksPage(); }
+  if (id === 'risingstar') { if (typeof renderRisingStarPage === 'function') renderRisingStarPage(); }
   if (id === 'notifications') { if (typeof renderAdminPanel === 'function') renderAdminPanel(); if (typeof renderAdminTodoList === 'function') renderAdminTodoList(); }}
+
+/* ═══════════════════════════════════════════════════════
+   SCHOOL MARKS  —  class-wise term marks + Parent/Student declaration
+═══════════════════════════════════════════════════════ */
+const SCHOOL_MARK_TERMS = [
+  {id:'school',    label:'School Mark'},
+  {id:'mid1',      label:'1st Mid Term'},
+  {id:'quarterly', label:'Quarterly Exam'},
+  {id:'mid2',      label:'2nd Mid Term'},
+  {id:'halfyear',  label:'Half Yearly Exam'},
+  {id:'mid3',      label:'3rd Mid Term'},
+];
+const SCHOOL_MARK_SUBJECTS = [
+  {id:'tamil',   label:'Tamil'},
+  {id:'english', label:'English'},
+  {id:'maths',   label:'Maths'},
+  {id:'science', label:'Science'},
+  {id:'social',  label:'Social'},
+];
+
+function _smLoad(studentId) {
+  try { return JSON.parse(localStorage.getItem('_erp_schoolmarks_' + studentId) || 'null') || {terms:{}}; }
+  catch (e) { return {terms:{}}; }
+}
+function _smSave(studentId, rec) {
+  try {
+    localStorage.setItem('_erp_schoolmarks_' + studentId, JSON.stringify(rec));
+    const idx = JSON.parse(localStorage.getItem('_erp_schoolmarks_index') || '[]');
+    if (!idx.includes(studentId)) { idx.push(studentId); localStorage.setItem('_erp_schoolmarks_index', JSON.stringify(idx)); }
+  } catch (e) {}
+}
+
+function _smPopulateGradeFilter() {
+  const sel = document.getElementById('sm-grade-sel');
+  if (!sel) return;
+  const prev = sel.value;
+  const grades = [...new Set(students.filter(s => s && s.grade && s.status === 'active').map(s => String(s.grade).trim()))]
+    .sort((a, b) => { const o = ['KG','1','2','3','4','5','6','7','8','9','10','11','12']; const ai = o.indexOf(a), bi = o.indexOf(b); return (ai < 0 ? 99 : ai) - (bi < 0 ? 99 : bi); });
+  sel.innerHTML = '<option value="">🌐 All Classes</option>' +
+    grades.map(g => `<option value="${g}">${g === 'KG' ? 'KG' : 'Class ' + g}</option>`).join('');
+  if (prev && (prev === '' || grades.includes(prev))) sel.value = prev;
+}
+
+function renderSchoolMarksPage() {
+  _smPopulateGradeFilter();
+  smRenderTable();
+}
+
+// Growth = % change from the earliest saved term to the latest saved term, for one subject.
+function smComputeGrowth(rec, subject) {
+  const seq = SCHOOL_MARK_TERMS
+    .map(t => rec.terms && rec.terms[t.id] && rec.terms[t.id][subject])
+    .filter(t => t && t.marks !== null && t.marks !== undefined && t.max);
+  if (seq.length < 2) return '<span style="color:var(--tx3);font-size:10px">— need 2+ terms</span>';
+  const firstPct = (seq[0].marks / seq[0].max) * 100;
+  const lastPct = (seq[seq.length - 1].marks / seq[seq.length - 1].max) * 100;
+  const delta = lastPct - firstPct;
+  if (delta > 1) return `<span style="color:#16a34a;font-weight:700;font-size:11px">▲ +${delta.toFixed(1)}%</span>`;
+  if (delta < -1) return `<span style="color:#dc2626;font-weight:700;font-size:11px">▼ ${delta.toFixed(1)}%</span>`;
+  return `<span style="color:#ca8a04;font-weight:700;font-size:11px">▬ ${delta.toFixed(1)}%</span>`;
+}
+
+function smRenderTable() {
+  const grade = document.getElementById('sm-grade-sel')?.value || '';
+  const term = document.getElementById('sm-term-sel')?.value || 'school';
+  const subject = document.getElementById('sm-subject-sel')?.value || 'tamil';
+  const wrap = document.getElementById('sm-table-wrap');
+  if (!wrap) return;
+
+  let list = students.filter(s => s && s.name && s.status === 'active');
+  if (grade) list = list.filter(s => String(s.grade || '').trim() === grade);
+  list.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
+  if (!list.length) {
+    wrap.innerHTML = '<div style="text-align:center;padding:40px;color:var(--tx3);font-size:12px">No students found for this class.</div>';
+    return;
+  }
+
+  const rows = list.map(s => {
+    const rec = _smLoad(s.id);
+    const tm = (rec.terms && rec.terms[term] && rec.terms[term][subject]) || {};
+    const marksVal = (tm.marks !== undefined && tm.marks !== null) ? tm.marks : '';
+    const maxVal = tm.max || 100;
+    return `<tr id="sm-row-${s.id}" style="border-bottom:.5px solid var(--br)">
+      <td style="padding:7px 6px">
+        <div style="display:flex;align-items:center;gap:6px">
+          <div class="av" style="background:${s.color};width:22px;height:22px;font-size:9px;flex-shrink:0">${(s.name || '?')[0]}</div>
+          <div>
+            <div style="font-size:12px;font-weight:500;color:var(--tx)">${s.name}</div>
+            <div style="font-size:9px;color:var(--tx3)">${s.grade === 'KG' ? 'KG' : 'Class ' + s.grade}</div>
+          </div>
+        </div>
+      </td>
+      <td style="padding:7px 6px"><input type="number" min="0" class="fi" style="width:70px;font-size:12px;padding:5px 6px" id="sm-marks-${s.id}" value="${marksVal}" placeholder="—"></td>
+      <td style="padding:7px 6px;text-align:center;color:var(--tx3);font-size:11px">/ <input type="number" min="1" class="fi" style="width:56px;font-size:11px;padding:4px 5px;display:inline-block" id="sm-max-${s.id}" value="${maxVal}"></td>
+      <td style="padding:7px 6px;text-align:center"><input type="checkbox" id="sm-pd-${s.id}" ${tm.parentDeclared ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer"></td>
+      <td style="padding:7px 6px;text-align:center"><input type="checkbox" id="sm-sd-${s.id}" ${tm.studentDeclared ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer"></td>
+      <td style="padding:7px 6px;text-align:center">${smComputeGrowth(rec, subject)}</td>
+    </tr>`;
+  }).join('');
+
+  const subjLabel = (SCHOOL_MARK_SUBJECTS.find(x => x.id === subject) || {}).label || subject;
+  wrap.innerHTML = `<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">
+    <thead><tr style="border-bottom:1px solid var(--br)">
+      <th style="text-align:left;padding:6px;color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.03em">Student</th>
+      <th style="text-align:left;padding:6px;color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.03em">${subjLabel} Marks</th>
+      <th style="text-align:center;padding:6px;color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.03em">Out&nbsp;of</th>
+      <th style="text-align:center;padding:6px;color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.03em">👪 Parent<br>Declared</th>
+      <th style="text-align:center;padding:6px;color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.03em">🧑‍🎓 Student<br>Declared</th>
+      <th style="text-align:center;padding:6px;color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.03em">Growth</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>`;
+}
+
+function smSaveAll() {
+  const grade = document.getElementById('sm-grade-sel')?.value || '';
+  const term = document.getElementById('sm-term-sel')?.value || 'school';
+  const subject = document.getElementById('sm-subject-sel')?.value || 'tamil';
+  let list = students.filter(s => s && s.name && s.status === 'active');
+  if (grade) list = list.filter(s => String(s.grade || '').trim() === grade);
+
+  let count = 0;
+  list.forEach(s => {
+    const marksEl = document.getElementById('sm-marks-' + s.id);
+    const maxEl = document.getElementById('sm-max-' + s.id);
+    const pdEl = document.getElementById('sm-pd-' + s.id);
+    const sdEl = document.getElementById('sm-sd-' + s.id);
+    if (!marksEl) return;
+    const rec = _smLoad(s.id);
+    const marksRaw = marksEl.value.trim();
+    const hadExisting = !!(rec.terms && rec.terms[term] && rec.terms[term][subject]);
+    if (marksRaw === '' && !pdEl.checked && !sdEl.checked && !hadExisting) return; // nothing to save for this student
+    rec.terms = rec.terms || {};
+    rec.terms[term] = rec.terms[term] || {};
+    rec.terms[term][subject] = {
+      marks: marksRaw === '' ? null : Number(marksRaw),
+      max: Number(maxEl.value) || 100,
+      parentDeclared: !!pdEl.checked,
+      studentDeclared: !!sdEl.checked,
+      savedAt: new Date().toISOString()
+    };
+    _smSave(s.id, rec);
+    count++;
+  });
+
+  smRenderTable();
+  const status = document.getElementById('sm-save-status');
+  if (status) { status.textContent = '✅ Saved ' + count + ' student' + (count === 1 ? '' : 's'); setTimeout(() => { status.textContent = ''; }, 2500); }
+}
+
+/* ═══════════════════════════════════════════════════════
+   RISING STARS  —  slow-learner coaching track (any class)
+═══════════════════════════════════════════════════════ */
+function _rsLoadAll() {
+  try { return JSON.parse(localStorage.getItem('_erp_risingstar') || '{}') || {}; }
+  catch (e) { return {}; }
+}
+function _rsSaveAll(data) {
+  try { localStorage.setItem('_erp_risingstar', JSON.stringify(data)); } catch (e) {}
+}
+
+// Used by the tickbox on a student's profile — works for any class.
+function isRisingStar(id) {
+  const data = _rsLoadAll();
+  return !!data[id];
+}
+
+function toggleRisingStar(id, checked) {
+  const data = _rsLoadAll();
+  if (checked) {
+    if (!data[id]) data[id] = { addedAt: new Date().toISOString(), coach: '', material: '', tests: [] };
+  } else {
+    delete data[id];
+  }
+  _rsSaveAll(data);
+  if (typeof renderRisingStarPage === 'function') renderRisingStarPage();
+  showToast(checked ? '🌟 Marked as Rising Star' : 'Removed from Rising Stars');
+}
+
+function renderRisingStarPage() {
+  const data = _rsLoadAll();
+  const sel = document.getElementById('rs-add-select');
+  if (sel) {
+    const already = new Set(Object.keys(data));
+    const eligible = students.filter(s => s && s.name && s.status === 'active' && !already.has(s.id));
+    sel.innerHTML = eligible.length
+      ? '<option value="">— Select Student —</option>' + eligible.map(s => `<option value="${s.id}">${s.name} · ${s.grade === 'KG' ? 'KG' : 'Class ' + s.grade} (${s.id})</option>`).join('')
+      : '<option value="">No eligible students</option>';
+  }
+  rsRenderRoster(data);
+}
+
+function risingStarAdd() {
+  const sel = document.getElementById('rs-add-select');
+  const id = sel?.value;
+  if (!id) { alert('Please select a student first.'); return; }
+  const coach = document.getElementById('rs-add-coach')?.value.trim() || '';
+  const material = document.getElementById('rs-add-material')?.value.trim() || '';
+  const data = _rsLoadAll();
+  data[id] = { addedAt: new Date().toISOString(), coach, material, tests: [] };
+  _rsSaveAll(data);
+  document.getElementById('rs-add-coach').value = '';
+  document.getElementById('rs-add-material').value = '';
+  renderRisingStarPage();
+}
+
+function risingStarRemove(id) {
+  if (!confirm('Remove this student from the Rising Stars program? Their test history for this program will be deleted.')) return;
+  const data = _rsLoadAll();
+  delete data[id];
+  _rsSaveAll(data);
+  renderRisingStarPage();
+}
+
+function rsUpdateField(id, field, value) {
+  const data = _rsLoadAll();
+  if (!data[id]) return;
+  data[id][field] = value;
+  _rsSaveAll(data);
+}
+
+function rsAddTest(id) {
+  const name = document.getElementById('rs-test-name-' + id)?.value.trim();
+  const dateV = document.getElementById('rs-test-date-' + id)?.value;
+  const marksRaw = document.getElementById('rs-test-marks-' + id)?.value;
+  const maxRaw = document.getElementById('rs-test-max-' + id)?.value || '100';
+  if (!name || marksRaw === '' || marksRaw === undefined) { alert('Enter a test name and marks.'); return; }
+  const data = _rsLoadAll();
+  if (!data[id]) return;
+  data[id].tests = data[id].tests || [];
+  data[id].tests.push({ name, date: dateV || new Date().toISOString().slice(0, 10), marks: Number(marksRaw), max: Number(maxRaw) || 100 });
+  data[id].tests.sort((a, b) => new Date(a.date) - new Date(b.date));
+  _rsSaveAll(data);
+  renderRisingStarPage();
+}
+
+function rsDeleteTest(id, idx) {
+  const data = _rsLoadAll();
+  if (!data[id] || !data[id].tests) return;
+  data[id].tests.splice(idx, 1);
+  _rsSaveAll(data);
+  renderRisingStarPage();
+}
+
+// Combines School Marks term history (averaged across whatever subjects were entered
+// each term) + Rising Star special-test history, in order, into one growth read-out.
+function rsComputeGrowth(id, entry) {
+  const smRec = _smLoad(id);
+  const smSeq = SCHOOL_MARK_TERMS
+    .map(t => smRec.terms && smRec.terms[t.id])
+    .filter(Boolean)
+    .map(termObj => {
+      const pcts = SCHOOL_MARK_SUBJECTS
+        .map(sub => termObj[sub.id])
+        .filter(x => x && x.marks !== null && x.marks !== undefined && x.max)
+        .map(x => (x.marks / x.max) * 100);
+      return pcts.length ? pcts.reduce((a, b) => a + b, 0) / pcts.length : null;
+    })
+    .filter(v => v !== null);
+  const testSeq = (entry.tests || []).filter(x => x.max).map(x => (x.marks / x.max) * 100);
+  const seq = smSeq.concat(testSeq);
+  if (seq.length < 2) return '<span style="color:var(--tx3);font-size:11px">Not enough data yet — add school marks or a test</span>';
+  const delta = seq[seq.length - 1] - seq[0];
+  if (delta > 1) return `<span style="color:#16a34a;font-weight:700">▲ Improved ${delta.toFixed(1)}%</span>`;
+  if (delta < -1) return `<span style="color:#dc2626;font-weight:700">▼ Dropped ${Math.abs(delta).toFixed(1)}%</span>`;
+  return `<span style="color:#ca8a04;font-weight:700">▬ Steady (${delta.toFixed(1)}%)</span>`;
+}
+
+function rsRenderRoster(data) {
+  const wrap = document.getElementById('rs-roster-wrap');
+  if (!wrap) return;
+  const ids = Object.keys(data);
+  if (!ids.length) {
+    wrap.innerHTML = '<div class="card" style="text-align:center;padding:40px;color:var(--tx3);font-size:12px">No Rising Star students yet. Tick "Rising Star" on a student\'s profile, or add one above, to start tracking their special coaching.</div>';
+    return;
+  }
+  wrap.innerHTML = ids.map(id => {
+    const s = students.find(x => x.id === id);
+    if (!s) return '';
+    const entry = data[id];
+    const growthBadge = rsComputeGrowth(id, entry);
+    const testsRows = (entry.tests || []).map((tt, i) => `
+      <tr style="border-bottom:.5px solid var(--br)">
+        <td style="padding:5px 6px;font-size:11px;color:var(--tx)">${tt.name}</td>
+        <td style="padding:5px 6px;font-size:11px;color:var(--tx3)">${tt.date}</td>
+        <td style="padding:5px 6px;font-size:11px;text-align:center;color:var(--tx)">${tt.marks}/${tt.max}</td>
+        <td style="padding:5px 6px;text-align:center"><button class="btn btn-sm" style="padding:2px 7px;font-size:10px" onclick="rsDeleteTest('${id}',${i})">✕</button></td>
+      </tr>`).join('');
+    return `
+    <div class="card" style="margin-bottom:12px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
+        <div class="av" style="background:${s.color};width:32px;height:32px;font-size:13px;flex-shrink:0">${(s.name || '?')[0]}</div>
+        <div style="flex:1;min-width:160px">
+          <div style="font-size:13px;font-weight:700;color:var(--tx)">${s.name} <span style="font-size:10px;color:var(--tx3);font-weight:500">· Class ${s.grade} · ${s.id}</span></div>
+          <div style="font-size:11px;margin-top:2px">${growthBadge}</div>
+        </div>
+        <button class="btn btn-sm" onclick="risingStarRemove('${id}')" style="font-size:10px;color:#dc2626">Remove</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+        <div class="fg" style="margin:0">
+          <label class="fl">👨‍🏫 Special Coach</label>
+          <input class="fi" style="font-size:12px" value="${entry.coach || ''}" onchange="rsUpdateField('${id}','coach',this.value)">
+        </div>
+        <div class="fg" style="margin:0">
+          <label class="fl">📚 Special Material</label>
+          <input class="fi" style="font-size:12px" value="${entry.material || ''}" onchange="rsUpdateField('${id}','material',this.value)">
+        </div>
+      </div>
+      <div style="font-size:11px;font-weight:700;color:var(--tx2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.03em">🧪 Special Tests</div>
+      <div style="overflow-x:auto;margin-bottom:8px">
+        <table style="width:100%;border-collapse:collapse">
+          <tbody>${testsRows || '<tr><td colspan="4" style="padding:8px;color:var(--tx3);font-size:11px;text-align:center">No tests recorded yet</td></tr>'}</tbody>
+        </table>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        <input class="fi" id="rs-test-name-${id}" placeholder="Test name" style="font-size:11px;width:120px;padding:5px 7px">
+        <input class="fi" id="rs-test-date-${id}" type="date" style="font-size:11px;width:130px;padding:5px 7px">
+        <input class="fi" id="rs-test-marks-${id}" type="number" placeholder="Marks" style="font-size:11px;width:70px;padding:5px 7px">
+        <input class="fi" id="rs-test-max-${id}" type="number" placeholder="Out of" value="100" style="font-size:11px;width:70px;padding:5px 7px">
+        <button class="btn btn-sm" onclick="rsAddTest('${id}')" style="font-size:11px">+ Add Test</button>
+      </div>
+    </div>`;
+  }).join('');
+}
 
 function tbAddAction() {
   const active = document.querySelector('.page.active');
@@ -4184,6 +4600,15 @@ function openStudentProfile(id) {
             <div style="grid-column:1/-1"><span style="color:var(--tx3)">Subjects:</span> ${s.subjects||'—'}</div>
             ${s.otherCourses&&s.otherCourses.length?`<div style="grid-column:1/-1"><span style="color:var(--tx3)">Other Courses:</span> ${s.otherCourses.map(c=>c.name).join(', ')}</div>`:''}
           </div>
+        </div>
+
+        <!-- Rising Star -->
+        <div style="background:var(--bg);border-radius:10px;padding:12px 14px;margin-bottom:12px">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;font-weight:700;color:var(--tx)">
+            <input type="checkbox" id="profile-rising-star-${s.id}" ${(typeof isRisingStar === 'function' && isRisingStar(s.id)) ? 'checked' : ''}
+              onchange="toggleRisingStar('${s.id}', this.checked)" style="width:16px;height:16px;cursor:pointer">
+            🌟 Rising Star <span style="font-weight:400;color:var(--tx3);font-size:10px">— give this student the special coaching track (any class)</span>
+          </label>
         </div>
 
         <!-- Commute -->

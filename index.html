@@ -1796,6 +1796,7 @@ tbody tr:hover td{background:var(--bg)}
     <button class="seg-b on" id="sf-tab-list" onclick="switchStaffTab('list',this)" style="flex:1;padding:8px;border-radius:8px;border:none;background:var(--card);color:var(--tx);cursor:pointer;font-size:12px;font-weight:600;font-family:inherit;border:.5px solid var(--br)">👥 Staff List</button>
     <button class="seg-b" id="sf-tab-att" onclick="switchStaffTab('att',this)" style="flex:1;padding:8px;border-radius:8px;border:none;background:transparent;color:var(--tx2);cursor:pointer;font-size:12px;font-weight:500;font-family:inherit">📅 Attendance</button>
     <button class="seg-b" id="sf-tab-pay" onclick="switchStaffTab('pay',this)" style="flex:1;padding:8px;border-radius:8px;border:none;background:transparent;color:var(--tx2);cursor:pointer;font-size:12px;font-weight:500;font-family:inherit">💰 Payroll</button>
+    <button class="seg-b" id="sf-tab-history" onclick="switchStaffTab('history',this)" style="flex:1;padding:8px;border-radius:8px;border:none;background:transparent;color:var(--tx2);cursor:pointer;font-size:12px;font-weight:500;font-family:inherit">📜 History</button>
   </div>
 
   <!-- TAB 1: Staff List -->
@@ -1848,6 +1849,10 @@ tbody tr:hover td{background:var(--bg)}
           <div style="font-size:11px;font-weight:600;color:var(--tx2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px">Payroll Month</div>
           <input type="month" class="fi" id="sf-pay-month" style="max-width:180px;font-size:14px;font-weight:600" onchange="generatePayroll()">
         </div>
+        <div style="min-width:0">
+          <div style="font-size:11px;font-weight:600;color:var(--tx2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px" title="The day of the month you usually pay salary — pre-fills the Payment Date when you Mark Salary Paid">📅 Pay Day</div>
+          <input type="number" min="1" max="31" class="fi" id="sf-pay-day" style="max-width:70px;font-size:14px;font-weight:600;text-align:center" onchange="_setPayrollPayDay(this.value)">
+        </div>
         <button class="btn btn-g" onclick="exportPayrollCSV()">⬇ Export CSV</button>
         <button class="btn btn-sm" onclick="navTo('whatsapp');setTimeout(()=>{switchWATab('templates');selectWTType('payroll_slip')},120)" style="font-size:11px;color:#16a34a;border-color:#bbf7d0;background:#f0fdf4">✏️ Payroll WA Template</button>
       </div>
@@ -1856,6 +1861,49 @@ tbody tr:hover td{background:var(--bg)}
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:14px" id="sf-pay-summary"></div>
     <!-- Payroll cards list -->
     <div id="sf-pay-body"></div>
+  </div>
+
+  <!-- TAB 4: Payment History -->
+  <div id="sf-panel-history" style="display:none">
+    <div class="card" style="margin-bottom:12px;padding:12px 16px">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <div style="min-width:130px">
+          <div style="font-size:11px;font-weight:600;color:var(--tx2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px">Staff</div>
+          <select class="fi" id="ph-staff" onchange="renderPaymentHistory()" style="font-size:12px"><option value="">All Staff</option></select>
+        </div>
+        <div style="min-width:110px">
+          <div style="font-size:11px;font-weight:600;color:var(--tx2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px">Month</div>
+          <input type="month" class="fi" id="ph-month" onchange="renderPaymentHistory()" style="font-size:12px">
+        </div>
+        <div style="min-width:110px">
+          <div style="font-size:11px;font-weight:600;color:var(--tx2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px">Method</div>
+          <select class="fi" id="ph-method" onchange="renderPaymentHistory()" style="font-size:12px">
+            <option value="">All Methods</option>
+            <option value="Cash">Cash</option>
+            <option value="UPI">UPI</option>
+            <option value="Bank Transfer">Bank Transfer</option>
+            <option value="Cheque">Cheque</option>
+          </select>
+        </div>
+        <div style="flex:1;min-width:140px">
+          <div style="font-size:11px;font-weight:600;color:var(--tx2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px">Search</div>
+          <input class="fi" id="ph-search" placeholder="Staff name, reference…" oninput="renderPaymentHistory()" style="font-size:12px">
+        </div>
+        <button class="btn btn-sm" onclick="clearPaymentHistoryFilters()">✕ Clear</button>
+        <button class="btn btn-g btn-sm" onclick="exportPaymentHistoryCSV()">⬇ Export CSV</button>
+        <button class="btn btn-sm" onclick="window.print()">🖨 Print</button>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:14px" id="ph-summary"></div>
+    <div class="tbl-wrap" style="overflow-x:auto">
+      <table style="min-width:820px">
+        <thead><tr>
+          <th>Staff</th><th>Month</th><th>Amount</th><th>Payment Date</th>
+          <th>Method</th><th>Reference</th><th>Paid By</th><th>WhatsApp</th><th>Actions</th>
+        </tr></thead>
+        <tbody id="ph-body"></tbody>
+      </table>
+    </div>
   </div>
 </div>
 
@@ -2747,6 +2795,7 @@ tbody tr:hover td{background:var(--bg)}
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js" onload="if(window.initCharts && document.getElementById('pg-dashboard').classList.contains('active'))initCharts()"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 <!-- ── PWA Install Banner ─────────────────────────── -->
 <div id="pwa-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;background:var(--sd);padding:14px 16px;z-index:500;display:none;align-items:center;gap:12px;border-top:1px solid rgba(255,255,255,.1)">
@@ -10480,7 +10529,7 @@ function confirmDeleteStaff(idx) {
   runBackup('change');
 }
 function switchStaffTab(tab, btn) {
-  ['list','att','pay'].forEach(t => {
+  ['list','att','pay','history'].forEach(t => {
     document.getElementById('sf-panel-'+t).style.display = t===tab ? 'block' : 'none';
     document.getElementById('sf-tab-'+t).style.background  = t===tab ? 'var(--card)' : 'transparent';
     document.getElementById('sf-tab-'+t).style.color       = t===tab ? 'var(--tx)' : 'var(--tx2)';
@@ -10489,6 +10538,7 @@ function switchStaffTab(tab, btn) {
   });
   if (tab==='att') renderStaffAttGrid();
   if (tab==='pay') { generatePayroll(); }
+  if (tab==='history') { renderPaymentHistory(); }
 }
 
 function renderStaffAttGrid() {
@@ -10723,12 +10773,27 @@ function renderClassIncomeSummary() {
   }).join('');
 }
 
+// The day of the month you usually run payroll (e.g. 25th) — used to pre-fill the
+// Payment Date when marking a salary paid, so early/mid-month payouts don't default to "today".
+function _getPayrollPayDay() {
+  var v = parseInt(localStorage.getItem('_erp_payroll_payday'));
+  return (v >= 1 && v <= 31) ? v : 25;
+}
+function _setPayrollPayDay(val) {
+  var v = parseInt(val);
+  if (!(v >= 1 && v <= 31)) return;
+  try { localStorage.setItem('_erp_payroll_payday', String(v)); } catch(e) {}
+  showToast('✅ Pay Day set to ' + v + (v===1?'st':v===2?'nd':v===3?'rd':'th') + ' of each month');
+}
+
 function generatePayroll() {
   var monthEl = document.getElementById('sf-pay-month');
   if (!monthEl || !monthEl.value) {
     var now = new Date();
     monthEl.value = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
   }
+  var payDayEl = document.getElementById('sf-pay-day');
+  if (payDayEl && !payDayEl.value) payDayEl.value = _getPayrollPayDay();
   var parts = monthEl.value.split('-');
   var yr = parseInt(parts[0]), mo = parseInt(parts[1]);
   var daysInMonth = new Date(yr, mo, 0).getDate();
@@ -10750,10 +10815,12 @@ function generatePayroll() {
 
   // Summary
   document.getElementById('sf-pay-summary').innerHTML = [
-    {l:'Total Staff',         v:staffData.length,                          c:'#185FA5', icon:'👥'},
-    {l:'Total Net Pay',       v:'&#8377;'+totalNet.toLocaleString('en-IN'), c:'#16a34a', icon:'💰'},
-    {l:'Salaries Paid',       v:paidCount + ' / ' + payData.length,         c:'#16a34a', icon:'✅'},
-    {l:'Pending Disbursement',v:'&#8377;'+(totalNet-paidTotal).toLocaleString('en-IN'), c:'#dc2626', icon:'⏳'},
+    {l:'Total Staff',    v:staffData.length,                                    c:'#185FA5', icon:'👥'},
+    {l:'Paid Staff',     v:paidCount,                                           c:'#16a34a', icon:'🟢'},
+    {l:'Unpaid Staff',   v:unpaidCount,                                         c:'#dc2626', icon:'🔴'},
+    {l:'Total Salary',   v:'&#8377;'+totalNet.toLocaleString('en-IN'),          c:'#185FA5', icon:'💰'},
+    {l:'Salary Paid',    v:'&#8377;'+paidTotal.toLocaleString('en-IN'),         c:'#16a34a', icon:'✅'},
+    {l:'Salary Remaining',v:'&#8377;'+(totalNet-paidTotal).toLocaleString('en-IN'), c:'#dc2626', icon:'⏳'},
   ].map(function(b) {
     return '<div class="stat" style="border-left:3px solid '+b.c+'"><div style="font-size:20px;margin-bottom:4px">'+b.icon+'</div><div class="stat-val" style="font-size:18px;color:'+b.c+'">'+b.v+'</div><div class="stat-lbl">'+b.l+' &middot; '+monthLabel+'</div></div>';
   }).join('');
@@ -10886,7 +10953,11 @@ function generatePayroll() {
         ? '  <button class="btn btn-wa btn-sm" onclick="openSalaryPaidModal(\''+s.id+'\')">&#128242; Resend Slip WA</button>'
         : '  <button class="btn btn-p btn-sm" style="background:#16a34a;border-color:#16a34a;" onclick="openSalaryPaidModal(\''+s.id+'\')">&#10003; Mark Salary Paid</button>'
       )
-      +'  <button class="btn btn-wa btn-sm" onclick="waStaff(\''+s.phone+'\',\''+s.name+'\')">&#128242; Salary Slip WA</button>'
+      +'  <button class="btn btn-wa btn-sm" onclick="sendSalarySlipQuickWA(\''+s.id+'\',\''+monthEl.value+'\')">&#128242; Salary Slip WA</button>'
+      +(salPaid&&salPaid.paid
+        ? '  <button class="btn btn-sm" onclick="downloadSalaryPayslipPDF(\''+s.id+'\',\''+monthEl.value+'\')">&#128196; Download Payslip</button>'
+        : '  <button class="btn btn-sm" disabled title="Pay salary first to unlock payslip" style="opacity:.45;cursor:not-allowed">&#128196; Download Payslip</button>'
+      )
       +'  <button class="btn btn-sm" onclick="openStaffAdvanceModal(\''+s.id+'\')">&#128176; Advance/Loan'+(outstandingAdv>0?' ('+outstandingAdv.toLocaleString('en-IN')+')':'')+'</button>'
       +'</div>'
       +'</div>';
@@ -10944,6 +11015,12 @@ function openSalaryPaidModal(staffId) {
   const key = getSalaryPayKey(staffId, monthVal);
   const existing = salaryPayments[key];
 
+  // Default the Payment Date to this month's configured Pay Day (clamped to a real day of the month)
+  const lastDayOfMonth = new Date(yr, mo, 0).getDate();
+  const clampedPayDay = Math.min(_getPayrollPayDay(), lastDayOfMonth);
+  const defaultDateISO = yr + '-' + String(mo).padStart(2,'0') + '-' + String(clampedPayDay).padStart(2,'0');
+  const dateISOValue = existing?.dateISO || defaultDateISO;
+
   // Recalculate net pay
   const daysInMonth = new Date(yr, mo, 0).getDate();
   let lopDays = 0, lateDaysM = 0;
@@ -10998,6 +11075,8 @@ function openSalaryPaidModal(staffId) {
     ${existing && existing.paid ? `
     <div style="background:#dcfce7;border-radius:8px;padding:10px 14px;margin-bottom:14px;border:.5px solid #bbf7d0;font-size:12px;color:#166534">
       ✅ <b>Already Paid</b> — ₹${(existing.amount||net).toLocaleString('en-IN')} on ${existing.date||'—'} via ${existing.mode||'Cash'}
+      ${existing.referenceNumber ? `<br><span style="font-size:11px;color:var(--tx3)">Ref: ${existing.referenceNumber}</span>` : ''}
+      ${existing.paidBy ? `<span style="font-size:11px;color:var(--tx3)"> · Paid by ${existing.paidBy}</span>` : ''}
       ${existing.note ? `<br><span style="font-size:11px;color:var(--tx3)">${existing.note}</span>` : ''}
     </div>` : ''}
 
@@ -11020,6 +11099,20 @@ function openSalaryPaidModal(staffId) {
           <option value="UPI">UPI</option>
           <option value="Cheque">Cheque</option>
         </select>
+      </div>
+    </div>
+    <div class="fg">
+      <label class="fl">Payment Date <span style="font-weight:400;color:var(--tx3)">(pre-filled to your Pay Day setting)</span></label>
+      <input class="fi" id="sp-date" type="date" value="${dateISOValue}">
+    </div>
+    <div class="frow">
+      <div class="fg">
+        <label class="fl">Reference No. <span style="font-weight:400;color:var(--tx3)">(optional)</span></label>
+        <input class="fi" id="sp-ref" placeholder="UTR / Cheque / Txn No." value="${existing?.referenceNumber||''}">
+      </div>
+      <div class="fg">
+        <label class="fl">Paid By</label>
+        <input class="fi" id="sp-paidby" placeholder="Admin name" value="${existing?.paidBy||(typeof currentAdminName==='string'?currentAdminName:'')||'Admin'}">
       </div>
     </div>
     <div class="fg">
@@ -11049,11 +11142,17 @@ function confirmSalaryPaid(staffId, monthVal, netPay) {
   const amount = parseFloat(document.getElementById('sp-amount')?.value) || netPay;
   const mode   = document.getElementById('sp-mode')?.value || 'Cash';
   const note   = document.getElementById('sp-note')?.value.trim() || '';
+  const referenceNumber = document.getElementById('sp-ref')?.value.trim() || '';
+  const paidBy = document.getElementById('sp-paidby')?.value.trim() || 'Admin';
   const key    = getSalaryPayKey(staffId, monthVal);
-  const now    = new Date();
-  const dateStr = now.toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric'});
+  const dateISO = document.getElementById('sp-date')?.value || new Date().toISOString().slice(0,10);
+  const dateStr = new Date(dateISO + 'T00:00:00').toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric'});
+  const timeStr = new Date().toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'});
+  const existingRec = salaryPayments[key] || {};
 
-  salaryPayments[key] = { paid: true, amount, mode, note, date: dateStr, staffId, monthVal };
+  salaryPayments[key] = { paid: true, amount, mode, note, date: dateStr, dateISO, staffId, monthVal,
+    paymentTime: timeStr, referenceNumber, paidBy,
+    createdAt: existingRec.createdAt || new Date().toISOString(), updatedAt: new Date().toISOString() };
   saveSalaryPayments();
   runBackup('change');
 
@@ -11067,7 +11166,7 @@ function confirmSalaryPaid(staffId, monthVal, netPay) {
   generatePayroll(); // refresh cards to show paid badge
 
   // Show WA confirmation
-  showSalaryPaidModal(s, amount, mode, monthLabel, dateStr, waMsg);
+  showSalaryPaidModal(s, amount, mode, monthLabel, dateStr, waMsg, staffId, monthVal);
 }
 
 function buildSalarySlipWA(s, amount, mode, monthLabel, dateStr, note, bonus, extraDed) {
@@ -11125,7 +11224,139 @@ Thank you for your dedication! 🙏
 _${CFG.CENTER.name}_`;
 }
 
-function showSalaryPaidModal(s, amount, mode, monthLabel, dateStr, waMsg) {
+/* ── Generate & download a professional A4 Payslip PDF for a staff member's paid month.
+   Requires the salary to already be marked Paid (uses recorded amount/mode/reference). ── */
+function downloadSalaryPayslipPDF(staffId, monthVal) {
+  const s = staffData.find(x => x.id === staffId);
+  if (!s) return;
+  const key = getSalaryPayKey(staffId, monthVal);
+  const salPaid = salaryPayments[key];
+  if (!salPaid || !salPaid.paid) { showToast('⚠️ Mark salary as paid first to generate the payslip'); return; }
+  if (!window.jspdf || !window.jspdf.jsPDF) { showToast('⚠️ PDF library still loading — try again in a moment'); return; }
+
+  const [yr, mo] = monthVal.split('-').map(Number);
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const monthLabel = months[mo - 1] + ' ' + yr;
+  const daysInMonth = new Date(yr, mo, 0).getDate();
+  const latesToLeave = CFG.ATTENDANCE?.latesToLeave || 10;
+  const calc = _calcStaffPay(s, yr, mo, daysInMonth, latesToLeave);
+  const pay = calc.pay, bonus = calc.bonus, lopDed = calc.lopDed, extraDed = calc.extraDed;
+  const gross = pay + bonus;
+  const net = salPaid.amount || calc.net;
+  const ctr = CFG.CENTER || {};
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+  const W = doc.internal.pageSize.getWidth();
+  const M = 40;
+  let y = 50;
+
+  // Header band
+  doc.setFillColor(26, 86, 219);
+  doc.rect(0, 0, W, 78, 'F');
+  doc.setTextColor(255,255,255);
+  doc.setFont('helvetica','bold'); doc.setFontSize(18);
+  doc.text(ctr.name || 'Tuition Center', M, 34);
+  doc.setFont('helvetica','normal'); doc.setFontSize(10);
+  doc.text((ctr.city||'') + (ctr.state?', '+ctr.state:'') + (ctr.phone?'   ·   '+ctr.phone:''), M, 52);
+  doc.setFont('helvetica','bold'); doc.setFontSize(13);
+  doc.text('PAYROLL SLIP', W - M, 34, { align: 'right' });
+  doc.setFont('helvetica','normal'); doc.setFontSize(10);
+  doc.text(monthLabel, W - M, 52, { align: 'right' });
+
+  y = 105;
+  doc.setTextColor(15, 23, 42);
+
+  // Employee details box
+  doc.setDrawColor(226,232,240); doc.setLineWidth(0.7);
+  doc.roundedRect(M, y, W - 2*M, 78, 4, 4);
+  doc.setFont('helvetica','bold'); doc.setFontSize(11);
+  doc.text(s.name || '-', M + 14, y + 22);
+  doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(71,85,105);
+  doc.text('Designation: ' + (s.desg || '-'), M + 14, y + 38);
+  doc.text('Employee ID: ' + (s.id || '-'), M + 14, y + 52);
+  doc.text('Phone: ' + (s.phone || '-'), M + 14, y + 66);
+  doc.text('Joining Date: ' + (s.joinDate || '-'), W/2 + 20, y + 38);
+  doc.text('Payment Date: ' + (salPaid.date || '-'), W/2 + 20, y + 52);
+  doc.text('Payment Mode: ' + (salPaid.mode || 'Cash') + (salPaid.referenceNumber ? '  (Ref: '+salPaid.referenceNumber+')' : ''), W/2 + 20, y + 66);
+  doc.setTextColor(15,23,42);
+
+  y += 100;
+  // Earnings / Deductions table header
+  doc.setFillColor(241,245,249);
+  doc.rect(M, y, W - 2*M, 24, 'F');
+  doc.setFont('helvetica','bold'); doc.setFontSize(10);
+  doc.text('EARNINGS', M + 12, y + 16);
+  doc.text('AMOUNT (₹)', W/2 - 20, y + 16, { align: 'right' });
+  doc.text('DEDUCTIONS', W/2 + 20, y + 16);
+  doc.text('AMOUNT (₹)', W - M - 12, y + 16, { align: 'right' });
+  y += 24;
+
+  const earnRows = [['Basic / Consolidated Salary', pay]];
+  if (bonus > 0) earnRows.push(['Bonus' + (s.bonusNote?' ('+s.bonusNote+')':''), bonus]);
+  const dedRows = [];
+  if (lopDed > 0) dedRows.push(['LOP (' + calc.lopDays + ' day' + (calc.lopDays!==1?'s':'') + ')', lopDed]);
+  if (extraDed > 0) dedRows.push(['Other Deduction' + (s.extraDedNote?' ('+s.extraDedNote+')':''), extraDed]);
+  if (!dedRows.length) dedRows.push(['—', 0]);
+
+  const rows = Math.max(earnRows.length, dedRows.length);
+  doc.setFont('helvetica','normal'); doc.setFontSize(9.5);
+  for (let i = 0; i < rows; i++) {
+    const ry = y + i*20 + 15;
+    if (earnRows[i]) { doc.text(earnRows[i][0], M + 12, ry); doc.text(earnRows[i][1].toLocaleString('en-IN'), W/2 - 20, ry, { align: 'right' }); }
+    if (dedRows[i]) { doc.text(String(dedRows[i][0]), W/2 + 20, ry); doc.text(dedRows[i][1].toLocaleString('en-IN'), W - M - 12, ry, { align: 'right' }); }
+  }
+  y += rows*20 + 18;
+  doc.setDrawColor(226,232,240); doc.line(M, y, W - M, y);
+  y += 18;
+  doc.setFont('helvetica','bold'); doc.setFontSize(10);
+  doc.text('Gross Earnings: ₹' + gross.toLocaleString('en-IN'), M + 12, y);
+  doc.text('Total Deductions: ₹' + (lopDed+extraDed).toLocaleString('en-IN'), W/2 + 20, y);
+
+  // Net pay highlight
+  y += 26;
+  doc.setFillColor(220, 252, 231);
+  doc.roundedRect(M, y, W - 2*M, 50, 6, 6, 'F');
+  doc.setTextColor(22, 101, 52);
+  doc.setFont('helvetica','bold'); doc.setFontSize(13);
+  doc.text('NET PAY', M + 16, y + 31);
+  doc.setFontSize(20);
+  doc.text('₹ ' + net.toLocaleString('en-IN'), W - M - 16, y + 33, { align: 'right' });
+
+  // Footer
+  y += 90;
+  doc.setTextColor(148,163,184); doc.setFont('helvetica','normal'); doc.setFontSize(8.5);
+  doc.text('This is a computer-generated payslip. No signature required.', M, y);
+  doc.text('Generated on ' + new Date().toLocaleDateString('en-IN', {day:'2-digit',month:'short',year:'numeric'}), M, y + 12);
+  doc.text((ctr.name||'') + (salPaid.paidBy ? '  ·  Paid by ' + salPaid.paidBy : ''), W - M, y, { align: 'right' });
+
+  const fileMonth = monthVal.replace('-', '_');
+  doc.save(`Payslip_${(s.name||'staff').replace(/\s+/g,'_')}_${fileMonth}.pdf`);
+  showToast('✅ Payslip PDF downloaded');
+}
+
+// Quick "Salary Slip WA" button on the payroll card — sends the same templated slip as
+// Mark Salary Paid / Resend Slip WA (via buildSalarySlipWA), without opening the modal.
+// Uses the recorded paid amount/mode if already paid this month, else the current calculated net pay.
+function sendSalarySlipQuickWA(staffId, monthVal) {
+  const s = staffData.find(x => x.id === staffId);
+  if (!s || !s.phone) { showToast('⚠️ No phone number saved for this staff member'); return; }
+  const [yr, mo] = monthVal.split('-').map(Number);
+  const daysInMonth = new Date(yr, mo, 0).getDate();
+  const latesToLeave = CFG.ATTENDANCE?.latesToLeave || 10;
+  const calc = _calcStaffPay(s, yr, mo, daysInMonth, latesToLeave);
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const monthLabel = months[mo - 1] + ' ' + yr;
+  const salPaid = salaryPayments[getSalaryPayKey(staffId, monthVal)];
+  const amount  = (salPaid && salPaid.paid) ? (salPaid.amount || calc.net) : calc.net;
+  const mode    = (salPaid && salPaid.paid) ? salPaid.mode : 'Cash';
+  const dateStr = (salPaid && salPaid.paid) ? salPaid.date : new Date().toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric'});
+  const note    = (salPaid && salPaid.paid) ? (salPaid.note || '') : '';
+  const msg = buildSalarySlipWA(s, amount, mode, monthLabel, dateStr, note, calc.bonus, calc.extraDed);
+  openWA(s.phone, msg);
+}
+
+function showSalaryPaidModal(s, amount, mode, monthLabel, dateStr, waMsg, staffId, monthVal) {
   const root = document.getElementById('modal-root');
   root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()">
   <div class="modal" style="max-width:430px">
@@ -11146,23 +11377,33 @@ function showSalaryPaidModal(s, amount, mode, monthLabel, dateStr, waMsg) {
 
     <div style="display:flex;gap:8px">
       <button class="btn btn-wa" style="flex:1;justify-content:center;padding:12px;font-size:13px;font-weight:700"
-        onclick="sendSalarySlipWA('${s.phone || ''}')">
+        onclick="sendSalarySlipWA('${s.phone || ''}','${staffId||''}','${monthVal||''}')">
         <svg viewBox="0 0 16 16" fill="none" width="16"><circle cx="8" cy="8" r="7" fill="#25d366"/><path d="M11.5 9.8c-.2-.1-1.2-.6-1.4-.7-.2-.1-.3-.1-.5.1-.1.2-.5.7-.6.8-.1.1-.2.1-.4 0-.2-.1-.9-.3-1.7-1-.6-.6-1-1.3-1.1-1.5-.1-.2 0-.3.1-.4l.3-.4c.1-.1.1-.2.2-.4 0-.1 0-.3 0-.4-.1-.1-.5-1.1-.6-1.5-.2-.4-.3-.3-.5-.3h-.4c-.1 0-.4.1-.6.3-.2.2-.8.8-.8 1.9s.8 2.2.9 2.4c.1.1 1.6 2.4 3.8 3.4.5.2.9.4 1.2.5.5.2 1 .1 1.3-.1.4-.2.8-.8.9-1.5.1-.4 0-.6-.1-.7z" fill="#fff"/></svg>
         📱 Send Salary Slip on WhatsApp
       </button>
+      ${staffId && monthVal ? `<button class="btn" style="padding:12px 14px" onclick="downloadSalaryPayslipPDF('${staffId}','${monthVal}')" title="Download PDF Payslip">📄</button>` : ''}
       <button class="btn" style="padding:12px 14px" onclick="closeModal()">Done</button>
     </div>
   </div>
 </div>`;
 }
 
-function sendSalarySlipWA(phone) {
+function sendSalarySlipWA(phone, staffId, monthVal) {
   const msg = document.getElementById('sal-wa-edit')?.value
            || document.getElementById('sal-wa-preview')?.textContent || '';
   closeModal();
   if (!phone || phone.replace(/\D/g,'').length < 10) {
     showToast('⚠️ No phone number saved for this staff. Add it in Staff profile.');
     return;
+  }
+  // Record WhatsApp send status against the payment record (optimistic — WA opens in a new tab/app)
+  if (staffId && monthVal) {
+    const key = getSalaryPayKey(staffId, monthVal);
+    if (salaryPayments[key]) {
+      salaryPayments[key].whatsappSent = true;
+      salaryPayments[key].whatsappSentDate = new Date().toISOString();
+      saveSalaryPayments();
+    }
   }
   setTimeout(() => _openWADirect(phone, msg), 200);
 }
@@ -11224,6 +11465,102 @@ function exportPayrollCSV() {
   a.download=`payroll-${month}.csv`;
   a.click();
   showToast('✅ Payroll CSV exported!');
+}
+
+/* ── Payment History ──────────────────────────────────────
+   Reads every record in salaryPayments (across all staff & months) and
+   renders it as a filterable, exportable table. ── */
+function _paymentHistoryRows() {
+  return Object.keys(salaryPayments)
+    .map(function(key) { return Object.assign({ key: key }, salaryPayments[key]); })
+    .filter(function(r) { return r.paid; })
+    .map(function(r) {
+      var s = staffData.find(function(x) { return x.id === r.staffId; });
+      return Object.assign({}, r, { staffName: s ? s.name : (r.staffId || 'Unknown') });
+    })
+    .sort(function(a, b) { return (b.dateISO || '').localeCompare(a.dateISO || ''); });
+}
+function _populatePaymentHistoryStaffFilter() {
+  var sel = document.getElementById('ph-staff');
+  if (!sel || sel.dataset.filled === '1') return;
+  sel.innerHTML = '<option value="">All Staff</option>' +
+    staffData.map(function(s) { return '<option value="'+s.id+'">'+s.name+'</option>'; }).join('');
+  sel.dataset.filled = '1';
+}
+function clearPaymentHistoryFilters() {
+  ['ph-staff','ph-month','ph-method','ph-search'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  renderPaymentHistory();
+}
+function renderPaymentHistory() {
+  _populatePaymentHistoryStaffFilter();
+  var staffF  = document.getElementById('ph-staff')?.value || '';
+  var monthF  = document.getElementById('ph-month')?.value || '';
+  var methodF = document.getElementById('ph-method')?.value || '';
+  var searchF = (document.getElementById('ph-search')?.value || '').toLowerCase().trim();
+
+  var rows = _paymentHistoryRows().filter(function(r) {
+    if (staffF && r.staffId !== staffF) return false;
+    if (monthF && r.monthVal !== monthF) return false;
+    if (methodF && r.mode !== methodF) return false;
+    if (searchF && !((r.staffName||'').toLowerCase().includes(searchF) || (r.referenceNumber||'').toLowerCase().includes(searchF) || (r.paidBy||'').toLowerCase().includes(searchF))) return false;
+    return true;
+  });
+
+  var totalAmt = rows.reduce(function(a,b){ return a + (b.amount||0); }, 0);
+  var waSent   = rows.filter(function(r){ return r.whatsappSent; }).length;
+  document.getElementById('ph-summary').innerHTML = [
+    { l: 'Payments', v: rows.length, c: '#185FA5', icon: '📜' },
+    { l: 'Total Disbursed', v: '&#8377;' + totalAmt.toLocaleString('en-IN'), c: '#16a34a', icon: '💰' },
+    { l: 'WhatsApp Sent', v: waSent + ' / ' + rows.length, c: '#25d366', icon: '📲' },
+  ].map(function(b) {
+    return '<div class="stat" style="border-left:3px solid '+b.c+'"><div style="font-size:20px;margin-bottom:4px">'+b.icon+'</div><div class="stat-val" style="font-size:18px;color:'+b.c+'">'+b.v+'</div><div class="stat-lbl">'+b.l+'</div></div>';
+  }).join('');
+
+  var body = document.getElementById('ph-body');
+  if (!rows.length) {
+    body.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--tx3)">No payment records match these filters</td></tr>';
+    return;
+  }
+  body.innerHTML = rows.map(function(r) {
+    var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var mp = (r.monthVal||'').split('-');
+    var monthLabel = mp.length===2 ? (months[parseInt(mp[1])-1]+' '+mp[0]) : (r.monthVal||'-');
+    var waBadge = r.whatsappSent
+      ? '<span class="badge" style="background:#dcfce7;color:#166534">✓ Sent</span>'
+      : '<span class="badge" style="background:#f1f5f9;color:var(--tx3)">Not sent</span>';
+    return '<tr>'
+      + '<td style="font-weight:600">'+r.staffName+'</td>'
+      + '<td>'+monthLabel+'</td>'
+      + '<td style="font-weight:700;color:#16a34a">&#8377;'+(r.amount||0).toLocaleString('en-IN')+'</td>'
+      + '<td>'+(r.date||'-')+(r.paymentTime?' · '+r.paymentTime:'')+'</td>'
+      + '<td>'+(r.mode||'Cash')+'</td>'
+      + '<td>'+(r.referenceNumber||'—')+'</td>'
+      + '<td>'+(r.paidBy||'Admin')+'</td>'
+      + '<td>'+waBadge+'</td>'
+      + '<td style="white-space:nowrap">'
+      + '  <button class="btn btn-sm" onclick="downloadSalaryPayslipPDF(\''+r.staffId+'\',\''+r.monthVal+'\')" title="Download Payslip">📄</button>'
+      + '  <button class="btn btn-sm" onclick="openSalaryPaidModal(\''+r.staffId+'\')" title="View / Edit">✏️</button>'
+      + '</td>'
+      + '</tr>';
+  }).join('');
+}
+function exportPaymentHistoryCSV() {
+  var rows = _paymentHistoryRows();
+  var csv = 'Staff,Month,Amount,Payment Date,Payment Time,Method,Reference,Paid By,WhatsApp Sent\n';
+  rows.forEach(function(r) {
+    csv += [r.staffName, r.monthVal, r.amount||0, r.date||'', r.paymentTime||'', r.mode||'Cash',
+            r.referenceNumber||'', r.paidBy||'Admin', r.whatsappSent?'Yes':'No']
+      .map(function(v){ return '"'+String(v).replace(/"/g,'""')+'"'; }).join(',') + '\n';
+  });
+  var blob = new Blob([csv], { type: 'text/csv' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'salary-payment-history.csv';
+  a.click();
+  showToast('✅ Payment history exported!');
 }
 
 /* ═══════════════════════════════════════════════════════

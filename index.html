@@ -511,6 +511,58 @@ tbody tr:hover td{background:var(--bg)}
   .btn{padding:9px 14px}
   .att-btn{min-width:44px;height:30px;padding:0 8px}
   .fi{font-size:16px}  /* prevent iOS zoom on input */
+  /* Same fix for the raw (non-.fi) inputs added on School Marks / Target / Rising Stars */
+  #pg-schoolmarks input,#pg-schoolmarks select,
+  #pg-target input,#pg-target select,
+  #pg-risingstar input,#pg-risingstar select{font-size:16px!important}
+}
+
+/* ── School Marks / Rising Stars / Target — mobile layout ── */
+@media(max-width:620px){
+  /* Filters stack full-width and become easy to tap */
+  #pg-schoolmarks .fg{flex:1 1 100%}
+  #pg-schoolmarks .fg select,#pg-schoolmarks .fg input{width:100%!important}
+  #pg-schoolmarks button[onclick="smSaveAll()"]{flex:1 1 100%;justify-content:center;margin-left:0!important}
+  #sm-save-status{flex:1 1 100%;text-align:center;padding-bottom:0!important}
+
+  #tgt-date-quarterly,#tgt-date-halfyearly,#tgt-date-public{width:100%!important}
+  #pg-target .fg{flex:1 1 100%}
+  #pg-target button[onclick="targetSaveDates()"]{width:100%;justify-content:center}
+  #tgt-countdown-wrap>div{flex:1 1 45%}
+
+  #rs-add-select,#rs-add-coach,#rs-add-material{width:100%!important;min-width:0!important}
+  #pg-risingstar button[onclick="risingStarAdd()"]{width:100%;justify-content:center}
+  #pg-risingstar .card>div[style*="grid-template-columns:1fr 1fr"]{grid-template-columns:1fr!important}
+  #pg-risingstar input[id^="rs-test-"],#pg-risingstar input[id^="rs-tt-"],
+  #pg-risingstar select[id^="rs-tt-"],#pg-risingstar input[id^="rs-plan-"]{flex:1 1 100%!important}
+
+  /* School Marks table → stacked cards (same pattern as Students) */
+  #sm-table-wrap table thead{display:none}
+  #sm-table-wrap table,#sm-table-wrap tbody,#sm-table-wrap tr{display:block;width:100%}
+  #sm-table-wrap tr{background:var(--card);border:.5px solid var(--br);border-radius:10px;margin-bottom:10px;padding:10px 12px;display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+  #sm-table-wrap td{border:none;padding:0;font-size:12px}
+  #sm-table-wrap td:nth-child(1){flex:1 1 100%;order:1}
+  #sm-table-wrap td:nth-child(2){order:2}
+  #sm-table-wrap td:nth-child(3){order:3}
+  #sm-table-wrap td:nth-child(4){order:4;display:inline-flex;align-items:center;gap:4px}
+  #sm-table-wrap td:nth-child(4)::before{content:'👪';font-size:11px}
+  #sm-table-wrap td:nth-child(5){order:5;display:inline-flex;align-items:center;gap:4px}
+  #sm-table-wrap td:nth-child(5)::before{content:'🧑‍🎓';font-size:11px}
+  #sm-table-wrap td:nth-child(6){order:6;margin-left:auto}
+  #sm-table-wrap td:nth-child(7){order:7;flex:1 1 100%}
+  #sm-table-wrap td:nth-child(7) button{width:100%}
+
+  /* Target predicted-marks table → stacked cards */
+  #tgt-predict-wrap table thead{display:none}
+  #tgt-predict-wrap table,#tgt-predict-wrap tbody,#tgt-predict-wrap tr{display:block;width:100%}
+  #tgt-predict-wrap tr{background:var(--card);border:.5px solid var(--br);border-radius:10px;margin-bottom:8px;padding:10px 12px;display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+  #tgt-predict-wrap td{border:none;padding:0;font-size:12px}
+  #tgt-predict-wrap td:nth-child(1){flex:1 1 100%;order:1}
+  #tgt-predict-wrap td:nth-child(2){order:3;flex:1 1 100%}
+  #tgt-predict-wrap td:nth-child(3){order:2;margin-left:auto}
+}
+@media(max-width:400px){
+  #tgt-countdown-wrap>div{flex:1 1 100%}
 }
 
 /* ── Student Summary Module styles ── */
@@ -795,15 +847,6 @@ tbody tr:hover td{background:var(--bg)}
       <span id="dash-class-total" style="font-size:11px;color:var(--tx3);font-weight:600"></span>
     </div>
     <div id="dash-class-bars" style="display:flex;flex-direction:column;gap:7px"></div>
-  </div>
-
-  <!-- 🎓 11th/12th Salary Readiness — fees collected vs senior-staff salary due -->
-  <div class="card" style="margin-bottom:14px" id="dash-senior-salary-card">
-    <div class="card-hd" style="margin-bottom:10px">
-      <span class="card-title">🎓 11th/12th Salary Readiness</span>
-      <span id="dash-senior-month" style="font-size:11px;color:var(--tx3);font-weight:600"></span>
-    </div>
-    <div id="dash-senior-body"></div>
   </div>
 
   <div class="row2">
@@ -4560,10 +4603,6 @@ const MODALS = {
     <div class="frow">
       <div class="fg"><label class="fl">Join Date</label><input class="fi" id="m-sfjoin" type="date"></div>
       <div class="fg"><label class="fl">Experience</label><input class="fi" id="m-sfexp" placeholder="e.g. 5 yrs"></div>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px;margin:4px 0 8px;padding:10px 12px;background:var(--bg);border-radius:8px;border:.5px solid var(--br)">
-      <input type="checkbox" id="m-sfsenior" style="width:16px;height:16px;cursor:pointer;flex-shrink:0">
-      <label for="m-sfsenior" style="font-size:12px;font-weight:600;color:var(--tx);cursor:pointer">🎓 Handles 11th / 12th (Senior Batch) — salary tracked against Class 11-12 fee collection</label>
     </div>
     <div style="background:var(--bg);border-radius:8px;padding:12px;margin:8px 0">
       <div style="font-size:11px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">💰 Consolidated Pay (₹/month)</div>
@@ -10105,7 +10144,6 @@ function saveStaff() {
     joinDate: document.getElementById('m-sfjoin')?.value || '',
     exp: document.getElementById('m-sfexp')?.value.trim() || '0 yrs',
     consolidatedPay: basic, extraDed: other, extraDedNote: otherNote,
-    seniorHandler: document.getElementById('m-sfsenior')?.checked || false,
     color: COLORS[staffData.length % COLORS.length]
   });
   saveStaffData(); renderStaff(); closeModal(); showToast(`✅ ${name} added to staff!`); runBackup('change');
@@ -10267,11 +10305,6 @@ function editStaffMember(idx) {
       <div class="fg"><label class="fl">Experience</label><input class="fi" id="esf-exp" value="${s.exp||''}"></div>
     </div>
 
-    <div style="display:flex;align-items:center;gap:8px;margin:4px 0 10px;padding:10px 12px;background:${s.seniorHandler?'#ede9fe':'var(--bg)'};border-radius:8px;border:.5px solid ${s.seniorHandler?'#c4b5fd':'var(--br)'}">
-      <input type="checkbox" id="esf-senior" ${s.seniorHandler?'checked':''} style="width:16px;height:16px;cursor:pointer;flex-shrink:0">
-      <label for="esf-senior" style="font-size:12px;font-weight:600;color:var(--tx);cursor:pointer">🎓 Handles 11th / 12th (Senior Batch) — salary tracked against Class 11-12 fee collection</label>
-    </div>
-
     <!-- ── Salary Section ── -->
     <div style="background:var(--bg);border-radius:10px;padding:14px;margin:10px 0;border:.5px solid var(--br)">
       <div style="font-size:11px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px">💰 Salary Structure</div>
@@ -10415,7 +10448,6 @@ function saveEditStaff(idx) {
   s.bonusNote    = document.getElementById('esf-bonusNote')?.value.trim() || '';
   s.extraDed     = parseFloat(document.getElementById('esf-other')?.value) || 0;
   s.extraDedNote = document.getElementById('esf-otherNote')?.value.trim() || '';
-  s.seniorHandler = document.getElementById('esf-senior')?.checked || false;
   saveStaffData(); renderStaff(); closeModal(); showToast(`✅ ${s.name} updated!`); runBackup('change');
 }
 
@@ -10641,40 +10673,6 @@ function _calcStaffPay(s, yr, mo, daysInMonth, latesToLeave) {
   return { s:s, pay:pay, bonus:bonus, lopDays:lopDays, clDays:clDays, hDays:hDays, lateDays:lateDays, lateAsLop:lateAsLop, lopDed:lopDed, extraDed:extraDed, net:net, dailyRate:dailyRate };
 }
 
-/* ── Senior Batch (Class 11-12) fee collection & salary readiness ──────
-   Staff flagged s.seniorHandler are paid once enough fee has come in
-   from Class 11 & 12 students for that month. These helpers compute
-   both sides so Dashboard + Payroll can show a "Ready to Pay" signal. */
-function _srClassFeeCollected(monthLabel) {
-  return fees.filter(function(f) { return f && !f._deleted && (f.paid||0) > 0 && f.month === monthLabel; })
-    .reduce(function(sum, f) {
-      var stu = students.find(function(s){ return s.id === f.studentId; }) ||
-                students.find(function(s){ return s.name === f.student; });
-      var g = stu ? String(stu.grade||'').trim() : '';
-      return (g === '11' || g === '12') ? sum + (f.paid||0) : sum;
-    }, 0);
-}
-function _srStaffSummary(ymStr) {
-  // ymStr = "YYYY-MM". Returns { staff:[{s,net,paid}], totalNet, totalPending, collected, monthLabel }
-  var parts = (ymStr || _feeMonthYM()).split('-');
-  var yr = parseInt(parts[0]), mo = parseInt(parts[1]);
-  var daysInMonth = new Date(yr, mo, 0).getDate();
-  var latesToLeave = CFG.ATTENDANCE?.latesToLeave || 10;
-  var MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  var monthLabel = MONTHS[mo-1] + ' ' + yr;
-  var seniors = staffData.filter(function(s) { return s && s.seniorHandler; });
-  var totalNet = 0, totalPending = 0;
-  var list = seniors.map(function(s) {
-    var calc = _calcStaffPay(s, yr, mo, daysInMonth, latesToLeave);
-    var salPaid = salaryPayments[getSalaryPayKey(s.id, ymStr)];
-    var isPaid = !!(salPaid && salPaid.paid);
-    totalNet += calc.net;
-    if (!isPaid) totalPending += calc.net;
-    return { s:s, net:calc.net, isPaid:isPaid };
-  });
-  return { staff:list, totalNet:totalNet, totalPending:totalPending, collected:_srClassFeeCollected(monthLabel), monthLabel:monthLabel };
-}
-
 /* ── Class-wise Income Summary — dashboard card ── */
 var _classIncomePeriod = 'month';
 function setClassIncomePeriod(mode, btn) {
@@ -10723,54 +10721,6 @@ function renderClassIncomeSummary() {
       + '<div style="font-size:10px;font-weight:600;color:var(--tx2);margin-top:6px;text-align:center;line-height:1.2">' + label + '</div>'
       + '</div>';
   }).join('');
-}
-
-/* ── 11th/12th Salary Readiness — dashboard card ── */
-function renderSeniorSalaryReadiness() {
-  var body = document.getElementById('dash-senior-body');
-  var monthTag = document.getElementById('dash-senior-month');
-  if (!body) return;
-  var ym = _feeMonthYM();
-  var sum = _srStaffSummary(ym);
-  if (monthTag) monthTag.textContent = sum.monthLabel;
-
-  if (!sum.staff.length) {
-    body.innerHTML = '<div style="font-size:12px;color:var(--tx3);padding:6px 2px;line-height:1.6">No staff tagged as 11th/12th handlers yet. Open a staff member in <b>Staff → Edit</b> and check "Handles 11th / 12th" to enable this.</div>'
-      + '<button class="btn btn-sm" style="margin-top:6px" onclick="navTo(\'staff\')">Go to Staff →</button>';
-    return;
-  }
-
-  var ready = sum.collected >= sum.totalPending;
-  var shortfall = Math.max(0, sum.totalPending - sum.collected);
-
-  var topBoxes = '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:10px">'
-    + '<div style="background:#ede9fe;border-radius:10px;padding:11px 13px;border:.5px solid #c4b5fd">'
-    + '  <div style="font-size:10px;color:#5b21b6;margin-bottom:4px">🎓 Fees Collected — Class 11 &amp; 12</div>'
-    + '  <div style="font-size:19px;font-weight:800;color:#7c3aed">₹' + sum.collected.toLocaleString('en-IN') + '</div>'
-    + '  <div style="font-size:9px;color:#5b21b6;margin-top:2px">' + sum.monthLabel + '</div>'
-    + '</div>'
-    + '<div style="background:' + (ready ? '#dcfce7' : '#fff7ed') + ';border-radius:10px;padding:11px 13px;border:.5px solid ' + (ready ? '#bbf7d0' : '#fed7aa') + '">'
-    + '  <div style="font-size:10px;color:' + (ready ? '#166534' : '#9a3412') + ';margin-bottom:4px">💰 Senior Staff Salary Pending</div>'
-    + '  <div style="font-size:19px;font-weight:800;color:' + (ready ? '#16a34a' : '#c2410c') + '">₹' + sum.totalPending.toLocaleString('en-IN') + '</div>'
-    + '  <div style="font-size:9px;color:' + (ready ? '#166534' : '#9a3412') + ';margin-top:2px">' + (ready ? '✅ Ready to pay' : '⏳ Short by ₹' + shortfall.toLocaleString('en-IN')) + '</div>'
-    + '</div></div>';
-
-  var rows = sum.staff.map(function(item) {
-    var s = item.s;
-    var badge = item.isPaid
-      ? '<span style="font-size:9px;background:#dcfce7;color:#166534;padding:2px 8px;border-radius:20px;font-weight:700">✓ PAID</span>'
-      : (sum.collected >= item.net
-          ? '<span style="font-size:9px;background:#ede9fe;color:#5b21b6;padding:2px 8px;border-radius:20px;font-weight:700">✅ READY</span>'
-          : '<span style="font-size:9px;background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:20px;font-weight:700">⏳ WAITING</span>');
-    return '<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-top:.5px solid var(--br)">'
-      + '<div class="av" style="background:' + s.color + ';width:28px;height:28px;font-size:12px;font-weight:700;flex-shrink:0">' + (s.name||'?')[0] + '</div>'
-      + '<div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600;color:var(--tx)">' + s.name + '</div><div style="font-size:10px;color:var(--tx3)">Net Pay ₹' + item.net.toLocaleString('en-IN') + '</div></div>'
-      + badge
-      + '</div>';
-  }).join('');
-
-  body.innerHTML = topBoxes + rows
-    + '<button class="btn btn-sm" style="margin-top:10px" onclick="navTo(\'staff\');setTimeout(()=>{const b=document.getElementById(\'sf-tab-pay\');if(b)switchStaffTab(\'pay\',b)},120)">Open Payroll →</button>';
 }
 
 function generatePayroll() {
@@ -10884,17 +10834,6 @@ function generatePayroll() {
       + '</div>'
       : '';
 
-    // Senior Batch (Class 11-12) fee-vs-salary readiness banner
-    var seniorBanner = '';
-    if (s.seniorHandler) {
-      var srCollected = (typeof _srClassFeeCollected === 'function') ? _srClassFeeCollected(monthLabel) : 0;
-      var srReady = srCollected >= item.net;
-      seniorBanner = '<div style="background:'+(srReady?'#ede9fe':'#fff7ed')+';border:.5px solid '+(srReady?'#c4b5fd':'#fed7aa')+';border-radius:8px;padding:7px 12px;margin:8px 0;font-size:11px;color:'+(srReady?'#5b21b6':'#9a3412')+'">'
-        + '🎓 <b>Senior Batch (11-12)</b> — Fees collected this month: &#8377;'+srCollected.toLocaleString('en-IN')
-        + (srReady ? ' · ✅ Enough collected to pay' : ' · ⏳ Short by &#8377;'+(item.net-srCollected).toLocaleString('en-IN'))
-        + '</div>';
-    }
-
     cards +=
       '<div class="card" style="margin-bottom:10px;padding:0;overflow:hidden;border-left:3px solid '+(salPaid&&salPaid.paid?'#16a34a':'var(--br)')+';">'
       // Header
@@ -10912,9 +10851,9 @@ function generatePayroll() {
       +'</div>'
       // Salary breakdown
       +'<div style="padding:10px 16px">'
-      +'  <div style="display:flex;justify-content:space-between;padding:4px 0">'
-      +'    <span style="font-size:12px;color:var(--tx2)">'+(s.payType==='perstudent'?'Per-Student Pay':'Consolidated Pay')+'</span>'
-      +'    <span style="font-size:13px;font-weight:600">&#8377;'+payFmt+'</span>'
+      +'  <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0;gap:8px">'
+      +'    <span style="font-size:12px;color:var(--tx2)">'+(s.payType==='perstudent'?'Per-Student Pay (override)':'Base Pay')+'</span>'
+      +'    <span style="display:flex;align-items:center;gap:3px"><span style="font-size:12px;color:var(--tx3)">&#8377;</span><input type="number" id="base-pay-'+s.id+'" value="'+item.pay+'" style="width:100px;text-align:right;border:.5px solid var(--br);border-radius:6px;padding:5px 8px;font-size:13px;font-weight:600;font-family:inherit;background:var(--bg);color:var(--tx)"></span>'
       +'  </div>'
       +perStuRow
       +attRow
@@ -10923,14 +10862,22 @@ function generatePayroll() {
       +extraRow
       +advRow
       +paidBanner
-      +seniorBanner
-      // Add deduction row
-      +'  <div style="display:flex;align-items:center;gap:8px;margin-top:8px;padding-top:8px;border-top:.5px solid var(--br)">'
-      +'    <input type="number" placeholder="Extra &#8377;" id="xtra-amt-'+s.id+'" value="'+(s.extraDed||'')+'" '
-      +'           style="width:90px;border:.5px solid var(--br);border-radius:6px;padding:5px 8px;font-size:12px;font-family:inherit;background:var(--bg);color:var(--tx)">'
-      +'    <input type="text" placeholder="Reason (e.g. Advance)" id="xtra-note-'+s.id+'" value="'+(s.extraDedNote||'')+'" '
-      +'           style="flex:1;border:.5px solid var(--br);border-radius:6px;padding:5px 8px;font-size:12px;font-family:inherit;background:var(--bg);color:var(--tx)">'
-      +'    <button class="btn btn-p btn-sm" onclick="applyExtraDed(\''+s.id+'\')">Apply</button>'
+      // Editable payroll fields — Base Pay above, Bonus + Extra Deduction here
+      +'  <div style="margin-top:8px;padding-top:8px;border-top:.5px solid var(--br)">'
+      +'    <div style="font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">✏️ Edit Payroll</div>'
+      +'    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'
+      +'      <input type="number" placeholder="Bonus &#8377;" id="bonus-amt-'+s.id+'" value="'+(s.bonus||'')+'" '
+      +'             style="width:90px;border:.5px solid var(--br);border-radius:6px;padding:5px 8px;font-size:12px;font-family:inherit;background:var(--bg);color:var(--tx)">'
+      +'      <input type="text" placeholder="Bonus reason" id="bonus-note-'+s.id+'" value="'+(s.bonusNote||'')+'" '
+      +'             style="flex:1;border:.5px solid var(--br);border-radius:6px;padding:5px 8px;font-size:12px;font-family:inherit;background:var(--bg);color:var(--tx)">'
+      +'    </div>'
+      +'    <div style="display:flex;align-items:center;gap:8px">'
+      +'      <input type="number" placeholder="Extra &#8377;" id="xtra-amt-'+s.id+'" value="'+(s.extraDed||'')+'" '
+      +'             style="width:90px;border:.5px solid var(--br);border-radius:6px;padding:5px 8px;font-size:12px;font-family:inherit;background:var(--bg);color:var(--tx)">'
+      +'      <input type="text" placeholder="Reason (e.g. Advance)" id="xtra-note-'+s.id+'" value="'+(s.extraDedNote||'')+'" '
+      +'             style="flex:1;border:.5px solid var(--br);border-radius:6px;padding:5px 8px;font-size:12px;font-family:inherit;background:var(--bg);color:var(--tx)">'
+      +'    </div>'
+      +'    <button class="btn btn-p btn-sm" style="width:100%;margin-top:8px;justify-content:center" onclick="applyPayrollEdits(\''+s.id+'\')">&#128190; Save Payroll Changes</button>'
       +'  </div>'
       +'</div>'
       // Footer
@@ -11220,15 +11167,25 @@ function sendSalarySlipWA(phone) {
   setTimeout(() => _openWADirect(phone, msg), 200);
 }
 
-function applyExtraDed(staffId) {
+// Saves Base Pay, Bonus (+note) and Extra Deduction (+note) together — makes the whole
+// payroll card editable in one go, instead of only the old extra-deduction field.
+function applyPayrollEdits(staffId) {
   var s = staffData.find(function(x){ return x.id===staffId; });
   if (!s) return;
-  var amt  = parseFloat(document.getElementById('xtra-amt-'+staffId)?.value)  || 0;
-  var note = document.getElementById('xtra-note-'+staffId)?.value.trim()       || '';
-  s.extraDed     = amt;
-  s.extraDedNote = note;
+  var baseVal  = parseFloat(document.getElementById('base-pay-'+staffId)?.value);
+  var bonus    = parseFloat(document.getElementById('bonus-amt-'+staffId)?.value) || 0;
+  var bonusNote= document.getElementById('bonus-note-'+staffId)?.value.trim()     || '';
+  var xtraAmt  = parseFloat(document.getElementById('xtra-amt-'+staffId)?.value)  || 0;
+  var xtraNote = document.getElementById('xtra-note-'+staffId)?.value.trim()      || '';
+
+  if (!isNaN(baseVal)) s.consolidatedPay = baseVal;
+  s.bonus        = bonus;
+  s.bonusNote    = bonusNote;
+  s.extraDed     = xtraAmt;
+  s.extraDedNote = xtraNote;
+
   saveStaffData();
-  showToast(amt > 0 ? '✅ ₹'+amt.toLocaleString('en-IN')+' deduction saved for '+s.name : '✅ Extra deduction cleared for '+s.name);
+  showToast('✅ Payroll updated for '+s.name);
   generatePayroll();
 }
 function toggleLopDeduction(key, apply) {
@@ -15884,9 +15841,6 @@ function updateDashStats() {
 
   // Class-wise Income Summary card
   if (typeof renderClassIncomeSummary === 'function') renderClassIncomeSummary();
-
-  // 11th/12th Senior Salary Readiness card
-  if (typeof renderSeniorSalaryReadiness === 'function') renderSeniorSalaryReadiness();
 
   // Expected Income Next Month card
   renderExpectedIncome();

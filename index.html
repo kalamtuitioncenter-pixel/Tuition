@@ -3847,6 +3847,37 @@ function _smAllRows(studentId) {
   return rows;
 }
 
+// Like _smAllRows, but also carries the Parent/Student declaration flags — used by the Student Profile view.
+function _smProfileRows(studentId) {
+  const rec = _smLoad(studentId);
+  const rows = [];
+  SCHOOL_MARK_TERMS.forEach(t => {
+    const termObj = rec.terms && rec.terms[t.id];
+    if (!termObj) return;
+    SCHOOL_MARK_SUBJECTS.forEach(sub => {
+      const m = termObj[sub.id];
+      if (m && m.marks !== null && m.marks !== undefined && m.max) {
+        rows.push({
+          term: t.label, subject: sub.label,
+          marks: m.marks, max: m.max,
+          pct: Math.round(m.marks / m.max * 100),
+          parentDeclared: !!m.parentDeclared,
+          studentDeclared: !!m.studentDeclared
+        });
+      }
+    });
+  });
+  return rows;
+}
+
+// Renders a small badge showing who declared this mark: Student, Parent, both, or neither.
+function _smDeclBadge(row) {
+  if (row.studentDeclared && row.parentDeclared) return '<span class="badge bp">🧑\u200d🎓+👪 Both Declared</span>';
+  if (row.studentDeclared) return '<span class="badge bb">🧑\u200d🎓 Student Declared</span>';
+  if (row.parentDeclared) return '<span class="badge bt">👪 Parent Declared</span>';
+  return '<span class="badge" style="background:var(--bg);color:var(--tx3);border:.5px solid var(--br)">— Not Declared</span>';
+}
+
 // Simple trend projection per subject (last value + average delta across saved terms) — no AI needed for this part.
 function _smHeuristicPredict(rows) {
   const bySubject = {};
@@ -3914,6 +3945,106 @@ async function smPredictAndPlan(studentId) {
     _smSave(studentId, rec);
   } catch (err) {
     const liveOut = document.getElementById('sm-ai-plan-out');
+    if (liveOut) liveOut.textContent = '⚠️ Could not reach AI right now. Try again in a moment.';
+  }
+}
+
+/* ═══════════════════════════════════════════════════════
+   PARENT MEETING BRIEF  —  weak-subject / attendance flags
+   + an AI Growth Summary & Forecast, shown on Student Profile
+═══════════════════════════════════════════════════════ */
+
+// Pulls together whatever we already have on a student — school marks, exam marks, this month's attendance.
+function _pmGatherData(student) {
+  const now = new Date();
+  let att = null;
+  try { if (typeof getStudentAttStats === 'function') att = getStudentAttStats(student, now.getFullYear(), now.getMonth()); } catch(e) {}
+  let marksList = [];
+  try {
+    marksList = (typeof getStudentMarksAuto === 'function') ? getStudentMarksAuto(student.id)
+              : (typeof getStudentMarks === 'function' ? getStudentMarks(student.id) : []);
+  } catch(e) {}
+  let smRows = [];
+  try { smRows = (typeof _smProfileRows === 'function') ? _smProfileRows(student.id) : []; } catch(e) {}
+  return { att, marksList: marksList || [], smRows: smRows || [] };
+}
+
+// Subjects averaging under 60% across School Marks + exam marks — instant, no AI needed.
+function _pmWeakSubjects(data) {
+  const bySubj = {};
+  (data.smRows || []).forEach(r => { (bySubj[r.subject] = bySubj[r.subject] || []).push(r.pct); });
+  (data.marksList || []).filter(m => !m.absent && m.marks != null && m.maxMarks).forEach(m => {
+    const pct = Math.round((m.marks / m.maxMarks) * 100);
+    (bySubj[m.subject] = bySubj[m.subject] || []).push(pct);
+  });
+  return Object.keys(bySubj).map(sub => {
+    const arr = bySubj[sub];
+    const avg = Math.round(arr.reduce((a, b) => a + b, 0) / arr.length);
+    return { subject: sub, avg };
+  }).filter(x => x.avg < 60).sort((a, b) => a.avg - b.avg);
+}
+
+// Absent / late / low-attendance flags for the current month — instant, no AI needed.
+function _pmAttendanceFlags(att) {
+  if (!att) return [];
+  const flags = [];
+  if (att.absent >= 3) flags.push(`⚠️ ${att.absent} absent day${att.absent === 1 ? '' : 's'} this month`);
+  if (att.late >= 3) flags.push(`⏰ ${att.late} late arrival${att.late === 1 ? '' : 's'} this month`);
+  if (att.pct !== undefined && att.pct !== null && att.pct < 75 && (att.present + att.absent + att.late) > 0) flags.push(`📉 Attendance only ${att.pct}% this month`);
+  return flags;
+}
+
+// Cached brief is keyed by student + current month so re-opening a profile doesn't refire the AI call every time.
+function _pmCacheKey(studentId) {
+  const now = new Date();
+  return '_erp_pmbrief_' + studentId + '_' + now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+}
+function _pmLoadCached(studentId) {
+  try { const v = JSON.parse(localStorage.getItem(_pmCacheKey(studentId)) || 'null'); return (v && v.text) || null; }
+  catch (e) { return null; }
+}
+
+// Generates (or regenerates) the short AI talking-points + growth forecast for a parent meeting.
+async function pmGenerateBrief(studentId) {
+  const s = students.find(x => x.id === studentId);
+  if (!s) return;
+  const outEl = document.getElementById('pm-brief-out-' + studentId);
+  if (outEl) outEl.innerHTML = '🤖 Preparing meeting brief…';
+
+  const data = _pmGatherData(s);
+  const weak = _pmWeakSubjects(data);
+  const flags = _pmAttendanceFlags(data.att);
+
+  const weakStr = weak.length ? weak.map(w => `${w.subject} (avg ${w.avg}%)`).join(', ') : 'none — every subject on record is at or above 60%';
+  const attStr = data.att ? `Present ${data.att.present}, Absent ${data.att.absent}, Late ${data.att.late}, ${data.att.pct}% attendance this month` : 'No attendance data recorded this month';
+  const marksTrend = data.smRows.map(r => `${r.term} ${r.subject}: ${r.pct}%`).join('; ') || 'No School Marks recorded yet';
+
+  const prompt = `You are a tuition center teacher preparing for a short face-to-face meeting with a parent about student "${s.name}" (Class ${s.grade}).
+Data on hand:
+- Weak subjects (avg under 60%): ${weakStr}
+- Attendance this month: ${attStr}
+- School marks history (term-wise %): ${marksTrend}
+
+Write a brief note (max 5-6 short lines, plain sentences, no headers or markdown) the teacher can glance at right before the meeting. Cover, in order:
+1) One line on overall standing.
+2) Weak subject(s) to raise with the parent, if any.
+3) Any absence/lateness issue worth mentioning, if any.
+4) A short AI Growth Summary & Forecast — 1-2 lines predicting the near-term trend and one concrete suggestion for the parent.
+Keep it concise and practical — something a teacher can read in about 10 seconds.`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 400, messages: [{ role: 'user', content: prompt }] })
+    });
+    const json = await res.json();
+    const txt = (json.content || []).filter(c => c.type === 'text').map(c => c.text).join('').trim() || 'No summary generated.';
+    const liveOut = document.getElementById('pm-brief-out-' + studentId);
+    if (liveOut) liveOut.textContent = txt;
+    try { localStorage.setItem(_pmCacheKey(studentId), JSON.stringify({ text: txt, at: new Date().toISOString() })); } catch (e) {}
+  } catch (err) {
+    const liveOut = document.getElementById('pm-brief-out-' + studentId);
     if (liveOut) liveOut.textContent = '⚠️ Could not reach AI right now. Try again in a moment.';
   }
 }
@@ -5105,6 +5236,20 @@ function openStudentProfile(id) {
   } catch(e) {}
   marksList = (marksList || []).slice().sort((a,b) => new Date(b.date||0) - new Date(a.date||0));
 
+  // School Marks (term-wise, with Parent/Student declaration tags)
+  let smRows = [];
+  try { smRows = (typeof _smProfileRows === 'function') ? _smProfileRows(s.id) : []; } catch(e) {}
+
+  // Parent Meeting Brief — weak subjects + attendance flags (instant) + cached AI growth forecast, if any
+  let pmWeak = [], pmFlags = [], pmCached = null;
+  try { pmWeak = (typeof _pmWeakSubjects === 'function') ? _pmWeakSubjects({ smRows, marksList }) : []; } catch(e) {}
+  try { pmFlags = (typeof _pmAttendanceFlags === 'function') ? _pmAttendanceFlags(att) : []; } catch(e) {}
+  try { pmCached = (typeof _pmLoadCached === 'function') ? _pmLoadCached(s.id) : null; } catch(e) {}
+  const pmFlagsHtml = [
+    ...pmWeak.map(w => `<span class="badge br2">📉 Weak: ${w.subject} (${w.avg}%)</span>`),
+    ...pmFlags.map(f => `<span class="badge ba">${f}</span>`)
+  ].join('') || '<span class="badge bg">✅ No major flags this month</span>';
+
   // Fee history — every record tied to this student, most recent first
   const feeList = fees.filter(f => f && !f._deleted && (f.studentId === s.id || f.student === s.name))
     .slice().sort((a,b) => (b.paidAtTs||0) - (a.paidAtTs||0) || String(b.month||'').localeCompare(String(a.month||'')));
@@ -5199,6 +5344,35 @@ function openStudentProfile(id) {
             <div>⏰ Late: <b>${att.late}</b></div>
             <div>📊 Attendance: <b>${att.pct}%</b></div>
           </div>` : `<div style="font-size:11px;color:var(--tx3)">No attendance data for this month</div>`}
+        </div>
+
+        <!-- Parent Meeting Brief + AI Growth Forecast -->
+        <div style="background:var(--bg);border-radius:10px;padding:12px 14px;margin-bottom:12px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px">
+            <div style="font-size:12px;font-weight:700;color:var(--tx)">🎤 Parent Meeting Brief</div>
+            <button class="btn btn-sm" style="font-size:10px;padding:3px 9px" onclick="pmGenerateBrief('${s.id}')">🤖 ${pmCached ? 'Refresh' : 'Generate'} AI Brief</button>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">${pmFlagsHtml}</div>
+          <div id="pm-brief-out-${s.id}" style="font-size:12px;color:var(--tx);white-space:pre-wrap;line-height:1.6;min-height:18px">${pmCached ? escHtml(pmCached) : '<span style="color:var(--tx3)">Tap "🤖 Generate AI Brief" for a short talking-points summary — weak subjects, attendance issues &amp; an AI Growth Summary forecast — to use while meeting the parent.</span>'}</div>
+        </div>
+
+        <!-- School Marks -->
+        <div style="background:var(--bg);border-radius:10px;padding:12px 14px;margin-bottom:12px">
+          <div style="font-size:12px;font-weight:700;color:var(--tx);margin-bottom:8px">🏫 School Marks</div>
+          ${smRows.length ? `<div style="max-height:200px;overflow-y:auto;border:.5px solid var(--br);border-radius:8px">
+            <table style="width:100%;font-size:11px;border-collapse:collapse">
+              <thead style="position:sticky;top:0;background:var(--card)"><tr style="text-align:left;color:var(--tx3)">
+                <th style="padding:6px 8px">Term</th><th style="padding:6px 8px">Subject</th><th style="padding:6px 8px">Marks</th><th style="padding:6px 8px">%</th><th style="padding:6px 8px">Declared By</th>
+              </tr></thead>
+              <tbody>${smRows.map(r => `<tr style="border-top:.5px solid var(--br)">
+                <td style="padding:6px 8px">${r.term}</td>
+                <td style="padding:6px 8px">${r.subject}</td>
+                <td style="padding:6px 8px">${r.marks}/${r.max}</td>
+                <td style="padding:6px 8px">${r.pct}%</td>
+                <td style="padding:6px 8px">${_smDeclBadge(r)}</td>
+              </tr>`).join('')}</tbody>
+            </table>
+          </div>` : `<div style="font-size:11px;color:var(--tx3);text-align:center;padding:10px">No school marks recorded yet</div>`}
         </div>
 
         <!-- Marks / Exam History -->

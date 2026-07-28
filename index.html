@@ -1796,7 +1796,6 @@ tbody tr:hover td{background:var(--bg)}
     <button class="seg-b on" id="sf-tab-list" onclick="switchStaffTab('list',this)" style="flex:1;padding:8px;border-radius:8px;border:none;background:var(--card);color:var(--tx);cursor:pointer;font-size:12px;font-weight:600;font-family:inherit;border:.5px solid var(--br)">👥 Staff List</button>
     <button class="seg-b" id="sf-tab-att" onclick="switchStaffTab('att',this)" style="flex:1;padding:8px;border-radius:8px;border:none;background:transparent;color:var(--tx2);cursor:pointer;font-size:12px;font-weight:500;font-family:inherit">📅 Attendance</button>
     <button class="seg-b" id="sf-tab-pay" onclick="switchStaffTab('pay',this)" style="flex:1;padding:8px;border-radius:8px;border:none;background:transparent;color:var(--tx2);cursor:pointer;font-size:12px;font-weight:500;font-family:inherit">💰 Payroll</button>
-    <button class="seg-b" id="sf-tab-history" onclick="switchStaffTab('history',this)" style="flex:1;padding:8px;border-radius:8px;border:none;background:transparent;color:var(--tx2);cursor:pointer;font-size:12px;font-weight:500;font-family:inherit">📜 History</button>
   </div>
 
   <!-- TAB 1: Staff List -->
@@ -1861,49 +1860,6 @@ tbody tr:hover td{background:var(--bg)}
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:14px" id="sf-pay-summary"></div>
     <!-- Payroll cards list -->
     <div id="sf-pay-body"></div>
-  </div>
-
-  <!-- TAB 4: Payment History -->
-  <div id="sf-panel-history" style="display:none">
-    <div class="card" style="margin-bottom:12px;padding:12px 16px">
-      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-        <div style="min-width:130px">
-          <div style="font-size:11px;font-weight:600;color:var(--tx2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px">Staff</div>
-          <select class="fi" id="ph-staff" onchange="renderPaymentHistory()" style="font-size:12px"><option value="">All Staff</option></select>
-        </div>
-        <div style="min-width:110px">
-          <div style="font-size:11px;font-weight:600;color:var(--tx2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px">Month</div>
-          <input type="month" class="fi" id="ph-month" onchange="renderPaymentHistory()" style="font-size:12px">
-        </div>
-        <div style="min-width:110px">
-          <div style="font-size:11px;font-weight:600;color:var(--tx2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px">Method</div>
-          <select class="fi" id="ph-method" onchange="renderPaymentHistory()" style="font-size:12px">
-            <option value="">All Methods</option>
-            <option value="Cash">Cash</option>
-            <option value="UPI">UPI</option>
-            <option value="Bank Transfer">Bank Transfer</option>
-            <option value="Cheque">Cheque</option>
-          </select>
-        </div>
-        <div style="flex:1;min-width:140px">
-          <div style="font-size:11px;font-weight:600;color:var(--tx2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px">Search</div>
-          <input class="fi" id="ph-search" placeholder="Staff name, reference…" oninput="renderPaymentHistory()" style="font-size:12px">
-        </div>
-        <button class="btn btn-sm" onclick="clearPaymentHistoryFilters()">✕ Clear</button>
-        <button class="btn btn-g btn-sm" onclick="exportPaymentHistoryCSV()">⬇ Export CSV</button>
-        <button class="btn btn-sm" onclick="window.print()">🖨 Print</button>
-      </div>
-    </div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:14px" id="ph-summary"></div>
-    <div class="tbl-wrap" style="overflow-x:auto">
-      <table style="min-width:820px">
-        <thead><tr>
-          <th>Staff</th><th>Month</th><th>Amount</th><th>Payment Date</th>
-          <th>Method</th><th>Reference</th><th>Paid By</th><th>WhatsApp</th><th>Actions</th>
-        </tr></thead>
-        <tbody id="ph-body"></tbody>
-      </table>
-    </div>
   </div>
 </div>
 
@@ -2721,18 +2677,19 @@ tbody tr:hover td{background:var(--bg)}
     <div style="font-size:11px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px">📅 Exam Start Dates</div>
     <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end">
       <div class="fg" style="margin:0">
-        <label class="fl">Quarterly Exam</label>
+        <label class="fl" id="tgt-label-quarterly">Quarterly Exam</label>
         <input class="fi" type="date" id="tgt-date-quarterly" style="width:auto">
       </div>
       <div class="fg" style="margin:0">
-        <label class="fl">Half Yearly Exam</label>
+        <label class="fl" id="tgt-label-halfyearly">Half Yearly Exam</label>
         <input class="fi" type="date" id="tgt-date-halfyearly" style="width:auto">
       </div>
       <div class="fg" style="margin:0">
-        <label class="fl">Public Exam</label>
+        <label class="fl" id="tgt-label-public">Public Exam</label>
         <input class="fi" type="date" id="tgt-date-public" style="width:auto">
       </div>
       <button class="btn btn-p btn-sm" onclick="targetSaveDates()">💾 Save Dates</button>
+      <button class="btn btn-sm" onclick="navTo('whatsapp');setTimeout(()=>{switchWATab('templates');selectWTType('target_countdown')},120)" style="font-size:11px;color:#dc2626;border-color:#fecaca;background:#fef2f2">✏️ Edit Countdown Template</button>
     </div>
     <div style="font-size:10px;color:var(--tx3);margin-top:8px">Once saved, a countdown is automatically added to Class 10 students' Absent &amp; Late WhatsApp messages, and shown on the Dashboard.</div>
   </div>
@@ -2795,7 +2752,6 @@ tbody tr:hover td{background:var(--bg)}
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js" onload="if(window.initCharts && document.getElementById('pg-dashboard').classList.contains('active'))initCharts()"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 <!-- ── PWA Install Banner ─────────────────────────── -->
 <div id="pwa-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;background:var(--sd);padding:14px 16px;z-index:500;display:none;align-items:center;gap:12px;border-top:1px solid rgba(255,255,255,.1)">
@@ -3514,6 +3470,13 @@ const WA_TEMPLATES = {
 📞 {center_phone}
 _{center_name}_`],
   },
+  target_countdown: {
+    ta: [`
+⏳ *10ஆம் வகுப்பு தேர்வு நேரம் நெருங்குகிறது!*
+{countdown_lines}
+👉 ஒவ்வொரு நாளும் முக்கியம் — வருகை தவறவிடாதீர்கள்!
+`],
+  },
 };
 
 // Fill template with actual data
@@ -3979,17 +3942,56 @@ function _targetDaysLeft(dateStr) {
   return Math.round((target - today) / 86400000);
 }
 
+// Editable exam names (e.g. rename "Quarterly Exam" to whatever your center calls it).
+function _targetLoadExamNames() {
+  try { return JSON.parse(localStorage.getItem('_erp_target_examnames') || '{}') || {}; }
+  catch (e) { return {}; }
+}
+function _targetSaveExamNames(data) {
+  try { localStorage.setItem('_erp_target_examnames', JSON.stringify(data)); } catch (e) {}
+}
+function _targetExamLabel(examId) {
+  const names = _targetLoadExamNames();
+  const def = TARGET_EXAMS.find(x => x.id === examId);
+  return names[examId] || (def ? def.label : examId);
+}
+function targetSaveExamName(examId, value) {
+  const names = _targetLoadExamNames();
+  names[examId] = (value || '').trim() || (TARGET_EXAMS.find(x => x.id === examId) || {}).label || examId;
+  _targetSaveExamNames(names);
+  const lbl = document.getElementById('tgt-label-' + examId);
+  if (lbl) lbl.textContent = names[examId];
+  targetRenderCountdowns();
+}
+
 // Builds the "⏳ X days left" WhatsApp block for Class 10 students — blank for everyone else.
+// Gives the template both a ready-made {countdown_lines} block AND per-exam placeholders
+// ({quarterly_name}/{quarterly_days}/{quarterly_line} etc.) for full line-by-line control.
 function _targetCountdownLine(student) {
   if (!student || normaliseGrade(student.grade) !== '10') return '';
   const dates = _targetLoad();
+  const perExam = {};
   const parts = [];
   TARGET_EXAMS.forEach(ex => {
+    const name = _targetExamLabel(ex.id);
     const d = _targetDaysLeft(dates[ex.id]);
-    if (d !== null && d >= 0) parts.push(`${ex.label}: *${d} day${d === 1 ? '' : 's'}* left`);
+    const has = d !== null && d >= 0;
+    const daysTxt = has ? String(d) : '';
+    const lineTxt = has ? `${name}: *${d} day${d === 1 ? '' : 's'}* left` : '';
+    perExam[ex.id + '_name'] = name;
+    perExam[ex.id + '_days'] = daysTxt;
+    perExam[ex.id + '_line'] = lineTxt;
+    if (has) parts.push(lineTxt);
   });
   if (!parts.length) return '';
-  return `\n⏳ *10ஆம் வகுப்பு தேர்வு நேரம் நெருங்குகிறது!*\n${parts.map(p => '• ' + p).join('\n')}\n👉 ஒவ்வொரு நாளும் முக்கியம் — வருகை தவறவிடாதீர்கள்!\n`;
+  const countdownLines = parts.map(p => '• ' + p).join('\n');
+  // Pull the customised template if the user has edited one under WhatsApp → Templates → 🎯 Exam Countdown, else fall back to the default.
+  let tmpl = (typeof getWTSaved === 'function' && getWTSaved('target_countdown', 'ta'))
+    || (typeof getWTDefault === 'function' && getWTDefault('target_countdown', 'ta'))
+    || WA_TEMPLATES.target_countdown?.ta?.[0]
+    || '\n⏳ *10ஆம் வகுப்பு தேர்வு நேரம் நெருங்குகிறது!*\n{countdown_lines}\n👉 ஒவ்வொரு நாளும் முக்கியம் — வருகை தவறவிடாதீர்கள்!\n';
+  Object.keys(perExam).forEach(k => { tmpl = tmpl.replace(new RegExp('{'+k+'}','g'), perExam[k]); });
+  return tmpl.replace(/{countdown_lines}/g, countdownLines);
 }
 
 function _targetDaysBadge(days) {
@@ -4005,6 +4007,8 @@ function renderTargetPage() {
   TARGET_EXAMS.forEach(ex => {
     const el = document.getElementById('tgt-date-' + ex.id);
     if (el) el.value = dates[ex.id] || '';
+    const lbl = document.getElementById('tgt-label-' + ex.id);
+    if (lbl) lbl.textContent = _targetExamLabel(ex.id);
   });
   targetRenderCountdowns();
   targetRenderPredictions();
@@ -4042,7 +4046,7 @@ function renderDashTargetWidget() {
   const pending = class10.filter(s => !_smAllRows(s.id).length).length;
 
   box.style.display = '';
-  sumEl.innerHTML = `<div style="font-size:12px;font-weight:700;color:#fff">🎯 ${nearest.ex.label}: ${nearest.days} day${nearest.days === 1 ? '' : 's'} left for Class 10</div>
+  sumEl.innerHTML = `<div style="font-size:12px;font-weight:700;color:#fff">🎯 ${_targetExamLabel(nearest.ex.id)}: ${nearest.days} day${nearest.days === 1 ? '' : 's'} left for Class 10</div>
     <div style="font-size:10px;color:rgba(255,255,255,.85);margin-top:1px">${pending > 0 ? `⚠️ ${pending} of ${class10.length} Class 10 students pending — no School Marks entered yet` : `✅ All ${class10.length} Class 10 students have marks on record`}</div>`;
 }
 
@@ -4052,8 +4056,9 @@ function targetRenderCountdowns() {
   const dates = _targetLoad();
   wrap.innerHTML = TARGET_EXAMS.map(ex => {
     const days = _targetDaysLeft(dates[ex.id]);
-    return `<div style="flex:1;min-width:140px;background:var(--bg);border-radius:10px;padding:12px;text-align:center">
-      <div style="font-size:11px;font-weight:700;color:var(--tx2);margin-bottom:6px">${ex.label}</div>
+    return `<div style="flex:1;min-width:150px;background:var(--bg);border-radius:10px;padding:12px;text-align:center">
+      <input value="${_targetExamLabel(ex.id)}" onchange="targetSaveExamName('${ex.id}',this.value)"
+        style="width:100%;text-align:center;font-size:11px;font-weight:700;color:var(--tx2);background:transparent;border:none;border-bottom:1px dashed var(--br);margin-bottom:6px;padding:2px 0;font-family:inherit">
       <div>${_targetDaysBadge(days)}</div>
     </div>`;
   }).join('');
@@ -10529,7 +10534,7 @@ function confirmDeleteStaff(idx) {
   runBackup('change');
 }
 function switchStaffTab(tab, btn) {
-  ['list','att','pay','history'].forEach(t => {
+  ['list','att','pay'].forEach(t => {
     document.getElementById('sf-panel-'+t).style.display = t===tab ? 'block' : 'none';
     document.getElementById('sf-tab-'+t).style.background  = t===tab ? 'var(--card)' : 'transparent';
     document.getElementById('sf-tab-'+t).style.color       = t===tab ? 'var(--tx)' : 'var(--tx2)';
@@ -10538,7 +10543,6 @@ function switchStaffTab(tab, btn) {
   });
   if (tab==='att') renderStaffAttGrid();
   if (tab==='pay') { generatePayroll(); }
-  if (tab==='history') { renderPaymentHistory(); }
 }
 
 function renderStaffAttGrid() {
@@ -10815,12 +10819,10 @@ function generatePayroll() {
 
   // Summary
   document.getElementById('sf-pay-summary').innerHTML = [
-    {l:'Total Staff',    v:staffData.length,                                    c:'#185FA5', icon:'👥'},
-    {l:'Paid Staff',     v:paidCount,                                           c:'#16a34a', icon:'🟢'},
-    {l:'Unpaid Staff',   v:unpaidCount,                                         c:'#dc2626', icon:'🔴'},
-    {l:'Total Salary',   v:'&#8377;'+totalNet.toLocaleString('en-IN'),          c:'#185FA5', icon:'💰'},
-    {l:'Salary Paid',    v:'&#8377;'+paidTotal.toLocaleString('en-IN'),         c:'#16a34a', icon:'✅'},
-    {l:'Salary Remaining',v:'&#8377;'+(totalNet-paidTotal).toLocaleString('en-IN'), c:'#dc2626', icon:'⏳'},
+    {l:'Total Staff',         v:staffData.length,                          c:'#185FA5', icon:'👥'},
+    {l:'Total Net Pay',       v:'&#8377;'+totalNet.toLocaleString('en-IN'), c:'#16a34a', icon:'💰'},
+    {l:'Salaries Paid',       v:paidCount + ' / ' + payData.length,         c:'#16a34a', icon:'✅'},
+    {l:'Pending Disbursement',v:'&#8377;'+(totalNet-paidTotal).toLocaleString('en-IN'), c:'#dc2626', icon:'⏳'},
   ].map(function(b) {
     return '<div class="stat" style="border-left:3px solid '+b.c+'"><div style="font-size:20px;margin-bottom:4px">'+b.icon+'</div><div class="stat-val" style="font-size:18px;color:'+b.c+'">'+b.v+'</div><div class="stat-lbl">'+b.l+' &middot; '+monthLabel+'</div></div>';
   }).join('');
@@ -10954,10 +10956,6 @@ function generatePayroll() {
         : '  <button class="btn btn-p btn-sm" style="background:#16a34a;border-color:#16a34a;" onclick="openSalaryPaidModal(\''+s.id+'\')">&#10003; Mark Salary Paid</button>'
       )
       +'  <button class="btn btn-wa btn-sm" onclick="sendSalarySlipQuickWA(\''+s.id+'\',\''+monthEl.value+'\')">&#128242; Salary Slip WA</button>'
-      +(salPaid&&salPaid.paid
-        ? '  <button class="btn btn-sm" onclick="downloadSalaryPayslipPDF(\''+s.id+'\',\''+monthEl.value+'\')">&#128196; Download Payslip</button>'
-        : '  <button class="btn btn-sm" disabled title="Pay salary first to unlock payslip" style="opacity:.45;cursor:not-allowed">&#128196; Download Payslip</button>'
-      )
       +'  <button class="btn btn-sm" onclick="openStaffAdvanceModal(\''+s.id+'\')">&#128176; Advance/Loan'+(outstandingAdv>0?' ('+outstandingAdv.toLocaleString('en-IN')+')':'')+'</button>'
       +'</div>'
       +'</div>';
@@ -11075,8 +11073,6 @@ function openSalaryPaidModal(staffId) {
     ${existing && existing.paid ? `
     <div style="background:#dcfce7;border-radius:8px;padding:10px 14px;margin-bottom:14px;border:.5px solid #bbf7d0;font-size:12px;color:#166534">
       ✅ <b>Already Paid</b> — ₹${(existing.amount||net).toLocaleString('en-IN')} on ${existing.date||'—'} via ${existing.mode||'Cash'}
-      ${existing.referenceNumber ? `<br><span style="font-size:11px;color:var(--tx3)">Ref: ${existing.referenceNumber}</span>` : ''}
-      ${existing.paidBy ? `<span style="font-size:11px;color:var(--tx3)"> · Paid by ${existing.paidBy}</span>` : ''}
       ${existing.note ? `<br><span style="font-size:11px;color:var(--tx3)">${existing.note}</span>` : ''}
     </div>` : ''}
 
@@ -11105,16 +11101,6 @@ function openSalaryPaidModal(staffId) {
       <label class="fl">Payment Date <span style="font-weight:400;color:var(--tx3)">(pre-filled to your Pay Day setting)</span></label>
       <input class="fi" id="sp-date" type="date" value="${dateISOValue}">
     </div>
-    <div class="frow">
-      <div class="fg">
-        <label class="fl">Reference No. <span style="font-weight:400;color:var(--tx3)">(optional)</span></label>
-        <input class="fi" id="sp-ref" placeholder="UTR / Cheque / Txn No." value="${existing?.referenceNumber||''}">
-      </div>
-      <div class="fg">
-        <label class="fl">Paid By</label>
-        <input class="fi" id="sp-paidby" placeholder="Admin name" value="${existing?.paidBy||(typeof currentAdminName==='string'?currentAdminName:'')||'Admin'}">
-      </div>
-    </div>
     <div class="fg">
       <label class="fl">Note (optional)</label>
       <input class="fi" id="sp-note" placeholder="e.g. Partial advance, bonus…" value="${existing?.note||''}">
@@ -11142,17 +11128,11 @@ function confirmSalaryPaid(staffId, monthVal, netPay) {
   const amount = parseFloat(document.getElementById('sp-amount')?.value) || netPay;
   const mode   = document.getElementById('sp-mode')?.value || 'Cash';
   const note   = document.getElementById('sp-note')?.value.trim() || '';
-  const referenceNumber = document.getElementById('sp-ref')?.value.trim() || '';
-  const paidBy = document.getElementById('sp-paidby')?.value.trim() || 'Admin';
   const key    = getSalaryPayKey(staffId, monthVal);
   const dateISO = document.getElementById('sp-date')?.value || new Date().toISOString().slice(0,10);
   const dateStr = new Date(dateISO + 'T00:00:00').toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric'});
-  const timeStr = new Date().toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'});
-  const existingRec = salaryPayments[key] || {};
 
-  salaryPayments[key] = { paid: true, amount, mode, note, date: dateStr, dateISO, staffId, monthVal,
-    paymentTime: timeStr, referenceNumber, paidBy,
-    createdAt: existingRec.createdAt || new Date().toISOString(), updatedAt: new Date().toISOString() };
+  salaryPayments[key] = { paid: true, amount, mode, note, date: dateStr, dateISO, staffId, monthVal };
   saveSalaryPayments();
   runBackup('change');
 
@@ -11166,7 +11146,7 @@ function confirmSalaryPaid(staffId, monthVal, netPay) {
   generatePayroll(); // refresh cards to show paid badge
 
   // Show WA confirmation
-  showSalaryPaidModal(s, amount, mode, monthLabel, dateStr, waMsg, staffId, monthVal);
+  showSalaryPaidModal(s, amount, mode, monthLabel, dateStr, waMsg);
 }
 
 function buildSalarySlipWA(s, amount, mode, monthLabel, dateStr, note, bonus, extraDed) {
@@ -11224,117 +11204,6 @@ Thank you for your dedication! 🙏
 _${CFG.CENTER.name}_`;
 }
 
-/* ── Generate & download a professional A4 Payslip PDF for a staff member's paid month.
-   Requires the salary to already be marked Paid (uses recorded amount/mode/reference). ── */
-function downloadSalaryPayslipPDF(staffId, monthVal) {
-  const s = staffData.find(x => x.id === staffId);
-  if (!s) return;
-  const key = getSalaryPayKey(staffId, monthVal);
-  const salPaid = salaryPayments[key];
-  if (!salPaid || !salPaid.paid) { showToast('⚠️ Mark salary as paid first to generate the payslip'); return; }
-  if (!window.jspdf || !window.jspdf.jsPDF) { showToast('⚠️ PDF library still loading — try again in a moment'); return; }
-
-  const [yr, mo] = monthVal.split('-').map(Number);
-  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-  const monthLabel = months[mo - 1] + ' ' + yr;
-  const daysInMonth = new Date(yr, mo, 0).getDate();
-  const latesToLeave = CFG.ATTENDANCE?.latesToLeave || 10;
-  const calc = _calcStaffPay(s, yr, mo, daysInMonth, latesToLeave);
-  const pay = calc.pay, bonus = calc.bonus, lopDed = calc.lopDed, extraDed = calc.extraDed;
-  const gross = pay + bonus;
-  const net = salPaid.amount || calc.net;
-  const ctr = CFG.CENTER || {};
-
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ unit: 'pt', format: 'a4' });
-  const W = doc.internal.pageSize.getWidth();
-  const M = 40;
-  let y = 50;
-
-  // Header band
-  doc.setFillColor(26, 86, 219);
-  doc.rect(0, 0, W, 78, 'F');
-  doc.setTextColor(255,255,255);
-  doc.setFont('helvetica','bold'); doc.setFontSize(18);
-  doc.text(ctr.name || 'Tuition Center', M, 34);
-  doc.setFont('helvetica','normal'); doc.setFontSize(10);
-  doc.text((ctr.city||'') + (ctr.state?', '+ctr.state:'') + (ctr.phone?'   ·   '+ctr.phone:''), M, 52);
-  doc.setFont('helvetica','bold'); doc.setFontSize(13);
-  doc.text('PAYROLL SLIP', W - M, 34, { align: 'right' });
-  doc.setFont('helvetica','normal'); doc.setFontSize(10);
-  doc.text(monthLabel, W - M, 52, { align: 'right' });
-
-  y = 105;
-  doc.setTextColor(15, 23, 42);
-
-  // Employee details box
-  doc.setDrawColor(226,232,240); doc.setLineWidth(0.7);
-  doc.roundedRect(M, y, W - 2*M, 78, 4, 4);
-  doc.setFont('helvetica','bold'); doc.setFontSize(11);
-  doc.text(s.name || '-', M + 14, y + 22);
-  doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(71,85,105);
-  doc.text('Designation: ' + (s.desg || '-'), M + 14, y + 38);
-  doc.text('Employee ID: ' + (s.id || '-'), M + 14, y + 52);
-  doc.text('Phone: ' + (s.phone || '-'), M + 14, y + 66);
-  doc.text('Joining Date: ' + (s.joinDate || '-'), W/2 + 20, y + 38);
-  doc.text('Payment Date: ' + (salPaid.date || '-'), W/2 + 20, y + 52);
-  doc.text('Payment Mode: ' + (salPaid.mode || 'Cash') + (salPaid.referenceNumber ? '  (Ref: '+salPaid.referenceNumber+')' : ''), W/2 + 20, y + 66);
-  doc.setTextColor(15,23,42);
-
-  y += 100;
-  // Earnings / Deductions table header
-  doc.setFillColor(241,245,249);
-  doc.rect(M, y, W - 2*M, 24, 'F');
-  doc.setFont('helvetica','bold'); doc.setFontSize(10);
-  doc.text('EARNINGS', M + 12, y + 16);
-  doc.text('AMOUNT (₹)', W/2 - 20, y + 16, { align: 'right' });
-  doc.text('DEDUCTIONS', W/2 + 20, y + 16);
-  doc.text('AMOUNT (₹)', W - M - 12, y + 16, { align: 'right' });
-  y += 24;
-
-  const earnRows = [['Basic / Consolidated Salary', pay]];
-  if (bonus > 0) earnRows.push(['Bonus' + (s.bonusNote?' ('+s.bonusNote+')':''), bonus]);
-  const dedRows = [];
-  if (lopDed > 0) dedRows.push(['LOP (' + calc.lopDays + ' day' + (calc.lopDays!==1?'s':'') + ')', lopDed]);
-  if (extraDed > 0) dedRows.push(['Other Deduction' + (s.extraDedNote?' ('+s.extraDedNote+')':''), extraDed]);
-  if (!dedRows.length) dedRows.push(['—', 0]);
-
-  const rows = Math.max(earnRows.length, dedRows.length);
-  doc.setFont('helvetica','normal'); doc.setFontSize(9.5);
-  for (let i = 0; i < rows; i++) {
-    const ry = y + i*20 + 15;
-    if (earnRows[i]) { doc.text(earnRows[i][0], M + 12, ry); doc.text(earnRows[i][1].toLocaleString('en-IN'), W/2 - 20, ry, { align: 'right' }); }
-    if (dedRows[i]) { doc.text(String(dedRows[i][0]), W/2 + 20, ry); doc.text(dedRows[i][1].toLocaleString('en-IN'), W - M - 12, ry, { align: 'right' }); }
-  }
-  y += rows*20 + 18;
-  doc.setDrawColor(226,232,240); doc.line(M, y, W - M, y);
-  y += 18;
-  doc.setFont('helvetica','bold'); doc.setFontSize(10);
-  doc.text('Gross Earnings: ₹' + gross.toLocaleString('en-IN'), M + 12, y);
-  doc.text('Total Deductions: ₹' + (lopDed+extraDed).toLocaleString('en-IN'), W/2 + 20, y);
-
-  // Net pay highlight
-  y += 26;
-  doc.setFillColor(220, 252, 231);
-  doc.roundedRect(M, y, W - 2*M, 50, 6, 6, 'F');
-  doc.setTextColor(22, 101, 52);
-  doc.setFont('helvetica','bold'); doc.setFontSize(13);
-  doc.text('NET PAY', M + 16, y + 31);
-  doc.setFontSize(20);
-  doc.text('₹ ' + net.toLocaleString('en-IN'), W - M - 16, y + 33, { align: 'right' });
-
-  // Footer
-  y += 90;
-  doc.setTextColor(148,163,184); doc.setFont('helvetica','normal'); doc.setFontSize(8.5);
-  doc.text('This is a computer-generated payslip. No signature required.', M, y);
-  doc.text('Generated on ' + new Date().toLocaleDateString('en-IN', {day:'2-digit',month:'short',year:'numeric'}), M, y + 12);
-  doc.text((ctr.name||'') + (salPaid.paidBy ? '  ·  Paid by ' + salPaid.paidBy : ''), W - M, y, { align: 'right' });
-
-  const fileMonth = monthVal.replace('-', '_');
-  doc.save(`Payslip_${(s.name||'staff').replace(/\s+/g,'_')}_${fileMonth}.pdf`);
-  showToast('✅ Payslip PDF downloaded');
-}
-
 // Quick "Salary Slip WA" button on the payroll card — sends the same templated slip as
 // Mark Salary Paid / Resend Slip WA (via buildSalarySlipWA), without opening the modal.
 // Uses the recorded paid amount/mode if already paid this month, else the current calculated net pay.
@@ -11356,7 +11225,7 @@ function sendSalarySlipQuickWA(staffId, monthVal) {
   openWA(s.phone, msg);
 }
 
-function showSalaryPaidModal(s, amount, mode, monthLabel, dateStr, waMsg, staffId, monthVal) {
+function showSalaryPaidModal(s, amount, mode, monthLabel, dateStr, waMsg) {
   const root = document.getElementById('modal-root');
   root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()">
   <div class="modal" style="max-width:430px">
@@ -11377,33 +11246,23 @@ function showSalaryPaidModal(s, amount, mode, monthLabel, dateStr, waMsg, staffI
 
     <div style="display:flex;gap:8px">
       <button class="btn btn-wa" style="flex:1;justify-content:center;padding:12px;font-size:13px;font-weight:700"
-        onclick="sendSalarySlipWA('${s.phone || ''}','${staffId||''}','${monthVal||''}')">
+        onclick="sendSalarySlipWA('${s.phone || ''}')">
         <svg viewBox="0 0 16 16" fill="none" width="16"><circle cx="8" cy="8" r="7" fill="#25d366"/><path d="M11.5 9.8c-.2-.1-1.2-.6-1.4-.7-.2-.1-.3-.1-.5.1-.1.2-.5.7-.6.8-.1.1-.2.1-.4 0-.2-.1-.9-.3-1.7-1-.6-.6-1-1.3-1.1-1.5-.1-.2 0-.3.1-.4l.3-.4c.1-.1.1-.2.2-.4 0-.1 0-.3 0-.4-.1-.1-.5-1.1-.6-1.5-.2-.4-.3-.3-.5-.3h-.4c-.1 0-.4.1-.6.3-.2.2-.8.8-.8 1.9s.8 2.2.9 2.4c.1.1 1.6 2.4 3.8 3.4.5.2.9.4 1.2.5.5.2 1 .1 1.3-.1.4-.2.8-.8.9-1.5.1-.4 0-.6-.1-.7z" fill="#fff"/></svg>
         📱 Send Salary Slip on WhatsApp
       </button>
-      ${staffId && monthVal ? `<button class="btn" style="padding:12px 14px" onclick="downloadSalaryPayslipPDF('${staffId}','${monthVal}')" title="Download PDF Payslip">📄</button>` : ''}
       <button class="btn" style="padding:12px 14px" onclick="closeModal()">Done</button>
     </div>
   </div>
 </div>`;
 }
 
-function sendSalarySlipWA(phone, staffId, monthVal) {
+function sendSalarySlipWA(phone) {
   const msg = document.getElementById('sal-wa-edit')?.value
            || document.getElementById('sal-wa-preview')?.textContent || '';
   closeModal();
   if (!phone || phone.replace(/\D/g,'').length < 10) {
     showToast('⚠️ No phone number saved for this staff. Add it in Staff profile.');
     return;
-  }
-  // Record WhatsApp send status against the payment record (optimistic — WA opens in a new tab/app)
-  if (staffId && monthVal) {
-    const key = getSalaryPayKey(staffId, monthVal);
-    if (salaryPayments[key]) {
-      salaryPayments[key].whatsappSent = true;
-      salaryPayments[key].whatsappSentDate = new Date().toISOString();
-      saveSalaryPayments();
-    }
   }
   setTimeout(() => _openWADirect(phone, msg), 200);
 }
@@ -11465,102 +11324,6 @@ function exportPayrollCSV() {
   a.download=`payroll-${month}.csv`;
   a.click();
   showToast('✅ Payroll CSV exported!');
-}
-
-/* ── Payment History ──────────────────────────────────────
-   Reads every record in salaryPayments (across all staff & months) and
-   renders it as a filterable, exportable table. ── */
-function _paymentHistoryRows() {
-  return Object.keys(salaryPayments)
-    .map(function(key) { return Object.assign({ key: key }, salaryPayments[key]); })
-    .filter(function(r) { return r.paid; })
-    .map(function(r) {
-      var s = staffData.find(function(x) { return x.id === r.staffId; });
-      return Object.assign({}, r, { staffName: s ? s.name : (r.staffId || 'Unknown') });
-    })
-    .sort(function(a, b) { return (b.dateISO || '').localeCompare(a.dateISO || ''); });
-}
-function _populatePaymentHistoryStaffFilter() {
-  var sel = document.getElementById('ph-staff');
-  if (!sel || sel.dataset.filled === '1') return;
-  sel.innerHTML = '<option value="">All Staff</option>' +
-    staffData.map(function(s) { return '<option value="'+s.id+'">'+s.name+'</option>'; }).join('');
-  sel.dataset.filled = '1';
-}
-function clearPaymentHistoryFilters() {
-  ['ph-staff','ph-month','ph-method','ph-search'].forEach(function(id) {
-    var el = document.getElementById(id);
-    if (el) el.value = '';
-  });
-  renderPaymentHistory();
-}
-function renderPaymentHistory() {
-  _populatePaymentHistoryStaffFilter();
-  var staffF  = document.getElementById('ph-staff')?.value || '';
-  var monthF  = document.getElementById('ph-month')?.value || '';
-  var methodF = document.getElementById('ph-method')?.value || '';
-  var searchF = (document.getElementById('ph-search')?.value || '').toLowerCase().trim();
-
-  var rows = _paymentHistoryRows().filter(function(r) {
-    if (staffF && r.staffId !== staffF) return false;
-    if (monthF && r.monthVal !== monthF) return false;
-    if (methodF && r.mode !== methodF) return false;
-    if (searchF && !((r.staffName||'').toLowerCase().includes(searchF) || (r.referenceNumber||'').toLowerCase().includes(searchF) || (r.paidBy||'').toLowerCase().includes(searchF))) return false;
-    return true;
-  });
-
-  var totalAmt = rows.reduce(function(a,b){ return a + (b.amount||0); }, 0);
-  var waSent   = rows.filter(function(r){ return r.whatsappSent; }).length;
-  document.getElementById('ph-summary').innerHTML = [
-    { l: 'Payments', v: rows.length, c: '#185FA5', icon: '📜' },
-    { l: 'Total Disbursed', v: '&#8377;' + totalAmt.toLocaleString('en-IN'), c: '#16a34a', icon: '💰' },
-    { l: 'WhatsApp Sent', v: waSent + ' / ' + rows.length, c: '#25d366', icon: '📲' },
-  ].map(function(b) {
-    return '<div class="stat" style="border-left:3px solid '+b.c+'"><div style="font-size:20px;margin-bottom:4px">'+b.icon+'</div><div class="stat-val" style="font-size:18px;color:'+b.c+'">'+b.v+'</div><div class="stat-lbl">'+b.l+'</div></div>';
-  }).join('');
-
-  var body = document.getElementById('ph-body');
-  if (!rows.length) {
-    body.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--tx3)">No payment records match these filters</td></tr>';
-    return;
-  }
-  body.innerHTML = rows.map(function(r) {
-    var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    var mp = (r.monthVal||'').split('-');
-    var monthLabel = mp.length===2 ? (months[parseInt(mp[1])-1]+' '+mp[0]) : (r.monthVal||'-');
-    var waBadge = r.whatsappSent
-      ? '<span class="badge" style="background:#dcfce7;color:#166534">✓ Sent</span>'
-      : '<span class="badge" style="background:#f1f5f9;color:var(--tx3)">Not sent</span>';
-    return '<tr>'
-      + '<td style="font-weight:600">'+r.staffName+'</td>'
-      + '<td>'+monthLabel+'</td>'
-      + '<td style="font-weight:700;color:#16a34a">&#8377;'+(r.amount||0).toLocaleString('en-IN')+'</td>'
-      + '<td>'+(r.date||'-')+(r.paymentTime?' · '+r.paymentTime:'')+'</td>'
-      + '<td>'+(r.mode||'Cash')+'</td>'
-      + '<td>'+(r.referenceNumber||'—')+'</td>'
-      + '<td>'+(r.paidBy||'Admin')+'</td>'
-      + '<td>'+waBadge+'</td>'
-      + '<td style="white-space:nowrap">'
-      + '  <button class="btn btn-sm" onclick="downloadSalaryPayslipPDF(\''+r.staffId+'\',\''+r.monthVal+'\')" title="Download Payslip">📄</button>'
-      + '  <button class="btn btn-sm" onclick="openSalaryPaidModal(\''+r.staffId+'\')" title="View / Edit">✏️</button>'
-      + '</td>'
-      + '</tr>';
-  }).join('');
-}
-function exportPaymentHistoryCSV() {
-  var rows = _paymentHistoryRows();
-  var csv = 'Staff,Month,Amount,Payment Date,Payment Time,Method,Reference,Paid By,WhatsApp Sent\n';
-  rows.forEach(function(r) {
-    csv += [r.staffName, r.monthVal, r.amount||0, r.date||'', r.paymentTime||'', r.mode||'Cash',
-            r.referenceNumber||'', r.paidBy||'Admin', r.whatsappSent?'Yes':'No']
-      .map(function(v){ return '"'+String(v).replace(/"/g,'""')+'"'; }).join(',') + '\n';
-  });
-  var blob = new Blob([csv], { type: 'text/csv' });
-  var a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'salary-payment-history.csv';
-  a.click();
-  showToast('✅ Payment history exported!');
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -14206,6 +13969,14 @@ function doGet(e) {
     const aiData = {};
     readSht('AI_Data').forEach(r => { if (r['Key']) aiData[r['Key']] = r['Data']||''; });
 
+    // School Marks (per-student term × subject marks + declarations)
+    const schoolMarks = {};
+    readSht('SchoolMarks').forEach(r => { if (r['StudentID']) schoolMarks[r['StudentID']] = safeJson(r['Data']) || {}; });
+
+    // Rising Stars (special-coaching roster: coach, material, tests, timetable, plans)
+    const risingStar = {};
+    readSht('RisingStars').forEach(r => { if (r['StudentID']) risingStar[r['StudentID']] = safeJson(r['Data']) || {}; });
+
     // Teaching Log
     const teachingLog = readSht('TeachingLog').map(r => ({
       id:r['ID']||'', date:r['Date']||'', grade:r['Grade']||'', batch:r['Batch']||'',
@@ -14241,9 +14012,13 @@ function doGet(e) {
         admLang:     settingsMap['adm_lang']||'',
         waTemplates, studentSummary, aiData, staffAttendance,
         teachingLog,
+        schoolMarks, risingStar,
+        targetDates:     safeJson(settingsMap['target_dates']) || {},
+        targetExamNames: safeJson(settingsMap['target_examnames']) || {},
         darkMode:         settingsMap['dark_mode']||'',
         latesToLeave:     settingsMap['lates_to_leave']||'',
         lastMonthlyReset: settingsMap['last_monthly_reset']||'',
+        payrollPayDay:    settingsMap['payroll_payday']||'',
       }
     })).setMimeType(ContentService.MimeType.JSON);
 
@@ -14493,6 +14268,22 @@ function doPost(e) {
         ['Time','ID','Date','Grade','Batch','Subject','Topic','Lesson Notes','Homework','Absent Student IDs','Day Order','Session No','Created At'],
         tlRows);
 
+    // ── School Marks (per-student term × subject marks + declarations) ──
+    const smRows = [];
+    Object.entries(data.schoolMarks||{}).forEach(([sid,v])=>{
+      smRows.push([ts, sid, JSON.stringify(v||{}).substring(0,50000)]);
+    });
+    if (smRows.length>0)
+      overwriteSht(ss,'SchoolMarks',['Time','StudentID','Data'],smRows);
+
+    // ── Rising Stars (special-coaching roster) ────────────────
+    const rsRows = [];
+    Object.entries(data.risingStar||{}).forEach(([sid,v])=>{
+      rsRows.push([ts, sid, JSON.stringify(v||{}).substring(0,50000)]);
+    });
+    if (rsRows.length>0)
+      overwriteSht(ss,'RisingStars',['Time','StudentID','Data'],rsRows);
+
     // ── Settings ──────────────────────────────────────────────
     const center = data.center||{};
     overwriteSht(ss,'Settings',
@@ -14506,6 +14297,9 @@ function doPost(e) {
         [ts,'dark_mode',      data.darkMode  ||''],
         [ts,'lates_to_leave', data.latesToLeave||''],
         [ts,'last_monthly_reset',data.lastMonthlyReset||''],
+        [ts,'target_dates',      JSON.stringify(data.targetDates||{})],
+        [ts,'target_examnames',  JSON.stringify(data.targetExamNames||{})],
+        [ts,'payroll_payday',    data.payrollPayDay||''],
         [ts,'backup_version', '3.5'],
         [ts,'sync_time',      ts],
       ]);
@@ -14531,6 +14325,8 @@ function doPost(e) {
         templates  : waRows.length,
         ai         : aiRows.length,
         teachingLog: tlRows.length,
+        schoolMarks: smRows.length,
+        risingStar : rsRows.length,
       }
     })).setMimeType(ContentService.MimeType.JSON);
 
@@ -14649,6 +14445,17 @@ function getSnapshot() {
     });
   } catch(e) {}
 
+  // Collect all School Marks (_erp_schoolmarks_*)
+  const schoolMarks = {};
+  try {
+    const idx = ls('_erp_schoolmarks_index') || [];
+    idx.forEach(k => { try { schoolMarks[k] = JSON.parse(localStorage.getItem('_erp_schoolmarks_' + k)); } catch(e) {} });
+    Object.keys(localStorage).filter(k => k.startsWith('_erp_schoolmarks_') && k !== '_erp_schoolmarks_index').forEach(k => {
+      const sid = k.replace('_erp_schoolmarks_', '');
+      if (!schoolMarks[sid]) { try { schoolMarks[sid] = JSON.parse(localStorage.getItem(k)); } catch(e) {} }
+    });
+  } catch(e) {}
+
   // Collect all AI / diagnostic / report data
   const aiData = {};
   try {
@@ -14730,11 +14537,22 @@ function getSnapshot() {
     // Teaching Log
     teachingLog:      ls('_erp_teaching_log') || [],
 
+    // School Marks (per-student term × subject marks + Parent/Student declaration)
+    schoolMarks:      schoolMarks,
+
+    // Rising Stars (special-coaching roster: coach, material, tests, timetable, plans)
+    risingStar:       ls('_erp_risingstar') || {},
+
+    // Target (Class 10 exam countdown dates + renamed exam labels)
+    targetDates:      ls('_erp_target_dates') || {},
+    targetExamNames:  ls('_erp_target_examnames') || {},
+
     // Settings
     sheetsUrl:        lsStr('_erp_sheets_url'),
     darkMode:         lsStr('_erp_dark'),
     latesToLeave:     lsStr('_erp_lates_to_leave'),
     lastMonthlyReset: lsStr('_erp_last_monthly_reset'),
+    payrollPayDay:    lsStr('_erp_payroll_payday'),
   };
 }
 function runBackup(source) {
@@ -14859,11 +14677,28 @@ function restoreBackup(input) {
       // Restore Teaching Log
       if (data.teachingLog) try { localStorage.setItem('_erp_teaching_log', JSON.stringify(data.teachingLog)); } catch(e) {}
 
+      // Restore School Marks
+      if (data.schoolMarks) {
+        const idx = [];
+        Object.entries(data.schoolMarks).forEach(([sid, v]) => {
+          try { localStorage.setItem('_erp_schoolmarks_' + sid, JSON.stringify(v)); idx.push(sid); } catch(e) {}
+        });
+        try { localStorage.setItem('_erp_schoolmarks_index', JSON.stringify(idx)); } catch(e) {}
+      }
+
+      // Restore Rising Stars
+      if (data.risingStar) try { localStorage.setItem('_erp_risingstar', JSON.stringify(data.risingStar)); } catch(e) {}
+
+      // Restore Target (exam countdown dates + renamed labels)
+      if (data.targetDates)     try { localStorage.setItem('_erp_target_dates',     JSON.stringify(data.targetDates)); } catch(e) {}
+      if (data.targetExamNames) try { localStorage.setItem('_erp_target_examnames', JSON.stringify(data.targetExamNames)); } catch(e) {}
+
       // Restore settings
       if (data.darkMode)         try { localStorage.setItem('_erp_dark',               data.darkMode); } catch(e) {}
       if (data.latesToLeave)     try { localStorage.setItem('_erp_lates_to_leave',      data.latesToLeave); } catch(e) {}
       if (data.lastMonthlyReset) try { localStorage.setItem('_erp_last_monthly_reset',  data.lastMonthlyReset); } catch(e) {}
       if (data.sheetsUrl)        try { localStorage.setItem('_erp_sheets_url',          data.sheetsUrl); } catch(e) {}
+      if (data.payrollPayDay)    try { localStorage.setItem('_erp_payroll_payday',      data.payrollPayDay); } catch(e) {}
 
       showToast('✅ Backup restored — ' + data.students.length + ' students. Reloading…');
       addBkLog('[Restore] Loaded from ' + data.timestamp + ' — ' + data.students.length + ' students, ' + (data.fees||[]).length + ' fees');
@@ -14947,6 +14782,11 @@ async function syncSheets(silent) {
       aiData:           snapshot.aiData           || {},
       staffAttendance:  snapshot.staffAttendance  || {},
       teachingLog:      snapshot.teachingLog      || [],
+      schoolMarks:      snapshot.schoolMarks      || {},
+      risingStar:       snapshot.risingStar       || {},
+      targetDates:      snapshot.targetDates      || {},
+      targetExamNames:  snapshot.targetExamNames  || {},
+      payrollPayDay:    snapshot.payrollPayDay    || '',
     });
 
     const sizeKB = (body.length / 1024).toFixed(1);
@@ -15177,11 +15017,28 @@ async function restoreFromSheets() {
     // ── Teaching Log ──────────────────────────────────────────
     if (data.teachingLog) localStorage.setItem('_erp_teaching_log', JSON.stringify(data.teachingLog));
 
+    // ── School Marks ──────────────────────────────────────────
+    if (data.schoolMarks) {
+      const smIdx = [];
+      Object.entries(data.schoolMarks).forEach(([sid, v]) => {
+        try { localStorage.setItem('_erp_schoolmarks_' + sid, JSON.stringify(v)); smIdx.push(sid); } catch(e) {}
+      });
+      localStorage.setItem('_erp_schoolmarks_index', JSON.stringify(smIdx));
+    }
+
+    // ── Rising Stars ──────────────────────────────────────────
+    if (data.risingStar) localStorage.setItem('_erp_risingstar', JSON.stringify(data.risingStar));
+
+    // ── Target (exam countdown dates + renamed labels) ────────
+    if (data.targetDates)     localStorage.setItem('_erp_target_dates',     JSON.stringify(data.targetDates));
+    if (data.targetExamNames) localStorage.setItem('_erp_target_examnames', JSON.stringify(data.targetExamNames));
+
     // ── Settings ──────────────────────────────────────────────
     if (data.sheetsUrl)        localStorage.setItem('_erp_sheets_url',          data.sheetsUrl);
     if (data.darkMode)         localStorage.setItem('_erp_dark',                data.darkMode);
     if (data.latesToLeave)     localStorage.setItem('_erp_lates_to_leave',      data.latesToLeave);
     if (data.lastMonthlyReset) localStorage.setItem('_erp_last_monthly_reset',  data.lastMonthlyReset);
+    if (data.payrollPayDay)    localStorage.setItem('_erp_payroll_payday',      data.payrollPayDay);
 
     const sc = data.students.length;
     const fc = (data.fees || []).length;
@@ -16598,6 +16455,7 @@ const WT_VARS = {
   teaching_daily: '{parent_name} · {student_name} · {grade} · {batch_line} · {date} · {lessons_block} · {center_name} · {center_phone}',
   teaching_monthly: '{parent_name} · {student_name} · {grade} · {batch_line} · {month_name} · {year} · {present_days} · {absent_days} · {att_pct} · {monthly_topics} · {marks_section} · {missed_note} · {teacher_note} · {center_name} · {center_phone}',
   payroll_slip: '{staff_name} · {designation} · {month} · {base_pay} · {bonus} · {bonus_note} · {deduction} · {deduction_note} · {net_pay} · {payment_mode} · {date} · {note} · {center_name} · {center_phone}',
+  target_countdown: '{countdown_lines} · {quarterly_name} · {quarterly_days} · {quarterly_line} · {halfyearly_name} · {halfyearly_days} · {halfyearly_line} · {public_name} · {public_days} · {public_line}',
 };
 
 const WT_SAMPLE = {
@@ -16615,6 +16473,7 @@ const WT_SAMPLE = {
   teaching_daily: { parent_name:'Suresh', student_name:'Monisha', grade:'10', batch_line:' | Evening Batch', date:'29 Jun 2026 (திங்கள்)', lessons_block:'📚 Mathematics — Quadratic Equations\n   📝 Solving ax²+bx+c=0 by factorisation method\n   📋 Homework: Exercise 4.2 Q1–Q5\n\n📚 Science — Light Reflection\n   📝 Laws of reflection, plane mirror images\n   📋 Homework: Draw ray diagram for concave mirror', center_name:'KTC', center_phone:'9876543210' },
   teaching_monthly: { parent_name:'Suresh', student_name:'Monisha', grade:'10', batch_line:' | Evening Batch', month_name:'ஜூன்', year:'2026', present_days:'20', absent_days:'4', att_pct:'83', monthly_topics:'• Mathematics: Quadratic Equations, Polynomials, Trigonometry\n• Science: Light Reflection, Chemical Reactions\n• Tamil: கவிதை, இலக்கணம்', marks_section:'• Monthly Test (Maths): 87/100 — A\n• Science Quiz: 42/50 — A', missed_note:'⚠️ கவனிக்கவும்: Quadratic Equations மற்றும் Light Reflection தவறிவிட்டீர்கள் — வீட்டில் படிக்கவும்.', teacher_note:'சிறப்பாக தொடர்ந்து படியுங்கள்! 💪', center_name:'KTC', center_phone:'9876543210' },
   payroll_slip: { staff_name:'Kavitha', designation:'Teacher', month:'June 2026', base_pay:'12,000', bonus:'1,000', bonus_note:' (Performance)', deduction:'500', deduction_note:' (Advance)', net_pay:'12,500', payment_mode:'UPI', date:'30 Jun 2026', note:'', center_name:'KTC', center_phone:'9876543210' },
+  target_countdown: { countdown_lines:'• Quarterly Exam: *18 days* left\n• Half Yearly Exam: *55 days* left', quarterly_name:'Quarterly Exam', quarterly_days:'18', quarterly_line:'Quarterly Exam: *18 days* left', halfyearly_name:'Half Yearly Exam', halfyearly_days:'55', halfyearly_line:'Half Yearly Exam: *55 days* left', public_name:'Public Exam', public_days:'', public_line:'' },
 };
 
 const WT_ALL_TYPES = [
@@ -16632,6 +16491,7 @@ const WT_ALL_TYPES = [
   {id:'teaching_daily',   label:'Daily Lesson (Absent)',   emoji:'📖', color:'#dc2626'},
   {id:'teaching_monthly', label:'Monthly Growth WA',       emoji:'📈', color:'#7c3aed'},
   {id:'payroll_slip',     label:'Payroll Salary Slip',     emoji:'💼', color:'#16a34a'},
+  {id:'target_countdown', label:'Exam Countdown (Target)',  emoji:'🎯', color:'#dc2626'},
 ];
 
 let wtActiveType = null;
@@ -16741,7 +16601,7 @@ function refreshWTPreview() {
     preview = fillFeeReceiptTemplate(template, sample);
   } else if (wtActiveType === 'monthly_summary') {
     preview = fillMonthlySummaryTemplate(template, sample);
-  } else if (wtActiveType === 'teaching_daily' || wtActiveType === 'teaching_monthly' || wtActiveType === 'payroll_slip') {
+  } else if (wtActiveType === 'teaching_daily' || wtActiveType === 'teaching_monthly' || wtActiveType === 'payroll_slip' || wtActiveType === 'target_countdown') {
     // Fill teaching/payroll template variables with sample data
     preview = template;
     Object.entries(sample).forEach(([k,v]) => {

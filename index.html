@@ -2227,11 +2227,16 @@ tbody tr:hover td{background:var(--bg)}
         <div>1️⃣ Click <b>View Script</b> → Copy the code</div>
         <div>2️⃣ Open Google Sheets → <b>Extensions → Apps Script</b> → Paste code</div>
         <div>3️⃣ Replace <code>YOUR_SPREADSHEET_ID_HERE</code> with your Sheet's ID (from its URL)</div>
-        <div>4️⃣ Click <b>Deploy → New Deployment → Web App → Anyone → Deploy</b></div>
-        <div>5️⃣ Copy the <b>Web App URL</b> → paste below → click <b>🔗 Test</b></div>
+        <div>4️⃣ Set <code>SECRET_TOKEN</code> in the script to any password only you know</div>
+        <div>5️⃣ Click <b>Deploy → New Deployment → Web App → Anyone → Deploy</b></div>
+        <div>6️⃣ Copy the <b>Web App URL</b> → paste below along with the same Secret Key → click <b>🔗 Test</b></div>
         <div style="margin-top:6px;padding:5px 8px;background:#dcfce7;border-radius:6px">✅ Syncs: Students · Fees · Staff · Exams · Attendance to separate sheets</div>
       </div>
       <div class="fg"><label class="fl">Apps Script Web App URL</label><input class="fi" id="sheets-url" placeholder="https://script.google.com/macros/s/…/exec" oninput="valSheetUrl(this.value)" style="font-family:monospace;font-size:12px"></div>
+      <div class="fg">
+        <label class="fl">🔐 Secret Key <span style="font-weight:400;color:var(--tx3)">(must match SECRET_TOKEN in the script — anyone with your URL but not this key is blocked)</span></label>
+        <input class="fi" id="sheets-secret" type="password" placeholder="Set the same password you put in SECRET_TOKEN" style="font-family:monospace;font-size:12px" oninput="saveSheetsSecret(this.value)">
+      </div>
       <div id="sheet-url-status" style="font-size:11px;margin-bottom:8px"></div>
       <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:.5px solid var(--br);margin-bottom:10px">
         <div><div style="font-size:13px;font-weight:500;color:var(--tx)">Auto Sync to Google Sheets</div><div style="font-size:11px;color:var(--tx2);margin-top:2px">Push backup to Sheets on every save</div></div>
@@ -2248,6 +2253,11 @@ tbody tr:hover td{background:var(--bg)}
         <button class="btn btn-sm" onclick="restoreFromSheets()" id="btn-restore-sheets" style="background:#d97706;color:#fff;border-color:#d97706">☁️ Restore from Google Sheets</button>
       </div>
       <div id="sheets-sync-status" style="margin-top:8px;font-size:12px"></div>
+    </div>
+    <div id="bk-undo-restore-wrap" class="card" style="margin-bottom:12px;display:none;border:.5px solid #fca5a5;background:#fef2f2">
+      <div style="font-size:12px;font-weight:700;color:#991b1b;margin-bottom:4px">↩️ Undo Last Restore</div>
+      <div id="bk-undo-restore-sub" style="font-size:11px;color:#7f1d1d;margin-bottom:8px"></div>
+      <button class="btn btn-sm" onclick="undoLastRestore()" style="background:#dc2626;color:#fff;border-color:#dc2626">↩️ Undo — Bring Back Previous Data</button>
     </div>
     <div class="card" style="margin-bottom:12px">
       <div class="card-title" style="margin-bottom:10px">Backup History</div>
@@ -2278,6 +2288,32 @@ tbody tr:hover td{background:var(--bg)}
         <button class="btn btn-sm" onclick="openEditCenter()">✏️ Edit Details</button>
         <button class="btn btn-p btn-sm" onclick="openUpgrade()">Upgrade Plan</button>
       </div>
+    </div>
+    <div class="card" style="margin-bottom:12px">
+      <div class="card-title" style="margin-bottom:10px">🤖 AI Features</div>
+      <div style="background:var(--bg);border-radius:8px;padding:10px 12px;margin-bottom:10px;font-size:11px;color:var(--tx2);line-height:1.7">
+        Used by <b>Predict &amp; Plan</b> (School Marks), <b>Rising Star AI Plans</b>, and other AI tools in the app.
+        <br>• Using this app inside <b>Claude.ai</b>? Leave everything blank — it already works with no key.
+        <br>• Downloaded/hosted this file elsewhere? Pick a provider below and add a key.
+      </div>
+      <div class="fg">
+        <label class="fl">AI Provider</label>
+        <select class="fi" id="set-ai-provider" onchange="saveAiProvider(this.value)">
+          <option value="anthropic">Anthropic (Claude) — paid, best quality</option>
+          <option value="groq">Groq — free, no card required</option>
+        </select>
+      </div>
+      <div class="fg" id="set-anthropic-key-row">
+        <label class="fl">Anthropic API Key</label>
+        <input class="fi" id="set-anthropic-key" type="password" placeholder="sk-ant-…" style="font-family:monospace;font-size:12px" oninput="saveAnthropicKey(this.value)">
+        <div style="font-size:10px;color:var(--tx3);margin-top:4px">Get one at <a href="https://console.anthropic.com/settings/keys" target="_blank" style="color:#2563eb">console.anthropic.com</a> — needs billing set up, pay-as-you-go.</div>
+      </div>
+      <div class="fg" id="set-groq-key-row" style="display:none">
+        <label class="fl">Groq API Key</label>
+        <input class="fi" id="set-groq-key" type="password" placeholder="gsk_…" style="font-family:monospace;font-size:12px" oninput="saveGroqKey(this.value)">
+        <div style="font-size:10px;color:var(--tx3);margin-top:4px">Free, no credit card — get one at <a href="https://console.groq.com/keys" target="_blank" style="color:#2563eb">console.groq.com/keys</a> (takes ~30 seconds).</div>
+      </div>
+      <div style="font-size:10px;color:var(--tx3);margin-top:4px">Keys are stored only in this browser's local storage — never sent anywhere except directly to the provider you choose.</div>
     </div>
     <div class="card" style="margin-bottom:12px" id="attendance-settings-card">
       <div class="card-title" style="margin-bottom:12px">Attendance Settings <span class="badge bp" style="font-size:9px;margin-left:6px">Pro+</span></div>
@@ -3761,9 +3797,9 @@ function smRenderTable() {
     return `<tr id="sm-row-${s.id}" style="border-bottom:.5px solid var(--br)">
       <td style="padding:7px 6px">
         <div style="display:flex;align-items:center;gap:6px">
-          <div class="av" style="background:${s.color};width:22px;height:22px;font-size:9px;flex-shrink:0">${(s.name || '?')[0]}</div>
+          <div class="av" style="background:${s.color};width:22px;height:22px;font-size:9px;flex-shrink:0">${escHtml((s.name || '?')[0])}</div>
           <div>
-            <div style="font-size:12px;font-weight:500;color:var(--tx)">${s.name}</div>
+            <div style="font-size:12px;font-weight:500;color:var(--tx)">${escHtml(s.name)}</div>
             <div style="font-size:9px;color:var(--tx3)">${s.grade === 'KG' ? 'KG' : 'Class ' + s.grade}</div>
           </div>
         </div>
@@ -3847,37 +3883,6 @@ function _smAllRows(studentId) {
   return rows;
 }
 
-// Like _smAllRows, but also carries the Parent/Student declaration flags — used by the Student Profile view.
-function _smProfileRows(studentId) {
-  const rec = _smLoad(studentId);
-  const rows = [];
-  SCHOOL_MARK_TERMS.forEach(t => {
-    const termObj = rec.terms && rec.terms[t.id];
-    if (!termObj) return;
-    SCHOOL_MARK_SUBJECTS.forEach(sub => {
-      const m = termObj[sub.id];
-      if (m && m.marks !== null && m.marks !== undefined && m.max) {
-        rows.push({
-          term: t.label, subject: sub.label,
-          marks: m.marks, max: m.max,
-          pct: Math.round(m.marks / m.max * 100),
-          parentDeclared: !!m.parentDeclared,
-          studentDeclared: !!m.studentDeclared
-        });
-      }
-    });
-  });
-  return rows;
-}
-
-// Renders a small badge showing who declared this mark: Student, Parent, both, or neither.
-function _smDeclBadge(row) {
-  if (row.studentDeclared && row.parentDeclared) return '<span class="badge bp">🧑\u200d🎓+👪 Both Declared</span>';
-  if (row.studentDeclared) return '<span class="badge bb">🧑\u200d🎓 Student Declared</span>';
-  if (row.parentDeclared) return '<span class="badge bt">👪 Parent Declared</span>';
-  return '<span class="badge" style="background:var(--bg);color:var(--tx3);border:.5px solid var(--br)">— Not Declared</span>';
-}
-
 // Simple trend projection per subject (last value + average delta across saved terms) — no AI needed for this part.
 function _smHeuristicPredict(rows) {
   const bySubject = {};
@@ -3931,13 +3936,7 @@ async function smPredictAndPlan(studentId) {
   const prompt = `Tuition center student "${s.name}" (Class ${s.grade}) has these school marks recorded across terms and subjects: ${dataStr}. Based on the trend, write a short, practical study plan (4-6 bullet lines) for the next term — call out the weakest subject(s), a specific focus action, and a realistic target percentage. Keep it concise and actionable for a tutor to hand to the student.`;
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 500, messages: [{ role: 'user', content: prompt }] })
-    });
-    const data = await res.json();
-    const txt = (data.content || []).map(c => c.text || '').join('').trim() || 'Plan generation returned no content.';
+    const txt = ((await aiComplete(prompt, 500)) || '').trim() || 'Plan generation returned no content.';
     const liveOut = document.getElementById('sm-ai-plan-out');
     if (liveOut) liveOut.textContent = txt;
     const rec = _smLoad(studentId);
@@ -3945,107 +3944,7 @@ async function smPredictAndPlan(studentId) {
     _smSave(studentId, rec);
   } catch (err) {
     const liveOut = document.getElementById('sm-ai-plan-out');
-    if (liveOut) liveOut.textContent = '⚠️ Could not reach AI right now. Try again in a moment.';
-  }
-}
-
-/* ═══════════════════════════════════════════════════════
-   PARENT MEETING BRIEF  —  weak-subject / attendance flags
-   + an AI Growth Summary & Forecast, shown on Student Profile
-═══════════════════════════════════════════════════════ */
-
-// Pulls together whatever we already have on a student — school marks, exam marks, this month's attendance.
-function _pmGatherData(student) {
-  const now = new Date();
-  let att = null;
-  try { if (typeof getStudentAttStats === 'function') att = getStudentAttStats(student, now.getFullYear(), now.getMonth()); } catch(e) {}
-  let marksList = [];
-  try {
-    marksList = (typeof getStudentMarksAuto === 'function') ? getStudentMarksAuto(student.id)
-              : (typeof getStudentMarks === 'function' ? getStudentMarks(student.id) : []);
-  } catch(e) {}
-  let smRows = [];
-  try { smRows = (typeof _smProfileRows === 'function') ? _smProfileRows(student.id) : []; } catch(e) {}
-  return { att, marksList: marksList || [], smRows: smRows || [] };
-}
-
-// Subjects averaging under 60% across School Marks + exam marks — instant, no AI needed.
-function _pmWeakSubjects(data) {
-  const bySubj = {};
-  (data.smRows || []).forEach(r => { (bySubj[r.subject] = bySubj[r.subject] || []).push(r.pct); });
-  (data.marksList || []).filter(m => !m.absent && m.marks != null && m.maxMarks).forEach(m => {
-    const pct = Math.round((m.marks / m.maxMarks) * 100);
-    (bySubj[m.subject] = bySubj[m.subject] || []).push(pct);
-  });
-  return Object.keys(bySubj).map(sub => {
-    const arr = bySubj[sub];
-    const avg = Math.round(arr.reduce((a, b) => a + b, 0) / arr.length);
-    return { subject: sub, avg };
-  }).filter(x => x.avg < 60).sort((a, b) => a.avg - b.avg);
-}
-
-// Absent / late / low-attendance flags for the current month — instant, no AI needed.
-function _pmAttendanceFlags(att) {
-  if (!att) return [];
-  const flags = [];
-  if (att.absent >= 3) flags.push(`⚠️ ${att.absent} absent day${att.absent === 1 ? '' : 's'} this month`);
-  if (att.late >= 3) flags.push(`⏰ ${att.late} late arrival${att.late === 1 ? '' : 's'} this month`);
-  if (att.pct !== undefined && att.pct !== null && att.pct < 75 && (att.present + att.absent + att.late) > 0) flags.push(`📉 Attendance only ${att.pct}% this month`);
-  return flags;
-}
-
-// Cached brief is keyed by student + current month so re-opening a profile doesn't refire the AI call every time.
-function _pmCacheKey(studentId) {
-  const now = new Date();
-  return '_erp_pmbrief_' + studentId + '_' + now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
-}
-function _pmLoadCached(studentId) {
-  try { const v = JSON.parse(localStorage.getItem(_pmCacheKey(studentId)) || 'null'); return (v && v.text) || null; }
-  catch (e) { return null; }
-}
-
-// Generates (or regenerates) the short AI talking-points + growth forecast for a parent meeting.
-async function pmGenerateBrief(studentId) {
-  const s = students.find(x => x.id === studentId);
-  if (!s) return;
-  const outEl = document.getElementById('pm-brief-out-' + studentId);
-  if (outEl) outEl.innerHTML = '🤖 Preparing meeting brief…';
-
-  const data = _pmGatherData(s);
-  const weak = _pmWeakSubjects(data);
-  const flags = _pmAttendanceFlags(data.att);
-
-  const weakStr = weak.length ? weak.map(w => `${w.subject} (avg ${w.avg}%)`).join(', ') : 'none — every subject on record is at or above 60%';
-  const attStr = data.att ? `Present ${data.att.present}, Absent ${data.att.absent}, Late ${data.att.late}, ${data.att.pct}% attendance this month` : 'No attendance data recorded this month';
-  const marksTrend = data.smRows.map(r => `${r.term} ${r.subject}: ${r.pct}%`).join('; ') || 'No School Marks recorded yet';
-
-  const prompt = `You are a tuition center teacher preparing for a short face-to-face meeting with a parent about student "${s.name}" (Class ${s.grade}).
-Data on hand:
-- Weak subjects (avg under 60%): ${weakStr}
-- Attendance this month: ${attStr}
-- School marks history (term-wise %): ${marksTrend}
-
-Write a brief note (max 5-6 short lines, plain sentences, no headers or markdown) the teacher can glance at right before the meeting. Cover, in order:
-1) One line on overall standing.
-2) Weak subject(s) to raise with the parent, if any.
-3) Any absence/lateness issue worth mentioning, if any.
-4) A short AI Growth Summary & Forecast — 1-2 lines predicting the near-term trend and one concrete suggestion for the parent.
-Keep it concise and practical — something a teacher can read in about 10 seconds.`;
-
-  try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 400, messages: [{ role: 'user', content: prompt }] })
-    });
-    const json = await res.json();
-    const txt = (json.content || []).filter(c => c.type === 'text').map(c => c.text).join('').trim() || 'No summary generated.';
-    const liveOut = document.getElementById('pm-brief-out-' + studentId);
-    if (liveOut) liveOut.textContent = txt;
-    try { localStorage.setItem(_pmCacheKey(studentId), JSON.stringify({ text: txt, at: new Date().toISOString() })); } catch (e) {}
-  } catch (err) {
-    const liveOut = document.getElementById('pm-brief-out-' + studentId);
-    if (liveOut) liveOut.textContent = '⚠️ Could not reach AI right now. Try again in a moment.';
+    if (liveOut) liveOut.textContent = aiUnreachableMsg();
   }
 }
 
@@ -4221,8 +4120,8 @@ function targetRenderPredictions() {
     return `<tr style="border-bottom:.5px solid var(--br)">
       <td style="padding:7px 6px">
         <div style="display:flex;align-items:center;gap:6px">
-          <div class="av" style="background:${s.color};width:22px;height:22px;font-size:9px;flex-shrink:0">${(s.name || '?')[0]}</div>
-          <div style="font-size:12px;font-weight:500;color:var(--tx)">${s.name}</div>
+          <div class="av" style="background:${s.color};width:22px;height:22px;font-size:9px;flex-shrink:0">${escHtml((s.name || '?')[0])}</div>
+          <div style="font-size:12px;font-weight:500;color:var(--tx)">${escHtml(s.name)}</div>
         </div>
       </td>
       <td style="padding:7px 6px">${predCell}</td>
@@ -4410,13 +4309,7 @@ async function rsGenerateAIPlan(id) {
   const prompt = `Tuition center slow-learner student "${s.name}" (Class ${s.grade}) is on the Rising Stars special coaching track. School marks history: ${smRows.join('; ') || 'none yet'}. Special coaching test scores: ${testRows.join('; ') || 'none yet'}. Special coach: ${entry.coach || 'not assigned'}. Write a short, practical coaching plan (4-6 bullet lines) for the next few weeks — call out the weakest area(s), a specific focus action for the special coach, and a realistic target improvement. Keep it concise and actionable.`;
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 500, messages: [{ role: 'user', content: prompt }] })
-    });
-    const resData = await res.json();
-    const txt = (resData.content || []).map(c => c.text || '').join('').trim() || 'Plan generation returned no content.';
+    const txt = ((await aiComplete(prompt, 500)) || '').trim() || 'Plan generation returned no content.';
     const freshData = _rsLoadAll();
     if (!freshData[id]) return;
     freshData[id].plans = freshData[id].plans || [];
@@ -4424,7 +4317,7 @@ async function rsGenerateAIPlan(id) {
     _rsSaveAll(freshData);
     renderRisingStarPage();
   } catch (err) {
-    alert('Could not reach AI right now. Try again in a moment.');
+    alert(aiUnreachableMsg());
     if (btn) { btn.disabled = false; btn.textContent = '🤖 Generate AI Plan'; }
   }
 }
@@ -4468,7 +4361,7 @@ function rsRenderRoster(data) {
     const growthBadge = rsComputeGrowth(id, entry);
     const testsRows = (entry.tests || []).map((tt, i) => `
       <tr style="border-bottom:.5px solid var(--br)">
-        <td style="padding:5px 6px;font-size:11px;color:var(--tx)">${tt.name}</td>
+        <td style="padding:5px 6px;font-size:11px;color:var(--tx)">${escHtml(tt.name)}</td>
         <td style="padding:5px 6px;font-size:11px;color:var(--tx3)">${tt.date}</td>
         <td style="padding:5px 6px;font-size:11px;text-align:center;color:var(--tx)">${tt.marks}/${tt.max}</td>
         <td style="padding:5px 6px;text-align:center"><button class="btn btn-sm" style="padding:2px 7px;font-size:10px" onclick="rsDeleteTest('${id}',${i})">✕</button></td>
@@ -4536,9 +4429,9 @@ function rsRenderRoster(data) {
     return `
     <div class="card" style="margin-bottom:12px">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
-        <div class="av" style="background:${s.color};width:32px;height:32px;font-size:13px;flex-shrink:0">${(s.name || '?')[0]}</div>
+        <div class="av" style="background:${s.color};width:32px;height:32px;font-size:13px;flex-shrink:0">${escHtml((s.name || '?')[0])}</div>
         <div style="flex:1;min-width:160px">
-          <div style="font-size:13px;font-weight:700;color:var(--tx)">${s.name} <span style="font-size:10px;color:var(--tx3);font-weight:500">· Class ${s.grade} · ${s.id}</span></div>
+          <div style="font-size:13px;font-weight:700;color:var(--tx)">${escHtml(s.name)} <span style="font-size:10px;color:var(--tx3);font-weight:500">· Class ${s.grade} · ${s.id}</span></div>
           <div style="font-size:11px;margin-top:2px">${growthBadge}</div>
         </div>
         <button class="btn btn-sm" onclick="risingStarRemove('${id}')" style="font-size:10px;color:#dc2626">Remove</button>
@@ -4546,11 +4439,11 @@ function rsRenderRoster(data) {
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
         <div class="fg" style="margin:0">
           <label class="fl">👨‍🏫 Special Coach</label>
-          <input class="fi" style="font-size:12px" value="${entry.coach || ''}" onchange="rsUpdateField('${id}','coach',this.value)">
+          <input class="fi" style="font-size:12px" value="${escHtml(entry.coach || '')}" onchange="rsUpdateField('${id}','coach',this.value)">
         </div>
         <div class="fg" style="margin:0">
           <label class="fl">📚 Special Material</label>
-          <input class="fi" style="font-size:12px" value="${entry.material || ''}" onchange="rsUpdateField('${id}','material',this.value)">
+          <input class="fi" style="font-size:12px" value="${escHtml(entry.material || '')}" onchange="rsUpdateField('${id}','material',this.value)">
         </div>
       </div>
       ${tabBar}
@@ -4884,7 +4777,7 @@ const MODALS = {
       ${batches.map((b,i)=>`
       <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:.5px solid var(--br);background:var(--card)" id="brow-${i}">
         <div style="flex:1">
-          <div style="font-size:13px;font-weight:600;color:var(--tx)">${b.name}</div>
+          <div style="font-size:13px;font-weight:600;color:var(--tx)">${escHtml(b.name)}</div>
           <div style="font-size:11px;color:var(--tx2)">
             <span style="background:${b.time==='Morning'?'#fef9c3':'#dbeafe'};color:${b.time==='Morning'?'#854d0e':'#1d4ed8'};padding:1px 7px;border-radius:10px;font-weight:600;font-size:10px">${b.time==='Morning'?'☀️ Morning':'🌙 Evening'}</span>
             &nbsp;· ${b.days}
@@ -5171,9 +5064,9 @@ function renderStudents(data) {
   document.getElementById('st-body').innerHTML = (data||students).filter(s=>s&&s.name).map((s,i) => `<tr>
     <td onclick="openStudentProfile('${s.id}')" style="cursor:pointer" title="View full profile">
       <div class="flex-c">
-        <div class="av" style="background:${s.color}">${(s.name||'?')[0]}</div>
+        <div class="av" style="background:${s.color}">${escHtml((s.name||'?')[0])}</div>
         <div>
-          <div style="font-weight:500;font-size:12px">${s.name}</div>
+          <div style="font-weight:500;font-size:12px">${escHtml(s.name)}</div>
           <div style="font-size:10px;color:var(--tx3)">${s.phone}</div>
           <div style="font-size:10px;color:var(--tx3)">${s.admNo||''}</div>
         </div>
@@ -5187,7 +5080,7 @@ function renderStudents(data) {
       ${s.subjects?`<div style="font-size:9px;color:var(--tx3);margin-top:2px">${s.subjects.slice(0,20)}${s.subjects.length>20?'…':''}</div>`:''}
       ${s.otherCourses&&s.otherCourses.length?`<div style="font-size:9px;color:#c026d3;margin-top:2px">${s.otherCourses.map(c=>c.name).join(', ').slice(0,24)}</div>`:''}
     </td>
-    <td><div style="font-size:11px;font-weight:500">${s.parent}</div></td>
+    <td><div style="font-size:11px;font-weight:500">${escHtml(s.parent)}</div></td>
     <td><span class="badge ${colors[s.status]||'ba'}">${s.status}</span></td>
     <td>
       <div style="display:flex;flex-direction:column;gap:4px">
@@ -5236,20 +5129,6 @@ function openStudentProfile(id) {
   } catch(e) {}
   marksList = (marksList || []).slice().sort((a,b) => new Date(b.date||0) - new Date(a.date||0));
 
-  // School Marks (term-wise, with Parent/Student declaration tags)
-  let smRows = [];
-  try { smRows = (typeof _smProfileRows === 'function') ? _smProfileRows(s.id) : []; } catch(e) {}
-
-  // Parent Meeting Brief — weak subjects + attendance flags (instant) + cached AI growth forecast, if any
-  let pmWeak = [], pmFlags = [], pmCached = null;
-  try { pmWeak = (typeof _pmWeakSubjects === 'function') ? _pmWeakSubjects({ smRows, marksList }) : []; } catch(e) {}
-  try { pmFlags = (typeof _pmAttendanceFlags === 'function') ? _pmAttendanceFlags(att) : []; } catch(e) {}
-  try { pmCached = (typeof _pmLoadCached === 'function') ? _pmLoadCached(s.id) : null; } catch(e) {}
-  const pmFlagsHtml = [
-    ...pmWeak.map(w => `<span class="badge br2">📉 Weak: ${w.subject} (${w.avg}%)</span>`),
-    ...pmFlags.map(f => `<span class="badge ba">${f}</span>`)
-  ].join('') || '<span class="badge bg">✅ No major flags this month</span>';
-
   // Fee history — every record tied to this student, most recent first
   const feeList = fees.filter(f => f && !f._deleted && (f.studentId === s.id || f.student === s.name))
     .slice().sort((a,b) => (b.paidAtTs||0) - (a.paidAtTs||0) || String(b.month||'').localeCompare(String(a.month||'')));
@@ -5268,9 +5147,9 @@ function openStudentProfile(id) {
     <div class="modal" style="max-width:720px;height:90vh;display:flex;flex-direction:column">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-shrink:0">
         <div class="flex-c">
-          <div class="av av-lg" style="background:${s.color}">${(s.name||'?')[0]}</div>
+          <div class="av av-lg" style="background:${s.color}">${escHtml((s.name||'?')[0])}</div>
           <div>
-            <div style="font-size:15px;font-weight:700;color:var(--tx)">${s.name}</div>
+            <div style="font-size:15px;font-weight:700;color:var(--tx)">${escHtml(s.name)}</div>
             <div style="font-size:11px;color:var(--tx3)">${s.id} · ${s.grade==='KG'?'KG':(s.grade==='COURSE'?'Course':'Class '+s.grade)} · <span class="badge ${s.status==='active'?'bg':'ba'}">${s.status}</span></div>
           </div>
         </div>
@@ -5344,35 +5223,6 @@ function openStudentProfile(id) {
             <div>⏰ Late: <b>${att.late}</b></div>
             <div>📊 Attendance: <b>${att.pct}%</b></div>
           </div>` : `<div style="font-size:11px;color:var(--tx3)">No attendance data for this month</div>`}
-        </div>
-
-        <!-- Parent Meeting Brief + AI Growth Forecast -->
-        <div style="background:var(--bg);border-radius:10px;padding:12px 14px;margin-bottom:12px">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px">
-            <div style="font-size:12px;font-weight:700;color:var(--tx)">🎤 Parent Meeting Brief</div>
-            <button class="btn btn-sm" style="font-size:10px;padding:3px 9px" onclick="pmGenerateBrief('${s.id}')">🤖 ${pmCached ? 'Refresh' : 'Generate'} AI Brief</button>
-          </div>
-          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">${pmFlagsHtml}</div>
-          <div id="pm-brief-out-${s.id}" style="font-size:12px;color:var(--tx);white-space:pre-wrap;line-height:1.6;min-height:18px">${pmCached ? escHtml(pmCached) : '<span style="color:var(--tx3)">Tap "🤖 Generate AI Brief" for a short talking-points summary — weak subjects, attendance issues &amp; an AI Growth Summary forecast — to use while meeting the parent.</span>'}</div>
-        </div>
-
-        <!-- School Marks -->
-        <div style="background:var(--bg);border-radius:10px;padding:12px 14px;margin-bottom:12px">
-          <div style="font-size:12px;font-weight:700;color:var(--tx);margin-bottom:8px">🏫 School Marks</div>
-          ${smRows.length ? `<div style="max-height:200px;overflow-y:auto;border:.5px solid var(--br);border-radius:8px">
-            <table style="width:100%;font-size:11px;border-collapse:collapse">
-              <thead style="position:sticky;top:0;background:var(--card)"><tr style="text-align:left;color:var(--tx3)">
-                <th style="padding:6px 8px">Term</th><th style="padding:6px 8px">Subject</th><th style="padding:6px 8px">Marks</th><th style="padding:6px 8px">%</th><th style="padding:6px 8px">Declared By</th>
-              </tr></thead>
-              <tbody>${smRows.map(r => `<tr style="border-top:.5px solid var(--br)">
-                <td style="padding:6px 8px">${r.term}</td>
-                <td style="padding:6px 8px">${r.subject}</td>
-                <td style="padding:6px 8px">${r.marks}/${r.max}</td>
-                <td style="padding:6px 8px">${r.pct}%</td>
-                <td style="padding:6px 8px">${_smDeclBadge(r)}</td>
-              </tr>`).join('')}</tbody>
-            </table>
-          </div>` : `<div style="font-size:11px;color:var(--tx3);text-align:center;padding:10px">No school marks recorded yet</div>`}
         </div>
 
         <!-- Marks / Exam History -->
@@ -5539,7 +5389,7 @@ function renderCommutePage() {
   body.innerHTML = list.map(s => {
     const opts = COMMUTE_MODES.map(m => `<option value="${m.v}" ${s.commute===m.v?'selected':''}>${m.emoji} ${m.label}</option>`).join('');
     return `<tr>
-      <td><div class="flex-c"><div class="av" style="background:${s.color}">${(s.name||'?')[0]}</div><div style="font-weight:500;font-size:12px">${s.name}</div></div></td>
+      <td><div class="flex-c"><div class="av" style="background:${s.color}">${escHtml((s.name||'?')[0])}</div><div style="font-weight:500;font-size:12px">${escHtml(s.name)}</div></div></td>
       <td style="font-size:11px;color:var(--tx3)">${s.id}</td>
       <td>${s.grade==='KG'?'KG':'Class '+s.grade}</td>
       <td style="font-size:12px">${s.phone||'—'}</td>
@@ -5911,10 +5761,10 @@ function renderAttList() {
     const rowBg = val==='L'?'var(--att-late-bg)':val==='A'?'var(--att-absent-bg)':'var(--card)';
     const rowBorder = val==='L'?'border-left:3px solid #ca8a04':val==='A'?'border-left:3px solid #dc2626':'';
     return `<div class="att-row" data-sid="${s.id}" style="background:${rowBg};${rowBorder}">
-      <div class="av" style="background:${s.color}">${(s.name||'?')[0]}</div>
+      <div class="av" style="background:${s.color}">${escHtml((s.name||'?')[0])}</div>
       <div class="att-name">
         <div style="display:flex;align-items:center;gap:6px">
-          <span style="font-weight:500;font-size:13px">${s.name}</span>
+          <span style="font-weight:500;font-size:13px">${escHtml(s.name)}</span>
           ${val==='L'?'<span class="att-status-badge" style="font-size:9px;background:#fef9c3;color:#ca8a04;padding:1px 6px;border-radius:8px;font-weight:700">⏰ Late</span>':''}
           ${val==='A'?'<span class="att-status-badge" style="font-size:9px;background:#fee2e2;color:#dc2626;padding:1px 6px;border-radius:8px;font-weight:700">✗ Absent</span>':''}
         </div>
@@ -6568,7 +6418,7 @@ function showMonthlyAttSummary() {
         </select>
         <select class="fi" id="mas-batch" style="width:auto" onchange="renderMAS()">
           <option value="all">All Batches</option>
-          ${(batches||[]).map(b=>`<option value="${b.name}">${b.name}</option>`).join('')}
+          ${(batches||[]).map(b=>`<option value="${b.name}">${escHtml(b.name)}</option>`).join('')}
         </select>
         <button class="btn btn-wa btn-sm" onclick="sendAllMASWA()" style="margin-left:auto">📱 Send All WA</button>
         <button class="btn btn-sm" onclick="downloadMASReport()">⬇ Download</button>
@@ -6710,9 +6560,9 @@ function renderMAS() {
     return `<tr style="${rowBg}">
       <td style="padding:8px 10px;border-bottom:.5px solid var(--br)">
         <div style="display:flex;align-items:center;gap:7px">
-          <div class="av" style="background:${s.color};width:24px;height:24px;font-size:10px;flex-shrink:0">${(s.name||'?')[0]}</div>
+          <div class="av" style="background:${s.color};width:24px;height:24px;font-size:10px;flex-shrink:0">${escHtml((s.name||'?')[0])}</div>
           <div>
-            <div style="font-weight:600;font-size:12px;color:var(--tx)">${s.name}</div>
+            <div style="font-weight:600;font-size:12px;color:var(--tx)">${escHtml(s.name)}</div>
             <div style="font-size:9px;color:var(--tx3)">${s.course||'—'}</div>
           </div>
         </div>
@@ -7118,9 +6968,9 @@ function renderWAQueue() {
     const phone = item._editedPhone !== undefined ? item._editedPhone : (s.phone || s.pphone || '');
     const hasPhone = phone.replace(/\D/g,'').length >= 10;
     return `<div class="wa-queue-item" style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:.5px solid var(--br)">
-      <div class="av" style="background:${s.color||'#185FA5'};width:30px;height:30px;font-size:12px;flex-shrink:0">${(s.name||'?')[0]}</div>
+      <div class="av" style="background:${s.color||'#185FA5'};width:30px;height:30px;font-size:12px;flex-shrink:0">${escHtml((s.name||'?')[0])}</div>
       <div style="flex:1;min-width:0">
-        <div style="font-weight:600;font-size:12px;color:var(--tx)">${s.name}</div>
+        <div style="font-weight:600;font-size:12px;color:var(--tx)">${escHtml(s.name)}</div>
         <div style="display:flex;align-items:center;gap:5px;margin-top:2px">
           <input id="waq-phone-${i}" value="${phone}" placeholder="Enter phone" type="tel"
             style="font-size:11px;color:${hasPhone?'var(--tx2)':'#dc2626'};border:none;background:transparent;outline:none;width:105px;font-family:inherit;padding:0"
@@ -7249,7 +7099,7 @@ function openSendResultsModal(examIdx) {
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
         <div style="width:38px;height:38px;background:#ede9fe;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">📝</div>
         <div style="flex:1;min-width:0">
-          <div style="font-size:14px;font-weight:700;color:var(--tx)">${exam.name}</div>
+          <div style="font-size:14px;font-weight:700;color:var(--tx)">${escHtml(exam.name)}</div>
           <div style="font-size:11px;color:var(--tx3)">${exam.subject} · ${dateStr} · Full: ${exam.maxMarks} · Pass: ${pass}</div>
         </div>
         <button onclick="closeModal()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--tx2);line-height:1">×</button>
@@ -7306,9 +7156,9 @@ function openSendResultsModal(examIdx) {
             : item.marks === null ? '#f1f5f9'
             : item.marks >= pass ? '#dcfce7' : '#fee2e2';
           return `<div class="wa-queue-item" id="rwq-${item.s.id}" style="display:flex;align-items:center;gap:9px;padding:9px 12px;border-bottom:.5px solid var(--br);background:var(--card)">
-            <div class="av" style="background:${item.s.color};width:28px;height:28px;font-size:11px;flex-shrink:0">${(item.s.name||'?')[0]}</div>
+            <div class="av" style="background:${item.s.color};width:28px;height:28px;font-size:11px;flex-shrink:0">${escHtml((item.s.name||'?')[0])}</div>
             <div style="flex:1;min-width:0">
-              <div style="font-size:12px;font-weight:600;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${item.s.name}</div>
+              <div style="font-size:12px;font-weight:600;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(item.s.name)}</div>
               <div style="font-size:10px;color:var(--tx3)">${item.s.parent} · ${hasPhone ? item.s.phone : '⚠️ No phone'}</div>
             </div>
             <div style="display:flex;align-items:center;gap:5px;flex-shrink:0">
@@ -7495,9 +7345,9 @@ function sendLateWA() {
           const phone = s.phone || s.pphone || '';
           return `<div class="wa-queue-item" id="lwq-${s.id}">
             <div style="font-size:14px">⏰</div>
-            <div class="av" style="background:${s.color};width:26px;height:26px;font-size:10px;flex-shrink:0">${(s.name||'?')[0]}</div>
+            <div class="av" style="background:${s.color};width:26px;height:26px;font-size:10px;flex-shrink:0">${escHtml((s.name||'?')[0])}</div>
             <div style="flex:1;min-width:0">
-              <div style="font-weight:600;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.name}</div>
+              <div style="font-weight:600;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(s.name)}</div>
               <div style="font-size:10px;color:var(--tx3)">${s.parent} · ${phone || '⚠️ No phone'}</div>
             </div>
             ${phone
@@ -7915,7 +7765,7 @@ function _renderFeesFiltered(tabVal, month) {
         <div style="display:flex;align-items:center;gap:8px">
           <div style="width:28px;height:28px;border-radius:8px;background:${av};color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">${s.name[0]}</div>
           <div>
-            <span style="font-size:13px;font-weight:700;color:var(--tx)">${s.name}</span>
+            <span style="font-size:13px;font-weight:700;color:var(--tx)">${escHtml(s.name)}</span>
             ${gradeTxt ? `<span style="font-size:10px;color:var(--tx3);margin-left:6px">${gradeTxt}</span>` : ''}
           </div>
           <div style="margin-left:auto">
@@ -8180,7 +8030,7 @@ function buildGenFeeRows(activeStudents, monthLabel) {
 
     return `<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:.5px solid var(--br);background:${existing?'#fef9c3':bg};opacity:${hasPaid?'.6':'1'}" id="gfrow-${s.id}">
       <input type="checkbox" id="gf-chk-${s.id}" ${existing?'':'checked'} style="width:16px;height:16px;accent-color:#7c3aed;cursor:pointer;flex-shrink:0">
-      <div style="width:30px;height:30px;border-radius:8px;background:${s.color||'#6366f1'};color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0">${(s.name||'?')[0]}</div>
+      <div style="width:30px;height:30px;border-radius:8px;background:${s.color||'#6366f1'};color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0">${escHtml((s.name||'?')[0])}</div>
       <div style="flex:1;min-width:0">
         <div style="font-size:12px;font-weight:600;color:var(--tx)">${s.name} ${statusBadge}</div>
         <div style="font-size:10px;color:var(--tx3)">${s.grade==='KG'?'KG':'Gr.'+s.grade} · ${s.course||'No batch'} · ${s.parent}</div>
@@ -8693,7 +8543,7 @@ function renderExams() {
           onclick="selectExam(${i})">
           <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px">
             <div style="flex:1;min-width:0">
-              <div style="font-size:12px;font-weight:700;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${e.name}</div>
+              <div style="font-size:12px;font-weight:700;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(e.name)}</div>
               <div style="font-size:11px;color:${e.color};margin-top:2px;font-weight:600">${e.subject}</div>
               <div style="font-size:10px;color:var(--tx3);margin-top:3px;display:flex;gap:8px;flex-wrap:wrap">
                 <span>📅 ${dateStr}</span>
@@ -8871,7 +8721,7 @@ function ewInitStep3() {
   const dateStr = exam.date ? new Date(exam.date+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) : '—';
   const card = document.getElementById('ew3-exam-card');
   if (card) card.innerHTML = `
-    <div style="font-size:12px;font-weight:700;color:var(--tx)">${exam.name}</div>
+    <div style="font-size:12px;font-weight:700;color:var(--tx)">${escHtml(exam.name)}</div>
     <div style="display:flex;gap:12px;margin-top:5px;flex-wrap:wrap">
       <span style="font-size:11px;color:#1d4ed8">📚 ${exam.subject}</span>
       <span style="font-size:11px;color:var(--tx2)">📅 ${dateStr}</span>
@@ -8927,9 +8777,9 @@ function ewInitStep3() {
       listEl.innerHTML = withPhone.map((s,i) => {
         const phone = s.phone||s.pphone||'';
         return `<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:.5px solid var(--br)">
-          <div style="width:28px;height:28px;border-radius:50%;background:${s.color||'#185FA5'};color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">${(s.name||'?')[0]}</div>
+          <div style="width:28px;height:28px;border-radius:50%;background:${s.color||'#185FA5'};color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">${escHtml((s.name||'?')[0])}</div>
           <div style="flex:1;min-width:0">
-            <div style="font-size:12px;font-weight:600;color:var(--tx)">${s.name}</div>
+            <div style="font-size:12px;font-weight:600;color:var(--tx)">${escHtml(s.name)}</div>
             <div style="font-size:10px;color:var(--tx3)">${s.parent||'—'} · ${phone}</div>
           </div>
           <button id="ew3-btn-${i}" onclick="ewSendOnePNot(${i})"
@@ -9002,7 +8852,7 @@ function ewInitStep4() {
 
   const infoEl = document.getElementById('ew4-exam-info');
   if (infoEl) {
-    infoEl.innerHTML = `<div style="font-size:12px;font-weight:700;color:#1d4ed8">${exam.name}</div>
+    infoEl.innerHTML = `<div style="font-size:12px;font-weight:700;color:#1d4ed8">${escHtml(exam.name)}</div>
     <div style="font-size:11px;color:var(--tx2);margin-top:4px">📚 ${exam.subject} · 📅 ${dateStr}</div>
     <div style="display:flex;gap:8px;margin-top:5px">
       <span style="font-size:11px;font-weight:700;color:var(--tx)">Full: ${exam.maxMarks}</span>
@@ -9039,13 +8889,7 @@ async function ewAISuggestExam() {
   showToast('🤖 Generating AI suggestions…');
   try {
     const prompt = `You are a tuition center teacher in Tamil Nadu, India. Suggest a syllabus/topics list and exam name for a ${type.replace('_',' ')} test for subject "${sub}" (class: ${grade}). Keep it concise. Respond in JSON: {"name":"...", "syllabus":"...", "tips":"..."}. No markdown.`;
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 400, messages: [{ role: 'user', content: prompt }] })
-    });
-    const data = await res.json();
-    const txt = (data.content || []).map(c => c.text || '').join('');
+    const txt = (await aiComplete(prompt, 400)) || '';
     let parsed;
     try { parsed = JSON.parse(txt.replace(/```json|```/g,'').trim()); } catch(e) { parsed = null; }
     if (parsed) {
@@ -9099,13 +8943,7 @@ async function ewRunAIMarksAnalysis() {
   const prompt = `Tamil Nadu tuition center marks analysis. Exam: "${exam.name}" Subject: ${exam.subject} Max Marks: ${exam.maxMarks} Pass Marks: ${exam.passMarks}. Results: ${passed} passed, ${failed} failed, ${absent} absent, class average: ${avgPct}%. Weak students: ${weakStudents || 'none'}. Provide brief analysis in 4–5 lines: class performance, weak areas, teacher action plan. Keep it practical and concise.`;
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 500, messages: [{ role: 'user', content: prompt }] })
-    });
-    const data = await res.json();
-    const txt = (data.content || []).map(c => c.text || '').join('').trim();
+    const txt = ((await aiComplete(prompt, 500)) || '').trim();
     outEl.textContent = txt || 'Analysis complete.';
     showToast('✨ AI analysis done!');
   } catch(err) {
@@ -9153,7 +8991,7 @@ function openSendResultsModalEW(examIdx) {
       ${recipients.map((r,i) => `
       <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:.5px solid var(--br)">
         <div style="flex:1;min-width:0">
-          <div style="font-weight:600;font-size:12px;color:var(--tx)">${r.name}</div>
+          <div style="font-weight:600;font-size:12px;color:var(--tx)">${escHtml(r.name)}</div>
           <div style="font-size:10px;color:var(--tx3)">${r.phone}</div>
         </div>
         <button id="res-btn-${i}" onclick="ewSendOneResult(${i})"
@@ -9343,9 +9181,9 @@ function selectExam(i) {
     return `<tr id="mr-${s.id}">
       <td>
         <div style="display:flex;align-items:center;gap:6px">
-          <div class="av" style="background:${s.color};width:22px;height:22px;font-size:9px;flex-shrink:0">${(s.name||'?')[0]}</div>
+          <div class="av" style="background:${s.color};width:22px;height:22px;font-size:9px;flex-shrink:0">${escHtml((s.name||'?')[0])}</div>
           <div>
-            <div style="font-size:12px;font-weight:500;color:var(--tx)">${s.name}</div>
+            <div style="font-size:12px;font-weight:500;color:var(--tx)">${escHtml(s.name)}</div>
             <div style="font-size:9px;color:var(--tx3)">${s.grade==='KG'?'KG':'Gr.'+s.grade}</div>
           </div>
         </div>
@@ -9377,7 +9215,7 @@ function selectExam(i) {
     <div style="background:${e.color}18;border-radius:10px;padding:12px 14px;margin-bottom:12px;border-left:4px solid ${e.color}">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap">
         <div>
-          <div style="font-size:14px;font-weight:700;color:var(--tx)">${e.name}</div>
+          <div style="font-size:14px;font-weight:700;color:var(--tx)">${escHtml(e.name)}</div>
           <div style="font-size:11px;color:${e.color};margin-top:3px;font-weight:600">${e.subject} &nbsp;·&nbsp; ${typeLabel}</div>
           ${e.batch&&e.batch!=='All'?`<div style="font-size:10px;color:var(--tx3);margin-top:2px">📚 ${e.batch}</div>`:''}
           ${e.syllabus?`<div style="font-size:10px;color:var(--tx3);margin-top:2px">📋 ${e.syllabus}</div>`:''}
@@ -9555,7 +9393,7 @@ function updateExamBatchDropdown(selId, currentVal) {
   if (bList.length > 0) {
     html += '<optgroup label="📋 Batches">';
     bList.forEach(b => {
-      html += `<option value="${b.name}" ${val===b.name?'selected':''}>${b.name}</option>`;
+      html += `<option value="${b.name}" ${val===b.name?'selected':''}>${escHtml(b.name)}</option>`;
     });
     html += '</optgroup>';
   }
@@ -9769,17 +9607,7 @@ Recent exam performance: ${extra.marks_section}
 
 Write ONLY the study tip in Tamil (2-3 sentences). Start with 📖 emoji. Be specific, encouraging, and practical.`;
 
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-6',
-          max_tokens: 1000,
-          messages: [{ role: 'user', content: prompt }]
-        })
-      });
-      const data = await res.json();
-      const tip = data.content?.filter(c=>c.type==='text').map(c=>c.text).join('').trim();
+      const tip = ((await aiComplete(prompt, 1000)) || '').trim();
       if (tip) aiStudyTip = tip;
     } catch(err) {
       // Use fallback from getWAExtra
@@ -9917,17 +9745,7 @@ Give a concise report (no markdown, use emoji icons) covering:
 Keep it practical and motivating. Use Tamil center context. Max 250 words.`;
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 1000,
-        messages: [{ role: 'user', content: prompt }]
-      })
-    });
-    const data = await res.json();
-    const text = data.content?.filter(c=>c.type==='text').map(c=>c.text).join('') || 'Could not generate insights.';
+    const text = (await aiComplete(prompt, 1000)) || 'Could not generate insights.';
     loading.style.display = 'none';
     // Typewriter
     let i = 0;
@@ -10109,7 +9927,7 @@ function showExamNoticeWAModal(examIdx) {
   <div class="modal" style="max-width:500px">
     <div class="modal-title">📱 தேர்வு அறிவிப்பு — WhatsApp</div>
     <div style="background:${e.color}18;border-radius:8px;padding:10px 12px;margin-bottom:12px;border-left:3px solid ${e.color}">
-      <div style="font-weight:700;font-size:13px;color:var(--tx)">${e.name}</div>
+      <div style="font-weight:700;font-size:13px;color:var(--tx)">${escHtml(e.name)}</div>
       <div style="font-size:11px;color:var(--tx3);margin-top:2px">${e.subject} · 📅 ${dateStr} · மொத்தம்: ${e.maxMarks} · தேர்ச்சி: ${pass}</div>
       ${e.syllabus?`<div style="font-size:10px;color:var(--tx3);margin-top:2px">📋 ${e.syllabus}</div>`:''}
     </div>
@@ -10199,9 +10017,9 @@ function sendExamNoticeToAll(exam, lang) {
         const phone = s.phone||s.pphone||'';
         const msg   = buildMsg(s);
         return `<div class="wa-queue-item" style="display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:.5px solid var(--br)">
-          <div class="av" style="background:${s.color};width:28px;height:28px;font-size:11px;flex-shrink:0">${(s.name||'?')[0]}</div>
+          <div class="av" style="background:${s.color};width:28px;height:28px;font-size:11px;flex-shrink:0">${escHtml((s.name||'?')[0])}</div>
           <div style="flex:1;min-width:0">
-            <div style="font-weight:600;font-size:12px;color:var(--tx)">${s.name}</div>
+            <div style="font-weight:600;font-size:12px;color:var(--tx)">${escHtml(s.name)}</div>
             <div style="font-size:10px;color:var(--tx3)">${s.parent||'—'} · ${phone||'📵 No phone'}</div>
           </div>
           <button id="exam-wa-btn-${i}" ${!phone?'disabled':''}
@@ -10325,15 +10143,15 @@ function renderStaff() {
     return `<tr>
       <td>
         <div class="flex-c">
-          <div class="av" style="background:${s.color}">${(s.name||'?')[0]}</div>
+          <div class="av" style="background:${s.color}">${escHtml((s.name||'?')[0])}</div>
           <div>
-            <div style="font-weight:600;font-size:12px">${s.name}</div>
+            <div style="font-weight:600;font-size:12px">${escHtml(s.name)}</div>
             <div style="font-size:10px;color:var(--tx3)">${s.phone||''} · ${s.id||''}</div>
           </div>
         </div>
       </td>
-      <td><span class="badge bp" style="font-size:10px">${s.desg}</span></td>
-      <td style="font-size:11px;color:var(--tx2)">${s.subjects}</td>
+      <td><span class="badge bp" style="font-size:10px">${escHtml(s.desg)}</span></td>
+      <td style="font-size:11px;color:var(--tx2)">${escHtml(s.subjects)}</td>
       <td><span style="font-size:10px;font-weight:600;background:${s.session==='morning'?'#fef9c3':s.session==='evening'?'#ede9fe':'#dbeafe'};color:${s.session==='morning'?'#92400e':s.session==='evening'?'#5b21b6':'#1e40af'};padding:2px 7px;border-radius:8px">${s.session==='morning'?'☀️ Morning':s.session==='evening'?'🌙 Evening':'☀️🌙 Both'}</span></td>
       <td style="font-weight:600;font-size:12px">₹${(s.baseSalary||0).toLocaleString('en-IN')}</td>
       <td style="font-weight:700;color:#16a34a;font-size:12px">₹${net.toLocaleString('en-IN')}</td>
@@ -10341,7 +10159,7 @@ function renderStaff() {
       <td>
         <div style="display:flex;flex-direction:column;gap:4px">
           <button class="btn btn-sm" style="font-size:10px;padding:4px 8px" onclick="editStaffMember(${i})">✏️ Edit</button>
-          <button class="btn btn-sm btn-wa" style="font-size:10px;padding:4px 8px" onclick="waStaff('${s.phone}','${s.name}')">📱 WA</button>
+          <button class="btn btn-sm btn-wa" style="font-size:10px;padding:4px 8px" onclick="waStaff('${(s.phone||'').replace(/'/g,"\\'")}','${(s.name||'').replace(/'/g,"\\'")}')">📱 WA</button>
           <button class="btn btn-sm" style="font-size:10px;padding:4px 8px;color:#dc2626;border-color:#fecdd3;background:#fff1f2" onclick="deleteStaffMember(${i})">🗑 Delete</button>
         </div>
       </td>
@@ -10351,7 +10169,7 @@ function renderStaff() {
   const sel = document.getElementById('sf-att-staff');
   if (sel) {
     sel.innerHTML = '<option value="all">All Staff</option>' +
-      staffData.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+      staffData.map(s=>`<option value="${s.id}">${escHtml(s.name)}</option>`).join('');
   }
 }
 function saveStaff() {
@@ -10689,7 +10507,7 @@ function deleteStaffMember(idx) {
     <div style="text-align:center;padding:8px 0 6px">
       <div style="font-size:36px;margin-bottom:8px">🗑️</div>
       <div style="font-size:15px;font-weight:700;color:var(--tx);margin-bottom:6px">Remove Staff Member?</div>
-      <div style="font-size:12px;color:var(--tx2);margin-bottom:16px"><b>${s.name}</b> (${s.id})<br>All payroll records will be removed.</div>
+      <div style="font-size:12px;color:var(--tx2);margin-bottom:16px"><b>${escHtml(s.name)}</b> (${s.id})<br>All payroll records will be removed.</div>
       <div style="display:flex;gap:8px;justify-content:center">
         <button class="btn" style="flex:1;justify-content:center;padding:10px" onclick="closeModal()">Cancel</button>
         <button class="btn" style="flex:1;justify-content:center;padding:10px;background:#dc2626;color:#fff;border-color:#dc2626" onclick="confirmDeleteStaff(${idx})">Remove</button>
@@ -11216,7 +11034,7 @@ function openSalaryPaidModal(staffId) {
   <div class="modal" style="max-width:420px">
     <div style="text-align:center;margin-bottom:16px">
       <div style="font-size:40px;margin-bottom:6px">💼</div>
-      <div style="font-size:15px;font-weight:700;color:var(--tx)">${s.name}</div>
+      <div style="font-size:15px;font-weight:700;color:var(--tx)">${escHtml(s.name)}</div>
       <div style="font-size:12px;color:var(--tx2)">${s.desg} · ${monthLabel}</div>
     </div>
 
@@ -11406,7 +11224,7 @@ function showSalaryPaidModal(s, amount, mode, monthLabel, dateStr, waMsg) {
     <div style="text-align:center;margin-bottom:14px">
       <div style="font-size:40px;margin-bottom:6px">✅</div>
       <div style="font-size:15px;font-weight:700;color:var(--tx)">Salary Marked as Paid!</div>
-      <div style="font-size:12px;color:var(--tx2);margin-top:3px">₹${amount.toLocaleString('en-IN')} to <b>${s.name}</b> — ${monthLabel}</div>
+      <div style="font-size:12px;color:var(--tx2);margin-top:3px">₹${amount.toLocaleString('en-IN')} to <b>${escHtml(s.name)}</b> — ${monthLabel}</div>
       <div style="font-size:11px;color:var(--tx3);margin-top:2px">${dateStr} · ${mode}</div>
     </div>
 
@@ -11517,7 +11335,7 @@ function renderShop() {
   }
   document.getElementById('shop-grid').innerHTML = prods.map((p,i)=>`
     <div class="sp">
-      <div class="sp-name">${p.name}</div>
+      <div class="sp-name">${escHtml(p.name)}</div>
       <div style="font-size:10px;color:var(--tx3);margin-bottom:4px">Stock: ${p.stock} · Margin: ${Math.round((p.price-p.cost)/p.price*100)}%</div>
       <div class="sp-price">₹${p.price}</div>
       <div class="qty-row">
@@ -11963,9 +11781,9 @@ function renderAdminDangerZone() {
     if (p.attScore   >= 70) reasons.push('📊 Attendance');
     return `<div class="dm-red-box" style="border-radius:10px;padding:10px 12px">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-        <div class="av" style="background:${s.color};width:28px;height:28px;font-size:11px;flex-shrink:0">${(s.name||'?')[0]}</div>
+        <div class="av" style="background:${s.color};width:28px;height:28px;font-size:11px;flex-shrink:0">${escHtml((s.name||'?')[0])}</div>
         <div style="flex:1;min-width:0">
-          <div style="font-size:12px;font-weight:700;color:var(--tx)">${s.name}</div>
+          <div style="font-size:12px;font-weight:700;color:var(--tx)">${escHtml(s.name)}</div>
           <div style="font-size:9px;color:var(--tx3)">${clsLabel(s)} · ${s.parent||'—'}</div>
         </div>
         <span style="font-size:9px;font-weight:800;background:#dc2626;color:#fff;padding:2px 8px;border-radius:8px">🔴 CRITICAL</span>
@@ -12082,9 +11900,9 @@ function renderAdminStaffSummary() {
 
     return `<div class="sum-card">
       <div class="sum-card-header">
-        <div class="av" style="background:${s.color||'#185FA5'}">${(s.name||'?')[0]}</div>
+        <div class="av" style="background:${s.color||'#185FA5'}">${escHtml((s.name||'?')[0])}</div>
         <div style="flex:1;min-width:0">
-          <div style="font-weight:700;font-size:13px;color:var(--tx)">${s.name}</div>
+          <div style="font-weight:700;font-size:13px;color:var(--tx)">${escHtml(s.name)}</div>
           <div style="font-size:10px;color:var(--tx3)">${s.desg||'Staff'} · ${sessLabel}</div>
         </div>
         <div style="text-align:right;flex-shrink:0">
@@ -12113,7 +11931,7 @@ function renderAdminStaffSummary() {
 
       <div class="sum-section">
         <div class="sum-section-title">ℹ️ Staff Details</div>
-        <div class="sum-metric-row"><span>Subjects</span><span class="sum-metric-val" style="font-weight:500">${s.subjects||'—'}</span></div>
+        <div class="sum-metric-row"><span>Subjects</span><span class="sum-metric-val" style="font-weight:500">${escHtml(s.subjects||'—')}</span></div>
         <div class="sum-metric-row"><span>Experience</span><span class="sum-metric-val" style="font-weight:500">${s.exp||'—'}</span></div>
         <div class="sum-metric-row"><span>Joined</span><span class="sum-metric-val" style="font-weight:500">${s.joinDate||'—'}</span></div>
         <div class="sum-metric-row"><span>Phone</span><span class="sum-metric-val" style="font-weight:500">${s.phone||'—'}</span></div>
@@ -12212,9 +12030,9 @@ function openStaffSummaryWAQueue() {
         ${staffData.map(s => {
           const hasPhone = s.phone && s.phone.replace(/\D/g,'').length >= 10;
           return `<div class="wa-queue-item">
-            <div class="av" style="background:${s.color||'#185FA5'};width:28px;height:28px;font-size:11px;flex-shrink:0">${(s.name||'?')[0]}</div>
+            <div class="av" style="background:${s.color||'#185FA5'};width:28px;height:28px;font-size:11px;flex-shrink:0">${escHtml((s.name||'?')[0])}</div>
             <div style="flex:1;min-width:0">
-              <div style="font-weight:600;font-size:12px">${s.name}</div>
+              <div style="font-weight:600;font-size:12px">${escHtml(s.name)}</div>
               <div style="font-size:10px;color:var(--tx3)">${s.phone || 'No phone number'} · ${s.desg||'Staff'}</div>
             </div>
             ${hasPhone
@@ -12527,9 +12345,9 @@ function buildPredictCard(feat, preds) {
     const rl = _riskLevel(p[scoreKey]);
     const score = p[scoreKey];
     return `<div style="display:flex;align-items:center;gap:7px;padding:5px 0;border-bottom:.5px solid var(--br)">
-      <div class="av" style="background:${p.student.color};width:24px;height:24px;font-size:10px;flex-shrink:0">${(p.student.name||'?')[0]}</div>
+      <div class="av" style="background:${p.student.color};width:24px;height:24px;font-size:10px;flex-shrink:0">${escHtml((p.student.name||'?')[0])}</div>
       <div style="flex:1;min-width:0">
-        <div style="font-size:11px;font-weight:600;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.student.name}</div>
+        <div style="font-size:11px;font-weight:600;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(p.student.name)}</div>
         <div style="font-size:9px;color:var(--tx3)">${p.att.pct}% ${ta?'வருகை':'att'} · ${p.avgPct >= 0 ? p.avgPct+'% '+( ta?'மதிப்பெண்':'marks') : (ta?'மதிப்பெண் இல்லை':'no marks')}</div>
       </div>
       <span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:8px;background:${rl.bg};color:${rl.color};flex-shrink:0">${score}%</span>
@@ -12540,7 +12358,7 @@ function buildPredictCard(feat, preds) {
     <div class="sum-card-header" style="background:${feat.bg}22">
       <div style="width:40px;height:40px;border-radius:10px;background:${feat.bg};display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">${feat.icon}</div>
       <div style="flex:1;min-width:0">
-        <div style="font-size:12px;font-weight:700;color:var(--tx)">${info.name}</div>
+        <div style="font-size:12px;font-weight:700;color:var(--tx)">${escHtml(info.name)}</div>
         <div style="font-size:10px;color:var(--tx3);margin-top:2px;line-height:1.4">${info.desc}</div>
       </div>
       <svg viewBox="0 0 16 16" fill="none" width="15" style="flex-shrink:0"><path d="M6 4l4 4-4 4" stroke="${feat.c}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -13366,9 +13184,9 @@ function renderStudyPlannerCards() {
 
     return `<div class="sum-card">
       <div class="sum-card-header">
-        <div class="av" style="background:${s.color};width:36px;height:36px;font-size:14px">${(s.name||'?')[0]}</div>
+        <div class="av" style="background:${s.color};width:36px;height:36px;font-size:14px">${escHtml((s.name||'?')[0])}</div>
         <div style="flex:1;min-width:0">
-          <div style="font-size:12px;font-weight:700;color:var(--tx)">${s.name}</div>
+          <div style="font-size:12px;font-weight:700;color:var(--tx)">${escHtml(s.name)}</div>
           <div style="font-size:10px;color:var(--tx3)">${ta?'வகுப்பு':'Grade'} ${s.grade} · ${plan.dayName}</div>
         </div>
         <div style="text-align:right;flex-shrink:0">
@@ -13719,9 +13537,9 @@ function renderGrowthForecastCards() {
 
     return `<div class="sum-card">
       <div class="sum-card-header" style="background:linear-gradient(135deg,#064e3b10,#065f4610)">
-        <div class="av" style="background:${s.color};width:36px;height:36px;font-size:14px">${(s.name||'?')[0]}</div>
+        <div class="av" style="background:${s.color};width:36px;height:36px;font-size:14px">${escHtml((s.name||'?')[0])}</div>
         <div style="flex:1;min-width:0">
-          <div style="font-size:12px;font-weight:700;color:var(--tx)">${s.name}</div>
+          <div style="font-size:12px;font-weight:700;color:var(--tx)">${escHtml(s.name)}</div>
           <div style="font-size:10px;color:var(--tx3)">${ta?'வகுப்பு':'Grade'} ${s.grade}</div>
         </div>
         <div style="text-align:right">
@@ -13950,18 +13768,29 @@ function initAI(){initAIFilter();renderAICards();renderPredictCards();renderStud
 /* ═══════════════════════════════════════════════════════
    BACKUP
 ═══════════════════════════════════════════════════════ */
-const BK_GS_CODE = `// ═══ Kalam Tuition ERP — Google Apps Script v3.5 ════════════
+const BK_GS_CODE = `// ═══ Kalam Tuition ERP — Google Apps Script v3.6 ════════════
 // 1. Open Google Sheet → Extensions → Apps Script
 // 2. Paste this entire code, replace SPREADSHEET_ID below
-// 3. Deploy → New Deployment → Web App → Execute as: Me → Who has access: Anyone → Deploy
-// 4. Copy the Web App URL → paste in ERP Settings → Backup & Sync
+// 3. Set SECRET_TOKEN to a password only you know — this is what stops a stranger who
+//    finds/guesses your Web App URL from reading or overwriting your student/parent data.
+// 4. Deploy → New Deployment → Web App → Execute as: Me → Who has access: Anyone → Deploy
+// 5. Copy the Web App URL → paste in ERP Settings → Backup & Sync, along with the same
+//    Secret Key you set below.
 
 const SPREADSHEET_ID = 'YOUR_SPREADSHEET_ID_HERE';
+const SECRET_TOKEN    = 'CHANGE_ME_TO_YOUR_OWN_SECRET'; // ⚠️ set this, then paste the same value into the ERP's "Secret Key" field
 
 // ── CORS preflight support — required for direct browser fetch ──
 function doOptions(e) {
   return ContentService.createTextOutput('')
     .setMimeType(ContentService.MimeType.TEXT);
+}
+
+function _tokenOk(token) {
+  // If left at the placeholder or blank, don't lock anyone out on first deploy —
+  // but this means the endpoint is UNPROTECTED until you set a real SECRET_TOKEN.
+  if (!SECRET_TOKEN || SECRET_TOKEN === 'CHANGE_ME_TO_YOUR_OWN_SECRET') return true;
+  return token === SECRET_TOKEN;
 }
 
 // ── GET — restore: returns all data from the Sheet back to ERP ──
@@ -13970,6 +13799,10 @@ function doGet(e) {
     const action = (e && e.parameter && e.parameter.action) || '';
     if (action !== 'getBackup') {
       return ContentService.createTextOutput(JSON.stringify({status:'ok',msg:'Kalam ERP Apps Script running'}))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    if (!_tokenOk((e && e.parameter && e.parameter.token) || '')) {
+      return ContentService.createTextOutput(JSON.stringify({status:'error', msg:'Unauthorized — Secret Key missing or incorrect.'}))
         .setMimeType(ContentService.MimeType.JSON);
     }
     const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
@@ -14206,6 +14039,10 @@ function doGet(e) {
 function doPost(e) {
   try {
     const data = JSON.parse(e.postData.contents);
+    if (!_tokenOk(data.token || '')) {
+      return ContentService.createTextOutput(JSON.stringify({status:'error', msg:'Unauthorized — Secret Key missing or incorrect.'}))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
     const ss   = SpreadsheetApp.openById(SPREADSHEET_ID);
     const ts   = new Date().toLocaleString('en-IN');
 
@@ -14795,85 +14632,13 @@ function restoreBackup(input) {
   reader.onload = e => {
     try {
       const data = JSON.parse(e.target.result);
-      if (!data.students) throw new Error('Invalid backup — missing students');
-      if (!confirm('Restore backup from ' + new Date(data.timestamp).toLocaleString('en-IN') + '?\nThis will replace ALL current data.')) return;
+      if (!Array.isArray(data.students)) throw new Error('Invalid backup — "students" is missing or not a list. File may be corrupted.');
+      if (data.fees !== undefined && !Array.isArray(data.fees)) throw new Error('Invalid backup — "fees" is not a list. File may be corrupted.');
+      if (data.staffData !== undefined && data.staff !== undefined && !Array.isArray(data.staffData) && !Array.isArray(data.staff)) throw new Error('Invalid backup — staff data is not a list. File may be corrupted.');
+      if (!confirm('Restore backup from ' + new Date(data.timestamp).toLocaleString('en-IN') + '?\nThis will replace ALL current data.\n\n(Your current data will be saved first, so you can Undo if needed.)')) return;
 
-      // Restore core arrays
-      try { localStorage.setItem('_erp_students',        JSON.stringify(data.students        || [])); } catch(e) {}
-      try { localStorage.setItem('_erp_fees',            JSON.stringify(data.fees            || [])); } catch(e) {}
-      try { localStorage.setItem('_erp_staff',           JSON.stringify(data.staffData       || data.staff || [])); } catch(e) {}
-      try { localStorage.setItem('_erp_exams',           JSON.stringify(data.exams           || [])); } catch(e) {}
-      try { localStorage.setItem('_erp_batches',         JSON.stringify(data.batches         || [])); } catch(e) {}
-      try { localStorage.setItem('_erp_notifs',          JSON.stringify(data.notifications   || [])); } catch(e) {}
-      try { localStorage.setItem('_erp_salary_payments', JSON.stringify(_salaryArrayToObj(data.salaryPayments))); } catch(e) {}
-      if (data.staffAdvances) try { localStorage.setItem('_erp_staff_advances', JSON.stringify(data.staffAdvances)); } catch(e) {}
-      if (data.staffAttendance) try { localStorage.setItem('_erp_staff_att', JSON.stringify(data.staffAttendance)); } catch(e) {}
-
-      // Restore fee config
-      if (data.feeStructure)    try { localStorage.setItem('_erp_fee_structure',       JSON.stringify(data.feeStructure)); } catch(e) {}
-      if (data.otherCourses)    try { localStorage.setItem('_erp_other_courses',       JSON.stringify(data.otherCourses)); } catch(e) {}
-      if (data.feeRcptTemplate) try { localStorage.setItem('_erp_fee_rcpt_template',   data.feeRcptTemplate); } catch(e) {}
-      if (data.feeRcptLang)     try { localStorage.setItem('_erp_fee_rcpt_lang',        data.feeRcptLang); } catch(e) {}
-      if (data.admTemplate)     try { localStorage.setItem('_erp_adm_template',         data.admTemplate); } catch(e) {}
-      if (data.admLang)         try { localStorage.setItem('_erp_adm_lang',             data.admLang); } catch(e) {}
-
-      // Restore timetables (_erp_tt_*)
-      if (data.timetables) Object.entries(data.timetables).forEach(([k, v]) => {
-        try { localStorage.setItem(k, JSON.stringify(v)); } catch(e) {}
-      });
-      if (data.dayOrder)  try { localStorage.setItem('_erp_day_order', JSON.stringify(data.dayOrder)); } catch(e) {}
-      if (data.ttToday)   try { localStorage.setItem('_erp_tt_today',  data.ttToday); } catch(e) {}
-
-      // Restore marks
-      if (data.marks) {
-        const idx = [];
-        Object.entries(data.marks).forEach(([k, v]) => {
-          try { localStorage.setItem(k, JSON.stringify(v)); idx.push(k); } catch(e) {}
-        });
-        try { localStorage.setItem('_erp_marks_index', JSON.stringify(data.marksIndex || idx)); } catch(e) {}
-      }
-
-      // Restore full attendance
-      if (data.attendanceFull) Object.entries(data.attendanceFull).forEach(([k, v]) => {
-        try { localStorage.setItem(k, typeof v === 'string' ? v : JSON.stringify(v)); } catch(e) {}
-      });
-
-      // Restore WhatsApp templates
-      if (data.waTemplates) Object.entries(data.waTemplates).forEach(([k, v]) => {
-        try { localStorage.setItem(k, v); } catch(e) {}
-      });
-
-      // Restore AI/diagnostic data
-      if (data.aiData) Object.entries(data.aiData).forEach(([k, v]) => {
-        try { localStorage.setItem(k, typeof v === 'string' ? v : JSON.stringify(v)); } catch(e) {}
-      });
-
-      // Restore Teaching Log
-      if (data.teachingLog) try { localStorage.setItem('_erp_teaching_log', JSON.stringify(data.teachingLog)); } catch(e) {}
-
-      // Restore School Marks
-      if (data.schoolMarks) {
-        const idx = [];
-        Object.entries(data.schoolMarks).forEach(([sid, v]) => {
-          try { localStorage.setItem('_erp_schoolmarks_' + sid, JSON.stringify(v)); idx.push(sid); } catch(e) {}
-        });
-        try { localStorage.setItem('_erp_schoolmarks_index', JSON.stringify(idx)); } catch(e) {}
-      }
-
-      // Restore Rising Stars
-      if (data.risingStar) try { localStorage.setItem('_erp_risingstar', JSON.stringify(data.risingStar)); } catch(e) {}
-
-      // Restore Target (exam countdown dates + renamed labels)
-      if (data.targetDates)     try { localStorage.setItem('_erp_target_dates',     JSON.stringify(data.targetDates)); } catch(e) {}
-      if (data.targetExamNames) try { localStorage.setItem('_erp_target_examnames', JSON.stringify(data.targetExamNames)); } catch(e) {}
-
-      // Restore settings
-      if (data.darkMode)         try { localStorage.setItem('_erp_dark',               data.darkMode); } catch(e) {}
-      if (data.latesToLeave)     try { localStorage.setItem('_erp_lates_to_leave',      data.latesToLeave); } catch(e) {}
-      if (data.lastMonthlyReset) try { localStorage.setItem('_erp_last_monthly_reset',  data.lastMonthlyReset); } catch(e) {}
-      if (data.sheetsUrl)        try { localStorage.setItem('_erp_sheets_url',          data.sheetsUrl); } catch(e) {}
-      if (data.payrollPayDay)    try { localStorage.setItem('_erp_payroll_payday',      data.payrollPayDay); } catch(e) {}
-
+      _saveRestoreSafetyNet();
+      _applyRestoreData(data);
       showToast('✅ Backup restored — ' + data.students.length + ' students. Reloading…');
       addBkLog('[Restore] Loaded from ' + data.timestamp + ' — ' + data.students.length + ' students, ' + (data.fees||[]).length + ' fees');
       setBkStatus('ok', 'Backup restored', 'From ' + file.name);
@@ -14881,6 +14646,135 @@ function restoreBackup(input) {
     } catch(err) { showToast('❌ Invalid backup file: ' + err.message); }
   };
   reader.readAsText(file);
+}
+
+// Snapshots EVERYTHING currently in the app to a dedicated "undo" slot before a restore
+// overwrites it — the one moment where a mistake (wrong file, wrong Sheet) is otherwise
+// unrecoverable. Kept separate from the rolling backup history so it's never bumped out.
+function _saveRestoreSafetyNet() {
+  try {
+    const snap = getSnapshot();
+    localStorage.setItem('_erp_pre_restore_snapshot', JSON.stringify(snap));
+    localStorage.setItem('_erp_pre_restore_meta', JSON.stringify({ ts: new Date().toISOString(), students: (snap.students||[]).length }));
+  } catch(e) {}
+}
+
+// Applies a full backup object (from a local .json file or Google Sheets) to localStorage.
+// Shared by restoreBackup(), restoreFromSheets(), and undoLastRestore() so all three restore
+// paths write data identically.
+function _applyRestoreData(data) {
+  try { localStorage.setItem('_erp_students',        JSON.stringify(data.students        || [])); } catch(e) {}
+  try { localStorage.setItem('_erp_fees',            JSON.stringify(data.fees            || [])); } catch(e) {}
+  try { localStorage.setItem('_erp_staff',           JSON.stringify(data.staffData       || data.staff || [])); } catch(e) {}
+  try { localStorage.setItem('_erp_exams',           JSON.stringify(data.exams           || [])); } catch(e) {}
+  try { localStorage.setItem('_erp_batches',         JSON.stringify(data.batches         || [])); } catch(e) {}
+  try { localStorage.setItem('_erp_notifs',          JSON.stringify(data.notifications   || [])); } catch(e) {}
+  try { localStorage.setItem('_erp_salary_payments', JSON.stringify(_salaryArrayToObj(data.salaryPayments))); } catch(e) {}
+  if (data.staffAdvances) try { localStorage.setItem('_erp_staff_advances', JSON.stringify(data.staffAdvances)); } catch(e) {}
+  if (data.staffAttendance) try { localStorage.setItem('_erp_staff_att', JSON.stringify(data.staffAttendance)); } catch(e) {}
+  if (data.attState) try { localStorage.setItem('attState', JSON.stringify(data.attState)); } catch(e) {}
+
+  // Fee config
+  if (data.feeStructure)    try { localStorage.setItem('_erp_fee_structure',       JSON.stringify(data.feeStructure)); } catch(e) {}
+  if (data.otherCourses)    try { localStorage.setItem('_erp_other_courses',       JSON.stringify(data.otherCourses)); } catch(e) {}
+  if (data.feeRcptTemplate) try { localStorage.setItem('_erp_fee_rcpt_template',   data.feeRcptTemplate); } catch(e) {}
+  if (data.feeRcptLang)     try { localStorage.setItem('_erp_fee_rcpt_lang',        data.feeRcptLang); } catch(e) {}
+  if (data.admTemplate)     try { localStorage.setItem('_erp_adm_template',         data.admTemplate); } catch(e) {}
+  if (data.admLang)         try { localStorage.setItem('_erp_adm_lang',             data.admLang); } catch(e) {}
+
+  // Timetables (_erp_tt_*)
+  if (data.timetables) Object.entries(data.timetables).forEach(([k, v]) => {
+    try { localStorage.setItem(k, JSON.stringify(v)); } catch(e) {}
+  });
+  if (data.dayOrder)  try { localStorage.setItem('_erp_day_order', JSON.stringify(data.dayOrder)); } catch(e) {}
+  if (data.ttToday)   try { localStorage.setItem('_erp_tt_today',  data.ttToday); } catch(e) {}
+
+  // Marks
+  if (data.marks) {
+    const idx = [];
+    Object.entries(data.marks).forEach(([k, v]) => {
+      try { localStorage.setItem(k, JSON.stringify(v)); idx.push(k); } catch(e) {}
+    });
+    try { localStorage.setItem('_erp_marks_index', JSON.stringify(data.marksIndex || idx)); } catch(e) {}
+  }
+
+  // Full attendance
+  if (data.attendanceFull) {
+    const attIdx = [];
+    Object.entries(data.attendanceFull).forEach(([k, v]) => {
+      try { localStorage.setItem(k, typeof v === 'string' ? v : JSON.stringify(v)); attIdx.push(k); } catch(e) {}
+    });
+    try { localStorage.setItem('_erp_att_index', JSON.stringify(attIdx)); } catch(e) {}
+  }
+
+  // WhatsApp templates
+  if (data.waTemplates) Object.entries(data.waTemplates).forEach(([k, v]) => {
+    try { localStorage.setItem(k, v); } catch(e) {}
+  });
+
+  // Student Summary
+  if (data.studentSummary) Object.entries(data.studentSummary).forEach(([k, v]) => {
+    try { localStorage.setItem(k, typeof v === 'string' ? v : JSON.stringify(v)); } catch(e) {}
+  });
+
+  // AI/diagnostic data
+  if (data.aiData) Object.entries(data.aiData).forEach(([k, v]) => {
+    try { localStorage.setItem(k, typeof v === 'string' ? v : JSON.stringify(v)); } catch(e) {}
+  });
+
+  // Teaching Log
+  if (data.teachingLog) try { localStorage.setItem('_erp_teaching_log', JSON.stringify(data.teachingLog)); } catch(e) {}
+
+  // School Marks
+  if (data.schoolMarks) {
+    const smIdx = [];
+    Object.entries(data.schoolMarks).forEach(([sid, v]) => {
+      try { localStorage.setItem('_erp_schoolmarks_' + sid, JSON.stringify(v)); smIdx.push(sid); } catch(e) {}
+    });
+    try { localStorage.setItem('_erp_schoolmarks_index', JSON.stringify(smIdx)); } catch(e) {}
+  }
+
+  // Rising Stars
+  if (data.risingStar) try { localStorage.setItem('_erp_risingstar', JSON.stringify(data.risingStar)); } catch(e) {}
+
+  // Target (exam countdown dates + renamed labels)
+  if (data.targetDates)     try { localStorage.setItem('_erp_target_dates',     JSON.stringify(data.targetDates)); } catch(e) {}
+  if (data.targetExamNames) try { localStorage.setItem('_erp_target_examnames', JSON.stringify(data.targetExamNames)); } catch(e) {}
+
+  // Settings
+  if (data.darkMode)         try { localStorage.setItem('_erp_dark',               data.darkMode); } catch(e) {}
+  if (data.latesToLeave)     try { localStorage.setItem('_erp_lates_to_leave',      data.latesToLeave); } catch(e) {}
+  if (data.lastMonthlyReset) try { localStorage.setItem('_erp_last_monthly_reset',  data.lastMonthlyReset); } catch(e) {}
+  if (data.sheetsUrl)        try { localStorage.setItem('_erp_sheets_url',          data.sheetsUrl); } catch(e) {}
+  if (data.payrollPayDay)    try { localStorage.setItem('_erp_payroll_payday',      data.payrollPayDay); } catch(e) {}
+}
+
+// Rolls back to the exact state saved by _saveRestoreSafetyNet() just before the last restore.
+function undoLastRestore() {
+  let meta;
+  try { meta = JSON.parse(localStorage.getItem('_erp_pre_restore_meta') || 'null'); } catch(e) { meta = null; }
+  const snapRaw = localStorage.getItem('_erp_pre_restore_snapshot');
+  if (!meta || !snapRaw) { showToast('⚠️ No pre-restore snapshot found to undo to'); return; }
+  if (!confirm('Undo the last restore?\nThis brings back your data from just before that restore (' + meta.students + ' students, saved ' + new Date(meta.ts).toLocaleString('en-IN') + ').')) return;
+  try {
+    const snap = JSON.parse(snapRaw);
+    _applyRestoreData(snap);
+    localStorage.removeItem('_erp_pre_restore_snapshot');
+    localStorage.removeItem('_erp_pre_restore_meta');
+    showToast('✅ Undo complete — reloading…');
+    addBkLog('[Restore] Undo — reverted to snapshot from ' + meta.ts);
+    setTimeout(() => location.reload(), 1000);
+  } catch(err) { showToast('❌ Undo failed: ' + err.message); }
+}
+function refreshUndoRestoreBtn() {
+  const wrap = document.getElementById('bk-undo-restore-wrap');
+  if (!wrap) return;
+  let meta;
+  try { meta = JSON.parse(localStorage.getItem('_erp_pre_restore_meta') || 'null'); } catch(e) { meta = null; }
+  if (!meta) { wrap.style.display = 'none'; return; }
+  wrap.style.display = '';
+  const sub = document.getElementById('bk-undo-restore-sub');
+  if (sub) sub.textContent = 'Snapshot from ' + new Date(meta.ts).toLocaleString('en-IN') + ' · ' + meta.students + ' students';
 }
 function updateBkCount() {
   const bks=JSON.parse(localStorage.getItem(BK_KEY)||'[]');
@@ -14933,6 +14827,7 @@ async function syncSheets(silent) {
       center:           snapshot.center,
       timestamp:        new Date().toISOString(),
       source:           'manual',
+      token:            getSheetsSecret(),
       students:         snapshot.students         || [],
       fees:             snapshot.fees             || [],
       staff:            snapshot.staffData        || [],
@@ -15056,7 +14951,7 @@ function testSheetConnection() {
 
   const testPayload = JSON.stringify({
     center: CFG.CENTER.name||'Test', timestamp: new Date().toISOString(),
-    source: 'test', students:[], fees:[], staff:[], exams:[], batches:[],
+    source: 'test', token: getSheetsSecret(), students:[], fees:[], staff:[], exams:[], batches:[],
     attendance:{}, attendanceFull:{}, timetables:{}, dayOrder:{}, marks:{},
     feeStructure:{}, salaryPayments:[], waTemplates:{}, studentSummary:{},
     staffAttendance:{}, aiData:{}, notifications:[]
@@ -15119,100 +15014,16 @@ async function restoreFromSheets() {
   addBkLog('[Restore] Starting Google Sheets restore…');
 
   try {
-    const resp = await fetch(url + '?action=getBackup', { method: 'GET', mode: 'cors' });
+    const resp = await fetch(url + '?action=getBackup&token=' + encodeURIComponent(getSheetsSecret()), { method: 'GET', mode: 'cors' });
     if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
     const result = await resp.json();
     if (result.status !== 'ok') throw new Error(result.msg || 'Apps Script returned error');
 
     const data = result.data;
-    if (!data || !data.students) throw new Error('No student data found in Google Sheet. Please sync first.');
+    if (!data || !Array.isArray(data.students)) throw new Error('No student data found in Google Sheet, or it is not in the expected format. Please sync first.');
 
-    // ── Restore core arrays ───────────────────────────────────
-    const safe = (v, fallback=[]) => { try { return v || fallback; } catch(e) { return fallback; } };
-    localStorage.setItem('_erp_students',        JSON.stringify(safe(data.students, [])));
-    localStorage.setItem('_erp_fees',            JSON.stringify(safe(data.fees, [])));
-    localStorage.setItem('_erp_staff',           JSON.stringify(safe(data.staff, [])));
-    localStorage.setItem('_erp_exams',           JSON.stringify(safe(data.exams, [])));
-    localStorage.setItem('_erp_batches',         JSON.stringify(safe(data.batches, [])));
-    localStorage.setItem('_erp_notifs',          JSON.stringify(safe(data.notifications, [])));
-    localStorage.setItem('_erp_salary_payments', JSON.stringify(_salaryArrayToObj(data.salaryPayments)));
-    if (data.staffAdvances) localStorage.setItem('_erp_staff_advances', JSON.stringify(safe(data.staffAdvances, [])));
-
-    // ── Attendance ────────────────────────────────────────────
-    if (data.attState)       localStorage.setItem('attState', JSON.stringify(data.attState));
-    if (data.staffAttendance) localStorage.setItem('_erp_staff_att', JSON.stringify(data.staffAttendance));
-    if (data.attendanceFull) {
-      const attIdx = [];
-      Object.entries(data.attendanceFull).forEach(([k, v]) => {
-        try { localStorage.setItem(k, typeof v === 'string' ? v : JSON.stringify(v)); attIdx.push(k); } catch(e) {}
-      });
-      localStorage.setItem('_erp_att_index', JSON.stringify(attIdx));
-    }
-
-    // ── Timetables & Day Order ────────────────────────────────
-    if (data.timetables) Object.entries(data.timetables).forEach(([k, v]) => {
-      try { localStorage.setItem(k, JSON.stringify(v)); } catch(e) {}
-    });
-    if (data.dayOrder) localStorage.setItem('_erp_day_order', JSON.stringify(data.dayOrder));
-    if (data.ttToday)  localStorage.setItem('_erp_tt_today', data.ttToday);
-
-    // ── Marks ─────────────────────────────────────────────────
-    if (data.marks) {
-      const idx = [];
-      Object.entries(data.marks).forEach(([k, v]) => {
-        try { localStorage.setItem(k, JSON.stringify(v)); idx.push(k); } catch(e) {}
-      });
-      localStorage.setItem('_erp_marks_index', JSON.stringify(data.marksIndex || idx));
-    }
-
-    // ── Fee config ────────────────────────────────────────────
-    if (data.feeStructure)   localStorage.setItem('_erp_fee_structure',     JSON.stringify(data.feeStructure));
-    if (data.otherCourses)   localStorage.setItem('_erp_other_courses',     JSON.stringify(data.otherCourses));
-    if (data.feeRcptTemplate) localStorage.setItem('_erp_fee_rcpt_template', data.feeRcptTemplate);
-    if (data.feeRcptLang)    localStorage.setItem('_erp_fee_rcpt_lang',     data.feeRcptLang);
-    if (data.admTemplate)    localStorage.setItem('_erp_adm_template',      data.admTemplate);
-    if (data.admLang)        localStorage.setItem('_erp_adm_lang',          data.admLang);
-
-    // ── WhatsApp Templates ────────────────────────────────────
-    if (data.waTemplates) Object.entries(data.waTemplates).forEach(([k, v]) => {
-      try { localStorage.setItem(k, v); } catch(e) {}
-    });
-
-    // ── Student Summary ───────────────────────────────────────
-    if (data.studentSummary) Object.entries(data.studentSummary).forEach(([k, v]) => {
-      try { localStorage.setItem(k, typeof v === 'string' ? v : JSON.stringify(v)); } catch(e) {}
-    });
-
-    // ── AI / Diagnostic Data ──────────────────────────────────
-    if (data.aiData) Object.entries(data.aiData).forEach(([k, v]) => {
-      try { localStorage.setItem(k, typeof v === 'string' ? v : JSON.stringify(v)); } catch(e) {}
-    });
-
-    // ── Teaching Log ──────────────────────────────────────────
-    if (data.teachingLog) localStorage.setItem('_erp_teaching_log', JSON.stringify(data.teachingLog));
-
-    // ── School Marks ──────────────────────────────────────────
-    if (data.schoolMarks) {
-      const smIdx = [];
-      Object.entries(data.schoolMarks).forEach(([sid, v]) => {
-        try { localStorage.setItem('_erp_schoolmarks_' + sid, JSON.stringify(v)); smIdx.push(sid); } catch(e) {}
-      });
-      localStorage.setItem('_erp_schoolmarks_index', JSON.stringify(smIdx));
-    }
-
-    // ── Rising Stars ──────────────────────────────────────────
-    if (data.risingStar) localStorage.setItem('_erp_risingstar', JSON.stringify(data.risingStar));
-
-    // ── Target (exam countdown dates + renamed labels) ────────
-    if (data.targetDates)     localStorage.setItem('_erp_target_dates',     JSON.stringify(data.targetDates));
-    if (data.targetExamNames) localStorage.setItem('_erp_target_examnames', JSON.stringify(data.targetExamNames));
-
-    // ── Settings ──────────────────────────────────────────────
-    if (data.sheetsUrl)        localStorage.setItem('_erp_sheets_url',          data.sheetsUrl);
-    if (data.darkMode)         localStorage.setItem('_erp_dark',                data.darkMode);
-    if (data.latesToLeave)     localStorage.setItem('_erp_lates_to_leave',      data.latesToLeave);
-    if (data.lastMonthlyReset) localStorage.setItem('_erp_last_monthly_reset',  data.lastMonthlyReset);
-    if (data.payrollPayDay)    localStorage.setItem('_erp_payroll_payday',      data.payrollPayDay);
+    _saveRestoreSafetyNet();
+    _applyRestoreData(data);
 
     const sc = data.students.length;
     const fc = (data.fees || []).length;
@@ -15270,11 +15081,24 @@ function initBackup() {
     const urlEl = document.getElementById('sheets-url');
     if (savedUrl && urlEl) urlEl.value = savedUrl;
   } catch(e) {}
+  // Restore saved Secret Key
+  try {
+    const savedSecret = localStorage.getItem('_erp_sheets_secret');
+    const secretEl = document.getElementById('sheets-secret');
+    if (savedSecret && secretEl) secretEl.value = savedSecret;
+  } catch(e) {}
   try{bkHistory=JSON.parse(localStorage.getItem(BK_HIST_KEY)||'[]');}catch(e){}
   runBackup('auto');
   startBkTimer();
   updateBkCount();
   renderBkHistory();
+  refreshUndoRestoreBtn();
+}
+function saveSheetsSecret(val) {
+  try { localStorage.setItem('_erp_sheets_secret', val || ''); } catch(e) {}
+}
+function getSheetsSecret() {
+  try { return localStorage.getItem('_erp_sheets_secret') || ''; } catch(e) { return ''; }
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -15304,7 +15128,7 @@ function renderPlansHTML() {
       ${isCur?`<div class="badge bg" style="margin-bottom:6px">✓ Current Plan</div>`:''}
       ${isP?'<div class="badge bb" style="margin-bottom:4px">⭐ Most Popular</div>':''}
       ${k==='ULTIMATE'?'<div class="badge bt" style="margin-bottom:4px;background:#4c1d95;color:#fff">🔥 Best Value</div>':''}
-      <div class="plan-name" style="${k==='ULTIMATE'?'color:#7c3aed':''}">${d.name}</div>
+      <div class="plan-name" style="${k==='ULTIMATE'?'color:#7c3aed':''}">${escHtml(d.name)}</div>
       <div class="plan-price" style="font-size:22px;font-weight:800;color:var(--pr)">${d.price}<span style="font-size:11px;font-weight:400;color:var(--tx2)">/yr</span></div>
       <div style="font-size:10px;font-weight:700;color:var(--tx3);margin-bottom:8px;text-transform:uppercase">${d.sub}</div>
       <div class="plan-feat" style="text-align:left;line-height:2.2;font-size:12px">${(FEAT_MAP[k]||[]).join('<br>')}</div>
@@ -15344,6 +15168,10 @@ function initLicenseUI() {
   const setCenter=document.getElementById('set-center'); if(setCenter) setCenter.textContent=CFG.CENTER.name;
   const setCity=document.getElementById('set-city'); if(setCity) setCity.textContent=(CFG.CENTER.city||'')+(CFG.CENTER.state?', '+CFG.CENTER.state:'');
   const setPhone=document.getElementById('set-phone'); if(setPhone) setPhone.textContent=CFG.CENTER.phone||'';
+  const setAiKey=document.getElementById('set-anthropic-key'); if(setAiKey && !setAiKey.value) setAiKey.value=getAnthropicKey();
+  const setGroqKey=document.getElementById('set-groq-key'); if(setGroqKey && !setGroqKey.value) setGroqKey.value=getGroqKey();
+  const setProvider=document.getElementById('set-ai-provider');
+  if (setProvider) { setProvider.value = getAiProvider(); saveAiProvider(setProvider.value); }
   const avInit=document.getElementById('av-initials'); if(avInit) avInit.textContent=(CFG.CENTER.ownerName||'KA').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
   const setAv=document.getElementById('set-avatar'); if(setAv) setAv.textContent=(CFG.CENTER.ownerName||'KA').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
   const sLogo=document.getElementById('s-logo'); if(sLogo) sLogo.textContent=CFG.BRAND.logoEmoji||CFG.BRAND.logoText||(CFG.CENTER.name||'KT').slice(0,2).toUpperCase();
@@ -15578,7 +15406,7 @@ function renderBatchesPage() {
       <div style="display:flex;align-items:flex-start;gap:10px">
         <div style="width:40px;height:40px;border-radius:10px;background:${sessionColor.bg};border:1px solid ${sessionColor.bc};display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${sessionIcon}</div>
         <div style="flex:1;min-width:0">
-          <div style="font-size:14px;font-weight:700;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${b.name}</div>
+          <div style="font-size:14px;font-weight:700;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(b.name)}</div>
           <div style="font-size:11px;color:var(--tx3);margin-top:2px">${b.days||'Mon–Sat'} · ${
             b.time === 'Both'
               ? `☀️ ${b.morningStart||'07:00'}–${b.morningEnd||'10:00'} &nbsp;🌙 ${b.eveningStart||'16:00'}–${b.eveningEnd||'19:00'}`
@@ -16367,9 +16195,9 @@ function _buildPFRows(entries) {
     const hasPhone = !!phone;
     const monthStr = [...new Set(entry.months)].join(', ') || '—';
     return `<div class="wa-queue-item" id="pf-row-${i}" style="display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:.5px solid var(--br)">
-      <div class="av" style="background:${color};width:30px;height:30px;font-size:12px;flex-shrink:0">${(entry.name||'?')[0]}</div>
+      <div class="av" style="background:${color};width:30px;height:30px;font-size:12px;flex-shrink:0">${escHtml((entry.name||'?')[0])}</div>
       <div style="flex:1;min-width:0">
-        <div style="font-size:12px;font-weight:600;color:var(--tx)">${entry.name}</div>
+        <div style="font-size:12px;font-weight:600;color:var(--tx)">${escHtml(entry.name)}</div>
         <div style="font-size:9px;color:var(--tx3)">${hasPhone ? '📞 '+phone : '⚠️ No phone'} · ${monthStr}</div>
       </div>
       <div style="font-size:13px;font-weight:800;color:#dc2626;flex-shrink:0;margin-right:4px">₹${entry.total.toLocaleString('en-IN')}</div>
@@ -18037,7 +17865,7 @@ function renderAdmRecent() {
     <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:.5px solid var(--br)">
       <div style="width:32px;height:32px;background:var(--prl);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0">🎓</div>
       <div style="flex:1;min-width:0">
-        <div style="font-size:12px;font-weight:600;color:var(--tx)">${a.name}</div>
+        <div style="font-size:12px;font-weight:600;color:var(--tx)">${escHtml(a.name)}</div>
         <div style="font-size:10px;color:var(--tx3)">${a.admNo} · Class ${a.grade} · ${a.date}</div>
         <div style="font-size:10px;color:var(--tx2)">${a.parent} · ${a.phone}</div>
       </div>
@@ -19193,9 +19021,9 @@ function buildSumCard(item, year, month) {
     <!-- ── Header ── -->
     <div class="sum-card-header">
       <div class="sum-rank-badge" style="background:${rc.bg};color:${rc.color}">${rc.label}</div>
-      <div class="av" style="background:${s.color};width:36px;height:36px;font-size:14px">${(s.name||'?')[0]}</div>
+      <div class="av" style="background:${s.color};width:36px;height:36px;font-size:14px">${escHtml((s.name||'?')[0])}</div>
       <div style="flex:1;min-width:0">
-        <div style="font-weight:700;font-size:13px;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.name}</div>
+        <div style="font-weight:700;font-size:13px;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(s.name)}</div>
         <div style="font-size:10px;color:var(--tx3)">வகுப்பு ${s.grade==='KG'?'KG':s.grade} &nbsp;·&nbsp; ${s.course||s.batch||'—'}</div>
       </div>
       ${feeTag}
@@ -19846,7 +19674,7 @@ function sendAllSummaryWA() {
           const lbl   = att.total > 0 ? att.pct + '% வருகை' : 'வருகை தரவு இல்லை';
           const sent  = isSumSentThisMonth(s.id, year, month);
           return `<div class="wa-queue-item">
-            <div class="av" style="background:${s.color};width:28px;height:28px;font-size:11px;flex-shrink:0">${(s.name||'?')[0]}</div>
+            <div class="av" style="background:${s.color};width:28px;height:28px;font-size:11px;flex-shrink:0">${escHtml((s.name||'?')[0])}</div>
             <div style="flex:1">
               <div style="font-weight:600;font-size:12px">${s.name} ${sent?'<span style="font-size:9px;color:#16a34a;font-weight:700">✅ Sent</span>':''}</div>
               <div style="font-size:10px;color:var(--tx3)">${s.phone||'எண் இல்லை'} · Gr.${s.grade} · ${lbl}</div>
@@ -20638,9 +20466,9 @@ function _renderFeeReport(month) {
         : `<div style="border:.5px solid #bbf7d0;border-radius:10px;overflow:hidden">
           ${paidList.map((r,i) => `
             <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:.5px solid #bbf7d0;background:${i%2===0?'#f0fdf4':'var(--card)'}">
-              <div style="width:26px;height:26px;border-radius:7px;background:#16a34a;color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">${(r.name||'?')[0]}</div>
+              <div style="width:26px;height:26px;border-radius:7px;background:#16a34a;color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">${escHtml((r.name||'?')[0])}</div>
               <div style="flex:1;min-width:0">
-                <span style="font-size:12px;font-weight:600;color:var(--tx)">${r.name}</span>
+                <span style="font-size:12px;font-weight:600;color:var(--tx)">${escHtml(r.name)}</span>
                 ${stuGrade(r.studentId, r.name) ? `<span style="font-size:9px;color:var(--tx3);margin-left:5px">${stuGrade(r.studentId, r.name)}</span>` : ''}
               </div>
               <span style="font-size:13px;font-weight:800;color:#16a34a">₹${r.total.toLocaleString('en-IN')}</span>
@@ -20659,9 +20487,9 @@ function _renderFeeReport(month) {
         : `<div style="border:.5px solid #fde68a;border-radius:10px;overflow:hidden">
           ${pendList.map((r,i) => `
             <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:.5px solid #fde68a;background:${i%2===0?'#fffbeb':'var(--card)'}">
-              <div style="width:26px;height:26px;border-radius:7px;background:#ca8a04;color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">${(r.name||'?')[0]}</div>
+              <div style="width:26px;height:26px;border-radius:7px;background:#ca8a04;color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">${escHtml((r.name||'?')[0])}</div>
               <div style="flex:1;min-width:0">
-                <span style="font-size:12px;font-weight:600;color:var(--tx)">${r.name}</span>
+                <span style="font-size:12px;font-weight:600;color:var(--tx)">${escHtml(r.name)}</span>
                 ${stuGrade(r.studentId, r.name) ? `<span style="font-size:9px;color:var(--tx3);margin-left:5px">${stuGrade(r.studentId, r.name)}</span>` : ''}
               </div>
               <span style="font-size:13px;font-weight:800;color:#dc2626">₹${r.balance.toLocaleString('en-IN')}</span>
@@ -21858,9 +21686,9 @@ function tlSendTodayContentToAbsent() {
       <div style="font-size:11px;color:var(--tx2);margin-bottom:10px">${subjects.join(', ') || 'Today\u2019s class'} · ${queue.length} student(s)${noPhoneNote}</div>
       <div style="max-height:320px;overflow-y:auto;border:.5px solid var(--br);border-radius:10px">
         ${queue.map((q,i) => `<div style="display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:.5px solid var(--br)">
-          <div class="av" style="background:${q.student.color||'#185FA5'};width:28px;height:28px;font-size:11px;flex-shrink:0">${(q.student.name||'?')[0]}</div>
+          <div class="av" style="background:${q.student.color||'#185FA5'};width:28px;height:28px;font-size:11px;flex-shrink:0">${escHtml((q.student.name||'?')[0])}</div>
           <div style="flex:1;min-width:0">
-            <div style="font-size:12px;font-weight:600;color:var(--tx)">${q.student.name}</div>
+            <div style="font-size:12px;font-weight:600;color:var(--tx)">${escHtml(q.student.name)}</div>
             <div style="font-size:10px;color:var(--tx3)">${q.phone}</div>
           </div>
           <button id="tlabs-btn-${i}" onclick="tlSendOneAbsentWA(${i})"
@@ -21982,13 +21810,7 @@ Keep it practical and focused on Tamil Nadu tuition center context. Use both Eng
   output.textContent = '';
   panel.scrollIntoView({behavior:'smooth',block:'start'});
   try {
-    const resp = await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({ model:'claude-sonnet-4-6', max_tokens:1200, messages:[{role:'user',content:prompt}] })
-    });
-    const data = await resp.json();
-    const text = (data.content||[]).map(c=>c.text||'').join('');
+    const text = (await aiComplete(prompt, 1200)) || '';
     if (loading) loading.style.display = 'none';
     output.style.display = '';
     output.textContent = text || 'No response received.';
@@ -22005,6 +21827,87 @@ function copyTLAI() {
 }
 
 function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ── Standalone Anthropic API key support ─────────────────────────────
+// Inside Claude.ai's artifact preview, calls to api.anthropic.com are auto-authenticated
+// by Claude — no key needed, and none should be sent. Once this file is downloaded and
+// opened outside Claude.ai, there's no such proxy, so every AI feature needs its own key.
+// If the user has set one (Settings → AI Features), attach it; otherwise send the plain
+// request exactly as before, so behaviour inside Claude.ai is unchanged.
+function getAnthropicKey() {
+  try { return localStorage.getItem('_erp_anthropic_key') || ''; } catch(e) { return ''; }
+}
+function saveAnthropicKey(val) {
+  try { localStorage.setItem('_erp_anthropic_key', (val||'').trim()); } catch(e) {}
+}
+function _anthropicHeaders() {
+  const key = getAnthropicKey();
+  const h = { 'Content-Type': 'application/json' };
+  if (key) {
+    h['x-api-key'] = key;
+    h['anthropic-version'] = '2023-06-01';
+    h['anthropic-dangerous-direct-browser-access'] = 'true';
+  }
+  return h;
+}
+// Friendlier message for AI-call catch blocks — tells standalone users exactly what to do.
+function aiUnreachableMsg() {
+  if (getAiProvider() === 'groq') {
+    return getGroqKey()
+      ? '⚠️ Could not reach Groq — check your API key in Settings → AI Features, or try again.'
+      : '⚠️ Could not reach AI. Add your free Groq API key in Settings → AI Features first.';
+  }
+  return getAnthropicKey()
+    ? '⚠️ Could not reach AI — check your API key in Settings → AI Features, or try again.'
+    : '⚠️ Could not reach AI. If you downloaded this app (not using it inside Claude.ai), add your Anthropic API key in Settings → AI Features first.';
+}
+
+// ── AI Provider choice ────────────────────────────────────────────────
+// 'anthropic' (default — free inside Claude.ai, needs a paid key standalone)
+// 'groq'      (needs a free Groq key — console.groq.com/keys, no card required)
+function getAiProvider() {
+  try { return localStorage.getItem('_erp_ai_provider') || 'anthropic'; } catch(e) { return 'anthropic'; }
+}
+function saveAiProvider(val) {
+  try { localStorage.setItem('_erp_ai_provider', val || 'anthropic'); } catch(e) {}
+  const groqRow = document.getElementById('set-groq-key-row');
+  const anthRow = document.getElementById('set-anthropic-key-row');
+  if (groqRow) groqRow.style.display = (val === 'groq') ? '' : 'none';
+  if (anthRow) anthRow.style.display = (val === 'groq') ? 'none' : '';
+}
+function getGroqKey() {
+  try { return localStorage.getItem('_erp_groq_key') || ''; } catch(e) { return ''; }
+}
+function saveGroqKey(val) {
+  try { localStorage.setItem('_erp_groq_key', (val||'').trim()); } catch(e) {}
+}
+
+// Single shared entry point every AI feature calls — picks the provider, builds the right
+// request, and returns just the response text. Keeps all 8 call sites identical regardless
+// of which provider is selected.
+async function aiComplete(prompt, maxTokens) {
+  maxTokens = maxTokens || 500;
+  if (getAiProvider() === 'groq') {
+    const key = getGroqKey();
+    if (!key) throw new Error('No Groq API key set — add a free one in Settings → AI Features.');
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+      body: JSON.stringify({ model: 'llama-3.3-70b-versatile', max_tokens: maxTokens, messages: [{ role: 'user', content: prompt }] })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message || 'Groq API error');
+    return (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || '';
+  }
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: _anthropicHeaders(),
+    body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: maxTokens, messages: [{ role: 'user', content: prompt }] })
+  });
+  const data = await res.json();
+  if (data.error) throw new Error(data.error.message || 'Anthropic API error');
+  return (data.content || []).map(c => c.text || '').join('');
+}
 
 /* ═══════════════════════════════════════════════════════
    TEACHING LOG — MONTHLY GROWTH REPORT + WA QUEUE
@@ -22301,9 +22204,9 @@ async function tlRunMonthlyGrowthWA() {
   if (subtitle) subtitle.textContent = `${isLastWD ? '🔔 Last Working Day! ' : ''}Generating ${activeStudents.length} reports for ${monthLabel}${filterTag}…`;
   if (qList) qList.innerHTML = activeStudents.map(s =>
     `<div id="tlmq-${s.id}" style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-bottom:.5px solid var(--br)">
-      <div class="av" style="background:${s.color||'#7c3aed'};width:28px;height:28px;font-size:11px;flex-shrink:0">${(s.name||'?')[0]}</div>
+      <div class="av" style="background:${s.color||'#7c3aed'};width:28px;height:28px;font-size:11px;flex-shrink:0">${escHtml((s.name||'?')[0])}</div>
       <div style="flex:1;min-width:0">
-        <div style="font-size:12px;font-weight:600;color:var(--tx)">${s.name}</div>
+        <div style="font-size:12px;font-weight:600;color:var(--tx)">${escHtml(s.name)}</div>
         <div style="font-size:10px;color:var(--tx3)">Class ${s.grade||'—'} · ${s.batch||s.course||'—'}</div>
       </div>
       <div id="tlmq-status-${s.id}" style="font-size:11px;color:var(--tx3)">⏳ Queued</div>
@@ -22324,17 +22227,7 @@ async function tlRunMonthlyGrowthWA() {
       const data   = _tlBuildStudentGrowthData(student, yr, mo);
       const prompt = _tlBuildGrowthPrompt(data, monthLabel);
 
-      const res  = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-6',
-          max_tokens: 1000,
-          messages: [{ role: 'user', content: prompt }]
-        })
-      });
-      const json = await res.json();
-      message = (json.content || []).filter(c => c.type === 'text').map(c => c.text).join('').trim();
+      message = ((await aiComplete(prompt, 1000)) || '').trim();
     } catch(err) {
       // Fallback: use customized monthly template
       const data = _tlBuildStudentGrowthData(student, yr, mo);
@@ -22370,9 +22263,9 @@ function _tlRenderMonthlyQueueList() {
     const waUrl = 'https://wa.me/91' + cleanPhone + '?text=' + encodeURIComponent(item.message);
     return `<div style="${item.sent?'opacity:.5':''}">
       <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-bottom:.5px solid var(--br)">
-        <div class="av" style="background:${s.color||'#7c3aed'};width:28px;height:28px;font-size:11px;flex-shrink:0">${(s.name||'?')[0]}</div>
+        <div class="av" style="background:${s.color||'#7c3aed'};width:28px;height:28px;font-size:11px;flex-shrink:0">${escHtml((s.name||'?')[0])}</div>
         <div style="flex:1;min-width:0">
-          <div style="font-size:12px;font-weight:600;color:var(--tx)">${s.name}</div>
+          <div style="font-size:12px;font-weight:600;color:var(--tx)">${escHtml(s.name)}</div>
           <div style="font-size:10px;color:var(--tx3)">Class ${s.grade||'—'} · ${s.batch||s.course||'—'} · ${item.phone||'No phone'}</div>
         </div>
         <div style="display:flex;gap:5px;flex-shrink:0">

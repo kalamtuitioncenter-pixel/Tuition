@@ -2805,7 +2805,25 @@ tbody tr:hover td{background:var(--bg)}
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('sw.js')
-      .then(reg => console.log('SW registered:', reg.scope))
+      .then(reg => {
+        console.log('SW registered:', reg.scope);
+        // Check for a newer sw.js (new CACHE_VERSION) every time the app opens
+        reg.update();
+        reg.addEventListener('updatefound', () => {
+          const newWorker = reg.installing;
+          if (!newWorker) return;
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'activated') {
+              // A new version just took over — reload once so the user gets it,
+              // instead of silently staying on the old cached version.
+              if (!sessionStorage.getItem('_erp_sw_reloaded')) {
+                sessionStorage.setItem('_erp_sw_reloaded', '1');
+                location.reload();
+              }
+            }
+          });
+        });
+      })
       .catch(err => console.log('SW failed:', err));
   });
 }
@@ -18845,7 +18863,11 @@ function computeRanks(year, month, gradeFilter) {
     const avgPct = validM.length > 0
       ? Math.round(validM.reduce((acc, m) => acc + (m.marks / m.maxMarks * 100), 0) / validM.length)
       : 0;
-    const score = (att.pct * 0.4) + (avgPct * 0.3) + ((sumD.stars / 5) * 100 * 0.2) + (Math.min(sumD.activities.length, 4) * 2.5);
+    // Rank is based ONLY on objective performance (attendance + marks) — deliberately
+    // excludes stars/activities, since those are teacher-clickable on this same page.
+    // Including them here made a student's rank (and everyone else's) visibly shuffle
+    // the instant a star or activity got toggled, which looked like the page "reloading".
+    const score = (att.pct * 0.6) + (avgPct * 0.4);
     return { student: s, score, att, sumD, marks, avgPct };
   });
 

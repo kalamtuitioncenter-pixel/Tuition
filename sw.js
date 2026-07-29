@@ -1,100 +1,58 @@
-/* ═══════════════════════════════════════════════════════
-   Kalam Tuition ERP — Service Worker v2.0
-   Caches app shell for full offline use
-═══════════════════════════════════════════════════════ */
-const CACHE_NAME   = 'kalam-erp-v2';
-const CACHE_STATIC = 'kalam-static-v2';
+// Kalam Tuition ERP — Service Worker
+// Caches the app shell so the PWA opens instantly after the first load,
+// instead of re-downloading the whole file over the network every time.
+//
+// IMPORTANT: bump CACHE_VERSION every time you upload a new index.html,
+// otherwise phones/browsers will keep serving the OLD cached version.
 
-// Files to cache on install
-const SHELL_FILES = [
+const CACHE_VERSION = 'v1';
+const CACHE_NAME = 'ktc-erp-' + CACHE_VERSION;
+const APP_SHELL = [
   './',
-  './index.html',
-  'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Tamil:wght@400;500;600;700&display=swap',
-  'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js',
+  './index.html'
 ];
 
-// ── Install: cache shell ─────────────────────────────
-self.addEventListener('install', event => {
+// ── Install: pre-cache the app shell ──────────────────────────────
+self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      return Promise.allSettled(
-        SHELL_FILES.map(url => cache.add(url).catch(() => null))
-      );
-    }).then(() => self.skipWaiting())
+    caches.open(CACHE_NAME)
+      .then((cache) => cache.addAll(APP_SHELL))
+      .then(() => self.skipWaiting())
   );
 });
 
-// ── Activate: clean old caches ───────────────────────
-self.addEventListener('activate', event => {
+// ── Activate: clear out any old cache versions ────────────────────
+self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then(keys =>
+    caches.keys().then((names) =>
       Promise.all(
-        keys.filter(k => k !== CACHE_NAME && k !== CACHE_STATIC)
-            .map(k => caches.delete(k))
+        names.filter((n) => n !== CACHE_NAME).map((n) => caches.delete(n))
       )
     ).then(() => self.clients.claim())
   );
 });
 
-// ── Fetch: Cache-first for assets, Network-first for data ──
-self.addEventListener('fetch', event => {
-  const url = new URL(event.request.url);
-
-  // Skip non-GET and external API requests
+// ── Fetch: cache-first for the app shell, so opens are instant ────
+// Falls back to network for anything not cached (e.g. WhatsApp links,
+// image searches), and updates the cache in the background so the
+// NEXT open picks up any change automatically.
+self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
-  if (url.hostname.includes('script.google.com')) return;
-  if (url.hostname.includes('wa.me')) return;
-  if (url.pathname.includes('/api/')) return;
 
-  // Google Fonts & Chart.js CDN — cache first
-  if (url.hostname.includes('fonts.googleapis.com') ||
-      url.hostname.includes('fonts.gstatic.com') ||
-      url.hostname.includes('cdnjs.cloudflare.com')) {
-    event.respondWith(
-      caches.match(event.request).then(cached => {
-        if (cached) return cached;
-        return fetch(event.request).then(resp => {
-          const clone = resp.clone();
-          caches.open(CACHE_STATIC).then(c => c.put(event.request, clone));
-          return resp;
-        }).catch(() => null);
-      })
-    );
-    return;
-  }
-
-  // App shell (index.html) — ALWAYS network-first, never serve stale cached HTML
-  // This ensures localStorage is always accessible with fresh page load
   event.respondWith(
-    fetch(event.request, { cache: 'no-cache' })
-      .then(resp => {
-        if (resp && resp.status === 200) {
-          const clone = resp.clone();
-          caches.open(CACHE_NAME).then(c => c.put(event.request, clone));
-        }
-        return resp;
-      })
-      .catch(() => {
-        // Offline fallback — serve cached version
-        return caches.match(event.request);
-      })
+    caches.match(event.request).then((cached) => {
+      const networkFetch = fetch(event.request)
+        .then((response) => {
+          if (response && response.status === 200) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          }
+          return response;
+        })
+        .catch(() => cached); // offline — fall back to whatever's cached
+
+      // Serve cached instantly if we have it; still refresh in the background.
+      return cached || networkFetch;
+    })
   );
-});
-
-// ── Background sync placeholder ──────────────────────
-self.addEventListener('sync', event => {
-  if (event.tag === 'sheets-sync') {
-    // Future: auto-sync to Google Sheets when back online
-    console.log('[SW] Background sync: sheets-sync');
-  }
-});
-
-// ── Push notification placeholder ────────────────────
-self.addEventListener('push', event => {
-  const data = event.data ? event.data.json() : {};
-  self.registration.showNotification(data.title || 'Kalam ERP', {
-    body: data.body || 'New notification',
-    icon: './icon-192.png',
-    badge: './icon-192.png',
-  });
 });

@@ -3939,13 +3939,26 @@ async function smPredictAndPlan(studentId) {
       <div style="font-size:11px;font-weight:700;color:var(--tx2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.03em">🧭 AI Study Plan</div>
       <div id="sm-ai-plan-out" style="background:var(--bg);border-radius:8px;padding:10px;font-size:12px;color:var(--tx);white-space:pre-wrap;min-height:60px">🤖 Analysing school marks…</div>
       <div style="margin-top:10px;text-align:right">
-        <button class="btn btn-sm" onclick="smPredictAndPlan('${studentId}')">🔄 Regenerate</button>
+        <button class="btn btn-sm" id="sm-regen-btn" onclick="smPredictAndPlan('${studentId}')">🔄 Regenerate</button>
       </div>
     </div>
   </div>`;
 
+  const regenBtn = document.getElementById('sm-regen-btn');
+  if (regenBtn) { regenBtn.disabled = true; regenBtn.style.opacity = '0.5'; }
+  // Animated dots so a slow AI response doesn't look like the app has frozen.
+  let _dots = 0;
+  const _thinkTimer = setInterval(() => {
+    const el = document.getElementById('sm-ai-plan-out');
+    if (!el) { clearInterval(_thinkTimer); return; }
+    _dots = (_dots + 1) % 4;
+    el.textContent = '🤖 Analysing school marks' + '.'.repeat(_dots);
+  }, 400);
+
   const outEl = document.getElementById('sm-ai-plan-out');
   if (!rows.length) {
+    clearInterval(_thinkTimer);
+    if (regenBtn) { regenBtn.disabled = false; regenBtn.style.opacity = '1'; }
     if (outEl) outEl.textContent = 'Not enough School Marks data yet — save at least one term/subject to generate a plan.';
     return;
   }
@@ -3955,12 +3968,16 @@ async function smPredictAndPlan(studentId) {
 
   try {
     const txt = ((await aiComplete(prompt, 500)) || '').trim() || 'Plan generation returned no content.';
+    clearInterval(_thinkTimer);
+    if (regenBtn) { regenBtn.disabled = false; regenBtn.style.opacity = '1'; }
     const liveOut = document.getElementById('sm-ai-plan-out');
     if (liveOut) liveOut.textContent = txt;
     const rec = _smLoad(studentId);
     rec.lastPlan = { text: txt, at: new Date().toISOString() };
     _smSave(studentId, rec);
   } catch (err) {
+    clearInterval(_thinkTimer);
+    if (regenBtn) { regenBtn.disabled = false; regenBtn.style.opacity = '1'; }
     const liveOut = document.getElementById('sm-ai-plan-out');
     if (liveOut) liveOut.textContent = aiUnreachableMsg();
   }
@@ -4322,12 +4339,19 @@ async function rsGenerateAIPlan(id) {
   }
 
   const btn = document.querySelector(`button[onclick="rsGenerateAIPlan('${id}')"]`);
-  if (btn) { btn.disabled = true; btn.textContent = '🤖 Generating…'; }
+  if (btn) btn.disabled = true;
+  let _dots = 0;
+  const _thinkTimer = setInterval(() => {
+    if (!btn) { clearInterval(_thinkTimer); return; }
+    _dots = (_dots + 1) % 4;
+    btn.textContent = '🤖 Generating' + '.'.repeat(_dots);
+  }, 400);
 
   const prompt = `Tuition center slow-learner student "${s.name}" (Class ${s.grade}) is on the Rising Stars special coaching track. School marks history: ${smRows.join('; ') || 'none yet'}. Special coaching test scores: ${testRows.join('; ') || 'none yet'}. Special coach: ${entry.coach || 'not assigned'}. Write a short, practical coaching plan (4-6 bullet lines) for the next few weeks — call out the weakest area(s), a specific focus action for the special coach, and a realistic target improvement. Keep it concise and actionable.`;
 
   try {
     const txt = ((await aiComplete(prompt, 500)) || '').trim() || 'Plan generation returned no content.';
+    clearInterval(_thinkTimer);
     const freshData = _rsLoadAll();
     if (!freshData[id]) return;
     freshData[id].plans = freshData[id].plans || [];
@@ -4335,6 +4359,7 @@ async function rsGenerateAIPlan(id) {
     _rsSaveAll(freshData);
     renderRisingStarPage();
   } catch (err) {
+    clearInterval(_thinkTimer);
     alert(aiUnreachableMsg());
     if (btn) { btn.disabled = false; btn.textContent = '🤖 Generate AI Plan'; }
   }

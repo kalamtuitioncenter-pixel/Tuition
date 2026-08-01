@@ -5558,6 +5558,8 @@ function _saveAttSession(date, batchId, session) {
     const idx = JSON.parse(localStorage.getItem('_erp_att_index') || '[]');
     if (!idx.includes(sk)) { idx.push(sk); localStorage.setItem('_erp_att_index', JSON.stringify(idx)); }
   } catch(e) {}
+  // This date's month may now be stale in getStudentAttStats' per-month cache.
+  if (typeof _attScanCache !== 'undefined') delete _attScanCache[date.slice(0,7)];
 }
 
 /* Sync the session dropdown to match the selected batch's time type.
@@ -18648,48 +18650,65 @@ function saveSumData(studentId, year, month, data) {
    Key: _erp_att_{YYYY-MM-DD}_{batchId}_{session}
    Value JSON keys: "{studentId}|{batchId}|{session}" : "P"/"A"/"L"
 ════════════════════════════════════════════════════════ */
-function getStudentAttStats(student, year, month) {
-  let present = 0, absent = 0, late = 0;
-  let mrnAbsent = 0, evnAbsent = 0, mrnPresent = 0, evnPresent = 0, mrnLate = 0, evnLate = 0;
-
-  const prefix   = '_erp_att_';
+// Caches the (expensive) localStorage scan for a given "YYYY-MM" so it only runs ONCE per
+// month, not once per student. getStudentAttStats used to do a full localStorage.length scan
+// EVERY call — with N students calling it per render, that was an O(students × total keys)
+// scan repeated on nearly every page (Dashboard, Student Summary, ranks...), and it only got
+// worse as attendance/marks/logs piled up over the school year. This is the main reason the
+// app felt sluggish everywhere. Cache is cleared automatically whenever that month's
+// attendance is re-saved (see _saveAttSession).
+let _attScanCache = {};
+function _getAttScanForMonth(year, month) {
   const monthStr = year + '-' + String(month + 1).padStart(2, '0');
+  if (_attScanCache[monthStr]) return _attScanCache[monthStr];
 
-  // ── Step 1: Scan raw attendance keys for P/A/L counts + session split ──
-  // Also collect absent dates per session so we can cross-ref timetable
-  const absentEntries = []; // { date, session, batchId }
-
+  const prefix = '_erp_att_';
+  const rows = [];
   try {
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i);
       if (!k || !k.startsWith(prefix)) continue;
-      const datePart = k.slice(prefix.length, prefix.length + 10); // "YYYY-MM-DD"
+      const datePart = k.slice(prefix.length, prefix.length + 10);
       if (!datePart.startsWith(monthStr)) continue;
-
-      // Key format: _erp_att_YYYY-MM-DD_batchId_session
       const rest    = k.slice(prefix.length + 11);
       const lastU   = rest.lastIndexOf('_');
       const batchId = rest.slice(0, lastU);
-      const session = rest.slice(lastU + 1); // "morning" or "evening"
-
+      const session = rest.slice(lastU + 1);
       try {
         const rec = JSON.parse(localStorage.getItem(k));
-        if (!rec || typeof rec !== 'object') continue;
-        Object.keys(rec).forEach(rk => {
-          if (!rk.startsWith(student.id + '|')) return;
-          const v      = rec[rk];
-          const isMrn  = session === 'morning';
-          if      (v === 'P') { present++; if (isMrn) mrnPresent++; else evnPresent++; }
-          else if (v === 'A') {
-            absent++;
-            if (isMrn) mrnAbsent++; else evnAbsent++;
-            absentEntries.push({ date: datePart, session, batchId });
-          }
-          else if (v === 'L') { late++; if (isMrn) mrnLate++; else evnLate++; }
-        });
+        if (rec && typeof rec === 'object') rows.push({ datePart, batchId, session, rec });
       } catch(e2) {}
     }
   } catch(e) {}
+
+  _attScanCache[monthStr] = rows;
+  return rows;
+}
+
+function getStudentAttStats(student, year, month) {
+  let present = 0, absent = 0, late = 0;
+  let mrnAbsent = 0, evnAbsent = 0, mrnPresent = 0, evnPresent = 0, mrnLate = 0, evnLate = 0;
+  const monthStr = year + '-' + String(month + 1).padStart(2, '0');
+
+  // ── Step 1: Use the cached month scan for P/A/L counts + session split ──
+  // Also collect absent dates per session so we can cross-ref timetable
+  const absentEntries = []; // { date, session, batchId }
+
+  const monthRows = _getAttScanForMonth(year, month);
+  monthRows.forEach(({ datePart, batchId, session, rec }) => {
+    Object.keys(rec).forEach(rk => {
+      if (!rk.startsWith(student.id + '|')) return;
+      const v      = rec[rk];
+      const isMrn  = session === 'morning';
+      if      (v === 'P') { present++; if (isMrn) mrnPresent++; else evnPresent++; }
+      else if (v === 'A') {
+        absent++;
+        if (isMrn) mrnAbsent++; else evnAbsent++;
+        absentEntries.push({ date: datePart, session, batchId });
+      }
+      else if (v === 'L') { late++; if (isMrn) mrnLate++; else evnLate++; }
+    });
+  });
 
   const total = present + absent + late;
   const pct   = total > 0 ? Math.round(present / total * 100) : 0;
@@ -18832,7 +18851,8 @@ function getStudentMarksAuto(studentId) {
   const results = [];
   const seen    = new Set();
   try {
-    // 1) Try the index first (fast path)
+    // 1) Index first (fast path) — every marks-save also updates this index, so once it's
+    //    populated it stays authoritative and this is all that should ever run.
     const idxRaw = localStorage.getItem('_erp_marks_index');
     const idx    = idxRaw ? JSON.parse(idxRaw) : [];
     idx.forEach(key => {
@@ -18845,17 +18865,24 @@ function getStudentMarksAuto(studentId) {
         }
       } catch(e2) {}
     });
-    // 2) Full scan fallback for any keys not in the index
-    for (let i = 0; i < localStorage.length; i++) {
-      const k = localStorage.key(i);
-      if (!k || !k.startsWith('_erp_marks_') || k === '_erp_marks_index' || seen.has(k)) continue;
-      try {
-        const rec = JSON.parse(localStorage.getItem(k));
-        if (rec && rec.marks && rec.marks[studentId] !== undefined) {
-          const e = rec.marks[studentId];
-          results.push({ examName: rec.examName, subject: rec.subject, maxMarks: rec.maxMarks, passMarks: rec.passMarks||Math.round((rec.maxMarks||100)*0.35), marks: e.marks, absent: e.absent, pass: e.pass, date: rec.date });
-        }
-      } catch(e2) {}
+    // 2) Full localStorage scan — ONLY as a one-time repair for marks records saved before
+    //    the index existed. Was previously running on every call for every student — with
+    //    localStorage growing across a school year (attendance, exams, logs...), that meant
+    //    scanning the ENTIRE store, for EVERY student, on EVERY render. That's the main
+    //    reason the app felt sluggish everywhere. Once the index has anything in it, every
+    //    future marks-save keeps it current, so this fallback is never needed again.
+    if (idx.length === 0) {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (!k || !k.startsWith('_erp_marks_') || k === '_erp_marks_index' || seen.has(k)) continue;
+        try {
+          const rec = JSON.parse(localStorage.getItem(k));
+          if (rec && rec.marks && rec.marks[studentId] !== undefined) {
+            const e = rec.marks[studentId];
+            results.push({ examName: rec.examName, subject: rec.subject, maxMarks: rec.maxMarks, passMarks: rec.passMarks||Math.round((rec.maxMarks||100)*0.35), marks: e.marks, absent: e.absent, pass: e.pass, date: rec.date });
+          }
+        } catch(e2) {}
+      }
     }
   } catch(e) {}
   return results;

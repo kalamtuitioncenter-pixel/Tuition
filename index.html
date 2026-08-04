@@ -1482,6 +1482,7 @@ tbody tr:hover td{background:var(--bg)}
   </div>
 
   <div class="toolbar">
+    <div class="search-box"><svg viewBox="0 0 16 16" fill="none"><circle cx="6.5" cy="6.5" r="4" stroke="currentColor" stroke-width="1.3"/><path d="M11 11l2.5 2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg><input id="fee-search" placeholder="Search name, ID, phone, class…" oninput="filterFees(this.value)"></div>
     <div class="seg" id="fee-tabs">
       <button class="seg-b on" data-tab="all" onclick="setFeeTab('all',this)">All</button>
       <button class="seg-b" data-tab="paid" onclick="setFeeTab('paid',this)" id="ft-paid">Paid</button>
@@ -5259,13 +5260,17 @@ function openStudentProfile(id) {
 
         <!-- Attendance -->
         <div style="background:var(--bg);border-radius:10px;padding:12px 14px;margin-bottom:12px">
-          <div style="font-size:12px;font-weight:700;color:var(--tx);margin-bottom:8px">📅 Attendance — This Month</div>
-          ${att ? `<div style="display:flex;gap:16px;font-size:11px;color:var(--tx);flex-wrap:wrap">
-            <div>✅ Present: <b>${att.present}</b></div>
-            <div>❌ Absent: <b>${att.absent}</b></div>
-            <div>⏰ Late: <b>${att.late}</b></div>
-            <div>📊 Attendance: <b>${att.pct}%</b></div>
-          </div>` : `<div style="font-size:11px;color:var(--tx3)">No attendance data for this month</div>`}
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px">
+            <div style="font-size:12px;font-weight:700;color:var(--tx)">📅 Month-wise Attendance</div>
+            <div style="display:flex;align-items:center;gap:6px">
+              <select id="profile-att-month-${s.id}" class="fi" style="font-size:11px;width:auto;padding:5px 8px"
+                onchange="renderStudentAttMonth('${s.id}', this.value)">
+                ${_attMonthOptions(now.getFullYear(), now.getMonth())}
+              </select>
+              <button class="btn btn-wa btn-sm" style="padding:5px 10px;font-size:11px" onclick="sendAttWA('${s.id}')">📱 WhatsApp</button>
+            </div>
+          </div>
+          <div id="profile-att-panel-${s.id}"></div>
         </div>
 
         <!-- Marks / Exam History -->
@@ -5296,6 +5301,9 @@ function openStudentProfile(id) {
       </div>
     </div>
   </div>`;
+
+  // Initial paint of the month-wise attendance panel (current month)
+  try { renderStudentAttMonth(s.id, now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0')); } catch(e) {}
 }
 
 function saveStudent() {
@@ -7675,6 +7683,15 @@ function applyFeeGradeFilter() {
   applyFeeMonthFilter();
 }
 
+/* Search box on the Fees page — filters by student name, ID, phone, or class */
+function filterFees(q) {
+  window._feeSearchQuery = (q || '').trim();
+  const activeTab = document.querySelector('#fee-tabs .seg-b.on');
+  const tabVal = activeTab ? (activeTab.getAttribute('data-tab') || 'all') : 'all';
+  const month = window._feeSelectedMonth || '';
+  _renderFeesFiltered(tabVal, month);
+}
+
 /* Core render — respects tab filter, month filter AND class filter */
 function _renderFeesFiltered(tabVal, month) {
   const bm = {paid:'bg', partial:'bp', pending:'ba', overdue:'br2'};
@@ -7686,6 +7703,18 @@ function _renderFeesFiltered(tabVal, month) {
 
   // Class/grade filter
   if (grade !== 'all') source = source.filter(f => _feeStudentGrade(f) === grade);
+
+  // Search filter — name, student ID, phone, or class
+  const searchQ = (window._feeSearchQuery || '').toLowerCase().trim();
+  function _feeMatchesSearch(f) {
+    const st = students.find(s => s.id === f.studentId || s.name === f.student);
+    return (f.student || '').toLowerCase().includes(searchQ)
+      || String(st?.id || '').toLowerCase().includes(searchQ)
+      || String(st?.phone || '').toLowerCase().includes(searchQ)
+      || String(st?.parent || '').toLowerCase().includes(searchQ)
+      || String(st?.grade || '').toLowerCase().includes(searchQ);
+  }
+  if (searchQ) source = source.filter(_feeMatchesSearch);
 
   // Tab filter
   if (tabVal === 'paid')    source = source.filter(f => f.status === 'paid');
@@ -7714,12 +7743,22 @@ function _renderFeesFiltered(tabVal, month) {
     noFeeStudents = students.filter(s => s && s.status === 'active' && s.name
       && !covered.has(String(s.id)) && !covered.has(String(s.name))
       && (grade === 'all' || String(s.grade||'').trim() === grade));
+    if (searchQ) {
+      noFeeStudents = noFeeStudents.filter(s =>
+        (s.name||'').toLowerCase().includes(searchQ)
+        || String(s.id||'').toLowerCase().includes(searchQ)
+        || String(s.phone||'').toLowerCase().includes(searchQ)
+        || String(s.parent||'').toLowerCase().includes(searchQ)
+        || String(s.grade||'').toLowerCase().includes(searchQ)
+      );
+    }
   }
 
   if (source.length === 0 && noFeeStudents.length === 0) {
-    const isFiltered = month || tabVal !== 'all' || grade !== 'all';
+    const isFiltered = month || tabVal !== 'all' || grade !== 'all' || searchQ;
     document.getElementById('fee-body').innerHTML = `<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--tx3);font-size:13px">
-      ${tabVal==='pending' ? '🎉 No pending fees for ' + (month||'this period') + '! All caught up.' :
+      ${searchQ ? '🔍 No students match "' + escHtml(window._feeSearchQuery || '') + '".' :
+        tabVal==='pending' ? '🎉 No pending fees for ' + (month||'this period') + '! All caught up.' :
         isFiltered ? 'No records match the selected filter.' : 'No fee records found.'}
     </td></tr>`;
     return;
@@ -7784,6 +7823,7 @@ function _renderFeesFiltered(tabVal, month) {
             <span>Paid: <b style="color:#16a34a">₹${(f.paid||0).toLocaleString('en-IN')}</b></span>
             ${f.balance>0?`<span>Due: <b style="color:#dc2626">₹${f.balance.toLocaleString('en-IN')}</b></span>`:''}
             <span style="color:var(--tx3)">${f.mode||'Cash'}</span>
+            ${f.concession>0?`<span title="${(f.concessionReason||'').replace(/"/g,'')}" style="color:#ca8a04">🎗️ Concession ₹${f.concession.toLocaleString('en-IN')}</span>`:''}
           </div>
         </td>
         <td style="padding:7px 8px;text-align:right;white-space:nowrap">
@@ -8403,6 +8443,25 @@ function openCollectModal(rcpt) {
         </button>`).join('')}
     </div>
 
+    <!-- Reduced Fee / Concession — for paying less than the balance permanently (poor students etc) -->
+    <div class="fg">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--tx2);font-weight:500">
+        <input type="checkbox" id="col-reduce" onchange="toggleReduceFee('${rcpt}')" style="width:15px;height:15px;cursor:pointer;accent-color:#ca8a04">
+        🎗️ Fee Reduced (Concession) — student is paying less than the full fee
+      </label>
+    </div>
+    <div id="col-reduce-box" style="display:none;background:#fffbeb;border:.5px solid #fde68a;border-radius:8px;padding:11px 13px;margin-bottom:12px">
+      <div class="fg" style="margin-bottom:8px">
+        <label class="fl">Reduced Total Fee (final amount this student needs to pay) ₹</label>
+        <input class="fi" id="col-reduced-total" type="number" value="${f.total||0}" oninput="updateCollectPreview('${rcpt}')">
+      </div>
+      <div class="fg" style="margin-bottom:0">
+        <label class="fl">Reason (optional)</label>
+        <input class="fi" id="col-reduce-reason" placeholder="e.g. Poor family, sibling discount">
+      </div>
+      <div style="font-size:10px;color:#92400e;margin-top:6px">Ticking this <b>permanently lowers</b> the fee for this record (e.g. ₹1300 → ₹1200) so it won't keep showing as pending. Leave unticked if this is just a partial payment and the rest is still owed (balance carries forward).</div>
+    </div>
+
     <!-- New status preview -->
     <div id="col-preview" style="background:#dcfce7;border-radius:8px;padding:10px 13px;font-size:12px;color:#166534;margin-bottom:14px;border:.5px solid #bbf7d0">
       ✅ After collection: <b>Fully Paid</b> — Balance ₹0
@@ -8416,20 +8475,42 @@ function openCollectModal(rcpt) {
   </div></div>`;
 }
 
+/* Toggle the Reduced Fee / Concession panel in the Collect modal */
+function toggleReduceFee(rcpt) {
+  const f = fees.find(fe => fe.rcpt === rcpt);
+  if (!f) return;
+  const checked = !!document.getElementById('col-reduce')?.checked;
+  const box = document.getElementById('col-reduce-box');
+  if (box) box.style.display = checked ? '' : 'none';
+  if (checked) {
+    const rt = document.getElementById('col-reduced-total');
+    if (rt && (!rt.value || parseFloat(rt.value) === f.total)) rt.value = f.total || 0;
+  }
+  updateCollectPreview(rcpt);
+}
+
 function updateCollectPreview(rcpt) {
   const f = fees.find(fe => fe.rcpt === rcpt);
   if (!f) return;
+  const reduceOn = !!document.getElementById('col-reduce')?.checked;
+  let effTotal = f.total || 0;
+  if (reduceOn) {
+    const rt = parseFloat(document.getElementById('col-reduced-total')?.value);
+    if (!isNaN(rt) && rt >= 0) effTotal = rt;
+  }
   const collecting = parseFloat(document.getElementById('col-amount')?.value) || 0;
   const newPaid = (f.paid || 0) + collecting;
-  const newBal  = Math.max(0, (f.total || 0) - newPaid);
+  const newBal  = Math.max(0, effTotal - newPaid);
   const el = document.getElementById('col-preview');
   if (!el) return;
+  const concessionAmt = reduceOn ? Math.max(0, (f.total||0) - effTotal) : 0;
+  const concessionNote = concessionAmt > 0 ? ` <span style="opacity:.85">(🎗️ ₹${concessionAmt.toLocaleString('en-IN')} concession applied)</span>` : '';
   if (newBal <= 0) {
     el.style.background = '#dcfce7'; el.style.color = '#166534'; el.style.borderColor = '#bbf7d0';
-    el.innerHTML = `✅ After collection: <b>Fully Paid</b> — Balance ₹0`;
+    el.innerHTML = `✅ After collection: <b>Fully Paid</b> — Balance ₹0${concessionNote}`;
   } else if (collecting > 0) {
     el.style.background = '#fef9c3'; el.style.color = '#854d0e'; el.style.borderColor = '#fde68a';
-    el.innerHTML = `⚠️ After collection: <b>Partial</b> — Balance ₹${newBal.toLocaleString('en-IN')} remaining`;
+    el.innerHTML = `⚠️ After collection: <b>Partial</b> — Balance ₹${newBal.toLocaleString('en-IN')} remaining${concessionNote}`;
   } else {
     el.style.background = '#fee2e2'; el.style.color = '#991b1b'; el.style.borderColor = '#fecdd3';
     el.innerHTML = `❌ Enter an amount to collect`;
@@ -8441,9 +8522,24 @@ function submitCollect(rcpt) {
   if (!f) return;
   const collecting = parseFloat(document.getElementById('col-amount')?.value) || 0;
   const mode = document.getElementById('col-mode')?.value || 'Cash';
+
+  // Reduced Fee / Concession — permanently lowers this record's total fee
+  // (e.g. ₹1300 → ₹1200 for a poor student) instead of leaving a balance pending.
+  const reduceOn = !!document.getElementById('col-reduce')?.checked;
+  const reduceReason = (document.getElementById('col-reduce-reason')?.value || '').trim();
+  if (reduceOn) {
+    const rt = parseFloat(document.getElementById('col-reduced-total')?.value);
+    if (!isNaN(rt) && rt >= 0 && rt < (f.total || 0)) {
+      const waived = (f.total || 0) - rt;
+      f.concession = (f.concession || 0) + waived;
+      f.concessionReason = reduceReason || f.concessionReason || '';
+      f.total = rt;
+    }
+  }
+
   if (collecting <= 0) { showToast('Enter amount to collect'); return; }
-  if (collecting > (f.balance || 0) + 0.01) {
-    showToast(`Max collectable is ₹${(f.balance||0).toLocaleString('en-IN')}`); return;
+  if (collecting > (Math.max(0, (f.total||0) - (f.paid||0))) + 0.01) {
+    showToast(`Max collectable is ₹${Math.max(0,(f.total||0)-(f.paid||0)).toLocaleString('en-IN')}`); return;
   }
 
   // Update fee record
@@ -18842,6 +18938,148 @@ function getStudentAttStats(student, year, month) {
     absentDates: { morning: absentEntries.filter(e=>e.session==='morning').map(e=>e.date),
                    evening: absentEntries.filter(e=>e.session==='evening').map(e=>e.date) }
   };
+}
+
+/* ════════════════════════════════════════════════════════
+   MONTH-WISE ATTENDANCE CALENDAR — used by the Student Profile
+   "Attendance" panel. Returns, for one calendar month, the full
+   list of Present / Leave(Absent) / Late / Holiday dates for a
+   single student, plus a per-day session breakdown.
+   Holiday dates are centre-wide (any batch/session marked as a
+   holiday that day) — individual batches aren't cross-referenced
+   against the student record here.
+════════════════════════════════════════════════════════ */
+function getStudentAttCalendar(student, year, month) {
+  const monthStr = year + '-' + String(month + 1).padStart(2, '0');
+  const dayMap = {}; // 'YYYY-MM-DD' -> { morning:'P'/'A'/'L'/null, evening:'P'/'A'/'L'/null }
+
+  const monthRows = (typeof _getAttScanForMonth === 'function') ? _getAttScanForMonth(year, month) : [];
+  monthRows.forEach(({ datePart, session, rec }) => {
+    Object.keys(rec).forEach(rk => {
+      if (!rk.startsWith(student.id + '|')) return;
+      const v = rec[rk];
+      if (v !== 'P' && v !== 'A' && v !== 'L') return;
+      if (!dayMap[datePart]) dayMap[datePart] = { morning: null, evening: null };
+      dayMap[datePart][session === 'morning' ? 'morning' : 'evening'] = v;
+    });
+  });
+
+  // Holiday dates this month (centre-wide) — from _erp_holiday_{date}_{batchId}_{session} keys
+  const holidaySet = new Set();
+  try {
+    const hPrefix = '_erp_holiday_';
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (!k || !k.startsWith(hPrefix)) continue;
+      const datePart = k.slice(hPrefix.length, hPrefix.length + 10);
+      if (datePart.startsWith(monthStr) && localStorage.getItem(k) === '1') holidaySet.add(datePart);
+    }
+  } catch(e) {}
+
+  const presentSet = new Set(), absentSet = new Set(), lateSet = new Set();
+  Object.entries(dayMap).forEach(([date, ses]) => {
+    [ses.morning, ses.evening].forEach(v => {
+      if (v === 'P') presentSet.add(date);
+      else if (v === 'A') absentSet.add(date);
+      else if (v === 'L') lateSet.add(date);
+    });
+  });
+
+  const sortFn = (a, b) => a.localeCompare(b);
+  return {
+    monthStr,
+    days: dayMap,
+    presentDates : Array.from(presentSet).sort(sortFn),
+    absentDates  : Array.from(absentSet).sort(sortFn),
+    lateDates    : Array.from(lateSet).sort(sortFn),
+    holidayDates : Array.from(holidaySet).sort(sortFn)
+  };
+}
+
+/* Compact "3, 7, 15" style day-of-month list for a date array (all same month) */
+function _attDayList(dates) {
+  if (!dates || !dates.length) return '—';
+  return dates.map(d => Number(d.slice(8, 10))).join(', ');
+}
+
+/* Build the <option> list for the Student Profile month picker — current
+   month plus the previous 11 months, most recent first. */
+function _attMonthOptions(selYear, selMonth) {
+  const now = new Date();
+  let opts = '';
+  for (let i = 0; i < 12; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const y = d.getFullYear(), m = d.getMonth();
+    const val = y + '-' + String(m + 1).padStart(2, '0');
+    const label = d.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+    const sel = (y === selYear && m === selMonth) ? 'selected' : '';
+    opts += `<option value="${val}" ${sel}>${label}</option>`;
+  }
+  return opts;
+}
+
+/* Render (or re-render) the month-wise attendance panel inside the Student
+   Profile modal. Called on open and whenever the month dropdown changes. */
+function renderStudentAttMonth(studentId, ym) {
+  const s = (typeof students !== 'undefined') ? students.find(x => x.id === studentId) : null;
+  const panel = document.getElementById('profile-att-panel-' + studentId);
+  if (!s || !panel) return;
+
+  const [yStr, mStr] = (ym || '').split('-');
+  const year  = yStr ? parseInt(yStr, 10) : new Date().getFullYear();
+  const month = mStr ? parseInt(mStr, 10) - 1 : new Date().getMonth();
+
+  let cal = { presentDates: [], absentDates: [], lateDates: [], holidayDates: [] };
+  try { cal = getStudentAttCalendar(s, year, month); } catch(e) {}
+
+  const rows = [
+    { label: '✅ Present', dates: cal.presentDates, color: '#16a34a' },
+    { label: '❌ Leave (Absent)', dates: cal.absentDates, color: '#dc2626' },
+    { label: '⏰ Late', dates: cal.lateDates, color: '#d97706' },
+    { label: '🏖 Holiday', dates: cal.holidayDates, color: '#0891b2' }
+  ];
+
+  const anyData = cal.presentDates.length || cal.absentDates.length || cal.lateDates.length || cal.holidayDates.length;
+
+  panel.innerHTML = `
+    <div style="display:flex;gap:10px;flex-wrap:wrap;font-size:11px;color:var(--tx);margin-bottom:10px">
+      <div>✅ <b>${cal.presentDates.length}</b></div>
+      <div>❌ <b>${cal.absentDates.length}</b></div>
+      <div>⏰ <b>${cal.lateDates.length}</b></div>
+      <div>🏖 <b>${cal.holidayDates.length}</b></div>
+    </div>
+    ${anyData ? rows.map(r => `
+      <div style="margin-bottom:7px;font-size:11px;line-height:1.5">
+        <span style="font-weight:700;color:${r.color}">${r.label}:</span>
+        <span style="color:var(--tx2)">${_attDayList(r.dates)}</span>
+      </div>`).join('') : `<div style="font-size:11px;color:var(--tx3)">No attendance data for this month</div>`}
+  `;
+}
+
+/* Compose and send the selected month's attendance summary to the parent via WhatsApp */
+function sendAttWA(studentId) {
+  const s = (typeof students !== 'undefined') ? students.find(x => x.id === studentId) : null;
+  if (!s) return;
+  const sel = document.getElementById('profile-att-month-' + studentId);
+  const ym  = sel ? sel.value : '';
+  const [yStr, mStr] = (ym || '').split('-');
+  const year  = yStr ? parseInt(yStr, 10) : new Date().getFullYear();
+  const month = mStr ? parseInt(mStr, 10) - 1 : new Date().getMonth();
+
+  let cal = { presentDates: [], absentDates: [], lateDates: [], holidayDates: [] };
+  try { cal = getStudentAttCalendar(s, year, month); } catch(e) {}
+
+  const monthLabel = new Date(year, month, 1).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+  const centerName = (typeof CFG !== 'undefined' && CFG.CENTER && CFG.CENTER.name) ? CFG.CENTER.name : '';
+
+  const msg = `Dear ${s.parent || 'Parent'},\n\n${centerName}\nAttendance Summary — ${monthLabel}\nStudent: *${s.name}* (${s.id})\n\n`
+    + `✅ Present (${cal.presentDates.length}): ${_attDayList(cal.presentDates)}\n`
+    + `❌ Leave (${cal.absentDates.length}): ${_attDayList(cal.absentDates)}\n`
+    + `⏰ Late (${cal.lateDates.length}): ${_attDayList(cal.lateDates)}\n`
+    + `🏖 Holiday (${cal.holidayDates.length}): ${_attDayList(cal.holidayDates)}\n\n`
+    + `📞 ${(typeof CFG !== 'undefined' && CFG.CENTER && CFG.CENTER.phone) || ''}`;
+
+  openWA(s.phone, msg);
 }
 
 /* ════════════════════════════════════════════════════════

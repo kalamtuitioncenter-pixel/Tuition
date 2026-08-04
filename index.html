@@ -5267,7 +5267,7 @@ function openStudentProfile(id) {
                 onchange="renderStudentAttMonth('${s.id}', this.value)">
                 ${_attMonthOptions(now.getFullYear(), now.getMonth())}
               </select>
-              <button class="btn btn-wa btn-sm" style="padding:5px 10px;font-size:11px" onclick="sendAttWA('${s.id}')">📱 WhatsApp</button>
+              <button class="btn btn-wa btn-sm" style="padding:5px 10px;font-size:11px" onclick="sendStudentAttSummaryWA('${s.id}')">📱 WhatsApp</button>
             </div>
           </div>
           <div id="profile-att-panel-${s.id}"></div>
@@ -19057,7 +19057,7 @@ function renderStudentAttMonth(studentId, ym) {
 }
 
 /* Compose and send the selected month's attendance summary to the parent via WhatsApp */
-function sendAttWA(studentId) {
+function sendStudentAttSummaryWA(studentId) {
   const s = (typeof students !== 'undefined') ? students.find(x => x.id === studentId) : null;
   if (!s) return;
   const sel = document.getElementById('profile-att-month-' + studentId);

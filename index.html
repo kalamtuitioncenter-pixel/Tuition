@@ -14148,7 +14148,7 @@ function doPost(e) {
     if (attRows.length>0)
       overwriteSht(ss,'Attendance',
         ['Time','Date','Batch','Session','Student ID','Student Name','Status'],
-        attRows.slice(0,3000));
+        attRows);
 
     // ── Day Order ─────────────────────────────────────────────
     const dayOrderRows = [];

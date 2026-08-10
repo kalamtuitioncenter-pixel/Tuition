@@ -580,6 +580,77 @@ tbody tr:hover td{background:var(--bg)}
 .sum-activity-tag.on { box-shadow:0 0 0 1.5px currentColor; }
 .dark .sum-card-header { background:transparent; }
 </style>
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   WEBINTOAPP UNIVERSAL LOCAL STORAGE MIRROR — V6
+   Every ERP localStorage key is mirrored to IndexedDB. This protects
+   students, fees, staff, exams, attendance, marks, timetable, day-order,
+   missed subjects, countdowns, reports, templates and settings when the
+   Android WebView clears or blocks Web Storage.
+═══════════════════════════════════════════════════════════════ */
+(function(){
+  if (window.__ERP_UNIVERSAL_STORAGE_V6__) return;
+  window.__ERP_UNIVERSAL_STORAGE_V6__ = true;
+  const DB='KalamERP_Persistent_v1', STORE='kv', PREFIX='ls:';
+  const cache = window.__ERP_LS_CACHE__ = window.__ERP_LS_CACHE__ || Object.create(null);
+  let dbp=null;
+  function db(){
+    if(dbp) return dbp;
+    dbp=new Promise((res,rej)=>{
+      try{
+        if(!window.indexedDB) return rej(new Error('IndexedDB unavailable'));
+        const r=indexedDB.open(DB,1);
+        r.onupgradeneeded=()=>{ if(!r.result.objectStoreNames.contains(STORE)) r.result.createObjectStore(STORE); };
+        r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error||new Error('IDB open failed')); r.onblocked=()=>rej(new Error('IDB blocked'));
+      }catch(e){rej(e)}
+    });
+    return dbp;
+  }
+  function put(k,v){ return db().then(d=>new Promise((res,rej)=>{try{const t=d.transaction(STORE,'readwrite');t.objectStore(STORE).put({value:v,savedAt:Date.now()},PREFIX+k);t.oncomplete=()=>res(1);t.onerror=()=>rej(t.error)}catch(e){rej(e)}})); }
+  function del(k){ return db().then(d=>new Promise((res,rej)=>{try{const t=d.transaction(STORE,'readwrite');t.objectStore(STORE).delete(PREFIX+k);t.oncomplete=()=>res(1);t.onerror=()=>rej(t.error)}catch(e){rej(e)}})); }
+  function hydrate(){
+    return db().then(d=>new Promise((res,rej)=>{try{const t=d.transaction(STORE,'readonly'), st=t.objectStore(STORE), kr=st.getAllKeys(), vr=st.getAll();t.oncomplete=()=>{const keys=kr.result||[], vals=vr.result||[];for(let i=0;i<keys.length;i++){const k=String(keys[i]);if(!k.startsWith(PREFIX))continue;const logical=k.slice(PREFIX.length), rec=vals[i];if(rec&&typeof rec.value==='string') cache[logical]=rec.value;}res(1)};t.onerror=()=>rej(t.error)}catch(e){rej(e)}}));
+  }
+  const nativeLS = (function(){ try{return window.localStorage;}catch(e){return null;} })();
+  // Prime the cache synchronously from native Web Storage when possible.
+  try{const ls=nativeLS;if(ls){for(let i=0;i<ls.length;i++){const k=ls.key(i);if(k!=null){const v=ls.getItem(k);if(v!=null)cache[k]=v;}}}}catch(e){}
+  window.erpGet=function(k){
+    k=String(k);
+    try{const v=nativeLS ? nativeLS.getItem(k) : null;if(v!==null&&v!==undefined){cache[k]=v;return v;}}catch(e){}
+    return Object.prototype.hasOwnProperty.call(cache,k)?cache[k]:null;
+  };
+  window.erpSet=function(k,v){
+    k=String(k); v=String(v); cache[k]=v;
+    try{if(nativeLS) nativeLS.setItem(k,v);}catch(e){}
+    put(k,v).catch(()=>{});
+    return true;
+  };
+  window.erpRemove=function(k){
+    k=String(k); delete cache[k];
+    try{if(nativeLS) nativeLS.removeItem(k);}catch(e){}
+    del(k).catch(()=>{}); return true;
+  };
+  window.erpStorageKeys=function(){
+    const out=new Set(Object.keys(cache));
+    try{const ls=nativeLS;if(ls){for(let i=0;i<ls.length;i++){const k=ls.key(i);if(k)out.add(k);}}}catch(e){}
+    return Array.from(out);
+  };
+  window.erpHydrateStorage=function(){
+    return hydrate().then(()=>{
+      // Restore mirrored keys into Web Storage when the WebView permits it.
+      try{if(nativeLS) for(const k of Object.keys(cache)){try{nativeLS.setItem(k,cache[k]);}catch(e){}}}catch(e){}
+      window.dispatchEvent(new Event('erp-persistence-hydrated'));
+      return true;
+    }).catch(()=>false);
+  };
+  window.erpHydrateStorage();
+  window.addEventListener('erp-persistence-hydrated',function(){
+    try{if(typeof renderAttList==='function')renderAttList();}catch(e){}
+    try{if(typeof renderDashboard==='function')renderDashboard();}catch(e){}
+    try{if(typeof renderTargetWidget==='function')renderTargetWidget();}catch(e){}
+  });
+})();
+</script>
 </head>
 <body>
 <div class="lic-banner" id="lic-banner"><span id="lic-banner-msg"></span> &nbsp;·&nbsp; <a onclick="openUpgrade()">Upgrade →</a><button onclick="this.parentElement.style.display='none'" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:#fff;cursor:pointer;font-size:18px">×</button></div>
@@ -875,7 +946,7 @@ tbody tr:hover td{background:var(--bg)}
       <div style="display:flex;gap:8px;margin-bottom:6px;flex-wrap:wrap">
   <button class="btn btn-sm" onclick="
     var k='_erp_students';
-    var ls=localStorage.getItem(k);
+    var ls=erpGet(k);
     var ss=sessionStorage.getItem(k);
     var ck=''; try{document.cookie.split(';').forEach(function(c){if(c.trim().startsWith('_erp_stu='))ck='cookie:yes';});}catch(e){}
     var msg='Storage Status:\n';
@@ -2863,7 +2934,7 @@ var _dt=false;function _chk(){var t=new Date();debugger;if(new Date()-t>100)_dt=
 function _sha256(msg){var K=[0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];function _r(x,n){return(x>>>n)|(x<<(32-n));}function _s(x,n){return x>>>n;}function _ch(x,y,z){return(x&y)^(~x&z);}function _mj(x,y,z){return(x&y)^(x&z)^(y&z);}function _s0(x){return _r(x,2)^_r(x,13)^_r(x,22);}function _s1(x){return _r(x,6)^_r(x,11)^_r(x,25);}function _t0(x){return _r(x,7)^_r(x,18)^_s(x,3);}function _t1(x){return _r(x,17)^_r(x,19)^_s(x,10);}function _a(x,y){var l=(x&0xffff)+(y&0xffff);return((x>>16)+(y>>16)+(l>>16)<<16)|(l&0xffff);}var u=[];for(var i=0;i<msg.length;i++){var c=msg.charCodeAt(i);if(c<128)u.push(c);else if(c<2048)u.push((c>>6)|192,(c&63)|128);else u.push((c>>12)|224,((c>>6)&63)|128,(c&63)|128);}var L=u.length,M=new Uint32Array(Math.ceil((L+9)/64)*16);for(var j=0;j<L;j++)M[j>>2]|=u[j]<<(24-(j%4)*8);M[L>>2]|=0x80<<(24-(L%4)*8);M[M.length-1]=L*8;var H=[0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];for(var b=0;b<M.length;b+=16){var W=new Uint32Array(64);for(var t2=0;t2<16;t2++)W[t2]=M[b+t2];for(var t3=16;t3<64;t3++)W[t3]=_a(_a(_t1(W[t3-2]),W[t3-7]),_a(_t0(W[t3-15]),W[t3-16]));var a=H[0],bc=H[1],c2=H[2],d=H[3],e=H[4],f=H[5],g=H[6],h=H[7];for(var t4=0;t4<64;t4++){var T1=_a(_a(_a(_a(h,_s1(e)),_ch(e,f,g)),K[t4]),W[t4]);var T2=_a(_s0(a),_mj(a,bc,c2));h=g;g=f;f=e;e=_a(d,T1);d=c2;c2=bc;bc=a;a=_a(T1,T2);}H[0]=_a(a,H[0]);H[1]=_a(bc,H[1]);H[2]=_a(c2,H[2]);H[3]=_a(d,H[3]);H[4]=_a(e,H[4]);H[5]=_a(f,H[5]);H[6]=_a(g,H[6]);H[7]=_a(h,H[7]);}return H.map(function(n){return('00000000'+n.toString(16).toUpperCase()).slice(-8);}).join('');}
 var _sl=['KalamERP@','2025#Tamil','Nadu$Secu','re!XK9'].join('');
 function _val(key){if(!key||typeof key!=='string')return{valid:false};var p=key.trim().toUpperCase().split('-');if(p.length<4)return{valid:false};var plan=p[0],year=p[1],serial=p[2],hash=p[3];if(!PLANS[plan])return{valid:false};var y=parseInt(year),s=parseInt(serial);if(isNaN(y)||isNaN(s)||y<2025||y>2035||s<1||s>9999)return{valid:false};var payload=_sl+':'+plan+':'+y+':'+('000'+s).slice(-4);var exp=_sha256(payload).substring(0,8);if(exp!==hash)return{valid:false};if(plan==='ULTIMATE')return{valid:true,plan:plan,expiry:new Date(2099,11,31),daysLeft:99999,serial:s};var expiry=new Date(y+1,3,30,23,59,59);var now=new Date();if(now>expiry)return{valid:false,expired:true,plan:plan};return{valid:true,plan:plan,expiry:expiry,daysLeft:Math.ceil((expiry-now)/86400000),serial:s};}
-var _TK='_erp_ts';function _trial(){var s=localStorage.getItem(_TK)||Date.now().toString();localStorage.setItem(_TK,s);var d=Math.floor((Date.now()-parseInt(s))/86400000);return{daysLeft:Math.max(0,7-d),expired:7-d<=0};}
+var _TK='_erp_ts';function _trial(){var s=erpGet(_TK)||Date.now().toString();erpSet(_TK,s);var d=Math.floor((Date.now()-parseInt(s))/86400000);return{daysLeft:Math.max(0,7-d),expired:7-d<=0};}
 function validateLicense(){var key=(CFG.LICENSE_KEY||'').trim().toUpperCase();var status={plan:'TRIAL',planName:'Free Trial',valid:true,expired:false,daysLeft:7,maxStudents:PLANS.TRIAL.maxStudents,features:{...PLANS.TRIAL.features},trialMode:true,message:''};if(!key||key==='TRIAL'){var t=_trial();status.daysLeft=t.daysLeft;status.expired=t.expired;status.valid=!t.expired;status.message=t.expired?'Trial expired — enter license key to continue':'Trial: '+t.daysLeft+' day'+(t.daysLeft===1?'':'s')+' left (5 students max)';}else{var r=_val(key);if(!r.valid){status={...status,valid:false,plan:'INVALID',planName:'Invalid',maxStudents:0,features:{},trialMode:false,message:r.expired?'License expired':'Invalid key'};}else{var pl=PLANS[r.plan];var daysMsg=r.plan==='ULTIMATE'?'Lifetime — ✅ Active':pl.name+' · '+r.daysLeft+' days left';status={...status,plan:r.plan,planName:pl.name,valid:true,expired:false,daysLeft:r.daysLeft,maxStudents:pl.maxStudents,features:{...pl.features},trialMode:false,message:daysMsg};}}CFG.FEATURES={...status.features};window.__LIC__=status;return status;}
 window.__VALIDATE_LICENSE__=validateLicense;window.__PLANS__=PLANS;
 })();
@@ -2886,14 +2957,14 @@ let currentDayOrder = '';        // which day order is active today (set by admi
 
 function saveDayOrder() {
   window.__ERP_DAYORDER_CACHE = JSON.parse(JSON.stringify(dayOrderMap || {}));
-  try { localStorage.setItem('_erp_day_order', JSON.stringify(dayOrderMap)); } catch(e) {}
+  try { erpSet('_erp_day_order', JSON.stringify(dayOrderMap)); } catch(e) {}
   try { sessionStorage.setItem('_erp_day_order', JSON.stringify(dayOrderMap)); } catch(e) {}
   if (typeof _erpPersistDayOrderIDB === 'function') _erpPersistDayOrderIDB();
 }
 function loadDayOrder() {
   var loaded = false;
   try {
-    const v = localStorage.getItem('_erp_day_order');
+    const v = erpGet('_erp_day_order');
     if (v) { const p = JSON.parse(v); if (p && typeof p === 'object') { Object.assign(dayOrderMap, p); loaded = true; } }
   } catch(e) {}
   if (!loaded) {
@@ -2926,10 +2997,10 @@ function getSubjectsForDayOrder(dayNum) {
 function _erpMaxDayOrderNum() {
   let maxDays = 0;
   try {
-    Object.keys(localStorage).forEach(k => {
+    erpStorageKeys().forEach(k => {
       if (k.startsWith('_erp_tt_')) {
         try {
-          const data = JSON.parse(localStorage.getItem(k) || 'null');
+          const data = JSON.parse(erpGet(k) || 'null');
           if (data && data.days && data.days.length > maxDays) maxDays = data.days.length;
         } catch(e) {}
       }
@@ -2948,31 +3019,41 @@ function _erpMaxDayOrderNum() {
    list for the same Day Order number) instead of the shared/global dayOrderMap,
    which only ever reflects whichever batch was last opened in Attendance. */
 function recordMissedSubjects(studentId, status, date, dayOrderNum, batchName) {
-  if (status !== 'A' && status !== 'L') return; // track absences AND late arrivals
+  if (status !== 'A' && status !== 'L') return;
   const allSubjects = (typeof _tlGetSubjectsForBatchDayOrder === 'function')
     ? _tlGetSubjectsForBatchDayOrder(batchName || '', dayOrderNum)
     : getSubjectsForDayOrder(dayOrderNum);
   if (!allSubjects.length) return;
 
-  // Absent → missed ALL subjects; Late → missed only the FIRST period subject
   const subjects = status === 'L' ? allSubjects.slice(0, 1) : allSubjects;
-
   const key = '_erp_missed_' + studentId;
-  let data = {};
-  try { data = JSON.parse(localStorage.getItem(key) || '{}'); } catch(e) {}
+
+  window.__ERP_MISSED_CACHE__ = window.__ERP_MISSED_CACHE__ || {};
+  let data = window.__ERP_MISSED_CACHE__[studentId] || {};
+  if (!Object.keys(data).length) {
+    try { data = JSON.parse(erpGet(key) || '{}') || {}; } catch(e) {}
+  }
+
   subjects.forEach(subj => {
     if (!data[subj]) data[subj] = { count: 0, dates: [], lateCount: 0, lateDates: [] };
     if (status === 'L') {
-      // Track late separately so AI can distinguish
       data[subj].lateCount = (data[subj].lateCount || 0) + 1;
       if (!data[subj].lateDates) data[subj].lateDates = [];
       if (!data[subj].lateDates.includes(date)) data[subj].lateDates.push(date);
     } else {
-      data[subj].count++;
+      data[subj].count = (data[subj].count || 0) + 1;
+      if (!data[subj].dates) data[subj].dates = [];
       if (!data[subj].dates.includes(date)) data[subj].dates.push(date);
     }
   });
-  try { localStorage.setItem(key, JSON.stringify(data)); } catch(e) {}
+
+  window.__ERP_MISSED_CACHE__[studentId] = data;
+  try { erpSet(key, JSON.stringify(data)); } catch(e) {}
+  if (typeof _erpIDBPut === 'function') {
+    _erpIDBPut('missed:' + studentId, {version:1, savedAt:Date.now(), data:data}).catch(function(e){
+      console.warn('[ERP] Missed-subject IDB save failed:', e);
+    });
+  }
 }
 
 /* Get subjects a student missed TODAY for a specific date+batch+session,
@@ -2987,7 +3068,11 @@ function _getMissedSubjectsForWA(studentId, date, batchId, session) {
   // shared across morning/evening sessions of that batch — same as saveAttendance()).
   let dayNum = document.getElementById('att-day-order')?.value || '';
   if (!dayNum) {
-    try { dayNum = localStorage.getItem('_erp_att_dayorder_' + date + '_' + batchId) || ''; } catch(e) {}
+    try {
+      const ck = date + '_' + batchId;
+      dayNum = (window.__ERP_ATT_DAYORDER_CACHE__ || {})[ck] || '';
+      if (!dayNum) dayNum = erpGet('_erp_att_dayorder_' + date + '_' + batchId) || '';
+    } catch(e) {}
   }
   if (!dayNum) return '';
 
@@ -3009,9 +3094,13 @@ function _getMissedSubjectsForWA(studentId, date, batchId, session) {
 
 /* Get missed subject summary for a student */
 function getMissedSubjects(studentId) {
+  window.__ERP_MISSED_CACHE__ = window.__ERP_MISSED_CACHE__ || {};
+  if (window.__ERP_MISSED_CACHE__[studentId]) return window.__ERP_MISSED_CACHE__[studentId];
   try {
-    const v = localStorage.getItem('_erp_missed_' + studentId);
-    return v ? JSON.parse(v) : {};
+    const v = erpGet('_erp_missed_' + studentId);
+    const data = v ? (JSON.parse(v) || {}) : {};
+    window.__ERP_MISSED_CACHE__[studentId] = data;
+    return data;
   } catch(e) { return {}; }
 }
 
@@ -3676,14 +3765,14 @@ const SCHOOL_MARK_SUBJECTS = [
 ];
 
 function _smLoad(studentId) {
-  try { return JSON.parse(localStorage.getItem('_erp_schoolmarks_' + studentId) || 'null') || {terms:{}}; }
+  try { return JSON.parse(erpGet('_erp_schoolmarks_' + studentId) || 'null') || {terms:{}}; }
   catch (e) { return {terms:{}}; }
 }
 function _smSave(studentId, rec) {
   try {
-    localStorage.setItem('_erp_schoolmarks_' + studentId, JSON.stringify(rec));
-    const idx = JSON.parse(localStorage.getItem('_erp_schoolmarks_index') || '[]');
-    if (!idx.includes(studentId)) { idx.push(studentId); localStorage.setItem('_erp_schoolmarks_index', JSON.stringify(idx)); }
+    erpSet('_erp_schoolmarks_' + studentId, JSON.stringify(rec));
+    const idx = JSON.parse(erpGet('_erp_schoolmarks_index') || '[]');
+    if (!idx.includes(studentId)) { idx.push(studentId); erpSet('_erp_schoolmarks_index', JSON.stringify(idx)); }
   } catch (e) {}
 }
 
@@ -3921,11 +4010,21 @@ const TARGET_EXAMS = [
 ];
 
 function _targetLoad() {
-  try { return JSON.parse(localStorage.getItem('_erp_target_dates') || '{}') || {}; }
-  catch (e) { return {}; }
+  if (window.__ERP_TARGET_DATES_CACHE__) return window.__ERP_TARGET_DATES_CACHE__;
+  try {
+    const data = JSON.parse(erpGet('_erp_target_dates') || '{}') || {};
+    window.__ERP_TARGET_DATES_CACHE__ = data;
+    return data;
+  } catch (e) { return {}; }
 }
 function _targetSave(data) {
-  try { localStorage.setItem('_erp_target_dates', JSON.stringify(data)); } catch (e) {}
+  window.__ERP_TARGET_DATES_CACHE__ = Object.assign({}, data || {});
+  try { erpSet('_erp_target_dates', JSON.stringify(window.__ERP_TARGET_DATES_CACHE__)); } catch (e) {}
+  if (typeof _erpIDBPut === 'function') {
+    _erpIDBPut('targetDates', {version:1, savedAt:Date.now(), data:window.__ERP_TARGET_DATES_CACHE__}).catch(function(e){
+      console.warn('[ERP] Target dates IDB save failed:', e);
+    });
+  }
 }
 function _targetDaysLeft(dateStr) {
   if (!dateStr) return null;
@@ -3937,11 +4036,21 @@ function _targetDaysLeft(dateStr) {
 
 // Editable exam names (e.g. rename "Quarterly Exam" to whatever your center calls it).
 function _targetLoadExamNames() {
-  try { return JSON.parse(localStorage.getItem('_erp_target_examnames') || '{}') || {}; }
-  catch (e) { return {}; }
+  if (window.__ERP_TARGET_NAMES_CACHE__) return window.__ERP_TARGET_NAMES_CACHE__;
+  try {
+    const data = JSON.parse(erpGet('_erp_target_examnames') || '{}') || {};
+    window.__ERP_TARGET_NAMES_CACHE__ = data;
+    return data;
+  } catch (e) { return {}; }
 }
 function _targetSaveExamNames(data) {
-  try { localStorage.setItem('_erp_target_examnames', JSON.stringify(data)); } catch (e) {}
+  window.__ERP_TARGET_NAMES_CACHE__ = Object.assign({}, data || {});
+  try { erpSet('_erp_target_examnames', JSON.stringify(window.__ERP_TARGET_NAMES_CACHE__)); } catch (e) {}
+  if (typeof _erpIDBPut === 'function') {
+    _erpIDBPut('targetExamNames', {version:1, savedAt:Date.now(), data:window.__ERP_TARGET_NAMES_CACHE__}).catch(function(e){
+      console.warn('[ERP] Target exam-name IDB save failed:', e);
+    });
+  }
 }
 function _targetExamLabel(examId) {
   const names = _targetLoadExamNames();
@@ -4112,11 +4221,11 @@ function targetRenderPredictions() {
    RISING STARS  —  slow-learner coaching track (any class)
 ═══════════════════════════════════════════════════════ */
 function _rsLoadAll() {
-  try { return JSON.parse(localStorage.getItem('_erp_risingstar') || '{}') || {}; }
+  try { return JSON.parse(erpGet('_erp_risingstar') || '{}') || {}; }
   catch (e) { return {}; }
 }
 function _rsSaveAll(data) {
-  try { localStorage.setItem('_erp_risingstar', JSON.stringify(data)); } catch (e) {}
+  try { erpSet('_erp_risingstar', JSON.stringify(data)); } catch (e) {}
 }
 
 // Used by the tickbox on a student's profile — works for any class.
@@ -4501,7 +4610,7 @@ function toggleDark() {
   document.documentElement.classList.toggle('dark', dark);
   const sub = document.getElementById('pref-dark-sub');
   if (sub) sub.textContent = dark ? t('dark_on') : t('dark_off');
-  try { localStorage.setItem('_erp_dark', dark ? '1' : '0'); } catch(e){}
+  try { erpSet('_erp_dark', dark ? '1' : '0'); } catch(e){}
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -4921,21 +5030,21 @@ const DEFAULT_ADMIN_TASKS = [
 ];
 function getAdminTodoTemplate() {
   try {
-    const raw = localStorage.getItem('_erp_admin_todo_template');
+    const raw = erpGet('_erp_admin_todo_template');
     if (raw) return JSON.parse(raw);
   } catch(e) {}
   saveAdminTodoTemplate(DEFAULT_ADMIN_TASKS);
   return DEFAULT_ADMIN_TASKS.slice();
 }
 function saveAdminTodoTemplate(arr) {
-  try { localStorage.setItem('_erp_admin_todo_template', JSON.stringify(arr)); } catch(e) {}
+  try { erpSet('_erp_admin_todo_template', JSON.stringify(arr)); } catch(e) {}
 }
 function getAdminTodoDoneMap() {
-  try { return JSON.parse(localStorage.getItem('_erp_admin_todo_done_' + _todayISO()) || '{}'); }
+  try { return JSON.parse(erpGet('_erp_admin_todo_done_' + _todayISO()) || '{}'); }
   catch(e) { return {}; }
 }
 function saveAdminTodoDoneMap(map) {
-  try { localStorage.setItem('_erp_admin_todo_done_' + _todayISO(), JSON.stringify(map)); } catch(e) {}
+  try { erpSet('_erp_admin_todo_done_' + _todayISO(), JSON.stringify(map)); } catch(e) {}
 }
 function renderAdminTodoList() {
   const wrap = document.getElementById('adm-todo-list');
@@ -5396,12 +5505,11 @@ function _todayAttPresentIds(session) {
   const prefix = '_erp_att_' + today + '_';
   const ids = new Set();
   try {
-    for (let i = 0; i < localStorage.length; i++) {
-      const k = localStorage.key(i);
+    for (const k of erpStorageKeys()) {
       if (!k || !k.startsWith(prefix) || k.startsWith('_erp_att_dayorder_')) continue;
       if (!k.endsWith('_' + session)) continue;
       try {
-        const rec = JSON.parse(localStorage.getItem(k)) || {};
+        const rec = JSON.parse(erpGet(k)) || {};
         Object.entries(rec).forEach(([rk, v]) => {
           if (v === 'P' || v === 'L') ids.add(rk.split('|')[0]);
         });
@@ -5466,16 +5574,48 @@ function _attStorageKey(date, batchId, session) {
 /* Load saved attendance for a specific date+batch+session into attState */
 function _loadAttSession(date, batchId, session) {
   const sk = _attStorageKey(date, batchId, session);
-  // Clear existing keys for this batch+session before loading
   const suffix = '|' + (batchId||'all') + '|' + session;
+  // Keep a durable in-memory copy so a WebIntoApp WebView storage failure
+  // cannot make freshly-saved attendance disappear on the immediate refresh.
+  window.__ERP_ATT_CACHE__ = window.__ERP_ATT_CACHE__ || {};
+  const cache = window.__ERP_ATT_CACHE__;
+  let loaded = false;
+
   Object.keys(attState).forEach(k => { if (k.endsWith(suffix)) delete attState[k]; });
+
+  // 1) Web Storage (fast path)
   try {
-    const saved = localStorage.getItem(sk);
+    const saved = erpGet(sk);
     if (saved) {
       const parsed = JSON.parse(saved);
+      cache[sk] = parsed;
       Object.keys(parsed).forEach(k => { if (k.endsWith(suffix)) attState[k] = parsed[k]; });
+      loaded = true;
     }
   } catch(e) {}
+
+  // 2) In-memory cache (important for WebIntoApp when localStorage is unavailable)
+  if (!loaded && cache[sk] && typeof cache[sk] === 'object') {
+    const parsed = cache[sk];
+    Object.keys(parsed).forEach(k => { if (k.endsWith(suffix)) attState[k] = parsed[k]; });
+    loaded = true;
+  }
+
+  // 3) IndexedDB durable fallback. This is async; refresh only if the user is
+  // still looking at the same date/batch/session when the read completes.
+  if (typeof _erpIDBGet === 'function') {
+    _erpIDBGet('attendance:' + sk).then(function(payload) {
+      if (!payload || !payload.data || typeof payload.data !== 'object') return;
+      cache[sk] = payload.data;
+      const curDate = document.getElementById('att-date')?.value || '';
+      const curBatch = document.getElementById('att-batch')?.value || '';
+      const curSession = document.getElementById('att-session')?.value || '';
+      if (curDate !== date || curBatch !== batchId || curSession !== session) return;
+      Object.keys(attState).forEach(k => { if (k.endsWith(suffix)) delete attState[k]; });
+      Object.keys(payload.data).forEach(k => { if (k.endsWith(suffix)) attState[k] = payload.data[k]; });
+      if (typeof renderAttList === 'function') renderAttList();
+    }).catch(function() {});
+  }
 }
 
 /* Save current batch+session data only */
@@ -5484,13 +5624,32 @@ function _saveAttSession(date, batchId, session) {
   const suffix = '|' + (batchId||'all') + '|' + session;
   const out = {};
   Object.keys(attState).forEach(k => { if (k.endsWith(suffix)) out[k] = attState[k]; });
+
+  // ALWAYS keep the latest attendance in memory first. This prevents the
+  // post-save render from wiping the visible P/A/L state when WebIntoApp
+  // rejects localStorage.
+  window.__ERP_ATT_CACHE__ = window.__ERP_ATT_CACHE__ || {};
+  window.__ERP_ATT_CACHE__[sk] = out;
+
+  // Fast Web Storage copy (when available).
   try {
-    localStorage.setItem(sk, JSON.stringify(out));
-    // Master index
-    const idx = JSON.parse(localStorage.getItem('_erp_att_index') || '[]');
-    if (!idx.includes(sk)) { idx.push(sk); localStorage.setItem('_erp_att_index', JSON.stringify(idx)); }
+    erpSet(sk, JSON.stringify(out));
+    const idx = JSON.parse(erpGet('_erp_att_index') || '[]');
+    if (!idx.includes(sk)) { idx.push(sk); erpSet('_erp_att_index', JSON.stringify(idx)); }
   } catch(e) {}
-  // This date's month may now be stale in getStudentAttStats' per-month cache.
+
+  // Durable WebIntoApp fallback: IndexedDB.
+  if (typeof _erpIDBPut === 'function') {
+    _erpIDBPut('attendance:' + sk, {version:1, savedAt:Date.now(), data:out})
+      .catch(function(e){ console.warn('[ERP] Attendance IDB save failed:', e); });
+    // Keep a compact index for backup/report scans.
+    _erpIDBGet('attendanceIndex').catch(function(){ return null; }).then(function(existing){
+      const arr = existing && Array.isArray(existing.keys) ? existing.keys.slice() : [];
+      if (!arr.includes(sk)) arr.push(sk);
+      return _erpIDBPut('attendanceIndex', {version:1, savedAt:Date.now(), keys:arr});
+    }).catch(function(){});
+  }
+
   if (typeof _attScanCache !== 'undefined') delete _attScanCache[date.slice(0,7)];
 }
 
@@ -5583,7 +5742,7 @@ function _populateDayOrderDropdown(date, batch) {
     const baseName = batch.name.replace(/\s*[\(\-].*$/, '').trim();
     if (baseName && baseName !== batch.name) batchKeys.push(baseName);
     try {
-      Object.keys(localStorage).forEach(k => {
+      erpStorageKeys().forEach(k => {
         if (k.startsWith('_erp_tt_')) {
           const ttKey = k.replace('_erp_tt_', '');
           if (ttKey !== 'all' && !batchKeys.includes(ttKey)) {
@@ -5600,7 +5759,7 @@ function _populateDayOrderDropdown(date, batch) {
   function _dayLabel(num) {
     for (const key of batchKeys) {
       try {
-        const raw = localStorage.getItem('_erp_tt_' + key);
+        const raw = erpGet('_erp_tt_' + key);
         if (!raw) continue;
         const data = JSON.parse(raw);
         const d = data && data.days ? data.days[parseInt(num, 10) - 1] : null;
@@ -5637,7 +5796,7 @@ function _populateDayOrderDropdown(date, batch) {
 
   // Auto-restore: check saved day order for this date, else use pending (holiday carry-over), else keep previous
   let restored = (window.__ERP_TODAY_DAYORDER_CACHE && window.__ERP_TODAY_DAYORDER_CACHE[date]) || '';
-  if (!restored) { try { restored = localStorage.getItem('_erp_last_dayorder_' + date) || ''; } catch(e) {} }
+  if (!restored) { try { restored = erpGet('_erp_last_dayorder_' + date) || ''; } catch(e) {} }
   if (!restored) { try { restored = sessionStorage.getItem('_erp_last_dayorder_' + date) || ''; } catch(e) {} }
 
   // Check if this date itself is a holiday — if so, show pending carry-over info
@@ -5694,7 +5853,7 @@ function renderAttList() {
   if (batch && batch.time === 'Both') {
     const otherSess   = session === 'morning' ? 'evening' : 'morning';
     const otherKey    = _attStorageKey(date, batchId, otherSess);
-    const otherSaved  = localStorage.getItem(otherKey);
+    const otherSaved  = erpGet(otherKey);
     const otherLabel  = otherSess === 'morning' ? '☀️ Morning' : '🌙 Evening';
     otherSessInfo = otherSaved
       ? `<span style="font-size:10px;background:#dcfce7;color:#166534;padding:2px 7px;border-radius:8px;border:.5px solid #bbf7d0;margin-left:8px">✅ ${otherLabel} saved</span>`
@@ -5977,7 +6136,7 @@ function onDayOrderChange() {
   if (num === 'HOLIDAY') {
     const today = document.getElementById('att-date')?.value || new Date().toISOString().split('T')[0];
     let realDayNum = '';
-    try { realDayNum = localStorage.getItem('_erp_last_dayorder_' + today) || ''; } catch(e) {}
+    try { realDayNum = erpGet('_erp_last_dayorder_' + today) || ''; } catch(e) {}
     if (sel) {
       const hasReal = realDayNum && Array.from(sel.options).some(o => o.value === realDayNum);
       sel.value = hasReal ? realDayNum : '';
@@ -6009,7 +6168,7 @@ function onDayOrderChange() {
   // Remember last used day order for today
   if (num) {
     const today = document.getElementById('att-date')?.value || new Date().toISOString().split('T')[0];
-    try { localStorage.setItem('_erp_last_dayorder_' + today, num); } catch(e) {}
+    try { erpSet('_erp_last_dayorder_' + today, num); } catch(e) {}
   }
 
   refreshDOPanel();
@@ -6183,16 +6342,22 @@ function saveAttendance() {
   // ── Real working day saved — clear holiday carry-over, record last working day order ──
   const dayNum = document.getElementById('att-day-order')?.value || '';
   if (dayNum) {
-    try { localStorage.removeItem('_erp_pending_dayorder_' + batchId + '_' + session); } catch(e) {}
-    try { localStorage.removeItem('_erp_pending_dayorder_' + batchId); } catch(e) {}
-    try { localStorage.setItem('_erp_last_working_dayorder_' + batchId + '_' + session, dayNum); } catch(e) {}
+    try { erpRemove('_erp_pending_dayorder_' + batchId + '_' + session); } catch(e) {}
+    try { erpRemove('_erp_pending_dayorder_' + batchId); } catch(e) {}
+    try { erpSet('_erp_last_working_dayorder_' + batchId + '_' + session, dayNum); } catch(e) {}
   }
 
   // ── Record missed subjects for absent students (Day Order integration) ──
 
   // Always store the day order for this date+batch so Summary can cross-ref timetable
   if (dayNum) {
-    try { localStorage.setItem('_erp_att_dayorder_' + date + '_' + batchId, String(dayNum)); } catch(e) {}
+    window.__ERP_ATT_DAYORDER_CACHE__ = window.__ERP_ATT_DAYORDER_CACHE__ || {};
+    window.__ERP_ATT_DAYORDER_CACHE__[date + '_' + batchId] = String(dayNum);
+    try { erpSet('_erp_att_dayorder_' + date + '_' + batchId, String(dayNum)); } catch(e) {}
+    if (typeof _erpIDBPut === 'function') {
+      _erpIDBPut('attDayOrder:' + date + ':' + batchId, {version:1, savedAt:Date.now(), dayOrder:String(dayNum)})
+        .catch(function(e){ console.warn('[ERP] Attendance day-order IDB save failed:', e); });
+    }
   }
 
   if (dayNum && (typeof _tlGetSubjectsForBatchDayOrder === 'function'
@@ -6231,7 +6396,7 @@ function _holidayKey(date, batchId, session) {
   return '_erp_holiday_' + date + '_' + batchId + '_' + session;
 }
 function _isHoliday(date, batchId, session) {
-  try { return localStorage.getItem(_holidayKey(date, batchId, session)) === '1'; } catch(e) { return false; }
+  try { return erpGet(_holidayKey(date, batchId, session)) === '1'; } catch(e) { return false; }
 }
 
 function markHoliday() {
@@ -6268,14 +6433,14 @@ function markHoliday() {
 function _applyHoliday(date, batchId, sessChoice, dayNum) {
   const sessions = sessChoice === 'both' ? ['morning','evening'] : [sessChoice];
   sessions.forEach(s => {
-    try { localStorage.setItem(_holidayKey(date, batchId, s), '1'); } catch(e) {}
+    try { erpSet(_holidayKey(date, batchId, s), '1'); } catch(e) {}
   });
   // Store pending day order for this batch (carries to next working day)
   if (dayNum) {
     sessions.forEach(s => {
-      try { localStorage.setItem('_erp_pending_dayorder_' + batchId + '_' + s, dayNum); } catch(e) {}
+      try { erpSet('_erp_pending_dayorder_' + batchId + '_' + s, dayNum); } catch(e) {}
     });
-    try { localStorage.setItem('_erp_last_dayorder_' + date, dayNum); } catch(e) {}
+    try { erpSet('_erp_last_dayorder_' + date, dayNum); } catch(e) {}
   }
   closeModal();
   const label = sessChoice === 'both' ? 'Both Sessions' : (sessChoice === 'morning' ? '☀️ Morning' : '🌙 Evening');
@@ -6290,9 +6455,9 @@ function unmarkHoliday() {
   const date    = document.getElementById('att-date')?.value || new Date().toISOString().split('T')[0];
   const batchId = document.getElementById('att-batch')?.value || '';
   const session = document.getElementById('att-session')?.value || 'morning';
-  try { localStorage.removeItem(_holidayKey(date, batchId, session)); } catch(e) {}
-  try { localStorage.removeItem(_holidayKey(date, batchId, 'morning')); } catch(e) {}
-  try { localStorage.removeItem(_holidayKey(date, batchId, 'evening')); } catch(e) {}
+  try { erpRemove(_holidayKey(date, batchId, session)); } catch(e) {}
+  try { erpRemove(_holidayKey(date, batchId, 'morning')); } catch(e) {}
+  try { erpRemove(_holidayKey(date, batchId, 'evening')); } catch(e) {}
   showToast('✅ Holiday removed for ' + date);
   _refreshHolidayBanner(date, batchId, session);
   renderAttList();
@@ -6345,8 +6510,8 @@ function _refreshHolidayBanner(date, batchId, session) {
 function _getPendingDayOrder(batchId, session) {
   try {
     // Session-specific first, then fallback to generic
-    return localStorage.getItem('_erp_pending_dayorder_' + batchId + '_' + (session||'morning'))
-        || localStorage.getItem('_erp_pending_dayorder_' + batchId)
+    return erpGet('_erp_pending_dayorder_' + batchId + '_' + (session||'morning'))
+        || erpGet('_erp_pending_dayorder_' + batchId)
         || '';
   } catch(e) { return ''; }
 }
@@ -6443,13 +6608,12 @@ function renderMAS() {
   // Collect all attendance keys for this month from localStorage
   const monthData = {}; // sid → { absent: N, late: N }
 
-  for (let i = 0; i < localStorage.length; i++) {
-    const k = localStorage.key(i);
+  for (const k of erpStorageKeys()) {
     if (!k || !k.startsWith('_erp_att_')) continue;
     const datePart = k.slice('_erp_att_'.length, '_erp_att_'.length + 10);
     if (!datePart.startsWith(monthStr)) continue;
     try {
-      const rec = JSON.parse(localStorage.getItem(k));
+      const rec = JSON.parse(erpGet(k));
       Object.keys(rec).forEach(rk => {
         const sid = rk.split('|')[0];
         if (!monthData[sid]) monthData[sid] = { absent:0, late:0 };
@@ -6499,7 +6663,7 @@ function renderMAS() {
   const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   tbody.innerHTML = activeStudents.map(s => {
     const rk       = `_mas_review_${s.id}_${yr}_${String(mo).padStart(2,'0')}`;
-    const saved    = (() => { try { return localStorage.getItem(rk)||''; } catch(e){ return ''; } })();
+    const saved    = (() => { try { return erpGet(rk)||''; } catch(e){ return ''; } })();
     const abLevel  = s.absent >= 5 ? 'critical' : s.absent >= 3 ? 'high' : s.absent >= 1 ? 'some' : 'none';
     const ltLevel  = s.late   >= 5 ? 'critical' : s.late   >= 3 ? 'high' : s.late   >= 1 ? 'some' : 'none';
     const abColor  = abLevel==='critical'?'#dc2626':abLevel==='high'?'#ea580c':abLevel==='some'?'#d97706':'#16a34a';
@@ -6579,8 +6743,8 @@ function renderMAS() {
 function saveMASReview(sid, yr, mo, val) {
   try {
     const k = `_mas_review_${sid}_${yr}_${String(mo).padStart(2,'0')}`;
-    if (val.trim()) localStorage.setItem(k, val.trim());
-    else localStorage.removeItem(k);
+    if (val.trim()) erpSet(k, val.trim());
+    else erpRemove(k);
   } catch(e) {}
   showToast('💾 Review saved');
 }
@@ -6593,13 +6757,12 @@ function buildMASWA(s, yr, mo) {
   // Scan localStorage for this month's attendance
   let absent = 0, late = 0;
   const absentDates = [], lateDates = [];
-  for (let i = 0; i < localStorage.length; i++) {
-    const k = localStorage.key(i);
+  for (const k of erpStorageKeys()) {
     if (!k || !k.startsWith('_erp_att_')) continue;
     const datePart = k.slice('_erp_att_'.length, '_erp_att_'.length+10);
     if (!datePart.startsWith(monthStr)) continue;
     try {
-      const rec = JSON.parse(localStorage.getItem(k));
+      const rec = JSON.parse(erpGet(k));
       Object.keys(rec).forEach(rk => {
         if (!rk.startsWith(s.id+'|')) return;
         if (rec[rk]==='A') { absent++; absentDates.push(datePart.slice(8)); }
@@ -6665,7 +6828,7 @@ function buildMASWA(s, yr, mo) {
     : '';
 
   const rk      = `_mas_review_${s.id}_${yr}_${String(mo).padStart(2,'0')}`;
-  const review  = (() => { try { return localStorage.getItem(rk)||''; } catch(e){ return ''; } })();
+  const review  = (() => { try { return erpGet(rk)||''; } catch(e){ return ''; } })();
   const rvLine  = review ? `\n📝 ஆசிரியர் கருத்து: ${review}` : '';
 
   // Use saved Tamil template if customised
@@ -6736,13 +6899,12 @@ function downloadMASReport() {
   const monthStr = yr+'-'+String(mo+1).padStart(2,'0');
 
   const monthData = {};
-  for (let i = 0; i < localStorage.length; i++) {
-    const k = localStorage.key(i);
+  for (const k of erpStorageKeys()) {
     if (!k||!k.startsWith('_erp_att_')) continue;
     const dp = k.slice('_erp_att_'.length, '_erp_att_'.length+10);
     if (!dp.startsWith(monthStr)) continue;
     try {
-      const rec = JSON.parse(localStorage.getItem(k));
+      const rec = JSON.parse(erpGet(k));
       Object.keys(rec).forEach(rk => {
         const sid = rk.split('|')[0];
         if (!monthData[sid]) monthData[sid]={absent:0,late:0};
@@ -6756,7 +6918,7 @@ function downloadMASReport() {
   students.filter(s=>s&&s.name&&s.status==='active').forEach(s => {
     const d  = monthData[s.id]||{absent:0,late:0};
     const rk = `_mas_review_${s.id}_${yr}_${String(mo).padStart(2,'0')}`;
-    const rv = (() => { try { return localStorage.getItem(rk)||''; } catch(e){ return ''; } })();
+    const rv = (() => { try { return erpGet(rk)||''; } catch(e){ return ''; } })();
     const st = d.absent===0&&d.late===0?'Perfect':d.absent>=5||d.late>=5?'Critical':d.absent>=3||d.late>=3?'Poor':'Fair';
 
     // Missed subjects summary
@@ -7041,7 +7203,7 @@ function openSendResultsModal(examIdx) {
   const savedKey = '_erp_marks_' + exam.id;
   let savedMarks = {};
   try {
-    const raw = localStorage.getItem(savedKey);
+    const raw = erpGet(savedKey);
     if (raw) savedMarks = JSON.parse(raw).marks || {};
   } catch(e) {}
 
@@ -8718,8 +8880,8 @@ function ewInit() {
 
 function ewRefreshExamStats() {
   const total = (exams || []).length;
-  const notified = parseInt(localStorage.getItem('_erp_exam_notified_count') || '0');
-  const sent = parseInt(localStorage.getItem('_erp_results_sent_count') || '0');
+  const notified = parseInt(erpGet('_erp_exam_notified_count') || '0');
+  const sent = parseInt(erpGet('_erp_results_sent_count') || '0');
   const el1 = document.getElementById('ex-stat-total');
   const el2 = document.getElementById('ex-stat-notified');
   const el3 = document.getElementById('ex-stat-sent');
@@ -8908,8 +9070,8 @@ function ewSendAllNotices() {
 
   // Increment notified count
   try {
-    const n = parseInt(localStorage.getItem('_erp_exam_notified_count') || '0');
-    localStorage.setItem('_erp_exam_notified_count', n + list.length);
+    const n = parseInt(erpGet('_erp_exam_notified_count') || '0');
+    erpSet('_erp_exam_notified_count', n + list.length);
   } catch(e) {}
 
   showToast(list.length > 1
@@ -9108,8 +9270,8 @@ function ewSendAllResults() {
   if (btn0) { btn0.textContent = '✅ Sent'; btn0.style.background = '#dcfce7'; btn0.style.color = '#166534'; btn0.disabled = true; }
 
   try {
-    const n = parseInt(localStorage.getItem('_erp_results_sent_count') || '0');
-    localStorage.setItem('_erp_results_sent_count', n + list.length);
+    const n = parseInt(erpGet('_erp_results_sent_count') || '0');
+    erpSet('_erp_results_sent_count', n + list.length);
   } catch(e) {}
 
   showToast(list.length > 1
@@ -9285,7 +9447,7 @@ function selectExam(i) {
   // Load existing saved marks for this exam
   const savedKey = '_erp_marks_' + e.id;
   let savedMarks = {};
-  try { const raw = localStorage.getItem(savedKey); if (raw) savedMarks = JSON.parse(raw).marks || {}; } catch(er) {}
+  try { const raw = erpGet(savedKey); if (raw) savedMarks = JSON.parse(raw).marks || {}; } catch(er) {}
 
   const rows = activeStudents.map((s,j) => {
     const saved   = savedMarks[s.id];
@@ -9373,7 +9535,7 @@ function selectExam(i) {
       </button>
       <button class="btn btn-wa" onclick="openSendResultsModal(${i})" id="send-res-btn-${e.id}" style="flex:1;justify-content:center">
         📱 Send Results
-        ${(()=>{try{const s=localStorage.getItem('_erp_marks_'+e.id);const m=s?JSON.parse(s).marks:{};const c=Object.keys(m||{}).length;return c>0?`<span style="background:#dcfce7;color:#166534;border-radius:8px;padding:1px 7px;font-size:10px;font-weight:700;margin-left:4px">${c} saved</span>`:'<span style="background:#fef9c3;color:#854d0e;border-radius:8px;padding:1px 7px;font-size:10px;font-weight:700;margin-left:4px">Save first</span>';}catch(e){return '';}})()} 
+        ${(()=>{try{const s=erpGet('_erp_marks_'+e.id);const m=s?JSON.parse(s).marks:{};const c=Object.keys(m||{}).length;return c>0?`<span style="background:#dcfce7;color:#166534;border-radius:8px;padding:1px 7px;font-size:10px;font-weight:700;margin-left:4px">${c} saved</span>`:'<span style="background:#fef9c3;color:#854d0e;border-radius:8px;padding:1px 7px;font-size:10px;font-weight:700;margin-left:4px">Save first</span>';}catch(e){return '';}})()} 
       </button>
       <button class="btn btn-sm" onclick="showExamNoticeWAModal(${i})" style="font-size:11px">📢 Exam Notice WA</button>
     </div>
@@ -9567,7 +9729,7 @@ function saveMarksToStorage(examIdx) {
   // students actually visible/editable in this save.
   let marksMap = {};
   try {
-    const raw = localStorage.getItem(key);
+    const raw = erpGet(key);
     if (raw) {
       const prev = JSON.parse(raw).marks || {};
       Object.keys(prev).forEach(sid => { if (!activeIds.has(sid)) marksMap[sid] = prev[sid]; });
@@ -9586,16 +9748,26 @@ function saveMarksToStorage(examIdx) {
     }
   });
 
+  const marksRecord = {
+    examId: e.id, examName: e.name, subject: e.subject,
+    maxMarks: e.maxMarks, passMarks: pass,
+    syllabus: e.syllabus||'', batch: e.batch||'All',
+    date: e.date, marks: marksMap,
+  };
+  window.__ERP_MARKS_CACHE__ = window.__ERP_MARKS_CACHE__ || {};
+  window.__ERP_MARKS_CACHE__[key] = marksRecord;
+  window.__ERP_MARKS_INDEX_CACHE__ = window.__ERP_MARKS_INDEX_CACHE__ || [];
+  if (!window.__ERP_MARKS_INDEX_CACHE__.includes(key)) window.__ERP_MARKS_INDEX_CACHE__.push(key);
   try {
-    localStorage.setItem(key, JSON.stringify({
-      examId: e.id, examName: e.name, subject: e.subject,
-      maxMarks: e.maxMarks, passMarks: pass,
-      syllabus: e.syllabus||'', batch: e.batch||'All',
-      date: e.date, marks: marksMap,
-    }));
-    const idx = JSON.parse(localStorage.getItem('_erp_marks_index') || '[]');
-    if (!idx.includes(key)) { idx.push(key); localStorage.setItem('_erp_marks_index', JSON.stringify(idx)); }
+    erpSet(key, JSON.stringify(marksRecord));
+    erpSet('_erp_marks_index', JSON.stringify(window.__ERP_MARKS_INDEX_CACHE__));
   } catch(err) {}
+  if (typeof _erpIDBPut === 'function') {
+    _erpIDBPut('marks:' + e.id, {version:1, savedAt:Date.now(), key:key, record:marksRecord})
+      .catch(function(err){ console.warn('[ERP] Marks IDB save failed:', err); });
+    _erpIDBPut('marksIndex', {version:1, savedAt:Date.now(), keys:window.__ERP_MARKS_INDEX_CACHE__})
+      .catch(function(err){ console.warn('[ERP] Marks index IDB save failed:', err); });
+  }
 
   const count = Object.keys(marksMap).length;
   showToast('✅ Marks saved for ' + e.name + ' (' + count + ' students)');
@@ -9802,7 +9974,7 @@ async function runExamAIInsights(examIdx) {
 
   // Load saved marks
   let marksMap = {};
-  try { const raw = localStorage.getItem(key); if (raw) marksMap = JSON.parse(raw).marks || {}; } catch(er) {}
+  try { const raw = erpGet(key); if (raw) marksMap = JSON.parse(raw).marks || {}; } catch(er) {}
 
   // Build student results
   let activeStudents = students.filter(s => s && s.name && s.status==='active');
@@ -9997,9 +10169,9 @@ function deleteExam(i) {
   // Remove saved marks from localStorage
   try {
     const marksKey = '_erp_marks_' + e.id;
-    localStorage.removeItem(marksKey);
-    const idx = JSON.parse(localStorage.getItem('_erp_marks_index') || '[]').filter(k => k !== marksKey);
-    localStorage.setItem('_erp_marks_index', JSON.stringify(idx));
+    erpRemove(marksKey);
+    const idx = JSON.parse(erpGet('_erp_marks_index') || '[]').filter(k => k !== marksKey);
+    erpSet('_erp_marks_index', JSON.stringify(idx));
   } catch(err) {}
   exams.splice(i, 1);
   if (selExam === i) {
@@ -10235,29 +10407,7 @@ function sendExamNoticeOne(btn, exam, waLang) {
 }
 /* ── Load all marks for a student ── */
 function getStudentMarks(studentId) {
-  const results = [];
-  try {
-    const idx = JSON.parse(localStorage.getItem('_erp_marks_index') || '[]');
-    idx.forEach(key => {
-      try {
-        const rec = JSON.parse(localStorage.getItem(key));
-        if (rec && rec.marks && rec.marks[studentId] !== undefined) {
-          const entry = rec.marks[studentId];
-          results.push({
-            examName: rec.examName,
-            subject:  rec.subject,
-            maxMarks: rec.maxMarks,
-            passMarks: rec.passMarks || Math.round((rec.maxMarks||100)*0.35),
-            marks:    entry.marks,
-            absent:   entry.absent,
-            pass:     entry.pass,
-            date:     rec.date,
-          });
-        }
-      } catch(e2) {}
-    });
-  } catch(e) {}
-  return results;
+  return (typeof getStudentMarksAuto === 'function') ? getStudentMarksAuto(studentId) : [];
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -10328,7 +10478,7 @@ function calcStaffSalary() { /* simplified - no live calc needed */ }
    STAFF ADVANCE / LOAN / PARTIAL PAYMENT LEDGER
 ═══════════════════════════════════════════════════════ */
 function saveStaffAdvances() {
-  try { localStorage.setItem('_erp_staff_advances', JSON.stringify(staffAdvances)); } catch(e) {}
+  try { erpSet('_erp_staff_advances', JSON.stringify(staffAdvances)); } catch(e) {}
 }
 function _stAdvForStaff(staffId) {
   return staffAdvances
@@ -10812,11 +10962,11 @@ function setStaffAtt(staffId, date, session, val) {
   if (worst) staffAtt[staffId+'|'+date] = worst;
   else delete staffAtt[staffId+'|'+date];
   // Auto-save
-  try { localStorage.setItem('_erp_staff_att', JSON.stringify(staffAtt)); } catch(e){}
+  try { erpSet('_erp_staff_att', JSON.stringify(staffAtt)); } catch(e){}
 }
 
 function saveStaffAtt() {
-  try { localStorage.setItem('_erp_staff_att', JSON.stringify(staffAtt)); } catch(e){}
+  try { erpSet('_erp_staff_att', JSON.stringify(staffAtt)); } catch(e){}
   const banner = document.getElementById('sf-att-saved');
   if (banner) { banner.style.display='block'; setTimeout(()=>{banner.style.display='none';},3000); }
   showToast('✅ Staff attendance saved!');
@@ -10899,13 +11049,13 @@ function renderClassIncomeSummary() {
 // The day of the month you usually run payroll (e.g. 25th) — used to pre-fill the
 // Payment Date when marking a salary paid, so early/mid-month payouts don't default to "today".
 function _getPayrollPayDay() {
-  var v = parseInt(localStorage.getItem('_erp_payroll_payday'));
+  var v = parseInt(erpGet('_erp_payroll_payday'));
   return (v >= 1 && v <= 31) ? v : 25;
 }
 function _setPayrollPayDay(val) {
   var v = parseInt(val);
   if (!(v >= 1 && v <= 31)) return;
-  try { localStorage.setItem('_erp_payroll_payday', String(v)); } catch(e) {}
+  try { erpSet('_erp_payroll_payday', String(v)); } catch(e) {}
   showToast('✅ Pay Day set to ' + v + (v===1?'st':v===2?'nd':v===3?'rd':'th') + ' of each month');
 }
 
@@ -11086,7 +11236,7 @@ function generatePayroll() {
 
 
 function saveSalaryPayments() {
-  try { localStorage.setItem('_erp_salary_payments', JSON.stringify(salaryPayments)); } catch(e) {}
+  try { erpSet('_erp_salary_payments', JSON.stringify(salaryPayments)); } catch(e) {}
 }
 
 /* ── Convert salaryPayments back from array format (Sheets/backup JSON) to the
@@ -11271,7 +11421,7 @@ function confirmSalaryPaid(staffId, monthVal, netPay) {
 function buildSalarySlipWA(s, amount, mode, monthLabel, dateStr, note, bonus, extraDed) {
   // Try customized template first
   let tmpl = '';
-  try { tmpl = localStorage.getItem('_erp_wt_payroll_slip_ta') || ''; } catch(e) {}
+  try { tmpl = erpGet('_erp_wt_payroll_slip_ta') || ''; } catch(e) {}
   if (!tmpl) tmpl = WA_TEMPLATES.payroll_slip?.ta?.[0] || '';
 
   if (tmpl) {
@@ -11408,7 +11558,7 @@ function applyPayrollEdits(staffId) {
   generatePayroll();
 }
 function toggleLopDeduction(key, apply) {
-  try { localStorage.setItem(key, apply ? '1' : '0'); } catch(e){}
+  try { erpSet(key, apply ? '1' : '0'); } catch(e){}
 }
 function exportPayrollCSV() {
   const monthEl = document.getElementById('sf-pay-month');
@@ -11477,7 +11627,7 @@ function buildOpsReport(period) {
   // 1) Teaching Log — entries within the period
   let logInRange = [];
   try {
-    const tLog = (typeof _tlLoad === 'function') ? _tlLoad() : JSON.parse(localStorage.getItem('_erp_teaching_log') || '[]');
+    const tLog = (typeof _tlLoad === 'function') ? _tlLoad() : JSON.parse(erpGet('_erp_teaching_log') || '[]');
     logInRange = (tLog || []).filter(e => e && e.date && e.date >= fromStr && e.date <= toStr);
   } catch(e) {}
 
@@ -11496,13 +11646,12 @@ function buildOpsReport(period) {
   // 3) Attendance — scan raw attendance keys for the period
   let present = 0, absent = 0, late = 0;
   try {
-    for (let i = 0; i < localStorage.length; i++) {
-      const k = localStorage.key(i);
+    for (const k of erpStorageKeys()) {
       if (!k || !k.startsWith('_erp_att_') || k.startsWith('_erp_att_dayorder_')) continue;
       const datePart = k.slice('_erp_att_'.length, '_erp_att_'.length + 10);
       if (datePart < fromStr || datePart > toStr) continue;
       try {
-        const rec = JSON.parse(localStorage.getItem(k)) || {};
+        const rec = JSON.parse(erpGet(k)) || {};
         Object.values(rec).forEach(v => { if (v==='P') present++; else if (v==='A') absent++; else if (v==='L') late++; });
       } catch(e2) {}
     }
@@ -11608,10 +11757,10 @@ function renderAdminPanel() {
   // ── Today's student attendance (across all batches/sessions) ──
   let pCount=0, aCount=0, lCount=0;
   try {
-    Object.keys(localStorage).forEach(k => {
+    erpStorageKeys().forEach(k => {
       if (k.indexOf('_erp_att_'+today+'_') === 0) {
         try {
-          const data = JSON.parse(localStorage.getItem(k) || '{}');
+          const data = JSON.parse(erpGet(k) || '{}');
           Object.values(data).forEach(v => {
             if (v==='P') pCount++; else if (v==='A') aCount++; else if (v==='L') lCount++;
           });
@@ -11645,7 +11794,7 @@ function renderAdminPanel() {
   const activeCount = students.filter(s => s.status === 'active').length;
   let expectedTotal = 0;
   try {
-    const fs = JSON.parse(localStorage.getItem('_ktc_feeStruct') || '{}');
+    const fs = JSON.parse(erpGet('_ktc_feeStruct') || '{}');
     students.filter(s => s.status === 'active').forEach(s => {
       expectedTotal += parseFloat(fs[String(s.grade||'').trim()] || fs['default'] || 0);
     });
@@ -11687,18 +11836,18 @@ function renderAdminPanel() {
    without the user having to repeat it per batch. ── */
 function _todayHolidayKey(dateStr) { return '_erp_today_holiday_' + dateStr; }
 function isTodayHoliday(dateStr) {
-  try { return localStorage.getItem(_todayHolidayKey(dateStr)) === '1'; } catch(e) { return false; }
+  try { return erpGet(_todayHolidayKey(dateStr)) === '1'; } catch(e) { return false; }
 }
 function setTodayHoliday() {
   const todayStr = new Date().toISOString().slice(0,10);
-  try { localStorage.setItem(_todayHolidayKey(todayStr), '1'); } catch(e) {}
+  try { erpSet(_todayHolidayKey(todayStr), '1'); } catch(e) {}
   const barr = (typeof batches !== 'undefined' && Array.isArray(batches)) ? batches : [];
   let dayNum = '';
-  try { dayNum = localStorage.getItem('_erp_last_dayorder_' + todayStr) || ''; } catch(e) {}
+  try { dayNum = erpGet('_erp_last_dayorder_' + todayStr) || ''; } catch(e) {}
   barr.forEach(b => {
     ['morning','evening'].forEach(s => {
-      try { localStorage.setItem(_holidayKey(todayStr, b.id, s), '1'); } catch(e) {}
-      if (dayNum) { try { localStorage.setItem('_erp_pending_dayorder_' + b.id + '_' + s, dayNum); } catch(e) {} }
+      try { erpSet(_holidayKey(todayStr, b.id, s), '1'); } catch(e) {}
+      if (dayNum) { try { erpSet('_erp_pending_dayorder_' + b.id + '_' + s, dayNum); } catch(e) {} }
     });
   });
   _refreshAfterTodayHolidayChange(todayStr);
@@ -11706,10 +11855,10 @@ function setTodayHoliday() {
 }
 function clearTodayHoliday() {
   const todayStr = new Date().toISOString().slice(0,10);
-  try { localStorage.removeItem(_todayHolidayKey(todayStr)); } catch(e) {}
+  try { erpRemove(_todayHolidayKey(todayStr)); } catch(e) {}
   const barr = (typeof batches !== 'undefined' && Array.isArray(batches)) ? batches : [];
   barr.forEach(b => {
-    ['morning','evening'].forEach(s => { try { localStorage.removeItem(_holidayKey(todayStr, b.id, s)); } catch(e) {} });
+    ['morning','evening'].forEach(s => { try { erpRemove(_holidayKey(todayStr, b.id, s)); } catch(e) {} });
   });
   _refreshAfterTodayHolidayChange(todayStr);
   showToast('✅ Holiday removed for today');
@@ -11727,7 +11876,7 @@ function _refreshAfterTodayHolidayChange(todayStr) {
 
 function setTodayDayOrder(num) {
   const todayStr = new Date().toISOString().slice(0,10);
-  window.__ERP_TODAY_DAYORDER_CACHE[todayStr] = String(num); try { localStorage.setItem('_erp_last_dayorder_' + todayStr, String(num)); } catch(e) {} try { sessionStorage.setItem('_erp_last_dayorder_' + todayStr, String(num)); } catch(e) {} if (typeof _erpPersistTodayDayOrderIDB === 'function') _erpPersistTodayDayOrderIDB(todayStr, String(num));
+  window.__ERP_TODAY_DAYORDER_CACHE[todayStr] = String(num); try { erpSet('_erp_last_dayorder_' + todayStr, String(num)); } catch(e) {} try { sessionStorage.setItem('_erp_last_dayorder_' + todayStr, String(num)); } catch(e) {} if (typeof _erpPersistTodayDayOrderIDB === 'function') _erpPersistTodayDayOrderIDB(todayStr, String(num));
   // Refresh every widget that reads this value, on whichever page(s) are
   // currently in the DOM (Dashboard and Admin Panel each have their own).
   if (typeof renderDashDayOrderSummary === 'function') renderDashDayOrderSummary();
@@ -11756,7 +11905,7 @@ function renderDayOrderSummary(dateElId, gridElId, pickerElId, showGrid) {
 
   // The single Day Order for today — same one Attendance reads/writes.
   let todaysDayOrder = (window.__ERP_TODAY_DAYORDER_CACHE && window.__ERP_TODAY_DAYORDER_CACHE[todayStr]) || '';
-  if (!todaysDayOrder) { try { todaysDayOrder = localStorage.getItem('_erp_last_dayorder_' + todayStr) || ''; } catch(e) {} }
+  if (!todaysDayOrder) { try { todaysDayOrder = erpGet('_erp_last_dayorder_' + todayStr) || ''; } catch(e) {} }
   if (!todaysDayOrder) { try { todaysDayOrder = sessionStorage.getItem('_erp_last_dayorder_' + todayStr) || ''; } catch(e) {} }
 
   // Which Day Order numbers exist to pick from — same canonical, global list
@@ -13017,7 +13166,7 @@ function changeLatesToLeave(delta) {
   const newVal = Math.max(1, Math.min(30, current + delta));
   if (!CFG.ATTENDANCE) CFG.ATTENDANCE = {};
   CFG.ATTENDANCE.latesToLeave = newVal;
-  try { localStorage.setItem('_erp_lates_to_leave', String(newVal)); } catch(e){}
+  try { erpSet('_erp_lates_to_leave', String(newVal)); } catch(e){}
   updateLatesDisplay();
   showToast(`✅ ${newVal} late arrivals = 1 leave day`);
 }
@@ -13070,7 +13219,7 @@ function doResetData() {
    '_erp_wt_fees_en','_erp_wt_fees_ta',
    '_erp_wt_admission_en','_erp_wt_admission_ta',
    '_erp_wt_fee_receipt_en','_erp_wt_fee_receipt_ta',
-   '_erp_lates_to_leave'].forEach(function(k){ localStorage.removeItem(k); });
+   '_erp_lates_to_leave'].forEach(function(k){ erpRemove(k); });
   // Reset in-memory arrays
   students.length = 0;
   fees.length     = 0;
@@ -13097,7 +13246,7 @@ function runStorageDiag() {
   var keys = ['_erp_students','_erp_fees','_erp_staff','_erp_exams','_erp_notifs','_erp_staff_att','_erp_lic_key','_erp_dark','_erp_center'];
   keys.forEach(function(k) {
     try {
-      var v = localStorage.getItem(k);
+      var v = erpGet(k);
       if (v === null) {
         out.push('❌ ' + k + ' = (not set)');
       } else {
@@ -13110,9 +13259,9 @@ function runStorageDiag() {
   });
   // Also test write
   try {
-    localStorage.setItem('_erp_diag_test', Date.now().toString());
-    var t = localStorage.getItem('_erp_diag_test');
-    localStorage.removeItem('_erp_diag_test');
+    erpSet('_erp_diag_test', Date.now().toString());
+    var t = erpGet('_erp_diag_test');
+    erpRemove('_erp_diag_test');
     out.unshift('✅ localStorage WRITE TEST: OK (' + t + ')');
   } catch(e) {
     out.unshift('❌ localStorage WRITE TEST FAILED: ' + e.message);
@@ -13397,10 +13546,10 @@ function _gfMonthAvg(studentId, yr, mo) {
   const monthStr = yr + '-' + String(mo + 1).padStart(2, '0');
   const results = [];
   try {
-    const idx = JSON.parse(localStorage.getItem('_erp_marks_index') || '[]');
+    const idx = JSON.parse(erpGet('_erp_marks_index') || '[]');
     idx.forEach(key => {
       try {
-        const rec = JSON.parse(localStorage.getItem(key));
+        const rec = JSON.parse(erpGet(key));
         if (!rec) return;
         const recDate = (rec.date || '').slice(0, 7);
         if (recDate && recDate !== monthStr) return;
@@ -13418,8 +13567,7 @@ function _gfMonthAvg(studentId, yr, mo) {
 function _gfMonthAtt(studentId, yr, mo) {
   const monthStr = yr + '-' + String(mo + 1).padStart(2, '0');
   let present = 0, absent = 0, late = 0;
-  for (let i = 0; i < localStorage.length; i++) {
-    const k = localStorage.key(i);
+  for (const k of erpStorageKeys()) {
     if (!k || !k.startsWith('_erp_att_')) continue;
     const datePart = k.slice(9, 16);
     if (!datePart.startsWith(monthStr.replace('-', '-'))) continue;
@@ -13430,7 +13578,7 @@ function _gfMonthAtt(studentId, yr, mo) {
     const dateChunk = k.slice(9, 19); // YYYY-MM-DD
     if (!dateChunk.startsWith(monthStr)) continue;
     try {
-      const rec = JSON.parse(localStorage.getItem(k));
+      const rec = JSON.parse(erpGet(k));
       Object.keys(rec).forEach(rk => {
         if (!rk.startsWith(studentId + '|')) return;
         const v = rec[rk];
@@ -14481,14 +14629,14 @@ function logEntry(ss, ts, data, attCount, salCount, sumCount) {
 
 function getSnapshot() {
   // Helper: read a localStorage key safely
-  function ls(k) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch(e) { return null; } }
-  function lsStr(k) { try { return localStorage.getItem(k) || ''; } catch(e) { return ''; } }
+  function ls(k) { try { const v = erpGet(k); return v ? JSON.parse(v) : null; } catch(e) { return null; } }
+  function lsStr(k) { try { return erpGet(k) || ''; } catch(e) { return ''; } }
 
   // Collect all timetable keys (_erp_tt_*)
   const timetables = {};
   try {
-    Object.keys(localStorage).filter(k => k.startsWith('_erp_tt_')).forEach(k => {
-      try { timetables[k] = JSON.parse(localStorage.getItem(k)); } catch(e) {}
+    erpStorageKeys().filter(k => k.startsWith('_erp_tt_')).forEach(k => {
+      try { timetables[k] = JSON.parse(erpGet(k)); } catch(e) {}
     });
   } catch(e) {}
 
@@ -14496,13 +14644,13 @@ function getSnapshot() {
   const attendanceFull = {};
   try {
     // Use index if available for efficiency
-    const attIndex = JSON.parse(localStorage.getItem('_erp_att_index') || '[]');
+    const attIndex = JSON.parse(erpGet('_erp_att_index') || '[]');
     const keysToRead = attIndex.length > 0
       ? attIndex
-      : Object.keys(localStorage).filter(k => k.startsWith('_erp_att_'));
+      : erpStorageKeys().filter(k => k.startsWith('_erp_att_'));
     keysToRead.forEach(k => {
-      try { attendanceFull[k] = JSON.parse(localStorage.getItem(k)); } catch(e) {
-        attendanceFull[k] = localStorage.getItem(k);
+      try { attendanceFull[k] = JSON.parse(erpGet(k)); } catch(e) {
+        attendanceFull[k] = erpGet(k);
       }
     });
   } catch(e) {}
@@ -14511,26 +14659,26 @@ function getSnapshot() {
   const marks = {};
   try {
     const idx = ls('_erp_marks_index') || [];
-    idx.forEach(k => { try { marks[k] = JSON.parse(localStorage.getItem(k)); } catch(e) {} });
+    idx.forEach(k => { try { marks[k] = JSON.parse(erpGet(k)); } catch(e) {} });
     // also grab any _erp_marks_ keys not in index
-    Object.keys(localStorage).filter(k => k.startsWith('_erp_marks_')).forEach(k => {
-      if (!marks[k]) { try { marks[k] = JSON.parse(localStorage.getItem(k)); } catch(e) {} }
+    erpStorageKeys().filter(k => k.startsWith('_erp_marks_')).forEach(k => {
+      if (!marks[k]) { try { marks[k] = JSON.parse(erpGet(k)); } catch(e) {} }
     });
   } catch(e) {}
 
   // Collect all WhatsApp templates (_erp_wt_*)
   const waTemplates = {};
   try {
-    Object.keys(localStorage).filter(k => k.startsWith('_erp_wt_')).forEach(k => {
-      waTemplates[k] = localStorage.getItem(k) || '';
+    erpStorageKeys().filter(k => k.startsWith('_erp_wt_')).forEach(k => {
+      waTemplates[k] = erpGet(k) || '';
     });
   } catch(e) {}
 
   // Collect Student Summary data (_erp_sum_*) — separate from AI
   const studentSummary = {};
   try {
-    Object.keys(localStorage).filter(k => k.startsWith('_erp_sum_')).forEach(k => {
-      try { studentSummary[k] = JSON.parse(localStorage.getItem(k)); } catch(e) { studentSummary[k] = localStorage.getItem(k); }
+    erpStorageKeys().filter(k => k.startsWith('_erp_sum_')).forEach(k => {
+      try { studentSummary[k] = JSON.parse(erpGet(k)); } catch(e) { studentSummary[k] = erpGet(k); }
     });
   } catch(e) {}
 
@@ -14538,10 +14686,10 @@ function getSnapshot() {
   const schoolMarks = {};
   try {
     const idx = ls('_erp_schoolmarks_index') || [];
-    idx.forEach(k => { try { schoolMarks[k] = JSON.parse(localStorage.getItem('_erp_schoolmarks_' + k)); } catch(e) {} });
-    Object.keys(localStorage).filter(k => k.startsWith('_erp_schoolmarks_') && k !== '_erp_schoolmarks_index').forEach(k => {
+    idx.forEach(k => { try { schoolMarks[k] = JSON.parse(erpGet('_erp_schoolmarks_' + k)); } catch(e) {} });
+    erpStorageKeys().filter(k => k.startsWith('_erp_schoolmarks_') && k !== '_erp_schoolmarks_index').forEach(k => {
       const sid = k.replace('_erp_schoolmarks_', '');
-      if (!schoolMarks[sid]) { try { schoolMarks[sid] = JSON.parse(localStorage.getItem(k)); } catch(e) {} }
+      if (!schoolMarks[sid]) { try { schoolMarks[sid] = JSON.parse(erpGet(k)); } catch(e) {} }
     });
   } catch(e) {}
 
@@ -14549,14 +14697,14 @@ function getSnapshot() {
   const aiData = {};
   try {
     // Diagnostic data
-    Object.keys(localStorage).filter(k => k.startsWith('_erp_diag_')).forEach(k => {
-      try { aiData[k] = JSON.parse(localStorage.getItem(k)); } catch(e) { aiData[k] = localStorage.getItem(k); }
+    erpStorageKeys().filter(k => k.startsWith('_erp_diag_')).forEach(k => {
+      try { aiData[k] = JSON.parse(erpGet(k)); } catch(e) { aiData[k] = erpGet(k); }
     });
     // Per-student AI / report keys (_erp_rep_*, _erp_ai_*, _erp_student_rep_*)
-    Object.keys(localStorage).filter(k =>
+    erpStorageKeys().filter(k =>
       k.startsWith('_erp_rep_') || k.startsWith('_erp_ai_') || k.startsWith('_erp_student_rep_')
     ).forEach(k => {
-      try { aiData[k] = JSON.parse(localStorage.getItem(k)); } catch(e) { aiData[k] = localStorage.getItem(k); }
+      try { aiData[k] = JSON.parse(erpGet(k)); } catch(e) { aiData[k] = erpGet(k); }
     });
   } catch(e) {}
 
@@ -14648,13 +14796,13 @@ function runBackup(source) {
   const data = getSnapshot();
   const json = JSON.stringify(data,null,2);
   const size = (json.length/1024).toFixed(1)+' KB';
-  const saved = JSON.parse(localStorage.getItem(BK_KEY)||'[]');
+  const saved = JSON.parse(erpGet(BK_KEY)||'[]');
   saved.unshift({ts:data.timestamp,data:json,source,size});
   if(saved.length>10) saved.pop();
-  localStorage.setItem(BK_KEY,JSON.stringify(saved));
+  erpSet(BK_KEY,JSON.stringify(saved));
   bkHistory.unshift({ts:data.timestamp,source,size,status:'ok'});
   if(bkHistory.length>20) bkHistory.pop();
-  localStorage.setItem(BK_HIST_KEY,JSON.stringify(bkHistory));
+  erpSet(BK_HIST_KEY,JSON.stringify(bkHistory));
   const now = new Date();
   const timeStr = now.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
   setBkStatus('ok','All data backed up','Last: '+timeStr+(source==='auto'?' (auto)':' ('+source+')')+' · '+size);
@@ -14732,8 +14880,8 @@ function restoreBackup(input) {
 function _saveRestoreSafetyNet() {
   try {
     const snap = getSnapshot();
-    localStorage.setItem('_erp_pre_restore_snapshot', JSON.stringify(snap));
-    localStorage.setItem('_erp_pre_restore_meta', JSON.stringify({ ts: new Date().toISOString(), students: (snap.students||[]).length }));
+    erpSet('_erp_pre_restore_snapshot', JSON.stringify(snap));
+    erpSet('_erp_pre_restore_meta', JSON.stringify({ ts: new Date().toISOString(), students: (snap.students||[]).length }));
   } catch(e) {}
 }
 
@@ -14741,104 +14889,104 @@ function _saveRestoreSafetyNet() {
 // Shared by restoreBackup(), restoreFromSheets(), and undoLastRestore() so all three restore
 // paths write data identically.
 function _applyRestoreData(data) {
-  try { localStorage.setItem('_erp_students',        JSON.stringify(data.students        || [])); } catch(e) {}
-  try { localStorage.setItem('_erp_fees',            JSON.stringify(data.fees            || [])); } catch(e) {}
-  try { localStorage.setItem('_erp_staff',           JSON.stringify(data.staffData       || data.staff || [])); } catch(e) {}
-  try { localStorage.setItem('_erp_exams',           JSON.stringify(data.exams           || [])); } catch(e) {}
-  try { localStorage.setItem('_erp_batches',         JSON.stringify(data.batches         || [])); } catch(e) {}
-  try { localStorage.setItem('_erp_notifs',          JSON.stringify(data.notifications   || [])); } catch(e) {}
-  try { localStorage.setItem('_erp_salary_payments', JSON.stringify(_salaryArrayToObj(data.salaryPayments))); } catch(e) {}
-  if (data.staffAdvances) try { localStorage.setItem('_erp_staff_advances', JSON.stringify(data.staffAdvances)); } catch(e) {}
-  if (data.staffAttendance) try { localStorage.setItem('_erp_staff_att', JSON.stringify(data.staffAttendance)); } catch(e) {}
-  if (data.attState) try { localStorage.setItem('attState', JSON.stringify(data.attState)); } catch(e) {}
+  try { erpSet('_erp_students',        JSON.stringify(data.students        || [])); } catch(e) {}
+  try { erpSet('_erp_fees',            JSON.stringify(data.fees            || [])); } catch(e) {}
+  try { erpSet('_erp_staff',           JSON.stringify(data.staffData       || data.staff || [])); } catch(e) {}
+  try { erpSet('_erp_exams',           JSON.stringify(data.exams           || [])); } catch(e) {}
+  try { erpSet('_erp_batches',         JSON.stringify(data.batches         || [])); } catch(e) {}
+  try { erpSet('_erp_notifs',          JSON.stringify(data.notifications   || [])); } catch(e) {}
+  try { erpSet('_erp_salary_payments', JSON.stringify(_salaryArrayToObj(data.salaryPayments))); } catch(e) {}
+  if (data.staffAdvances) try { erpSet('_erp_staff_advances', JSON.stringify(data.staffAdvances)); } catch(e) {}
+  if (data.staffAttendance) try { erpSet('_erp_staff_att', JSON.stringify(data.staffAttendance)); } catch(e) {}
+  if (data.attState) try { erpSet('attState', JSON.stringify(data.attState)); } catch(e) {}
 
   // Fee config
-  if (data.feeStructure)    try { localStorage.setItem('_erp_fee_structure',       JSON.stringify(data.feeStructure)); } catch(e) {}
-  if (data.otherCourses)    try { localStorage.setItem('_erp_other_courses',       JSON.stringify(data.otherCourses)); } catch(e) {}
-  if (data.feeRcptTemplate) try { localStorage.setItem('_erp_fee_rcpt_template',   data.feeRcptTemplate); } catch(e) {}
-  if (data.feeRcptLang)     try { localStorage.setItem('_erp_fee_rcpt_lang',        data.feeRcptLang); } catch(e) {}
-  if (data.admTemplate)     try { localStorage.setItem('_erp_adm_template',         data.admTemplate); } catch(e) {}
-  if (data.admLang)         try { localStorage.setItem('_erp_adm_lang',             data.admLang); } catch(e) {}
+  if (data.feeStructure)    try { erpSet('_erp_fee_structure',       JSON.stringify(data.feeStructure)); } catch(e) {}
+  if (data.otherCourses)    try { erpSet('_erp_other_courses',       JSON.stringify(data.otherCourses)); } catch(e) {}
+  if (data.feeRcptTemplate) try { erpSet('_erp_fee_rcpt_template',   data.feeRcptTemplate); } catch(e) {}
+  if (data.feeRcptLang)     try { erpSet('_erp_fee_rcpt_lang',        data.feeRcptLang); } catch(e) {}
+  if (data.admTemplate)     try { erpSet('_erp_adm_template',         data.admTemplate); } catch(e) {}
+  if (data.admLang)         try { erpSet('_erp_adm_lang',             data.admLang); } catch(e) {}
 
   // Timetables (_erp_tt_*)
   if (data.timetables) Object.entries(data.timetables).forEach(([k, v]) => {
-    try { localStorage.setItem(k, JSON.stringify(v)); } catch(e) {}
+    try { erpSet(k, JSON.stringify(v)); } catch(e) {}
   });
-  if (data.dayOrder)  try { localStorage.setItem('_erp_day_order', JSON.stringify(data.dayOrder)); } catch(e) {}
-  if (data.ttToday)   try { localStorage.setItem('_erp_tt_today',  data.ttToday); } catch(e) {}
+  if (data.dayOrder)  try { erpSet('_erp_day_order', JSON.stringify(data.dayOrder)); } catch(e) {}
+  if (data.ttToday)   try { erpSet('_erp_tt_today',  data.ttToday); } catch(e) {}
 
   // Marks
   if (data.marks) {
     const idx = [];
     Object.entries(data.marks).forEach(([k, v]) => {
-      try { localStorage.setItem(k, JSON.stringify(v)); idx.push(k); } catch(e) {}
+      try { erpSet(k, JSON.stringify(v)); idx.push(k); } catch(e) {}
     });
-    try { localStorage.setItem('_erp_marks_index', JSON.stringify(data.marksIndex || idx)); } catch(e) {}
+    try { erpSet('_erp_marks_index', JSON.stringify(data.marksIndex || idx)); } catch(e) {}
   }
 
   // Full attendance
   if (data.attendanceFull) {
     const attIdx = [];
     Object.entries(data.attendanceFull).forEach(([k, v]) => {
-      try { localStorage.setItem(k, typeof v === 'string' ? v : JSON.stringify(v)); attIdx.push(k); } catch(e) {}
+      try { erpSet(k, typeof v === 'string' ? v : JSON.stringify(v)); attIdx.push(k); } catch(e) {}
     });
-    try { localStorage.setItem('_erp_att_index', JSON.stringify(attIdx)); } catch(e) {}
+    try { erpSet('_erp_att_index', JSON.stringify(attIdx)); } catch(e) {}
   }
 
   // WhatsApp templates
   if (data.waTemplates) Object.entries(data.waTemplates).forEach(([k, v]) => {
-    try { localStorage.setItem(k, v); } catch(e) {}
+    try { erpSet(k, v); } catch(e) {}
   });
 
   // Student Summary
   if (data.studentSummary) Object.entries(data.studentSummary).forEach(([k, v]) => {
-    try { localStorage.setItem(k, typeof v === 'string' ? v : JSON.stringify(v)); } catch(e) {}
+    try { erpSet(k, typeof v === 'string' ? v : JSON.stringify(v)); } catch(e) {}
   });
 
   // AI/diagnostic data
   if (data.aiData) Object.entries(data.aiData).forEach(([k, v]) => {
-    try { localStorage.setItem(k, typeof v === 'string' ? v : JSON.stringify(v)); } catch(e) {}
+    try { erpSet(k, typeof v === 'string' ? v : JSON.stringify(v)); } catch(e) {}
   });
 
   // Teaching Log
-  if (data.teachingLog) try { localStorage.setItem('_erp_teaching_log', JSON.stringify(data.teachingLog)); } catch(e) {}
+  if (data.teachingLog) try { erpSet('_erp_teaching_log', JSON.stringify(data.teachingLog)); } catch(e) {}
 
   // School Marks
   if (data.schoolMarks) {
     const smIdx = [];
     Object.entries(data.schoolMarks).forEach(([sid, v]) => {
-      try { localStorage.setItem('_erp_schoolmarks_' + sid, JSON.stringify(v)); smIdx.push(sid); } catch(e) {}
+      try { erpSet('_erp_schoolmarks_' + sid, JSON.stringify(v)); smIdx.push(sid); } catch(e) {}
     });
-    try { localStorage.setItem('_erp_schoolmarks_index', JSON.stringify(smIdx)); } catch(e) {}
+    try { erpSet('_erp_schoolmarks_index', JSON.stringify(smIdx)); } catch(e) {}
   }
 
   // Rising Stars
-  if (data.risingStar) try { localStorage.setItem('_erp_risingstar', JSON.stringify(data.risingStar)); } catch(e) {}
+  if (data.risingStar) try { erpSet('_erp_risingstar', JSON.stringify(data.risingStar)); } catch(e) {}
 
   // Target (exam countdown dates + renamed labels)
-  if (data.targetDates)     try { localStorage.setItem('_erp_target_dates',     JSON.stringify(data.targetDates)); } catch(e) {}
-  if (data.targetExamNames) try { localStorage.setItem('_erp_target_examnames', JSON.stringify(data.targetExamNames)); } catch(e) {}
+  if (data.targetDates)     try { erpSet('_erp_target_dates',     JSON.stringify(data.targetDates)); } catch(e) {}
+  if (data.targetExamNames) try { erpSet('_erp_target_examnames', JSON.stringify(data.targetExamNames)); } catch(e) {}
 
   // Settings
-  if (data.darkMode)         try { localStorage.setItem('_erp_dark',               data.darkMode); } catch(e) {}
-  if (data.latesToLeave)     try { localStorage.setItem('_erp_lates_to_leave',      data.latesToLeave); } catch(e) {}
-  if (data.lastMonthlyReset) try { localStorage.setItem('_erp_last_monthly_reset',  data.lastMonthlyReset); } catch(e) {}
-  if (data.sheetsUrl)        try { localStorage.setItem('_erp_sheets_url',          data.sheetsUrl); } catch(e) {}
-  if (data.payrollPayDay)    try { localStorage.setItem('_erp_payroll_payday',      data.payrollPayDay); } catch(e) {}
+  if (data.darkMode)         try { erpSet('_erp_dark',               data.darkMode); } catch(e) {}
+  if (data.latesToLeave)     try { erpSet('_erp_lates_to_leave',      data.latesToLeave); } catch(e) {}
+  if (data.lastMonthlyReset) try { erpSet('_erp_last_monthly_reset',  data.lastMonthlyReset); } catch(e) {}
+  if (data.sheetsUrl)        try { erpSet('_erp_sheets_url',          data.sheetsUrl); } catch(e) {}
+  if (data.payrollPayDay)    try { erpSet('_erp_payroll_payday',      data.payrollPayDay); } catch(e) {}
 }
 
 // Rolls back to the exact state saved by _saveRestoreSafetyNet() just before the last restore.
 function undoLastRestore() {
   let meta;
-  try { meta = JSON.parse(localStorage.getItem('_erp_pre_restore_meta') || 'null'); } catch(e) { meta = null; }
-  const snapRaw = localStorage.getItem('_erp_pre_restore_snapshot');
+  try { meta = JSON.parse(erpGet('_erp_pre_restore_meta') || 'null'); } catch(e) { meta = null; }
+  const snapRaw = erpGet('_erp_pre_restore_snapshot');
   if (!meta || !snapRaw) { showToast('⚠️ No pre-restore snapshot found to undo to'); return; }
   if (!confirm('Undo the last restore?\nThis brings back your data from just before that restore (' + meta.students + ' students, saved ' + new Date(meta.ts).toLocaleString('en-IN') + ').')) return;
   try {
     const snap = JSON.parse(snapRaw);
     _applyRestoreData(snap);
-    localStorage.removeItem('_erp_pre_restore_snapshot');
-    localStorage.removeItem('_erp_pre_restore_meta');
+    erpRemove('_erp_pre_restore_snapshot');
+    erpRemove('_erp_pre_restore_meta');
     showToast('✅ Undo complete — reloading…');
     addBkLog('[Restore] Undo — reverted to snapshot from ' + meta.ts);
     setTimeout(() => location.reload(), 1000);
@@ -14848,14 +14996,14 @@ function refreshUndoRestoreBtn() {
   const wrap = document.getElementById('bk-undo-restore-wrap');
   if (!wrap) return;
   let meta;
-  try { meta = JSON.parse(localStorage.getItem('_erp_pre_restore_meta') || 'null'); } catch(e) { meta = null; }
+  try { meta = JSON.parse(erpGet('_erp_pre_restore_meta') || 'null'); } catch(e) { meta = null; }
   if (!meta) { wrap.style.display = 'none'; return; }
   wrap.style.display = '';
   const sub = document.getElementById('bk-undo-restore-sub');
   if (sub) sub.textContent = 'Snapshot from ' + new Date(meta.ts).toLocaleString('en-IN') + ' · ' + meta.students + ' students';
 }
 function updateBkCount() {
-  const bks=JSON.parse(localStorage.getItem(BK_KEY)||'[]');
+  const bks=JSON.parse(erpGet(BK_KEY)||'[]');
   const el=document.getElementById('bk-local-count'); if(el) el.textContent=bks.length+' backup'+(bks.length!==1?'s':'')+' in browser';
 }
 function renderBkHistory() {
@@ -14868,7 +15016,7 @@ function renderBkHistory() {
     return `<div class="bk-hist-item"><span style="font-size:15px">${icons[h.source]||'💾'}</span><div style="flex:1"><div style="font-size:12px;font-weight:500;color:var(--tx)">${fmt}</div><div style="font-size:10px;color:var(--tx3)">${h.source} backup · ${h.size}</div></div><span class="badge ${h.status==='ok'?'bg':'br2'}">${h.status}</span></div>`;
   }).join('');
 }
-function clearBkHistory() { bkHistory=[]; localStorage.removeItem(BK_HIST_KEY); renderBkHistory(); }
+function clearBkHistory() { bkHistory=[]; erpRemove(BK_HIST_KEY); renderBkHistory(); }
 function valSheetUrl(url) {
   const el=document.getElementById('sheet-url-status'); if(!el) return;
   if(!url){el.style.display='none';return;}
@@ -15004,7 +15152,7 @@ async function syncSheets(silent) {
     }
 
     if (succeeded) {
-      try { localStorage.setItem('_erp_sheets_url', url); } catch(e){}
+      try { erpSet('_erp_sheets_url', url); } catch(e){}
     }
   } catch(err) {
     const msg = err.message || 'Connection failed';
@@ -15047,7 +15195,7 @@ function testSheetConnection() {
       if (statusEl) statusEl.innerHTML =
         '<span style="color:#16a34a">✅ Connection confirmed! Apps Script received test ping and replied successfully. Ready to sync.</span>';
       showToast('✅ Google Sheets connected and working!');
-      try { localStorage.setItem('_erp_sheets_url', url); } catch(e){}
+      try { erpSet('_erp_sheets_url', url); } catch(e){}
     } else {
       if (statusEl) statusEl.innerHTML =
         `<span style="color:#dc2626">⚠️ Apps Script error: ${result.msg || JSON.stringify(result)}</span>`;
@@ -15067,7 +15215,7 @@ function testSheetConnection() {
           <b>Check your Google Sheet → Log tab</b> for a new "test" row to confirm receipt.<br>
           To get full confirmation (✅): add the <code>doOptions()</code> function to your Apps Script and re-deploy.</span>`;
         showToast('⚠️ Ping sent — check Sheet Log tab to verify');
-        try { localStorage.setItem('_erp_sheets_url', url); } catch(e){}
+        try { erpSet('_erp_sheets_url', url); } catch(e){}
       }).catch(() => {
         if (statusEl) statusEl.innerHTML = '<span style="color:#dc2626">❌ Cannot reach URL — check your internet connection</span>';
       });
@@ -15078,7 +15226,7 @@ function testSheetConnection() {
 }
 
 async function restoreFromSheets() {
-  const url = (document.getElementById('sheets-url')?.value || localStorage.getItem('_erp_sheets_url') || '').trim();
+  const url = (document.getElementById('sheets-url')?.value || erpGet('_erp_sheets_url') || '').trim();
   const statusEl = document.getElementById('sheets-sync-status');
   const btn = document.getElementById('btn-restore-sheets');
 
@@ -15155,17 +15303,17 @@ function selectAppsScriptText() {
 function initBackup() {
   // Restore saved Sheets URL
   try {
-    const savedUrl = localStorage.getItem('_erp_sheets_url');
+    const savedUrl = erpGet('_erp_sheets_url');
     const urlEl = document.getElementById('sheets-url');
     if (savedUrl && urlEl) urlEl.value = savedUrl;
   } catch(e) {}
   // Restore saved Secret Key
   try {
-    const savedSecret = localStorage.getItem('_erp_sheets_secret');
+    const savedSecret = erpGet('_erp_sheets_secret');
     const secretEl = document.getElementById('sheets-secret');
     if (savedSecret && secretEl) secretEl.value = savedSecret;
   } catch(e) {}
-  try{bkHistory=JSON.parse(localStorage.getItem(BK_HIST_KEY)||'[]');}catch(e){}
+  try{bkHistory=JSON.parse(erpGet(BK_HIST_KEY)||'[]');}catch(e){}
   runBackup('auto');
   startBkTimer();
   updateBkCount();
@@ -15173,10 +15321,10 @@ function initBackup() {
   refreshUndoRestoreBtn();
 }
 function saveSheetsSecret(val) {
-  try { localStorage.setItem('_erp_sheets_secret', val || ''); } catch(e) {}
+  try { erpSet('_erp_sheets_secret', val || ''); } catch(e) {}
 }
 function getSheetsSecret() {
-  try { return localStorage.getItem('_erp_sheets_secret') || ''; } catch(e) { return ''; }
+  try { return erpGet('_erp_sheets_secret') || ''; } catch(e) { return ''; }
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -15224,7 +15372,7 @@ function activateLic() {
     CFG.LICENSE_KEY='TRIAL'; // revert if invalid
   } else {
     // SAVE to localStorage so key persists after app close/reopen
-    try { localStorage.setItem('_erp_lic_key', key); sessionStorage.setItem('_erp_lic_key', key); } catch(e){}
+    try { erpSet('_erp_lic_key', key); sessionStorage.setItem('_erp_lic_key', key); } catch(e){}
     if(msgEl)msgEl.innerHTML=`<span style="color:#16a34a">✅ Activated! ${lic.planName} · ${lic.daysLeft} days</span>`;
     setTimeout(()=>{closeModal();initLicenseUI();},1500);
   }
@@ -15263,11 +15411,11 @@ function initLicenseUI() {
    BATCH MANAGEMENT
 ═══════════════════════════════════════════════════════ */
 function saveBatches() {
-  try { localStorage.setItem('_erp_batches', JSON.stringify(batches)); } catch(e){}
+  try { erpSet('_erp_batches', JSON.stringify(batches)); } catch(e){}
 }
 function loadBatches() {
   try {
-    const v = localStorage.getItem('_erp_batches');
+    const v = erpGet('_erp_batches');
     if (v) { const p=JSON.parse(v); if(Array.isArray(p)&&p.length>0){batches.length=0;p.forEach(b=>batches.push(b));} }
   } catch(e){}
 }
@@ -15531,13 +15679,13 @@ function deleteBatchFromPage(i) {
    FEE STRUCTURE
 ═══════════════════════════════════════════════════════ */
 function saveFeeStructure() {
-  try { localStorage.setItem('_erp_fee_structure', JSON.stringify(feeStructure)); } catch(e){}
+  try { erpSet('_erp_fee_structure', JSON.stringify(feeStructure)); } catch(e){}
   closeModal();
   showToast('✅ Fee structure saved!');
 }
 function loadFeeStructure() {
   try {
-    const v = localStorage.getItem('_erp_fee_structure');
+    const v = erpGet('_erp_fee_structure');
     if (v) { const p=JSON.parse(v); if(Array.isArray(p)&&p.length>0){feeStructure.length=0;p.forEach(f=>feeStructure.push(f));} }
   } catch(e){}
 }
@@ -15581,13 +15729,13 @@ function updateOtherCourse(i, field, val) {
   otherCourses[i][field] = (field === 'fee') ? (parseFloat(val)||0) : val;
 }
 function saveOtherCourses() {
-  try { localStorage.setItem('_erp_other_courses', JSON.stringify(otherCourses)); } catch(e){}
+  try { erpSet('_erp_other_courses', JSON.stringify(otherCourses)); } catch(e){}
   closeModal();
   showToast('✅ Other courses saved!');
 }
 function loadOtherCourses() {
   try {
-    const v = localStorage.getItem('_erp_other_courses');
+    const v = erpGet('_erp_other_courses');
     if (v) { const p=JSON.parse(v); if(Array.isArray(p)&&p.length>0){otherCourses.length=0;p.forEach(c=>otherCourses.push(c));} }
   } catch(e){}
 }
@@ -15610,10 +15758,10 @@ function _feeMonthYM(date) {
   return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
 }
 function _getLastResetYM() {
-  try { return localStorage.getItem('_erp_last_monthly_reset') || ''; } catch(e) { return ''; }
+  try { return erpGet('_erp_last_monthly_reset') || ''; } catch(e) { return ''; }
 }
 function _setLastResetYM(ym) {
-  try { localStorage.setItem('_erp_last_monthly_reset', ym); } catch(e) {}
+  try { erpSet('_erp_last_monthly_reset', ym); } catch(e) {}
 }
 
 /* ── Dismiss new-month banner ─────────────────────────── */
@@ -16088,7 +16236,7 @@ function updateDashStats() {
         try {
           const sk = (typeof _attStorageKey === 'function') ? _attStorageKey(todayStr, b.id, sess) : null;
           if (!sk) return;
-          const saved = localStorage.getItem(sk);
+          const saved = erpGet(sk);
           if (!saved) return;
           const parsed = JSON.parse(saved);
           Object.keys(parsed).forEach(k => {
@@ -16640,12 +16788,12 @@ function getWTDefault(typeId, lang) {
 
 function getWTSaved(typeId, lang) {
   // Tamil only — always load ta regardless of lang param
-  try { return localStorage.getItem(`_erp_wt_${typeId}_ta`) || ''; } catch(e) { return ''; }
+  try { return erpGet(`_erp_wt_${typeId}_ta`) || ''; } catch(e) { return ''; }
 }
 
 function setWTSaved(typeId, lang, val) {
   // Tamil only — always store as ta
-  try { localStorage.setItem(`_erp_wt_${typeId}_ta`, val); } catch(e) {}
+  try { erpSet(`_erp_wt_${typeId}_ta`, val); } catch(e) {}
 }
 
 function loadWTEditors(typeId) {
@@ -16747,7 +16895,7 @@ function resetWATypeTemplate() {
   if (!wtActiveType) return;
   if (!confirm('Reset this template to default?')) return;
   try {
-    localStorage.removeItem(`_erp_wt_${wtActiveType}_ta`);
+    erpRemove(`_erp_wt_${wtActiveType}_ta`);
   } catch(e) {}
   loadWTEditors(wtActiveType);
   // Restore defaults in live WA_TEMPLATES
@@ -16764,7 +16912,7 @@ function resetWATypeTemplate() {
 function resetAllWATemplates() {
   if (!confirm('Reset ALL WhatsApp templates to defaults?')) return;
   WT_ALL_TYPES.forEach(t => {
-    try { localStorage.removeItem(`_erp_wt_${t.id}_ta`); } catch(e) {}
+    try { erpRemove(`_erp_wt_${t.id}_ta`); } catch(e) {}
   });
   loadAllCustomWATemplates();
   showToast('All templates reset to defaults');
@@ -16774,11 +16922,11 @@ function resetAllWATemplates() {
 
 function applyCustomWATemplate(typeId, lang, val) {
   if (typeId === 'admission') {
-    if (lang==='en') { try { localStorage.setItem('_erp_adm_template', val); } catch(e) {} }
+    if (lang==='en') { try { erpSet('_erp_adm_template', val); } catch(e) {} }
     return;
   }
   if (typeId === 'fee_receipt') {
-    if (lang==='en') { try { localStorage.setItem('_erp_fee_rcpt_template', val); } catch(e) {} }
+    if (lang==='en') { try { erpSet('_erp_fee_rcpt_template', val); } catch(e) {} }
     return;
   }
   if (WA_TEMPLATES[typeId]) {
@@ -16883,7 +17031,7 @@ function fillFeeReceiptTemplate(template, d) {
 
 function getFeeReceiptTemplate() {
   try {
-    const saved = localStorage.getItem('_erp_fee_rcpt_template');
+    const saved = erpGet('_erp_fee_rcpt_template');
     if (saved) return saved;
   } catch(e) {}
   // BUG FIX: previously this always fell back to the ENGLISH default
@@ -16894,7 +17042,7 @@ function getFeeReceiptTemplate() {
   // unexpectedly. Now it honours the saved language preference (defaulting
   // to Tamil, the primary parent-facing language for this product) instead.
   let savedLang = 'ta';
-  try { savedLang = localStorage.getItem('_erp_fee_rcpt_lang') || 'ta'; } catch(e) {}
+  try { savedLang = erpGet('_erp_fee_rcpt_lang') || 'ta'; } catch(e) {}
   if (savedLang === 'en')   return FEE_RECEIPT_TEMPLATES.en;
   if (savedLang === 'both') return FEE_RECEIPT_TEMPLATES.en + '\n\n─────────────\n\n' + FEE_RECEIPT_TEMPLATES.ta;
   return FEE_RECEIPT_TEMPLATES.ta;
@@ -16902,7 +17050,7 @@ function getFeeReceiptTemplate() {
 
 function saveFeeReceiptTemplate() {
   const tmpl = document.getElementById('fee-rcpt-template')?.value || '';
-  try { localStorage.setItem('_erp_fee_rcpt_template', tmpl); } catch(e) {}
+  try { erpSet('_erp_fee_rcpt_template', tmpl); } catch(e) {}
   showToast('✅ Fee receipt template saved!');
 }
 
@@ -16914,7 +17062,7 @@ function resetFeeReceiptTemplate() {
   else if (lang === 'both') tpl = FEE_RECEIPT_TEMPLATES.en + '\n\n─────────────\n\n' + FEE_RECEIPT_TEMPLATES.ta;
   else tpl = FEE_RECEIPT_TEMPLATES.en;
   if (tmplEl) tmplEl.value = tpl;
-  try { localStorage.removeItem('_erp_fee_rcpt_template'); } catch(e) {}
+  try { erpRemove('_erp_fee_rcpt_template'); } catch(e) {}
   refreshFeeReceiptPreview();
   showToast('Template reset to default');
 }
@@ -16925,7 +17073,7 @@ function refreshFeeReceiptPreview() {
   const prevEl = document.getElementById('fee-rcpt-preview');
   if (!tmplEl || !prevEl) return;
   // Load correct default if field is blank or matches a default
-  const saved = localStorage.getItem('_erp_fee_rcpt_template');
+  const saved = erpGet('_erp_fee_rcpt_template');
   const currentVal = tmplEl.value;
   const isShowingDefault = currentVal === FEE_RECEIPT_TEMPLATES.en || currentVal === FEE_RECEIPT_TEMPLATES.ta || currentVal === '';
   if (isShowingDefault) {
@@ -16934,8 +17082,8 @@ function refreshFeeReceiptPreview() {
     else tmplEl.value = FEE_RECEIPT_TEMPLATES.en;
   }
   // Auto-save template whenever previewed
-  try { localStorage.setItem('_erp_fee_rcpt_template', tmplEl.value); } catch(e) {}
-  try { localStorage.setItem('_erp_fee_rcpt_lang', lang); } catch(e) {}
+  try { erpSet('_erp_fee_rcpt_template', tmplEl.value); } catch(e) {}
+  try { erpSet('_erp_fee_rcpt_lang', lang); } catch(e) {}
   // Preview with sample data
   prevEl.textContent = fillFeeReceiptTemplate(tmplEl.value, {
     studentName : 'Monisha R',
@@ -16958,8 +17106,8 @@ function initFeeReceiptTemplate() {
   const tmplEl = document.getElementById('fee-rcpt-template');
   if (!tmplEl) return;
   try {
-    const saved     = localStorage.getItem('_erp_fee_rcpt_template');
-    const savedLang = localStorage.getItem('_erp_fee_rcpt_lang') || 'ta';
+    const saved     = erpGet('_erp_fee_rcpt_template');
+    const savedLang = erpGet('_erp_fee_rcpt_lang') || 'ta';
     const langSel   = document.getElementById('fee-rcpt-lang');
     if (langSel) langSel.value = savedLang;
     tmplEl.value = saved || (savedLang === 'en' ? FEE_RECEIPT_TEMPLATES.en : savedLang === 'both' ? (FEE_RECEIPT_TEMPLATES.en + '\n\n─────────────\n\n' + FEE_RECEIPT_TEMPLATES.ta) : FEE_RECEIPT_TEMPLATES.ta);
@@ -16972,7 +17120,7 @@ function initFeeReceiptTemplate() {
 function initAdmissions() {
   // Restore recent admissions from localStorage
   try {
-    const saved = localStorage.getItem('_erp_adm_recent');
+    const saved = erpGet('_erp_adm_recent');
     if (saved) { admRecentList = JSON.parse(saved) || []; }
   } catch(e) {}
   // Populate batch dropdown from batches array
@@ -16989,15 +17137,15 @@ function initAdmissions() {
 
   // Load saved custom template or default
   try {
-    const saved = localStorage.getItem('_erp_adm_template');
-    const savedLang = localStorage.getItem('_erp_adm_lang') || 'en';
+    const saved = erpGet('_erp_adm_template');
+    const savedLang = erpGet('_erp_adm_lang') || 'en';
     const langSel = document.getElementById('adm-wa-lang');
     if (langSel) langSel.value = savedLang;
     const tmplEl = document.getElementById('adm-wa-template');
     if (tmplEl) {
       tmplEl.value = _admEnsureTimetablePlaceholder(saved) || (savedLang === 'ta' ? ADM_TEMPLATES.ta : ADM_TEMPLATES.en);
       // Persist the repaired version so it stays fixed going forward.
-      if (saved && tmplEl.value !== saved) { try { localStorage.setItem('_erp_adm_template', tmplEl.value); } catch(e) {} }
+      if (saved && tmplEl.value !== saved) { try { erpSet('_erp_adm_template', tmplEl.value); } catch(e) {} }
     }
   } catch(e){}
   refreshAdmPreview();
@@ -17554,10 +17702,10 @@ function refreshAdmPreview() {
   }
 
   // Auto-save any edit immediately so it persists across navigations
-  try { localStorage.setItem('_erp_adm_template', tmplEl.value); } catch(e) {}
+  try { erpSet('_erp_adm_template', tmplEl.value); } catch(e) {}
 
   // Save choice
-  try { localStorage.setItem('_erp_adm_lang', lang_); } catch(e) {}
+  try { erpSet('_erp_adm_lang', lang_); } catch(e) {}
 
   const batchVal  = document.getElementById('adm-course')?.value || 'Evening Batch';
   const includeTT = document.getElementById('adm-include-tt')?.checked !== false;
@@ -17584,7 +17732,7 @@ function resetAdmTemplate() {
   const lang_ = document.getElementById('adm-wa-lang')?.value || 'en';
   const tmplEl = document.getElementById('adm-wa-template');
   if (tmplEl) tmplEl.value = lang_ === 'ta' ? ADM_TEMPLATES.ta : ADM_TEMPLATES.en;
-  try { localStorage.removeItem('_erp_adm_template'); } catch(e) {}
+  try { erpRemove('_erp_adm_template'); } catch(e) {}
   refreshAdmPreview();
   showToast('Template reset to default');
 }
@@ -17663,7 +17811,7 @@ function submitAdmission() {
 
   // Save custom template
   const tmpl = _admEnsureTimetablePlaceholder(document.getElementById('adm-wa-template')?.value || '');
-  try { localStorage.setItem('_erp_adm_template', tmpl); } catch(e) {}
+  try { erpSet('_erp_adm_template', tmpl); } catch(e) {}
 
   // Build WA message (with class timetable and/or course schedule, if enabled) and open WhatsApp
   const message = fillAdmTemplate(tmpl, {
@@ -17677,7 +17825,7 @@ function submitAdmission() {
   // Add to recent admissions
   admRecentList.unshift({ admNo, name, grade, parent, phone, date: new Date().toLocaleDateString('en-IN'), message });
   if (admRecentList.length > 20) admRecentList.pop();
-  try { localStorage.setItem('_erp_adm_recent', JSON.stringify(admRecentList)); } catch(e) {}
+  try { erpSet('_erp_adm_recent', JSON.stringify(admRecentList)); } catch(e) {}
 
   // Auto-create fee records for the new student
   // — skipped entirely when "No fee collected at admission" is checked,
@@ -18129,11 +18277,10 @@ function deleteStudent(idx) {
   const paidTotal = paidFees.reduce((a,f) => a+(f.paid||0), 0);
   const examCount = exams.filter(e => e.marks && e.marks[sid]!==undefined).length;
   let attCount = 0;
-  for (let i = 0; i < localStorage.length; i++) {
-    const k = localStorage.key(i);
+  for (const k of erpStorageKeys()) {
     if (!k || !k.startsWith('_erp_att_')) continue;
     try {
-      const rec = JSON.parse(localStorage.getItem(k));
+      const rec = JSON.parse(erpGet(k));
       Object.keys(rec).forEach(rk => { if (rk.startsWith(sid+'|')) attCount++; });
     } catch(e) {}
   }
@@ -18190,26 +18337,24 @@ function confirmDelete(idx) {
 
   // 2. Clear all localStorage attendance records for this student
   //    Keys: _erp_att_{YYYY-MM-DD}_{batch}_{session} — value obj has keys like "sid|batch|session"
-  for (var i = 0; i < localStorage.length; i++) {
-    var lk = localStorage.key(i);
+  for (var lk of erpStorageKeys()) {
     if (!lk || !lk.startsWith('_erp_att_')) continue;
     try {
-      var rec = JSON.parse(localStorage.getItem(lk));
+      var rec = JSON.parse(erpGet(lk));
       var changed = false;
       Object.keys(rec).forEach(function(rk) {
         if (rk.startsWith(sid + '|')) { delete rec[rk]; changed = true; }
       });
-      if (changed) localStorage.setItem(lk, JSON.stringify(rec));
+      if (changed) erpSet(lk, JSON.stringify(rec));
     } catch(e2) {}
   }
 
   // 3. Clear student summary data (_erp_sum_)
   var sumKeys = [];
-  for (var j = 0; j < localStorage.length; j++) {
-    var sk = localStorage.key(j);
+  for (var sk of erpStorageKeys()) {
     if (sk && sk.startsWith('_erp_sum_' + sid + '_')) sumKeys.push(sk);
   }
-  sumKeys.forEach(function(k) { try { localStorage.removeItem(k); } catch(e) {} });
+  sumKeys.forEach(function(k) { try { erpRemove(k); } catch(e) {} });
 
   // 4. PRESERVE paid fees (income) — only remove pending/overdue fees
   var removedIncome = 0;
@@ -18231,13 +18376,13 @@ function confirmDelete(idx) {
   saveFees();
 
   // 5. Remove from saved marks (localStorage _erp_marks_*)
-  var mIdx = JSON.parse(localStorage.getItem('_erp_marks_index') || '[]');
+  var mIdx = JSON.parse(erpGet('_erp_marks_index') || '[]');
   mIdx.forEach(function(mk) {
     try {
-      var rec = JSON.parse(localStorage.getItem(mk));
+      var rec = JSON.parse(erpGet(mk));
       if (rec && rec.marks && (rec.marks[sid] !== undefined)) {
         delete rec.marks[sid];
-        localStorage.setItem(mk, JSON.stringify(rec));
+        erpSet(mk, JSON.stringify(rec));
       }
     } catch(e) {}
   });
@@ -18322,7 +18467,7 @@ function saveEditCenter() {
   CFG.CENTER.address  = document.getElementById('ec-address')?.value.trim()  || CFG.CENTER.address;
   if (CFG.APP) CFG.APP.studentIdPrefix = (document.getElementById('ec-prefix')?.value.trim().toUpperCase() || CFG.APP.studentIdPrefix);
   // Persist to localStorage
-  try { localStorage.setItem('_erp_center', JSON.stringify(CFG.CENTER)); } catch(e){}
+  try { erpSet('_erp_center', JSON.stringify(CFG.CENTER)); } catch(e){}
   closeModal();
   initLicenseUI();
   applyLang();
@@ -18494,6 +18639,47 @@ function _erpLoadStudentsIDB() {
   });
 }
 
+function _erpHydrateWAPersistentCaches() {
+  window.__ERP_MISSED_CACHE__ = window.__ERP_MISSED_CACHE__ || {};
+  window.__ERP_MARKS_CACHE__ = window.__ERP_MARKS_CACHE__ || {};
+  window.__ERP_MARKS_INDEX_CACHE__ = window.__ERP_MARKS_INDEX_CACHE__ || [];
+  return _erpOpenIDB().then(function(){
+    return Promise.all([
+      _erpIDBGet('targetDates').catch(function(){return null;}),
+      _erpIDBGet('targetExamNames').catch(function(){return null;}),
+      _erpIDBGet('marksIndex').catch(function(){return null;})
+    ]);
+  }).then(function(base){
+    var td=base[0], tn=base[1], mi=base[2];
+    if (td && td.data && typeof td.data === 'object' && Object.keys(td.data).length) {
+      window.__ERP_TARGET_DATES_CACHE__ = td.data;
+    }
+    if (tn && tn.data && typeof tn.data === 'object' && Object.keys(tn.data).length) {
+      window.__ERP_TARGET_NAMES_CACHE__ = tn.data;
+    }
+    var keys = mi && Array.isArray(mi.keys) ? mi.keys : [];
+    window.__ERP_MARKS_INDEX_CACHE__ = Array.from(new Set((window.__ERP_MARKS_INDEX_CACHE__ || []).concat(keys)));
+    return Promise.all([
+      Promise.all(window.__ERP_MARKS_INDEX_CACHE__.map(function(key){
+        return _erpIDBGet('marks:' + String(key).replace(/^_erp_marks_/, '')).then(function(payload){
+          if (payload && payload.record) window.__ERP_MARKS_CACHE__[key] = payload.record;
+        }).catch(function(){});
+      })),
+      Promise.all((Array.isArray(students) ? students : []).map(function(st){
+        return _erpIDBGet('missed:' + st.id).then(function(payload){
+          if (payload && payload.data) window.__ERP_MISSED_CACHE__[st.id] = payload.data;
+        }).catch(function(){});
+      }))
+    ]);
+  }).then(function(){
+    console.log('[ERP] WA data caches hydrated: missed subjects, marks, countdown');
+    return true;
+  }).catch(function(e){
+    console.warn('[ERP] WA data cache hydration failed:', e);
+    return false;
+  });
+}
+
 function _erpInitPersistentStudents() {
   // First open the DB. If it already contains students, use them.
   // Otherwise seed it from the current local/session data.
@@ -18501,13 +18687,15 @@ function _erpInitPersistentStudents() {
     return _erpIDBGet('students');
   }).then(function(payload){
     if (payload && Array.isArray(payload.students) && payload.students.length > 0) {
-      return _erpLoadStudentsIDB();
+      return _erpLoadStudentsIDB().then(function(){
+        return _erpHydrateWAPersistentCaches();
+      });
     }
     if (students.length > 0) {
       _erpPersistStudentsIDB();
-      return false;
+      return _erpHydrateWAPersistentCaches();
     }
-    return false;
+    return _erpHydrateWAPersistentCaches();
   }).catch(function(e){
     console.warn('[ERP] Persistent student store init failed:', e);
     return false;
@@ -18519,8 +18707,8 @@ function saveStudents() {
   let saved = false;
   // WebIntoApp/WebView-safe: test each storage independently.
   try {
-    localStorage.setItem(STUDENTS_KEY, data);
-    saved = localStorage.getItem(STUDENTS_KEY) === data || saved;
+    erpSet(STUDENTS_KEY, data);
+    saved = erpGet(STUDENTS_KEY) === data || saved;
   } catch(e) {
     console.warn('[ERP] localStorage student save failed:', e);
   }
@@ -18553,7 +18741,7 @@ function _attemptStudentRecovery() {
 
   // 1) In-app rolling backup history (erp_bk) — newest entries are at index 0
   try {
-    var bk = JSON.parse(localStorage.getItem(BK_KEY) || '[]');
+    var bk = JSON.parse(erpGet(BK_KEY) || '[]');
     if (Array.isArray(bk)) {
       bk.forEach(function(entry) {
         try {
@@ -18568,7 +18756,7 @@ function _attemptStudentRecovery() {
 
   // 2) Pre-restore safety snapshot (written automatically before any Restore Backup)
   try {
-    var pre = JSON.parse(localStorage.getItem('_erp_pre_restore_snapshot') || 'null');
+    var pre = JSON.parse(erpGet('_erp_pre_restore_snapshot') || 'null');
     if (pre && Array.isArray(pre.students) && pre.students.length > 0) {
       candidates.push({ source: '_erp_pre_restore_snapshot', students: pre.students });
     }
@@ -18588,7 +18776,7 @@ function _attemptStudentRecovery() {
 
   // _erp_students was already confirmed empty/missing/corrupted before this ran,
   // so there is no valid current value being overwritten here.
-  try { localStorage.setItem('_erp_students', JSON.stringify(students)); } catch(e) {}
+  try { erpSet('_erp_students', JSON.stringify(students)); } catch(e) {}
   try { sessionStorage.setItem('_erp_students', JSON.stringify(students)); } catch(e) {}
 
   console.warn('[ERP] Recovered ' + students.length + ' students from ' + pick.source + ' and restored to _erp_students.');
@@ -18633,7 +18821,7 @@ function runStudentStorageDiagnostic() {
   };
   try {
     var raw = null;
-    try { raw = localStorage.getItem('_erp_students'); } catch(e) {}
+    try { raw = erpGet('_erp_students'); } catch(e) {}
     if (!raw) { try { raw = sessionStorage.getItem('_erp_students'); } catch(e) {} }
     if (raw) {
       report.erp_students_exists = true;
@@ -18652,27 +18840,27 @@ const EXAMS_KEY   = '_erp_exams';
 const NOTIFS_KEY  = '_erp_notifs';
 
 function saveFees() {
-  try { localStorage.setItem(FEES_KEY, JSON.stringify(fees)); } catch(e){}
+  try { erpSet(FEES_KEY, JSON.stringify(fees)); } catch(e){}
 }
 function saveStaffData() {
   try { 
     const data = JSON.stringify(staffData);
-    localStorage.setItem(STAFF_KEY, data);
+    erpSet(STAFF_KEY, data);
     sessionStorage.setItem(STAFF_KEY, data);
     console.log('[ERP] Saved ' + staffData.length + ' staff to localStorage');
   } catch(e){ console.error('[ERP] Save staff failed:', e); }
 }
 function saveExams() {
-  try { localStorage.setItem(EXAMS_KEY, JSON.stringify(exams)); } catch(e){}
+  try { erpSet(EXAMS_KEY, JSON.stringify(exams)); } catch(e){}
 }
 function saveNotifs() {
-  try { localStorage.setItem(NOTIFS_KEY, JSON.stringify(notifData)); } catch(e){}
+  try { erpSet(NOTIFS_KEY, JSON.stringify(notifData)); } catch(e){}
 }
 
 function loadAllData() {
   function readKey(key) {
     var v = null;
-    try { v = localStorage.getItem(key); } catch(e) {}
+    try { v = erpGet(key); } catch(e) {}
     if (!v) { try { v = sessionStorage.getItem(key); } catch(e) {} }
     return v;
   }
@@ -18684,7 +18872,7 @@ function loadAllData() {
   // behavioural change to student loading — the parsing/repair logic below is unchanged.
   (function loadStudentsSafe() {
     var sv = null, _source = 'none';
-    try { sv = localStorage.getItem('_erp_students'); if (sv) _source = 'localStorage'; } catch(e) { console.error('[ERP] localStorage read error:', e); }
+    try { sv = erpGet('_erp_students'); if (sv) _source = 'localStorage'; } catch(e) { console.error('[ERP] localStorage read error:', e); }
     if (!sv) {
       try { sv = sessionStorage.getItem('_erp_students'); if (sv) _source = 'sessionStorage'; } catch(e) { console.error('[ERP] sessionStorage read error:', e); }
     }
@@ -18715,7 +18903,7 @@ function loadAllData() {
               _seenIds[stu.id] = true;
             }
           });
-          if (_dupFixed > 0) { try { localStorage.setItem('_erp_students', JSON.stringify(students)); } catch(e2) {} }
+          if (_dupFixed > 0) { try { erpSet('_erp_students', JSON.stringify(students)); } catch(e2) {} }
         } else {
           console.log('[ERP] _erp_students key exists but empty or not array (source: ' + _source + ')');
         }
@@ -18781,13 +18969,13 @@ function loadAllData() {
       // Try active batch first, then 'all'
       var keys = [];
       try {
-        var bs = JSON.parse(localStorage.getItem('_erp_batches') || '[]');
+        var bs = JSON.parse(erpGet('_erp_batches') || '[]');
         bs.forEach(function(b){ if(b.name) keys.push(b.name); });
       } catch(e){}
       keys.push('all');
       keys.forEach(function(k) {
         try {
-          var raw = localStorage.getItem('_erp_tt_' + k);
+          var raw = erpGet('_erp_tt_' + k);
           if (!raw) return;
           var ttData = JSON.parse(raw);
           if (!ttData || !Array.isArray(ttData.days)) return;
@@ -18823,11 +19011,11 @@ function loadAllData() {
 function saveLicenseKey(key) {
   if (!key) return;
   CFG.LICENSE_KEY = key.trim().toUpperCase();
-  try { localStorage.setItem('_erp_lic_key', CFG.LICENSE_KEY); } catch(e) {}
+  try { erpSet('_erp_lic_key', CFG.LICENSE_KEY); } catch(e) {}
 }
 function clearLicenseKey() {
   CFG.LICENSE_KEY = 'TRIAL';
-  try { localStorage.removeItem('_erp_lic_key'); } catch(e) {}
+  try { erpRemove('_erp_lic_key'); } catch(e) {}
 }
 
 function _safeInit() {
@@ -18861,7 +19049,7 @@ function _safeInit() {
   })();
   // Restore dark mode FIRST (before any rendering to avoid flash)
   try {
-    const savedDark = localStorage.getItem('_erp_dark');
+    const savedDark = erpGet('_erp_dark');
     if (savedDark === '1') {
       dark = true;
       document.documentElement.classList.add('dark');
@@ -18872,32 +19060,32 @@ function _safeInit() {
   } catch(e) {}
   // Restore license key from localStorage (persists across app restarts)
   try {
-    const savedKey = localStorage.getItem('_erp_lic_key') || sessionStorage.getItem('_erp_lic_key');
+    const savedKey = erpGet('_erp_lic_key') || sessionStorage.getItem('_erp_lic_key');
     if (savedKey && savedKey !== 'TRIAL') { CFG.LICENSE_KEY = savedKey; }
   } catch(e) {}
   // Restore center details edited by admin
   try {
-    const savedCenter = localStorage.getItem('_erp_center');
+    const savedCenter = erpGet('_erp_center');
     if (savedCenter) { Object.assign(CFG.CENTER, JSON.parse(savedCenter)); }
   } catch(e) {}
   // Restore staff attendance
   try {
-    const savedStaffAtt = localStorage.getItem('_erp_staff_att');
+    const savedStaffAtt = erpGet('_erp_staff_att');
     if (savedStaffAtt) { Object.assign(staffAtt, JSON.parse(savedStaffAtt)); }
   } catch(e) {}
   // Restore salary payments
   try {
-    const savedSalPay = localStorage.getItem('_erp_salary_payments');
+    const savedSalPay = erpGet('_erp_salary_payments');
     if (savedSalPay) { Object.assign(salaryPayments, JSON.parse(savedSalPay)); }
   } catch(e) {}
   // Restore staff advances/loans
   try {
-    const savedAdv = localStorage.getItem('_erp_staff_advances');
+    const savedAdv = erpGet('_erp_staff_advances');
     if (savedAdv) { const p = JSON.parse(savedAdv); if (Array.isArray(p)) { staffAdvances.length = 0; p.forEach(a=>staffAdvances.push(a)); } }
   } catch(e) {}
   // Restore late-to-leave config
   try {
-    const savedLTL = localStorage.getItem('_erp_lates_to_leave');
+    const savedLTL = erpGet('_erp_lates_to_leave');
     if (savedLTL) {
       if (!CFG.ATTENDANCE) CFG.ATTENDANCE = {};
       CFG.ATTENDANCE.latesToLeave = parseInt(savedLTL) || 10;
@@ -18948,11 +19136,11 @@ function _safeInit() {
     try {
       var hasData = (students && students.length > 0) || (fees && fees.length > 0);
       if (!hasData) return;
-      var lastRemind = parseInt(localStorage.getItem('_erp_backup_remind') || '0');
+      var lastRemind = parseInt(erpGet('_erp_backup_remind') || '0');
       var now = Date.now();
       var sevenDays = 7 * 24 * 60 * 60 * 1000;
       if (now - lastRemind > sevenDays) {
-        localStorage.setItem('_erp_backup_remind', String(now));
+        erpSet('_erp_backup_remind', String(now));
         var toast = document.getElementById('toast');
         if (toast) {
           toast.textContent = '💾 Reminder: Download a backup from Backup & Sync page';
@@ -19005,7 +19193,7 @@ function getSumKey(studentId, year, month) {
 
 function loadSumData(studentId, year, month) {
   try {
-    const raw = localStorage.getItem(getSumKey(studentId, year, month));
+    const raw = erpGet(getSumKey(studentId, year, month));
     if (raw) return JSON.parse(raw);
   } catch(e) {}
   return { stars: 0, activities: [], note: '' };
@@ -19013,7 +19201,7 @@ function loadSumData(studentId, year, month) {
 
 function saveSumData(studentId, year, month, data) {
   try {
-    localStorage.setItem(getSumKey(studentId, year, month), JSON.stringify(data));
+    erpSet(getSumKey(studentId, year, month), JSON.stringify(data));
   } catch(e) {}
 }
 
@@ -19037,8 +19225,7 @@ function _getAttScanForMonth(year, month) {
   const prefix = '_erp_att_';
   const rows = [];
   try {
-    for (let i = 0; i < localStorage.length; i++) {
-      const k = localStorage.key(i);
+    for (const k of erpStorageKeys()) {
       if (!k || !k.startsWith(prefix)) continue;
       const datePart = k.slice(prefix.length, prefix.length + 10);
       if (!datePart.startsWith(monthStr)) continue;
@@ -19047,7 +19234,7 @@ function _getAttScanForMonth(year, month) {
       const batchId = rest.slice(0, lastU);
       const session = rest.slice(lastU + 1);
       try {
-        const rec = JSON.parse(localStorage.getItem(k));
+        const rec = JSON.parse(erpGet(k));
         if (rec && typeof rec === 'object') rows.push({ datePart, batchId, session, rec });
       } catch(e2) {}
     }
@@ -19095,7 +19282,7 @@ function getStudentAttStats(student, year, month) {
 
   // Priority A — _erp_missed_ already has correct subject data per Day Order
   try {
-    const missedRaw = localStorage.getItem('_erp_missed_' + student.id);
+    const missedRaw = erpGet('_erp_missed_' + student.id);
     if (missedRaw) {
       const missedAll = JSON.parse(missedRaw); // { "Maths": { count, dates: ["2025-05-03",...] } }
       Object.entries(missedAll).forEach(([subj, data]) => {
@@ -19121,7 +19308,7 @@ function getStudentAttStats(student, year, month) {
     absentEntries.forEach(({ date, session, batchId }) => {
       // Check if day order was stored for this date+batch
       const doKey = '_erp_att_dayorder_' + date + '_' + batchId;
-      const dayNum = localStorage.getItem(doKey);
+      const dayNum = erpGet(doKey);
       const _b     = batches.find(b => b.id === batchId);
       const subjs  = dayNum
         ? (((typeof _tlGetSubjectsForBatchDayOrder === 'function')
@@ -19135,7 +19322,7 @@ function getStudentAttStats(student, year, month) {
         if (batch) {
           // Try all timetable keys for this batch name
           try {
-            const ttRaw = localStorage.getItem('_erp_tt_' + batch.name);
+            const ttRaw = erpGet('_erp_tt_' + batch.name);
             const ttData = ttRaw ? JSON.parse(ttRaw) : null;
             if (ttData && ttData.days && ttData.days.length > 0) {
               // We don't know which day order was used without the stored index,
@@ -19160,8 +19347,7 @@ function getStudentAttStats(student, year, month) {
   // ── Step 3: Count total classes taught per subject this month (for % calc) ──
   // Scan all att keys for present days, look up subjects via same day-order mechanism
   try {
-    for (let i = 0; i < localStorage.length; i++) {
-      const k = localStorage.key(i);
+    for (const k of erpStorageKeys()) {
       if (!k || !k.startsWith(prefix)) continue;
       const datePart = k.slice(prefix.length, prefix.length + 10);
       if (!datePart.startsWith(monthStr)) continue;
@@ -19169,12 +19355,12 @@ function getStudentAttStats(student, year, month) {
       const lastU   = rest.lastIndexOf('_');
       const batchId = rest.slice(0, lastU);
       try {
-        const rec = JSON.parse(localStorage.getItem(k));
+        const rec = JSON.parse(erpGet(k));
         if (!rec || typeof rec !== 'object') continue;
         const hasStudent = Object.keys(rec).some(rk => rk.startsWith(student.id + '|'));
         if (!hasStudent) continue;
         const doKey  = '_erp_att_dayorder_' + datePart + '_' + batchId;
-        const dayNum = localStorage.getItem(doKey);
+        const dayNum = erpGet(doKey);
         const _b2    = batches.find(b => b.id === batchId);
         const subjs  = dayNum
           ? (((typeof _tlGetSubjectsForBatchDayOrder === 'function')
@@ -19244,11 +19430,10 @@ function getStudentAttCalendar(student, year, month) {
   const holidaySet = new Set();
   try {
     const hPrefix = '_erp_holiday_';
-    for (let i = 0; i < localStorage.length; i++) {
-      const k = localStorage.key(i);
+    for (const k of erpStorageKeys()) {
       if (!k || !k.startsWith(hPrefix)) continue;
       const datePart = k.slice(hPrefix.length, hPrefix.length + 10);
-      if (datePart.startsWith(monthStr) && localStorage.getItem(k) === '1') holidaySet.add(datePart);
+      if (datePart.startsWith(monthStr) && erpGet(k) === '1') holidaySet.add(datePart);
     }
   } catch(e) {}
 
@@ -19406,42 +19591,47 @@ function sendStudentAttSummaryWA(studentId) {
 ════════════════════════════════════════════════════════ */
 function getStudentMarksAuto(studentId) {
   const results = [];
-  const seen    = new Set();
+  const seen = new Set();
+  window.__ERP_MARKS_CACHE__ = window.__ERP_MARKS_CACHE__ || {};
+  window.__ERP_MARKS_INDEX_CACHE__ = window.__ERP_MARKS_INDEX_CACHE__ || [];
+
+  // 1) Memory cache first — survives WebIntoApp localStorage failures during this session.
+  const cacheKeys = window.__ERP_MARKS_INDEX_CACHE__;
+  cacheKeys.forEach(key => {
+    const rec = window.__ERP_MARKS_CACHE__[key];
+    if (rec && rec.marks && rec.marks[studentId] !== undefined) {
+      seen.add(key);
+      const e = rec.marks[studentId];
+      results.push({ examName: rec.examName, subject: rec.subject, maxMarks: rec.maxMarks,
+        passMarks: rec.passMarks||Math.round((rec.maxMarks||100)*0.35), marks:e.marks,
+        absent:e.absent, pass:e.pass, date:rec.date });
+    }
+  });
+
+  // 2) localStorage fallback/migration for older records.
   try {
-    // 1) Index first (fast path) — every marks-save also updates this index, so once it's
-    //    populated it stays authoritative and this is all that should ever run.
-    const idxRaw = localStorage.getItem('_erp_marks_index');
-    const idx    = idxRaw ? JSON.parse(idxRaw) : [];
-    idx.forEach(key => {
-      try {
-        const rec = JSON.parse(localStorage.getItem(key));
-        if (rec && rec.marks && rec.marks[studentId] !== undefined) {
-          seen.add(key);
-          const e = rec.marks[studentId];
-          results.push({ examName: rec.examName, subject: rec.subject, maxMarks: rec.maxMarks, passMarks: rec.passMarks||Math.round((rec.maxMarks||100)*0.35), marks: e.marks, absent: e.absent, pass: e.pass, date: rec.date });
-        }
-      } catch(e2) {}
-    });
-    // 2) Full localStorage scan — ONLY as a one-time repair for marks records saved before
-    //    the index existed. Was previously running on every call for every student — with
-    //    localStorage growing across a school year (attendance, exams, logs...), that meant
-    //    scanning the ENTIRE store, for EVERY student, on EVERY render. That's the main
-    //    reason the app felt sluggish everywhere. Once the index has anything in it, every
-    //    future marks-save keeps it current, so this fallback is never needed again.
-    if (idx.length === 0) {
-      for (let i = 0; i < localStorage.length; i++) {
-        const k = localStorage.key(i);
-        if (!k || !k.startsWith('_erp_marks_') || k === '_erp_marks_index' || seen.has(k)) continue;
+    let idx = [];
+    const idxRaw = erpGet('_erp_marks_index');
+    if (idxRaw) idx = JSON.parse(idxRaw) || [];
+    if (idx.length) {
+      window.__ERP_MARKS_INDEX_CACHE__ = Array.from(new Set(window.__ERP_MARKS_INDEX_CACHE__.concat(idx)));
+      idx.forEach(key => {
+        if (seen.has(key)) return;
         try {
-          const rec = JSON.parse(localStorage.getItem(k));
+          const rec = JSON.parse(erpGet(key));
           if (rec && rec.marks && rec.marks[studentId] !== undefined) {
+            window.__ERP_MARKS_CACHE__[key] = rec;
+            seen.add(key);
             const e = rec.marks[studentId];
-            results.push({ examName: rec.examName, subject: rec.subject, maxMarks: rec.maxMarks, passMarks: rec.passMarks||Math.round((rec.maxMarks||100)*0.35), marks: e.marks, absent: e.absent, pass: e.pass, date: rec.date });
+            results.push({ examName:rec.examName, subject:rec.subject, maxMarks:rec.maxMarks,
+              passMarks:rec.passMarks||Math.round((rec.maxMarks||100)*0.35), marks:e.marks,
+              absent:e.absent, pass:e.pass, date:rec.date });
           }
         } catch(e2) {}
-      }
+      });
     }
   } catch(e) {}
+
   return results;
 }
 
@@ -20009,10 +20199,10 @@ function _sumSentKey(studentId, year, month) {
   return '_erp_sum_sent_' + studentId + '_' + year + '_' + month;
 }
 function isSumSentThisMonth(studentId, year, month) {
-  try { return !!localStorage.getItem(_sumSentKey(studentId, year, month)); } catch(e) { return false; }
+  try { return !!erpGet(_sumSentKey(studentId, year, month)); } catch(e) { return false; }
 }
 function markSumSent(studentId, year, month) {
-  try { localStorage.setItem(_sumSentKey(studentId, year, month), new Date().toISOString()); } catch(e) {}
+  try { erpSet(_sumSentKey(studentId, year, month), new Date().toISOString()); } catch(e) {}
 }
 
 function buildSumWAMessage(s, year, month, ctx) {
@@ -20366,7 +20556,7 @@ function ttKey(batch) { return '_erp_tt_' + (batch || 'all'); }
 
 function ttLoadBatch(batch) {
   var d = null;
-  try { d = JSON.parse(localStorage.getItem(ttKey(batch)) || 'null'); } catch(e) { d = null; }
+  try { d = JSON.parse(erpGet(ttKey(batch)) || 'null'); } catch(e) { d = null; }
   if (!d || typeof d !== 'object') {
     try { d = JSON.parse(sessionStorage.getItem(ttKey(batch)) || 'null'); } catch(e) { d = null; }
   }
@@ -20395,7 +20585,7 @@ function ttLoadBatch(batch) {
 function ttSaveBatch(batch, data) {
   var key = String(batch || 'all');
   window.__ERP_TT_CACHE[key] = JSON.parse(JSON.stringify(data));
-  try { localStorage.setItem(ttKey(batch), JSON.stringify(data)); } catch(e) {}
+  try { erpSet(ttKey(batch), JSON.stringify(data)); } catch(e) {}
   try { sessionStorage.setItem(ttKey(batch), JSON.stringify(data)); } catch(e) {}
   if (typeof _erpPersistTimetableIDB === 'function') { _erpPersistTimetableIDB(key, data); _erpPersistTimetableIndex(); }
 }
@@ -20633,7 +20823,7 @@ function updateTTTodayDisplay(data, batch) {
   var el = document.getElementById('tt-today-day');
   if (!el || !data.days || data.days.length === 0) return;
   // Simple cycling: use day-of-week or saved today index
-  var todayIdx = parseInt(localStorage.getItem('_erp_tt_today') || '0') % data.days.length;
+  var todayIdx = parseInt(erpGet('_erp_tt_today') || '0') % data.days.length;
   var day = data.days[todayIdx];
   if (day) el.textContent = day.name || ('D-' + (todayIdx+1));
 }
@@ -20777,7 +20967,7 @@ function _renderFeeReport(month) {
 function getTodaySubjects() {
   var data = ttLoad();
   if (!data.days || data.days.length === 0) return [];
-  var todayIdx = parseInt(localStorage.getItem('_erp_tt_today') || '0') % data.days.length;
+  var todayIdx = parseInt(erpGet('_erp_tt_today') || '0') % data.days.length;
   var day = data.days[todayIdx];
   return day ? data.periods.map(function(p, i) { return { period: p.label, start: p.start, end: p.end, subject: day.subjects[i] || '' }; }) : [];
 }
@@ -20790,10 +20980,10 @@ function getTodaySubjects() {
    BELL REMINDER SYSTEM
 ═══════════════════════════════════════════════════════ */
 function _loadReminders() {
-  try { return JSON.parse(localStorage.getItem('_ktc_reminders') || '[]'); } catch(e){ return []; }
+  try { return JSON.parse(erpGet('_ktc_reminders') || '[]'); } catch(e){ return []; }
 }
 function _saveReminders(r) {
-  localStorage.setItem('_ktc_reminders', JSON.stringify(r));
+  erpSet('_ktc_reminders', JSON.stringify(r));
 }
 function toggleReminderPanel() {
   const p = document.getElementById('reminder-panel');
@@ -20934,10 +21124,10 @@ function switchWATab(tab) {
    Storage key: _erp_teaching_log → [{id,date,grade,batch,subject,topic,lessonNotes,homeworkGiven,absentStudentIds,createdAt}]
 ═══════════════════════════════════════════════════════ */
 function _tlLoad() {
-  try { return JSON.parse(localStorage.getItem('_erp_teaching_log') || '[]'); } catch(e) { return []; }
+  try { return JSON.parse(erpGet('_erp_teaching_log') || '[]'); } catch(e) { return []; }
 }
 function _tlSave(logs) {
-  try { localStorage.setItem('_erp_teaching_log', JSON.stringify(logs)); } catch(e) {}
+  try { erpSet('_erp_teaching_log', JSON.stringify(logs)); } catch(e) {}
 }
 
 var _tlCurrentTab = 'all';
@@ -21333,7 +21523,7 @@ function _tlGetSubjectsForBatchDayOrder(batchName, dayNum) {
     const baseName = batchName.replace(/\s*[\(\-].*$/, '').trim();
     if (baseName && baseName !== batchName) batchKeys.push(baseName);
     try {
-      Object.keys(localStorage).forEach(k => {
+      erpStorageKeys().forEach(k => {
         if (k.startsWith('_erp_tt_')) {
           const ttKey = k.replace('_erp_tt_', '');
           if (ttKey !== 'all' && !batchKeys.includes(ttKey)) {
@@ -21347,7 +21537,7 @@ function _tlGetSubjectsForBatchDayOrder(batchName, dayNum) {
 
   for (const key of batchKeys) {
     try {
-      const raw = localStorage.getItem('_erp_tt_' + key);
+      const raw = erpGet('_erp_tt_' + key);
       if (!raw) continue;
       const data = JSON.parse(raw);
       const day  = data && data.days ? data.days[parseInt(dayNum, 10) - 1] : null;
@@ -21377,11 +21567,11 @@ function _tlGetAbsentIdsForDate(date) {
       });
     }
     // Scan saved attendance sessions for the given date
-    const idx = JSON.parse(localStorage.getItem('_erp_att_index') || '[]');
+    const idx = JSON.parse(erpGet('_erp_att_index') || '[]');
     idx.forEach(sk => {
       if (sk.includes('_erp_att_' + d)) {
         try {
-          const saved = JSON.parse(localStorage.getItem(sk) || '{}');
+          const saved = JSON.parse(erpGet(sk) || '{}');
           Object.keys(saved).forEach(k => {
             if (saved[k] === 'A') { const sid = k.split('|')[0]; if (sid) absentIds.add(sid); }
           });
@@ -21406,7 +21596,7 @@ function _tlDayOrderOptions(sel, batchName) {
   function _dayLabel(num) {
     for (const key of batchKeys) {
       try {
-        const raw = localStorage.getItem('_erp_tt_' + key);
+        const raw = erpGet('_erp_tt_' + key);
         if (!raw) continue;
         const data = JSON.parse(raw);
         const d = data && data.days ? data.days[parseInt(num, 10) - 1] : null;
@@ -21446,7 +21636,7 @@ function _tlFindAttDayOrder(date, courseName, session) {
   // 1) The single Day Order for the whole day — same value Attendance's
   //    dropdown auto-restores and the Dashboard/Admin picker sets.
   try {
-    const v = localStorage.getItem('_erp_last_dayorder_' + date);
+    const v = erpGet('_erp_last_dayorder_' + date);
     if (v) return v;
   } catch(e) {}
 
@@ -21468,7 +21658,7 @@ function _tlFindAttDayOrder(date, courseName, session) {
   // 2) Legacy per-batch/date record — from before Day Order was unified.
   for (const bid of candidates) {
     try {
-      const v = localStorage.getItem('_erp_att_dayorder_' + date + '_' + bid);
+      const v = erpGet('_erp_att_dayorder_' + date + '_' + bid);
       if (v) return v;
     } catch(e) {}
   }
@@ -21477,7 +21667,7 @@ function _tlFindAttDayOrder(date, courseName, session) {
   for (const bid of candidates) {
     if (bid === 'all') continue;
     try {
-      const v = localStorage.getItem('_erp_last_working_dayorder_' + bid + '_' + sess);
+      const v = erpGet('_erp_last_working_dayorder_' + bid + '_' + sess);
       if (v) return v;
     } catch(e) {}
   }
@@ -21731,10 +21921,10 @@ function tlShowAbsentSummary() {
 
 /* ── Get customized teaching WA template (falls back to WA_TEMPLATES default) ── */
 function _tlGetDailyTemplate() {
-  try { return localStorage.getItem('_erp_wt_teaching_daily_ta') || ''; } catch(e) { return ''; }
+  try { return erpGet('_erp_wt_teaching_daily_ta') || ''; } catch(e) { return ''; }
 }
 function _tlGetMonthlyTemplate() {
-  try { return localStorage.getItem('_erp_wt_teaching_monthly_ta') || ''; } catch(e) { return ''; }
+  try { return erpGet('_erp_wt_teaching_monthly_ta') || ''; } catch(e) { return ''; }
 }
 
 /* ── Fill daily lesson template for one absent student — groups ALL subjects into one message ── */
@@ -21892,11 +22082,11 @@ function tlSendTodayContentToAbsent() {
 
   // From localStorage — scan all of today's saved sessions
   try {
-    const idx = JSON.parse(localStorage.getItem('_erp_att_index') || '[]');
+    const idx = JSON.parse(erpGet('_erp_att_index') || '[]');
     idx.forEach(sk => {
       if (!sk.includes('_erp_att_' + today)) return;
       try {
-        const saved = JSON.parse(localStorage.getItem(sk) || '{}');
+        const saved = JSON.parse(erpGet(sk) || '{}');
         Object.keys(saved).forEach(k => {
           if (saved[k] !== 'A') return;
           const parts = k.split('|');
@@ -22108,10 +22298,10 @@ function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&
 // If the user has set one (Settings → AI Features), attach it; otherwise send the plain
 // request exactly as before, so behaviour inside Claude.ai is unchanged.
 function getAnthropicKey() {
-  try { return localStorage.getItem('_erp_anthropic_key') || ''; } catch(e) { return ''; }
+  try { return erpGet('_erp_anthropic_key') || ''; } catch(e) { return ''; }
 }
 function saveAnthropicKey(val) {
-  try { localStorage.setItem('_erp_anthropic_key', (val||'').trim()); } catch(e) {}
+  try { erpSet('_erp_anthropic_key', (val||'').trim()); } catch(e) {}
 }
 function _anthropicHeaders() {
   const key = getAnthropicKey();
@@ -22139,20 +22329,20 @@ function aiUnreachableMsg() {
 // 'anthropic' (default — free inside Claude.ai, needs a paid key standalone)
 // 'groq'      (needs a free Groq key — console.groq.com/keys, no card required)
 function getAiProvider() {
-  try { return localStorage.getItem('_erp_ai_provider') || 'anthropic'; } catch(e) { return 'anthropic'; }
+  try { return erpGet('_erp_ai_provider') || 'anthropic'; } catch(e) { return 'anthropic'; }
 }
 function saveAiProvider(val) {
-  try { localStorage.setItem('_erp_ai_provider', val || 'anthropic'); } catch(e) {}
+  try { erpSet('_erp_ai_provider', val || 'anthropic'); } catch(e) {}
   const groqRow = document.getElementById('set-groq-key-row');
   const anthRow = document.getElementById('set-anthropic-key-row');
   if (groqRow) groqRow.style.display = (val === 'groq') ? '' : 'none';
   if (anthRow) anthRow.style.display = (val === 'groq') ? 'none' : '';
 }
 function getGroqKey() {
-  try { return localStorage.getItem('_erp_groq_key') || ''; } catch(e) { return ''; }
+  try { return erpGet('_erp_groq_key') || ''; } catch(e) { return ''; }
 }
 function saveGroqKey(val) {
-  try { localStorage.setItem('_erp_groq_key', (val||'').trim()); } catch(e) {}
+  try { erpSet('_erp_groq_key', (val||'').trim()); } catch(e) {}
 }
 
 // Single shared entry point every AI feature calls — picks the provider, builds the right
@@ -22215,13 +22405,12 @@ function _tlMonthAttendance(studentId, yr, mo) {
   const monthStr = yr + '-' + String(mo + 1).padStart(2, '0');
   let present = 0, absent = 0, late = 0;
   const sessionDates = new Set();
-  for (let i = 0; i < localStorage.length; i++) {
-    const k = localStorage.key(i);
+  for (const k of erpStorageKeys()) {
     if (!k || !k.startsWith('_erp_att_')) continue;
     const datePart = k.slice(9, 19); // YYYY-MM-DD
     if (!datePart.startsWith(monthStr)) continue;
     try {
-      const rec = JSON.parse(localStorage.getItem(k));
+      const rec = JSON.parse(erpGet(k));
       const sid = studentId;
       Object.keys(rec).forEach(rk => {
         if (!rk.startsWith(sid + '|')) return;
@@ -22242,10 +22431,10 @@ function _tlMonthMarks(studentId, yr, mo) {
   const monthStr = yr + '-' + String(mo + 1).padStart(2, '0');
   const results = [];
   try {
-    const idx = JSON.parse(localStorage.getItem('_erp_marks_index') || '[]');
+    const idx = JSON.parse(erpGet('_erp_marks_index') || '[]');
     idx.forEach(key => {
       try {
-        const rec = JSON.parse(localStorage.getItem(key));
+        const rec = JSON.parse(erpGet(key));
         if (!rec) return;
         // Match by date or fall back to any exam
         const recDate = (rec.date || '').slice(0, 7);
@@ -22524,7 +22713,7 @@ async function tlRunMonthlyGrowthWA() {
   showToast(`✅ ${_tlMonthlyWAQueue.length} growth reports generated${filterTag}! Tap 📲 Send Next to start sending.`);
 
   // Auto-save report key to prevent duplicate generation this month
-  try { localStorage.setItem('_erp_tl_monthly_report_' + yr + '_' + String(mo+1).padStart(2,'0'), '1'); } catch(e) {}
+  try { erpSet('_erp_tl_monthly_report_' + yr + '_' + String(mo+1).padStart(2,'0'), '1'); } catch(e) {}
 }
 
 function _tlRenderMonthlyQueueList() {
@@ -22585,7 +22774,7 @@ function _tlCheckLastWorkingDay() {
   const now = new Date();
   const yr  = now.getFullYear();
   const mo  = String(now.getMonth() + 1).padStart(2, '0');
-  const alreadySent = localStorage.getItem('_erp_tl_monthly_report_' + yr + '_' + mo);
+  const alreadySent = erpGet('_erp_tl_monthly_report_' + yr + '_' + mo);
   if (alreadySent) return;
   const btn = document.getElementById('tl-monthly-wa-btn');
   if (btn) {

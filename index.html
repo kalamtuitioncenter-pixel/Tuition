@@ -18333,13 +18333,123 @@ function _updateSaveBar() {
   } catch(e) {}
 }
 
+/* ── WebIntoApp persistent student store (IndexedDB) ───────────────
+   Some WebViews disable/clear Web Storage even though IndexedDB remains persistent.
+   IndexedDB is therefore the durable source for the student master list.
+*/
+const ERP_IDB_NAME = 'KalamERP_Persistent_v1';
+const ERP_IDB_STORE = 'kv';
+let _erpIDBPromise = null;
+
+function _erpOpenIDB() {
+  if (_erpIDBPromise) return _erpIDBPromise;
+  _erpIDBPromise = new Promise(function(resolve, reject) {
+    try {
+      if (!window.indexedDB) return reject(new Error('IndexedDB unavailable'));
+      const req = indexedDB.open(ERP_IDB_NAME, 1);
+      req.onupgradeneeded = function() {
+        const db = req.result;
+        if (!db.objectStoreNames.contains(ERP_IDB_STORE)) db.createObjectStore(ERP_IDB_STORE);
+      };
+      req.onsuccess = function() { resolve(req.result); };
+      req.onerror = function() { reject(req.error || new Error('IndexedDB open failed')); };
+      req.onblocked = function() { reject(new Error('IndexedDB blocked')); };
+    } catch(e) { reject(e); }
+  });
+  return _erpIDBPromise;
+}
+
+function _erpIDBPut(key, value) {
+  return _erpOpenIDB().then(function(db) {
+    return new Promise(function(resolve, reject) {
+      try {
+        const tx = db.transaction(ERP_IDB_STORE, 'readwrite');
+        tx.objectStore(ERP_IDB_STORE).put(value, key);
+        tx.oncomplete = function(){ resolve(true); };
+        tx.onerror = function(){ reject(tx.error || new Error('IndexedDB write failed')); };
+      } catch(e) { reject(e); }
+    });
+  });
+}
+
+function _erpIDBGet(key) {
+  return _erpOpenIDB().then(function(db) {
+    return new Promise(function(resolve, reject) {
+      try {
+        const tx = db.transaction(ERP_IDB_STORE, 'readonly');
+        const req = tx.objectStore(ERP_IDB_STORE).get(key);
+        req.onsuccess = function(){ resolve(req.result); };
+        req.onerror = function(){ reject(req.error || new Error('IndexedDB read failed')); };
+      } catch(e) { reject(e); }
+    });
+  });
+}
+
+function _erpPersistStudentsIDB() {
+  const payload = { version: 1, savedAt: Date.now(), students: students.map(function(x){ return x; }) };
+  _erpIDBPut('students', payload).then(function(){
+    window.__ERP_IDB_STUDENTS__ = payload.savedAt;
+    console.log('[ERP] Students persisted to IndexedDB:', students.length);
+  }).catch(function(e){
+    console.warn('[ERP] IndexedDB student save failed:', e);
+  });
+}
+
+function _erpLoadStudentsIDB() {
+  return _erpIDBGet('students').then(function(payload){
+    if (!payload || !Array.isArray(payload.students) || payload.students.length === 0) return false;
+    // IndexedDB is the durable source of truth when present.
+    students.length = 0;
+    payload.students.forEach(function(x){ if (x && x.name) students.push(x); });
+    window.__ERP_IDB_STUDENTS__ = payload.savedAt || Date.now();
+    console.log('[ERP] Loaded ' + students.length + ' students from IndexedDB');
+    return students.length > 0;
+  }).catch(function(e){
+    console.warn('[ERP] IndexedDB student load failed:', e);
+    return false;
+  });
+}
+
+function _erpInitPersistentStudents() {
+  // First open the DB. If it already contains students, use them.
+  // Otherwise seed it from the current local/session data.
+  return _erpOpenIDB().then(function(){
+    return _erpIDBGet('students');
+  }).then(function(payload){
+    if (payload && Array.isArray(payload.students) && payload.students.length > 0) {
+      return _erpLoadStudentsIDB();
+    }
+    if (students.length > 0) {
+      _erpPersistStudentsIDB();
+      return false;
+    }
+    return false;
+  }).catch(function(e){
+    console.warn('[ERP] Persistent student store init failed:', e);
+    return false;
+  });
+}
+
 function saveStudents() {
   const data = JSON.stringify(students);
+  let saved = false;
+  // WebIntoApp/WebView-safe: test each storage independently.
   try {
     localStorage.setItem(STUDENTS_KEY, data);
+    saved = localStorage.getItem(STUDENTS_KEY) === data || saved;
+  } catch(e) {
+    console.warn('[ERP] localStorage student save failed:', e);
+  }
+  try {
     sessionStorage.setItem(STUDENTS_KEY, data);
-    console.log('[ERP] Saved ' + students.length + ' students');
-  } catch(e) { console.error('[ERP] saveStudents error:', e); }
+    saved = sessionStorage.getItem(STUDENTS_KEY) === data || saved;
+  } catch(e) {
+    console.warn('[ERP] sessionStorage student save failed:', e);
+  }
+  // Always attempt the durable IndexedDB copy independently.
+  _erpPersistStudentsIDB();
+  if (saved) console.log('[ERP] Saved ' + students.length + ' students');
+  else console.warn('[ERP] Web Storage unavailable; IndexedDB persistence attempted');
   _updateSaveBar();
 }
 
@@ -18399,6 +18509,23 @@ function _attemptStudentRecovery() {
 
   console.warn('[ERP] Recovered ' + students.length + ' students from ' + pick.source + ' and restored to _erp_students.');
   return true;
+}
+
+// ── Persistent storage diagnostic ───────────────────────────────
+function runPersistentStorageDiagnostic() {
+  return Promise.all([
+    (function(){ try { return Promise.resolve({ok: !!window.indexedDB}); } catch(e){ return Promise.resolve({ok:false,error:String(e)}); } })(),
+    _erpIDBGet('students').catch(function(e){ return {error:String(e)}; })
+  ]).then(function(r){
+    var out = {
+      indexedDBAvailable: !!(r[0] && r[0].ok),
+      indexedDBStudents: r[1] && Array.isArray(r[1].students) ? r[1].students.length : 0,
+      indexedDBSavedAt: r[1] && r[1].savedAt || null,
+      memoryStudents: students.length
+    };
+    console.log('[ERP Persistent Diagnostic]', out);
+    return out;
+  });
 }
 
 // ── Diagnostic helper — run runStudentStorageDiagnostic() from the console ─
@@ -18621,18 +18748,33 @@ function clearLicenseKey() {
 
 function _safeInit() {
   // (data version check removed — safe)
-  // ── Test localStorage availability ─────────────────────
-  try {
-    localStorage.setItem('_erp_ls_test', '1');
-    const t = localStorage.getItem('_erp_ls_test');
-    if (t !== '1') throw new Error('read mismatch');
-    localStorage.removeItem('_erp_ls_test');
-  } catch(lsErr) {
-    // localStorage is not available — show warning banner
-    setTimeout(function() {
-      showToast('⚠️ Storage unavailable — data will not persist. Use GitHub Pages, not preview.');
-    }, 1500);
-  }
+  // ── WebIntoApp/WebView-safe storage test ─────────────────
+  // Do NOT show a fatal warning merely because localStorage fails.
+  // sessionStorage may still be available and is a valid fallback for the
+  // current app session. Test both independently.
+  (function checkERPStorage() {
+    function testStore(store) {
+      try {
+        var key = '_erp_storage_test_' + Date.now();
+        store.setItem(key, '1');
+        var ok = store.getItem(key) === '1';
+        store.removeItem(key);
+        return ok;
+      } catch(e) { return false; }
+    }
+
+    var lsOK = testStore(window.localStorage);
+    var ssOK = testStore(window.sessionStorage);
+    window.__ERP_STORAGE__ = { localStorage: lsOK, sessionStorage: ssOK };
+
+    if (!lsOK && !ssOK) {
+      setTimeout(function() {
+        showToast('⚠️ Browser storage unavailable — data cannot persist after app restart.');
+      }, 1500);
+    } else if (!lsOK && ssOK) {
+      console.warn('[ERP] localStorage unavailable; sessionStorage fallback is active.');
+    }
+  })();
   // Restore dark mode FIRST (before any rendering to avoid flash)
   try {
     const savedDark = localStorage.getItem('_erp_dark');
@@ -18680,6 +18822,18 @@ function _safeInit() {
   initLicenseUI();
   applyLang();
   loadAllData();
+  // Load the durable IndexedDB student master after the synchronous storage pass.
+  // This survives WebIntoApp/WebView localStorage clearing.
+  _erpInitPersistentStudents().then(function(loaded){
+    if (loaded) {
+      renderStudents(students);
+      renderAttList();
+      updateDashStats();
+      if (typeof renderDashDayOrderSummary === 'function') renderDashDayOrderSummary();
+      var bar = document.getElementById('_save_status_bar');
+      if (bar) bar.textContent = '✅ ' + students.length + ' students loaded from persistent storage';
+    }
+  });
   // (cleanup loop removed — was incorrectly removing valid entries)
   renderStudents(students);
   renderAttList();

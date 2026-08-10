@@ -3043,6 +3043,7 @@ function getAllWeakSubjectData() {
 }
 let activeAI = null;
 let selExam = null;
+let _lastMarksExamId = null; // tracks which exam's marks panel is currently shown
 let bkTimer = null;
 let bkInterval = 30;
 let nextBkAt = null;
@@ -7030,11 +7031,7 @@ function openSendResultsModal(examIdx) {
     if (raw) savedMarks = JSON.parse(raw).marks || {};
   } catch(e) {}
 
-  let activeStudents = students.filter(s => s && s.name && s.status === 'active');
-  // Filter by exam batch/grade — same students who appeared in the marks panel
-  if (exam.batch && exam.batch !== 'All' && exam.batch.trim() !== '') {
-    activeStudents = filterStudentsByBatch(activeStudents, exam.batch);
-  }
+  let activeStudents = getStudentsForExam(exam);
   if (activeStudents.length === 0) { showToast('மாணவர்கள் இல்லை'); return; }
 
   // Build per-student data
@@ -7114,6 +7111,10 @@ function openSendResultsModal(examIdx) {
         ${window._resultStudents.map(item => {
           const phone = (item.s.phone||'').replace(/\D/g,'');
           const hasPhone = phone.length >= 10;
+          // BUGFIX: don't offer to send a result to a student with no saved
+          // mark and no absent status — there's nothing meaningful to tell
+          // their parent yet.
+          const hasResult = item.absent || item.marks !== null;
           const grColor = item.absent ? '#6b7280'
             : item.marks === null ? '#94a3b8'
             : item.marks >= pass ? '#16a34a' : '#dc2626';
@@ -7132,7 +7133,9 @@ function openSendResultsModal(examIdx) {
                 ${item.absent ? 'AB' : item.marks !== null ? item.marks+'/'+exam.maxMarks : '—'}
               </span>
               <span style="font-size:10px;font-weight:700;color:${grColor};min-width:22px;text-align:center">${item.grade}</span>
-              ${hasPhone
+              ${!hasResult
+                ? `<span style="font-size:10px;color:#94a3b8;min-width:56px;text-align:center">No mark yet</span>`
+                : hasPhone
                 ? `<button class="btn btn-wa btn-sm" id="rbtn-${item.s.id}"
                     onclick="sendOneResultWA('${item.s.id}')"
                     style="font-size:10px;padding:4px 10px">📱 Send</button>`
@@ -7146,7 +7149,7 @@ function openSendResultsModal(examIdx) {
       <div class="modal-foot" style="margin-top:10px">
         <button class="btn btn-wa" onclick="sendAllResultsWA()"
           style="flex:1;justify-content:center;font-weight:700;padding:10px;font-size:12px">
-          📱 Send to All (${withPhone})
+          📱 Send to All (${window._resultStudents.filter(x => (x.absent || x.marks !== null) && (x.s.phone||'').replace(/\D/g,'').length >= 10).length})
         </button>
         <button class="btn" onclick="closeModal()" style="padding:10px 16px">Close</button>
       </div>
@@ -7193,6 +7196,9 @@ function sendOneResultWA(studentId) {
   if (!window._resultStudents || !window._resultExam) return;
   const item = window._resultStudents.find(x => x.s.id === studentId);
   if (!item) return;
+  // BUGFIX: refuse to send a result for a student with no saved mark and no
+  // absent status — nothing meaningful to tell the parent yet.
+  if (!item.absent && item.marks === null) return showToast('⚠️ ' + item.s.name + ' — மதிப்பெண் பதிவு செய்யப்படவில்லை');
   const phone = (item.s.phone || '').replace(/\D/g,'');
   if (phone.length < 10) return showToast('⚠️ ' + item.s.name + ' — தொலைபேசி எண் இல்லை');
   const msg = _buildOneResultMsg(item, window._resultExam, window._resultPass);
@@ -7208,7 +7214,9 @@ function sendOneResultWA(studentId) {
 /* Send to all students with phone numbers */
 function sendAllResultsWA() {
   if (!window._resultStudents || !window._resultExam) return;
-  const withPhone = window._resultStudents.filter(x => (x.s.phone||'').replace(/\D/g,'').length >= 10);
+  // BUGFIX: only students with a saved mark or absent status, AND a phone number.
+  const withPhone = window._resultStudents.filter(x =>
+    (x.absent || x.marks !== null) && (x.s.phone||'').replace(/\D/g,'').length >= 10);
   if (withPhone.length === 0) return showToast('⚠️ தொலைபேசி எண் உள்ள மாணவர்கள் இல்லை');
 
   // Only the first WA open is a direct result of this click (a trusted
@@ -9155,11 +9163,37 @@ function filterStudentsByBatch(studentList, batchStr) {
     if (raw) gradeHint = raw;
   }
 
+  // BUGFIX (re-audit): if the ENTIRE batch string is nothing but a bare
+  // grade token ("X", "10", "Grade 10", "XI"...), course-name matching
+  // makes no sense and is actively dangerous — a short token like "X" or
+  // "IX" can appear as a raw substring inside totally unrelated course
+  // text (e.g. batch "X" matching a course field "Extra Maths", because
+  // "extra" contains "x"). In that case rely on gradeMatch alone.
+  const isBareGradeToken = batchWords.length === 1 && gradeHint !== '';
+
+  // Whole-word substring check — avoids "X" matching inside "eXtra" etc.
+  // while still catching real phrase overlaps like batch "Grade 10 Morning"
+  // vs a student course field of "Morning" or vice-versa.
+  function wordBoundaryIncludes(haystack, needle) {
+    if (!needle) return false;
+    const esc = needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return new RegExp('(^|\\s)' + esc + '(\\s|$)').test(haystack);
+  }
+
   return studentList.filter(s => {
-    const sc = (s.course || '').toLowerCase();
+    const sc = (s.course || '').toLowerCase().trim();
 
     // 1. Course name match (e.g. batch field = "Grade 10 Morning")
-    const courseMatch = sc.includes(batchLower) || batchLower.includes(sc);
+    //    BUGFIX: sc must be non-empty on both sides before comparing —
+    //    "".includes(x) and x.includes("") are both true for ANY x, which
+    //    made every student with an unset `course` field match every batch
+    //    (this was the root cause of students from other classes showing up
+    //    in exam/marks lists). Only count it as a match when there's an
+    //    actual non-empty course string on the student that overlaps the
+    //    batch string — and only as a WHOLE WORD, and never when the batch
+    //    string is just a bare grade token (see isBareGradeToken above).
+    const courseMatch = !isBareGradeToken && sc !== '' &&
+      (wordBoundaryIncludes(sc, batchLower) || wordBoundaryIncludes(batchLower, sc));
 
     // 2. Normalised grade match — handles "10" == "X" == "10th" etc.
     const studentGradeNorm = normaliseGrade(s.grade);
@@ -9216,6 +9250,18 @@ function ewApplyGradeFilter() {
 function selectExam(i) {
   selExam = i; renderExams();
   const e    = exams[i];
+  // BUGFIX (re-audit): reset the "Filter by Class" dropdown to "all" whenever
+  // switching to a DIFFERENT exam (e.g. clicking a new exam in the list).
+  // Without this, a class filter picked while viewing one exam (say Class 10)
+  // silently carried over to the next exam selected — showing the wrong
+  // class's students for an unrelated exam with no obvious reason on screen.
+  // Re-applying the SAME exam's filter via the dropdown itself (ewApplyGradeFilter
+  // → selectExam(selExam)) must NOT reset it — only an actual exam switch does.
+  if (_lastMarksExamId !== e.id) {
+    const filterEl = document.getElementById('ew4-grade-filter');
+    if (filterEl) filterEl.value = 'all';
+  }
+  _lastMarksExamId = e.id;
   const pass = e.passMarks || Math.round((e.maxMarks||100)*0.35);
   const dateStr = e.date ? new Date(e.date+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) : e.date;
   const typeLabel = {unit_test:'Unit Test',monthly:'Monthly Test',quarterly:'Quarterly',halfyearly:'Half-Yearly',annual:'Annual',model:'Model Exam',public:'Public Exam'}[e.type] || e.type;
@@ -9496,9 +9542,23 @@ function saveMarksToStorage(examIdx) {
   if (!e) return;
   const key  = '_erp_marks_' + e.id;
   const pass = e.passMarks || Math.round((e.maxMarks||100) * 0.35);
-  const marksMap = {};
   // Same student list as selectExam() — live class filter wins, else exam batch
   let activeStudents = getStudentsForExam(e);
+  const activeIds = new Set(activeStudents.map(s => s.id));
+
+  // BUGFIX: start from whatever was already saved, so that if a live class
+  // filter is narrowing the panel to one class, saving does NOT wipe out
+  // previously-saved marks for students outside that filter (e.g. other
+  // classes in the same "All" batch exam). We only replace entries for the
+  // students actually visible/editable in this save.
+  let marksMap = {};
+  try {
+    const raw = localStorage.getItem(key);
+    if (raw) {
+      const prev = JSON.parse(raw).marks || {};
+      Object.keys(prev).forEach(sid => { if (!activeIds.has(sid)) marksMap[sid] = prev[sid]; });
+    }
+  } catch(err) {}
 
   activeStudents.forEach(s => {
     // New per-student IDs (from upgraded marks panel)

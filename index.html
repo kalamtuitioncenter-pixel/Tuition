@@ -18343,6 +18343,96 @@ function saveStudents() {
   _updateSaveBar();
 }
 
+// ── Safe recovery for _erp_students (WebView/WebIntoApp resilience) ────────
+// Only runs when BOTH localStorage['_erp_students'] and sessionStorage['_erp_students']
+// were found missing/empty/corrupted by loadAllData(). It never touches, clears, or
+// overwrites any existing valid storage — it only looks inside the app's OWN existing
+// backup structures (the rolling in-app backup history and the pre-restore safety
+// snapshot, both already written by the existing Backup & Sync feature) for a
+// students[] array, and — only if one is found and the in-memory `students` array is
+// still empty — repopulates memory and re-saves it to `_erp_students` so normal
+// loading resumes on the next run. Student IDs and all fields are preserved exactly
+// as found; nothing is regenerated or deduplicated beyond what loadAllData() already does.
+function _attemptStudentRecovery() {
+  if (students.length > 0) return false; // never overwrite data already loaded successfully
+  var candidates = [];
+
+  // 1) In-app rolling backup history (erp_bk) — newest entries are at index 0
+  try {
+    var bk = JSON.parse(localStorage.getItem(BK_KEY) || '[]');
+    if (Array.isArray(bk)) {
+      bk.forEach(function(entry) {
+        try {
+          var snap = JSON.parse(entry.data);
+          if (snap && Array.isArray(snap.students) && snap.students.length > 0) {
+            candidates.push({ source: 'in-app backup (' + (entry.ts || 'unknown time') + ')', students: snap.students });
+          }
+        } catch(e) {}
+      });
+    }
+  } catch(e) {}
+
+  // 2) Pre-restore safety snapshot (written automatically before any Restore Backup)
+  try {
+    var pre = JSON.parse(localStorage.getItem('_erp_pre_restore_snapshot') || 'null');
+    if (pre && Array.isArray(pre.students) && pre.students.length > 0) {
+      candidates.push({ source: '_erp_pre_restore_snapshot', students: pre.students });
+    }
+  } catch(e) {}
+
+  if (candidates.length === 0) {
+    console.log('[ERP] Recovery: no backup source with students found — nothing to recover.');
+    return false;
+  }
+
+  var pick = candidates[0]; // most recent
+  var recovered = pick.students.filter(function(x) { return x && x.name; });
+  if (recovered.length === 0) return false;
+
+  students.length = 0;
+  recovered.forEach(function(x) { students.push(x); }); // IDs & all fields preserved as-is
+
+  // _erp_students was already confirmed empty/missing/corrupted before this ran,
+  // so there is no valid current value being overwritten here.
+  try { localStorage.setItem('_erp_students', JSON.stringify(students)); } catch(e) {}
+  try { sessionStorage.setItem('_erp_students', JSON.stringify(students)); } catch(e) {}
+
+  console.warn('[ERP] Recovered ' + students.length + ' students from ' + pick.source + ' and restored to _erp_students.');
+  return true;
+}
+
+// ── Diagnostic helper — run runStudentStorageDiagnostic() from the console ─
+function runStudentStorageDiagnostic() {
+  function testStore(store) {
+    try {
+      store.setItem('_erp_diag_test', '1');
+      var ok = store.getItem('_erp_diag_test') === '1';
+      store.removeItem('_erp_diag_test');
+      return ok;
+    } catch(e) { return false; }
+  }
+  var report = {
+    localStorageAvailable: testStore(window.localStorage),
+    sessionStorageAvailable: testStore(window.sessionStorage),
+    erp_students_exists: false,
+    studentCountInStorage: 0,
+    studentCountInMemory: students.length,
+    firstStudentName: students[0] ? students[0].name : null,
+    recoveryPerformed: !!window._erpStudentRecoveryUsed
+  };
+  try {
+    var raw = null;
+    try { raw = localStorage.getItem('_erp_students'); } catch(e) {}
+    if (!raw) { try { raw = sessionStorage.getItem('_erp_students'); } catch(e) {} }
+    if (raw) {
+      report.erp_students_exists = true;
+      var arr = JSON.parse(raw);
+      if (Array.isArray(arr)) report.studentCountInStorage = arr.length;
+    }
+  } catch(e) { report.parseError = String(e); }
+  console.log('[ERP Diagnostic]', report);
+  return report;
+}
 
 /* ── Persist all arrays to localStorage ─────────────── */
 const FEES_KEY    = '_erp_fees';
@@ -18377,39 +18467,58 @@ function loadAllData() {
   }
 
   // Students
-  try {
-    var sv = localStorage.getItem('_erp_students') || sessionStorage.getItem('_erp_students');
-    if (sv) {
-      var sp = JSON.parse(sv);
-      if (Array.isArray(sp) && sp.length > 0) {
-        students.length = 0;
-        sp.forEach(function(x) { if (x && x.name) students.push(x); });
-        console.log('[ERP] Loaded ' + students.length + ' students from storage. First: ' + (students[0]&&students[0].name));
+  // NOTE: localStorage and sessionStorage are each read/guarded independently below —
+  // some WebViews (incl. some WebIntoApp configs) can throw when ONE storage API is
+  // touched; that must not prevent falling back to the other. This is the only
+  // behavioural change to student loading — the parsing/repair logic below is unchanged.
+  (function loadStudentsSafe() {
+    var sv = null, _source = 'none';
+    try { sv = localStorage.getItem('_erp_students'); if (sv) _source = 'localStorage'; } catch(e) { console.error('[ERP] localStorage read error:', e); }
+    if (!sv) {
+      try { sv = sessionStorage.getItem('_erp_students'); if (sv) _source = 'sessionStorage'; } catch(e) { console.error('[ERP] sessionStorage read error:', e); }
+    }
 
-        // ── Duplicate ID repair: if two students share the same ID (caused by the old
-        //    serial=students.length+1 scheme after deletions), assign a new unique ID
-        //    to the duplicate so attendance keys stop colliding. ──
-        var _seenIds = {};
-        var _dupFixed = 0;
-        students.forEach(function(stu) {
-          if (!stu.id) { stu.id = 'FIX-' + Date.now() + '-' + Math.floor(Math.random()*9999); _dupFixed++; return; }
-          if (_seenIds[stu.id]) {
-            var _old = stu.id;
-            stu.id = stu.id + '-R' + String(Math.floor(Math.random()*10000)).padStart(4,'0');
-            console.warn('[ERP] Duplicate student ID repaired: ' + _old + ' → ' + stu.id + ' (' + stu.name + ')');
-            _dupFixed++;
-          } else {
-            _seenIds[stu.id] = true;
-          }
-        });
-        if (_dupFixed > 0) { try { localStorage.setItem('_erp_students', JSON.stringify(students)); } catch(e2) {} }
-      } else {
-        console.log('[ERP] localStorage students key exists but empty or not array');
+    var loadedOk = false;
+    if (sv) {
+      try {
+        var sp = JSON.parse(sv);
+        if (Array.isArray(sp) && sp.length > 0) {
+          students.length = 0;
+          sp.forEach(function(x) { if (x && x.name) students.push(x); });
+          console.log('[ERP] Loaded ' + students.length + ' students from ' + _source + '. First: ' + (students[0]&&students[0].name));
+          loadedOk = true;
+
+          // ── Duplicate ID repair: if two students share the same ID (caused by the old
+          //    serial=students.length+1 scheme after deletions), assign a new unique ID
+          //    to the duplicate so attendance keys stop colliding. ──
+          var _seenIds = {};
+          var _dupFixed = 0;
+          students.forEach(function(stu) {
+            if (!stu.id) { stu.id = 'FIX-' + Date.now() + '-' + Math.floor(Math.random()*9999); _dupFixed++; return; }
+            if (_seenIds[stu.id]) {
+              var _old = stu.id;
+              stu.id = stu.id + '-R' + String(Math.floor(Math.random()*10000)).padStart(4,'0');
+              console.warn('[ERP] Duplicate student ID repaired: ' + _old + ' → ' + stu.id + ' (' + stu.name + ')');
+              _dupFixed++;
+            } else {
+              _seenIds[stu.id] = true;
+            }
+          });
+          if (_dupFixed > 0) { try { localStorage.setItem('_erp_students', JSON.stringify(students)); } catch(e2) {} }
+        } else {
+          console.log('[ERP] _erp_students key exists but empty or not array (source: ' + _source + ')');
+        }
+      } catch(parseErr) {
+        console.error('[ERP] _erp_students JSON parse failed (source: ' + _source + ', data left untouched):', parseErr);
       }
     } else {
       console.log('[ERP] No _erp_students key in localStorage or sessionStorage');
     }
-  } catch(e) { console.error('[ERP] Load students error:', e); }
+
+    // ── Safe recovery: only when nothing usable was found above. Looks inside the
+    //    app's own existing backup structures — never clears or overwrites anything. ──
+    window._erpStudentRecoveryUsed = loadedOk ? false : _attemptStudentRecovery();
+  })();
 
   // Fees
   try {

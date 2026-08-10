@@ -2885,13 +2885,26 @@ let dayOrderMap = {};            // { "1": ["Physics","Maths"], "2": ["Chemistry
 let currentDayOrder = '';        // which day order is active today (set by admin in attendance toolbar)
 
 function saveDayOrder() {
+  window.__ERP_DAYORDER_CACHE = JSON.parse(JSON.stringify(dayOrderMap || {}));
   try { localStorage.setItem('_erp_day_order', JSON.stringify(dayOrderMap)); } catch(e) {}
+  try { sessionStorage.setItem('_erp_day_order', JSON.stringify(dayOrderMap)); } catch(e) {}
+  if (typeof _erpPersistDayOrderIDB === 'function') _erpPersistDayOrderIDB();
 }
 function loadDayOrder() {
+  var loaded = false;
   try {
     const v = localStorage.getItem('_erp_day_order');
-    if (v) { const p = JSON.parse(v); if (p && typeof p === 'object') Object.assign(dayOrderMap, p); }
+    if (v) { const p = JSON.parse(v); if (p && typeof p === 'object') { Object.assign(dayOrderMap, p); loaded = true; } }
   } catch(e) {}
+  if (!loaded) {
+    try {
+      const v = sessionStorage.getItem('_erp_day_order');
+      if (v) { const p = JSON.parse(v); if (p && typeof p === 'object') { Object.assign(dayOrderMap, p); loaded = true; } }
+    } catch(e) {}
+  }
+  if (!loaded && window.__ERP_DAYORDER_CACHE && typeof window.__ERP_DAYORDER_CACHE === 'object') {
+    Object.assign(dayOrderMap, window.__ERP_DAYORDER_CACHE);
+  }
 }
 
 /* Get subjects for a given day order number */
@@ -5623,8 +5636,9 @@ function _populateDayOrderDropdown(date, batch) {
   });
 
   // Auto-restore: check saved day order for this date, else use pending (holiday carry-over), else keep previous
-  let restored = '';
-  try { restored = localStorage.getItem('_erp_last_dayorder_' + date) || ''; } catch(e) {}
+  let restored = (window.__ERP_TODAY_DAYORDER_CACHE && window.__ERP_TODAY_DAYORDER_CACHE[date]) || '';
+  if (!restored) { try { restored = localStorage.getItem('_erp_last_dayorder_' + date) || ''; } catch(e) {} }
+  if (!restored) { try { restored = sessionStorage.getItem('_erp_last_dayorder_' + date) || ''; } catch(e) {} }
 
   // Check if this date itself is a holiday — if so, show pending carry-over info
   const batchId2 = document.getElementById('att-batch')?.value || '';
@@ -11713,7 +11727,7 @@ function _refreshAfterTodayHolidayChange(todayStr) {
 
 function setTodayDayOrder(num) {
   const todayStr = new Date().toISOString().slice(0,10);
-  try { localStorage.setItem('_erp_last_dayorder_' + todayStr, String(num)); } catch(e) {}
+  window.__ERP_TODAY_DAYORDER_CACHE[todayStr] = String(num); try { localStorage.setItem('_erp_last_dayorder_' + todayStr, String(num)); } catch(e) {} try { sessionStorage.setItem('_erp_last_dayorder_' + todayStr, String(num)); } catch(e) {} if (typeof _erpPersistTodayDayOrderIDB === 'function') _erpPersistTodayDayOrderIDB(todayStr, String(num));
   // Refresh every widget that reads this value, on whichever page(s) are
   // currently in the DOM (Dashboard and Admin Panel each have their own).
   if (typeof renderDashDayOrderSummary === 'function') renderDashDayOrderSummary();
@@ -11741,8 +11755,9 @@ function renderDayOrderSummary(dateElId, gridElId, pickerElId, showGrid) {
   if (dateEl) dateEl.textContent = dayName + ' · ' + dateLabel;
 
   // The single Day Order for today — same one Attendance reads/writes.
-  let todaysDayOrder = '';
-  try { todaysDayOrder = localStorage.getItem('_erp_last_dayorder_' + todayStr) || ''; } catch(e) {}
+  let todaysDayOrder = (window.__ERP_TODAY_DAYORDER_CACHE && window.__ERP_TODAY_DAYORDER_CACHE[todayStr]) || '';
+  if (!todaysDayOrder) { try { todaysDayOrder = localStorage.getItem('_erp_last_dayorder_' + todayStr) || ''; } catch(e) {} }
+  if (!todaysDayOrder) { try { todaysDayOrder = sessionStorage.getItem('_erp_last_dayorder_' + todayStr) || ''; } catch(e) {} }
 
   // Which Day Order numbers exist to pick from — same canonical, global list
   // Attendance and Teaching Log use (see _erpMaxDayOrderNum), so this picker
@@ -18385,6 +18400,75 @@ function _erpIDBGet(key) {
   });
 }
 
+
+/* ── WebIntoApp persistent timetable + Day Order state ─────────────
+   Student master is durable in IndexedDB already. Timetable patterns and
+   today's selected Day Order must use the same durable store, otherwise a
+   WebView that clears localStorage can keep students but lose the pattern.
+*/
+window.__ERP_TT_CACHE = window.__ERP_TT_CACHE || {};
+window.__ERP_DAYORDER_CACHE = window.__ERP_DAYORDER_CACHE || {};
+window.__ERP_TODAY_DAYORDER_CACHE = window.__ERP_TODAY_DAYORDER_CACHE || {};
+
+function _erpPersistDayOrderIDB() {
+  var payload = {version:1, savedAt:Date.now(), dayOrder:JSON.parse(JSON.stringify(dayOrderMap || {}))};
+  window.__ERP_DAYORDER_CACHE = payload.dayOrder;
+  _erpIDBPut('dayOrder', payload).catch(function(e){ console.warn('[ERP] Day Order IDB save failed:', e); });
+}
+
+function _erpPersistTodayDayOrderIDB(date, num) {
+  window.__ERP_TODAY_DAYORDER_CACHE[String(date)] = String(num || '');
+  _erpIDBGet('todayDayOrders').catch(function(){ return null; }).then(function(existing){
+    var map = (existing && existing.values && typeof existing.values === 'object') ? existing.values : {};
+    map[String(date)] = String(num || '');
+    return _erpIDBPut('todayDayOrders', {version:1, savedAt:Date.now(), values:map});
+  }).catch(function(e){ console.warn('[ERP] Today Day Order IDB save failed:', e); });
+}
+
+function _erpPersistTimetableIDB(batch, data) {
+  var copy;
+  try { copy = JSON.parse(JSON.stringify(data)); } catch(e) { copy = data; }
+  window.__ERP_TT_CACHE[String(batch || 'all')] = copy;
+  _erpIDBPut('timetable:' + String(batch || 'all'), {version:1, savedAt:Date.now(), data:copy})
+    .catch(function(e){ console.warn('[ERP] Timetable IDB save failed:', e); });
+}
+
+function _erpInitPersistentTimetable() {
+  return _erpOpenIDB().then(function(){
+    return Promise.all([
+      _erpIDBGet('dayOrder'),
+      _erpIDBGet('todayDayOrders'),
+      _erpIDBGet('timetableIndex')
+    ]);
+  }).then(function(parts){
+    var dayP=parts[0], todayP=parts[1], idx=parts[2];
+    if (dayP && dayP.dayOrder && typeof dayP.dayOrder === 'object') {
+      window.__ERP_DAYORDER_CACHE = dayP.dayOrder;
+      Object.assign(dayOrderMap, dayP.dayOrder);
+    }
+    if (todayP && todayP.values && typeof todayP.values === 'object') {
+      window.__ERP_TODAY_DAYORDER_CACHE = todayP.values;
+    }
+    var batches = (idx && Array.isArray(idx.batches)) ? idx.batches : [];
+    return Promise.all(batches.map(function(batch){
+      return _erpIDBGet('timetable:' + batch).then(function(payload){
+        if (payload && payload.data) window.__ERP_TT_CACHE[batch] = payload.data;
+      }).catch(function(){});
+    }));
+  }).then(function(){
+    console.log('[ERP] Persistent timetable/day-order state hydrated');
+    return true;
+  }).catch(function(e){
+    console.warn('[ERP] Persistent timetable/day-order init failed:', e);
+    return false;
+  });
+}
+
+function _erpPersistTimetableIndex() {
+  var keys = Object.keys(window.__ERP_TT_CACHE || {});
+  _erpIDBPut('timetableIndex', {version:1, savedAt:Date.now(), batches:keys}).catch(function(){});
+}
+
 function _erpPersistStudentsIDB() {
   const payload = { version: 1, savedAt: Date.now(), students: students.map(function(x){ return x; }) };
   _erpIDBPut('students', payload).then(function(){
@@ -18833,6 +18917,14 @@ function _safeInit() {
       var bar = document.getElementById('_save_status_bar');
       if (bar) bar.textContent = '✅ ' + students.length + ' students loaded from persistent storage';
     }
+  });
+  _erpInitPersistentTimetable().then(function(){
+    loadDayOrder();
+    renderStudents(students);
+    renderAttList();
+    updateDashStats();
+    if (typeof renderDashDayOrderSummary === 'function') renderDashDayOrderSummary();
+    if (typeof renderAdminDayOrderSummary === 'function') renderAdminDayOrderSummary();
   });
   // (cleanup loop removed — was incorrectly removing valid entries)
   renderStudents(students);
@@ -20275,6 +20367,12 @@ function ttKey(batch) { return '_erp_tt_' + (batch || 'all'); }
 function ttLoadBatch(batch) {
   var d = null;
   try { d = JSON.parse(localStorage.getItem(ttKey(batch)) || 'null'); } catch(e) { d = null; }
+  if (!d || typeof d !== 'object') {
+    try { d = JSON.parse(sessionStorage.getItem(ttKey(batch)) || 'null'); } catch(e) { d = null; }
+  }
+  if ((!d || typeof d !== 'object') && window.__ERP_TT_CACHE && window.__ERP_TT_CACHE[String(batch || 'all')]) {
+    try { d = JSON.parse(JSON.stringify(window.__ERP_TT_CACHE[String(batch || 'all')])); } catch(e) { d = window.__ERP_TT_CACHE[String(batch || 'all')]; }
+  }
   if (!d || typeof d !== 'object') d = {};
   // Guard against malformed/partial saved data (e.g. missing periods/days) —
   // this was the cause of "Add Day Order" silently doing nothing: ttAddDay()
@@ -20295,7 +20393,11 @@ function ttLoadBatch(batch) {
 }
 
 function ttSaveBatch(batch, data) {
-  localStorage.setItem(ttKey(batch), JSON.stringify(data));
+  var key = String(batch || 'all');
+  window.__ERP_TT_CACHE[key] = JSON.parse(JSON.stringify(data));
+  try { localStorage.setItem(ttKey(batch), JSON.stringify(data)); } catch(e) {}
+  try { sessionStorage.setItem(ttKey(batch), JSON.stringify(data)); } catch(e) {}
+  if (typeof _erpPersistTimetableIDB === 'function') { _erpPersistTimetableIDB(key, data); _erpPersistTimetableIndex(); }
 }
 
 // Legacy compat

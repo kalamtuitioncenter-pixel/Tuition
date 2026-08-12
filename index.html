@@ -616,8 +616,21 @@ tbody tr:hover td{background:var(--bg)}
   try{const ls=nativeLS;if(ls){for(let i=0;i<ls.length;i++){const k=ls.key(i);if(k!=null){const v=ls.getItem(k);if(v!=null)cache[k]=v;}}}}catch(e){}
   window.erpGet=function(k){
     k=String(k);
+    // BUGFIX (audit): this used to check native localStorage FIRST and
+    // trust any non-null result unconditionally, falling back to the
+    // in-memory cache only when native had nothing at all. That's backwards
+    // on a device where native storage is unreliable: erpSet() writes to
+    // native inside a try/catch that silently swallows failures — if THAT
+    // write fails while the cache/IndexedDB write succeeds, native is left
+    // holding a STALE value while cache has the correct new one, and every
+    // future erpGet() would keep returning the stale native value forever
+    // (since it's non-null, it always won). Prefer cache when we have it —
+    // it's updated synchronously on every erpSet() this session regardless
+    // of whether the underlying native/IndexedDB writes succeed, so it's
+    // always the most recently written value we actually know about.
+    if (Object.prototype.hasOwnProperty.call(cache,k)) return cache[k];
     try{const v=nativeLS ? nativeLS.getItem(k) : null;if(v!==null&&v!==undefined){cache[k]=v;return v;}}catch(e){}
-    return Object.prototype.hasOwnProperty.call(cache,k)?cache[k]:null;
+    return null;
   };
   // BUGFIX: the original put(k,v).catch(()=>{}) silently discarded any
   // IndexedDB write failure — on a device where native localStorage is
@@ -677,10 +690,18 @@ tbody tr:hover td{background:var(--bg)}
     // arrays empty even though the cache is now warm. Re-run loadAllData()
     // here too, before refreshing the widgets, so data actually shows up
     // without requiring a second manual reload.
+    // NOTE (re-audit): this previously called renderDashboard() and
+    // renderTargetWidget() — NEITHER of those functions exists anywhere in
+    // this file, so those two calls were always silent no-ops. The real
+    // dashboard entry point is updateDashStats() (it already calls the
+    // actual target widget renderer, renderDashTargetWidget, internally).
+    // _startAppInit() below now waits for hydration before the very first
+    // render anyway, so this listener is mainly a safety net for the rare
+    // case where IndexedDB is slow enough to hit that 800ms cap.
     try{if(typeof loadAllData==='function')loadAllData();}catch(e){}
     try{if(typeof renderAttList==='function')renderAttList();}catch(e){}
-    try{if(typeof renderDashboard==='function')renderDashboard();}catch(e){}
-    try{if(typeof renderTargetWidget==='function')renderTargetWidget();}catch(e){}
+    try{if(typeof updateDashStats==='function')updateDashStats();}catch(e){}
+    try{if(typeof renderDashDayOrderSummary==='function')renderDashDayOrderSummary();}catch(e){}
   });
 })();
 </script>
@@ -3739,17 +3760,6 @@ function navTo(id) {
   if (id === 'dashboard') {
     updateDashStats();
     renderDashDayOrderSummary();
-    setTimeout(function() {
-      if (window.Chart) {
-        initCharts();
-      } else {
-        // Chart.js not yet loaded — inject it
-        var s = document.createElement('script');
-        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js';
-        s.onload = function() { initCharts(); };
-        document.head.appendChild(s);
-      }
-    }, 150);
   }
   if (id === 'batches') { renderBatchesPage(); }
   if (id === 'commute') { renderCommutePage(); }
@@ -4852,8 +4862,8 @@ const MODALS = {
   sendNotif: () => `<div class="modal-title">${t('sendNotif')}</div>
     <div class="fg"><label class="fl">Title</label><input class="fi" id="m-ntitle" placeholder="e.g. Fee reminder for December"></div>
     <div class="fg"><label class="fl">Message</label><textarea class="fi fi-ta" id="m-nmsg" rows="3" placeholder="Message content…"></textarea></div>
-    <div class="frow"><div class="fg"><label class="fl">Type</label><select class="fi"><option>Fee Reminder</option><option>Exam Alert</option><option>Homework</option><option>Absent Alert</option><option>General</option></select></div>
-    <div class="fg"><label class="fl">Send To</label><select class="fi"><option>All Parents</option><option>All Staff</option><option>Everyone</option></select></div></div>
+    <div class="frow"><div class="fg"><label class="fl">Type</label><select class="fi" id="m-ntype"><option>Fee Reminder</option><option>Exam Alert</option><option>Homework</option><option>Absent Alert</option><option>General</option></select></div>
+    <div class="fg"><label class="fl">Send To</label><select class="fi" id="m-nsendto"><option>All Parents</option><option>All Staff</option><option>Everyone</option></select></div></div>
     <div class="modal-foot"><button class="btn btn-p" onclick="saveNotif()">Send Now</button><button class="btn" onclick="closeModal()">${t('cancel')}</button></div>`,
 
   upgrade: () => `<div class="modal-title">Upgrade Plan</div>
@@ -11910,6 +11920,26 @@ function deleteNotif(i) {
   showToast('Notification deleted');
 }
 
+/* BUGFIX (audit): the "Send Notification" button's Send Now action called
+   saveNotif(), which never existed anywhere in the file — clicking it threw
+   silently and did nothing. This logs the notification into the same
+   notifData list the Admin Panel table and bell badge already read. */
+function saveNotif() {
+  const title = document.getElementById('m-ntitle')?.value.trim() || '';
+  const msg   = document.getElementById('m-nmsg')?.value.trim()   || '';
+  const type  = document.getElementById('m-ntype')?.value || 'General';
+  if (!title) { showToast('⚠️ Enter a title'); return; }
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric'});
+  const colors = { 'Fee Reminder':'#ca8a04','Exam Alert':'#7c3aed','Homework':'#185FA5','Absent Alert':'#dc2626','General':'#16a34a' };
+  notifData.push({ title, msg, type, date: dateStr, time: 'Just now', color: colors[type] || '#185FA5' });
+  saveNotifs();
+  closeModal();
+  if (typeof renderNotifs === 'function') renderNotifs();
+  if (typeof updateBellBadge === 'function' && typeof _loadReminders === 'function') updateBellBadge(_loadReminders());
+  showToast('✅ Notification saved');
+}
+
 function renderAdminPanel() {
   const today = _todayISO();
 
@@ -16535,7 +16565,27 @@ function updateDashStats() {
   if (typeof renderCommuteDashCard === 'function') renderCommuteDashCard();
 
   // Charts
-  if (window.Chart && document.getElementById('chart-income')) setTimeout(initCharts, 50);
+  // BUGFIX (audit): this used to fire alongside a SECOND, separate
+  // initCharts() trigger inside navTo('dashboard') (150ms later) — since
+  // updateDashStats() is always called first there, both ended up firing on
+  // every single dashboard visit, destroying and rebuilding both charts
+  // twice in quick succession. That's what was showing as "blinking"
+  // numbers/graphs. Consolidated into this one place (now also handles
+  // lazy-loading Chart.js itself, matching what navTo('dashboard') used to
+  // do separately) — navTo('dashboard') no longer has its own copy.
+  if (document.getElementById('chart-income')) {
+    setTimeout(function() {
+      if (window.Chart) {
+        initCharts();
+      } else if (!window.__ERP_CHARTJS_LOADING__) {
+        window.__ERP_CHARTJS_LOADING__ = true;
+        var s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js';
+        s.onload = function() { window.__ERP_CHARTJS_LOADING__ = false; initCharts(); };
+        document.head.appendChild(s);
+      }
+    }, 80);
+  }
 }
 
 /* ═══════════════════════════════════════════════════════

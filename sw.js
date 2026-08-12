@@ -5,7 +5,7 @@
 // IMPORTANT: bump CACHE_VERSION every time you upload a new index.html,
 // otherwise phones/browsers will keep serving the OLD cached version.
 
-const CACHE_VERSION = 'v9';
+const CACHE_VERSION = 'v10';
 const CACHE_NAME = 'ktc-erp-' + CACHE_VERSION;
 const APP_SHELL = [
   './',

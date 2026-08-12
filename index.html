@@ -619,10 +619,33 @@ tbody tr:hover td{background:var(--bg)}
     try{const v=nativeLS ? nativeLS.getItem(k) : null;if(v!==null&&v!==undefined){cache[k]=v;return v;}}catch(e){}
     return Object.prototype.hasOwnProperty.call(cache,k)?cache[k]:null;
   };
+  // BUGFIX: the original put(k,v).catch(()=>{}) silently discarded any
+  // IndexedDB write failure — on a device where native localStorage is
+  // already unreliable/blocked, IndexedDB is the ONLY durable persistence
+  // path, so a swallowed failure here means the data is gone with zero
+  // trace (it stays correct in-memory for the rest of that session, which
+  // is why it "looked fine" right after saving, then reverts on next
+  // load). Retry a few times with backoff, and if it still ultimately
+  // fails, surface a visible warning instead of staying silent.
+  function _putWithRetry(k, v, attemptsLeft){
+    put(k, v).catch(function(err){
+      if (attemptsLeft > 1) {
+        setTimeout(function(){ _putWithRetry(k, v, attemptsLeft - 1); }, 400);
+      } else {
+        window.__ERP_STORAGE_WRITE_FAILED__ = (window.__ERP_STORAGE_WRITE_FAILED__ || 0) + 1;
+        console.error('[ERP Storage] Save did not persist for key "' + k + '" after retries:', err);
+        try {
+          if (typeof showToast === 'function') {
+            showToast('⚠️ A save did not persist — please check this entry again after reopening the app.', 6000);
+          }
+        } catch(e2) {}
+      }
+    });
+  }
   window.erpSet=function(k,v){
     k=String(k); v=String(v); cache[k]=v;
     try{if(nativeLS) nativeLS.setItem(k,v);}catch(e){}
-    put(k,v).catch(()=>{});
+    _putWithRetry(k, v, 3);
     return true;
   };
   window.erpRemove=function(k){
@@ -639,9 +662,10 @@ tbody tr:hover td{background:var(--bg)}
     return hydrate().then(()=>{
       // Restore mirrored keys into Web Storage when the WebView permits it.
       try{if(nativeLS) for(const k of Object.keys(cache)){try{nativeLS.setItem(k,cache[k]);}catch(e){}}}catch(e){}
+      window.__ERP_HYDRATED__ = true;
       window.dispatchEvent(new Event('erp-persistence-hydrated'));
       return true;
-    }).catch(()=>false);
+    }).catch(()=>{ window.__ERP_HYDRATED__ = true; return false; });
   };
   window.erpHydrateStorage();
   window.addEventListener('erp-persistence-hydrated',function(){
@@ -19395,10 +19419,24 @@ function _safeInit() {
   setInterval(function() { if (typeof updateAdminTodoBadge === 'function') updateAdminTodoBadge(); }, 60000);
 }
 
+// Wait for the async IndexedDB hydration to finish before the very first
+// render, so devices where native storage is unreliable/blocked don't show
+// a "wrong numbers, then they correct themselves" flash on the Dashboard
+// (numbers/charts appearing to blink). Capped at 800ms so a slow or broken
+// IndexedDB can never meaningfully delay app startup — on devices where
+// native storage already works fine this resolves almost instantly anyway.
+function _startAppInit() {
+  if (window.__ERP_HYDRATED__) { _safeInit(); return; }
+  let started = false;
+  function go() { if (started) return; started = true; _safeInit(); }
+  window.addEventListener('erp-persistence-hydrated', go, { once: true });
+  setTimeout(go, 800);
+}
+
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', _safeInit);
+  document.addEventListener('DOMContentLoaded', _startAppInit);
 } else {
-  _safeInit();
+  _startAppInit();
 }
 
 </script>

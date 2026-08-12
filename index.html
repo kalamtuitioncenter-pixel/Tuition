@@ -645,6 +645,15 @@ tbody tr:hover td{background:var(--bg)}
   };
   window.erpHydrateStorage();
   window.addEventListener('erp-persistence-hydrated',function(){
+    // BUGFIX: erpHydrateStorage() is async (reads IndexedDB), but loadAllData()
+    // — which populates the actual students/exams/fees/etc arrays — runs
+    // synchronously at startup via _safeInit(). On a device where native
+    // localStorage is genuinely blocked, that first synchronous load can
+    // finish BEFORE this hydration event fires, leaving the app's in-memory
+    // arrays empty even though the cache is now warm. Re-run loadAllData()
+    // here too, before refreshing the widgets, so data actually shows up
+    // without requiring a second manual reload.
+    try{if(typeof loadAllData==='function')loadAllData();}catch(e){}
     try{if(typeof renderAttList==='function')renderAttList();}catch(e){}
     try{if(typeof renderDashboard==='function')renderDashboard();}catch(e){}
     try{if(typeof renderTargetWidget==='function')renderTargetWidget();}catch(e){}
@@ -5693,7 +5702,7 @@ function autoSelectBatch() {
   function batchHasClass(b) {
     if (selectedClass === 'all') return true;
     if (selectedClass === '__none__') return students.some(s => s && s.status === 'active' && !String(s.grade||'').trim());
-    return students.some(s =>
+    const courseMatch = students.some(s =>
       s && s.status === 'active' &&
       String(s.grade || '').trim() === selectedClass &&
       s.course && (
@@ -5702,6 +5711,26 @@ function autoSelectBatch() {
         s.course.toLowerCase() === b.name.toLowerCase()
       )
     );
+    if (courseMatch) return true;
+    // BUGFIX: fall back to matching the BATCH'S OWN NAME against the selected
+    // class/grade (same word-aware normalisation used by filterStudentsByBatch
+    // for exams) when no student's `course` field resolves a match. Without
+    // this, a class whose students simply have an empty `course` field (a
+    // common data gap — confirmed to affect Class 10 here) could never
+    // resolve to ANY batch here, silently falling through to a session-only
+    // or "first batch" guess instead. That wrong batch then gets used
+    // everywhere att-batch is read — including the Day Order → Time Table
+    // lookup for missed subjects, which is exactly why absent/late WhatsApp
+    // messages for that class were going out with the missed-subjects field
+    // blank: it was reading the wrong batch's (or no) timetable.
+    if (typeof normaliseGrade === 'function') {
+      const wanted = normaliseGrade(selectedClass);
+      if (wanted) {
+        const nameWords = b.name.toLowerCase().split(/\s+/);
+        for (const w of nameWords) { if (normaliseGrade(w) === wanted) return true; }
+      }
+    }
+    return false;
   }
 
   // 1. Exact match: batch serves this class AND matches session
@@ -6425,12 +6454,24 @@ function markHoliday() {
     <div style="font-size:11px;color:var(--tx3);background:var(--bg);border-radius:8px;padding:8px 10px;margin-bottom:4px">
       📅 Day Order <b>${dayNum||'(not set)'}</b> will carry over to the next working day for whichever session(s) you mark.
     </div>
+    <div class="fg" style="margin:10px 0 4px">
+      <label class="fl">Reason (shown to parents — optional)</label>
+      <input class="fi" id="hol-reason" placeholder="e.g. பொங்கல் விடுமுறை">
+    </div>
+    <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:11px;color:var(--tx2);margin-bottom:6px">
+      <input type="checkbox" id="hol-send-wa" checked style="width:14px;height:14px;cursor:pointer">
+      📱 Also send Holiday Notice WhatsApp to parents now
+    </label>
     ${sessOptions}
     <div class="modal-foot"><button class="btn" onclick="closeModal()">Cancel</button></div>
   </div></div>`;
 }
 
 function _applyHoliday(date, batchId, sessChoice, dayNum) {
+  // Read these BEFORE closeModal() removes the inputs from the DOM.
+  const reason  = document.getElementById('hol-reason')?.value.trim() || '';
+  const sendWA  = document.getElementById('hol-send-wa')?.checked !== false;
+
   const sessions = sessChoice === 'both' ? ['morning','evening'] : [sessChoice];
   sessions.forEach(s => {
     try { erpSet(_holidayKey(date, batchId, s), '1'); } catch(e) {}
@@ -6449,6 +6490,93 @@ function _applyHoliday(date, batchId, sessChoice, dayNum) {
   _refreshHolidayBanner(date, batchId, curSession);
   renderAttList();
   runBackup('change');
+
+  // Auto-send Holiday Notice WA to affected parents, per the requested
+  // "auto-send right when I mark a day as Holiday" behaviour.
+  if (sendWA) _sendHolidayNoticeWA(date, batchId, reason);
+}
+
+/* Auto-triggered from _applyHoliday() — builds the Holiday Notice using the
+   WA_TEMPLATES.holiday template (or the admin's saved custom version) and
+   sends it to the affected parents: if a specific batch was selected on the
+   Attendance page, only that batch's students get notified; if no batch was
+   selected (center-wide view), every active student's parent is notified. */
+function _sendHolidayNoticeWA(date, batchId, reason) {
+  const ctr = CFG.CENTER || {};
+  let recipients = students.filter(s => s && s.name && s.status === 'active');
+  const batch = batches.find(b => b.id === batchId);
+  if (batch && batch.name) {
+    recipients = filterStudentsByBatch(recipients, batch.name);
+  }
+  recipients = recipients.filter(s => s.phone || s.pphone);
+  if (recipients.length === 0) { return; } // nothing to notify — no toast, this is a silent auto-trigger
+
+  const dateStr = (() => {
+    try { return new Date(date+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}); }
+    catch(e) { return date; }
+  })();
+
+  const saved = (typeof getWTSaved === 'function') ? getWTSaved('holiday','ta') : '';
+  const tmpl  = saved || (WA_TEMPLATES.holiday?.ta?.[0]) || '';
+
+  function buildMsg() {
+    if (!tmpl) {
+      return `அன்பான பெற்றோரே,\n\n🎉 *விடுமுறை அறிவிப்பு*\n\n${ctr.name||''} இல் வகுப்புகள்:\n📅 ${dateStr} அன்று *மூடப்படும்*\n\nகாரணம்: ${reason||'—'}\n\nவகுப்புகள் அடுத்த வேலை நாளில் தொடர்ந்து நடைபெறும்.\n\nவிடுமுறை வாழ்த்துக்கள்! 🙏\n\n${ctr.name||''}`;
+    }
+    return tmpl
+      .replace(/{holiday_date}/g,   dateStr)
+      .replace(/{holiday_reason}/g, reason || '—')
+      .replace(/{resume_date}/g,    'அடுத்த வேலை நாள்')
+      .replace(/{holiday_name}/g,   'விடுமுறை')
+      .replace(/{center_name}/g,    ctr.name  || '')
+      .replace(/{center_phone}/g,   ctr.phone || '');
+  }
+  const msg = buildMsg();
+
+  window._holidayWAMsgs = recipients.map(s => ({ sid: s.id, phone: s.phone||s.pphone||'', name: s.name, parent: s.parent, color: s.color, msg }));
+
+  const root = document.getElementById('modal-root');
+  root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-title">📱 Holiday Notice — ${dateStr}</div>
+    <div style="font-size:11px;color:var(--tx2);margin-bottom:10px">${recipients.length} பெற்றோர் | ஒவ்வொருவரையும் தட்டி WA அனுப்பவும்</div>
+    <div style="background:#dcfce7;border:.5px solid #bbf7d0;border-radius:8px;padding:10px 12px;font-size:11px;color:#166534;white-space:pre-wrap;max-height:120px;overflow-y:auto;margin-bottom:10px;font-family:'Noto Sans Tamil',system-ui;line-height:1.7">${msg}</div>
+    <div style="max-height:300px;overflow-y:auto;border:.5px solid var(--br);border-radius:10px">
+      ${window._holidayWAMsgs.map(item => `<div class="wa-queue-item" id="hol-wa-row-${item.sid}" style="display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:.5px solid var(--br)">
+        <div class="av" style="background:${item.color};width:28px;height:28px;font-size:11px;flex-shrink:0">${escHtml((item.name||'?')[0])}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600;font-size:12px;color:var(--tx)">${escHtml(item.name)}</div>
+          <div style="font-size:10px;color:var(--tx3)">${item.parent||'—'} · ${item.phone}</div>
+        </div>
+        <button id="hol-wa-btn-${item.sid}"
+          style="background:#25d366;color:#fff;border:none;padding:6px 12px;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0"
+          onclick="sendOneHolidayWA('${item.sid}')">📱 Send</button>
+      </div>`).join('')}
+    </div>
+    <div class="modal-foot" style="margin-top:10px">
+      <button class="btn" onclick="closeModal()" style="flex:1;justify-content:center">Close</button>
+    </div>
+  </div></div>`;
+
+  // This is the trusted user click that opened the Mark Holiday confirm
+  // button, so the first WhatsApp open is allowed to fire automatically —
+  // same "send #1 now, tap the rest" pattern used across the app, since
+  // browsers block auto-opening more than one popup per click.
+  const first = window._holidayWAMsgs[0];
+  const clean0 = first.phone.replace(/\D/g,'');
+  const ph0    = clean0.startsWith('91') ? clean0 : '91'+clean0;
+  _openWADirect(ph0, first.msg);
+  const btn0 = document.getElementById('hol-wa-btn-'+first.sid);
+  if (btn0) { btn0.textContent='✅ Sent'; btn0.style.background='#dcfce7'; btn0.style.color='#166534'; btn0.disabled=true; }
+}
+
+function sendOneHolidayWA(sid) {
+  const list = window._holidayWAMsgs || [];
+  const item = list.find(x => x.sid === sid);
+  if (!item || !item.phone) { showToast('⚠️ No phone'); return; }
+  openWA(item.phone, item.msg);
+  const btn = document.getElementById('hol-wa-btn-'+sid);
+  if (btn) { btn.textContent='✅ Sent'; btn.style.background='#dcfce7'; btn.style.color='#166534'; btn.disabled=true; }
 }
 
 function unmarkHoliday() {
@@ -7055,8 +7183,16 @@ function buildWAQueue() {
   const waSession = document.getElementById('att-session')?.value || 'morning';
 
   waQueue = targetStudents.map(s => {
-    const saved = (typeof getWTSaved === 'function') ? getWTSaved(waType, 'ta') : null;
-    const tmplArr = saved ? [saved] : (WA_TEMPLATES[waType] ? (WA_TEMPLATES[waType].ta || []) : []);
+    // BUGFIX (audit): waType only ever gets set to 'absent' anywhere in the
+    // app — nothing ever pointed it at 'birthday' (or 'holiday'), so picking
+    // "Birthday Students (This Month)" as the recipient filter would silently
+    // build messages from whatever OTHER template was last active (e.g. the
+    // absent-alert template) instead of the actual Birthday Wish template.
+    // Route the template choice by the selected recipient filter itself when
+    // it maps to a real template, so the two stay in sync automatically.
+    const effectiveWaType = (filter === 'birthday') ? 'birthday' : waType;
+    const saved = (typeof getWTSaved === 'function') ? getWTSaved(effectiveWaType, 'ta') : null;
+    const tmplArr = saved ? [saved] : (WA_TEMPLATES[effectiveWaType] ? (WA_TEMPLATES[effectiveWaType].ta || []) : []);
     const customMsg = document.getElementById('wa-custom-msg')?.value.trim() || '';
     let tmpl = customMsg || (tmplArr[0] || '');
     const stFees = fees.filter(f => f.studentId === s.id || f.student === s.name);
@@ -10321,9 +10457,9 @@ function sendExamNoticeToAll(exam, lang) {
             <div style="font-weight:600;font-size:12px;color:var(--tx)">${escHtml(s.name)}</div>
             <div style="font-size:10px;color:var(--tx3)">${s.parent||'—'} · ${phone||'📵 No phone'}</div>
           </div>
-          <button id="exam-wa-btn-${i}" ${!phone?'disabled':''}
+          <button id="exam-wa-btn-${s.id}" ${!phone?'disabled':''}
             style="background:${phone?'#25d366':'#e2e8f0'};color:${phone?'#fff':'#94a3b8'};border:none;padding:6px 12px;border-radius:7px;font-size:11px;font-weight:700;cursor:${phone?'pointer':'not-allowed'};font-family:inherit;white-space:nowrap;flex-shrink:0"
-            onclick="sendExamNoticeOneByIdx(${i})">
+            onclick="sendExamNoticeOneById('${s.id}')">
             📱 Send
           </button>
         </div>`;
@@ -10336,8 +10472,10 @@ function sendExamNoticeToAll(exam, lang) {
     </div>
   </div></div>`;
 
-  // Store msgs for Send All
-  window._examWAMsgs = active.map(s => ({ phone: s.phone||s.pphone||'', name: s.name, msg: buildMsg(s) }));
+  // Store msgs for Send All — keyed by stable student ID, not array index,
+  // so a send always targets the exact student it was built for even if
+  // this snapshot list is ever re-sorted or re-filtered later.
+  window._examWAMsgs = active.map(s => ({ sid: s.id, phone: s.phone||s.pphone||'', name: s.name, msg: buildMsg(s) }));
 }
 
 function sendAllExamNoticeWA() {
@@ -10349,11 +10487,10 @@ function sendAllExamNoticeWA() {
   // setTimeout-chained window.open for the rest gets silently popup-blocked
   // by the browser, so ask the teacher to tap each remaining row instead.
   const x0 = list[0];
-  const idx0 = full.indexOf(x0);
   const clean0 = x0.phone.replace(/\D/g,'');
   const ph0    = clean0.startsWith('91') ? clean0 : '91'+clean0;
   _openWADirect(ph0, x0.msg);
-  const btn0 = document.getElementById('exam-wa-btn-'+idx0);
+  const btn0 = document.getElementById('exam-wa-btn-'+x0.sid);
   if (btn0) { btn0.textContent='✅ Sent'; btn0.style.background='#dcfce7'; btn0.style.color='#166534'; btn0.disabled=true; }
 
   showToast(list.length > 1
@@ -10361,15 +10498,16 @@ function sendAllExamNoticeWA() {
     : `📱 ${x0.name}-க்கு அனுப்புகிறது…`);
 }
 
-/* Safe individual exam notice send using stored _examWAMsgs */
-function sendExamNoticeOneByIdx(i) {
+/* Safe individual exam notice send using stored _examWAMsgs, matched by
+   stable student ID (not array index) */
+function sendExamNoticeOneById(sid) {
   var list = window._examWAMsgs || [];
-  var item = list[i];
+  var item = list.find(x => x.sid === sid);
   if (!item || !item.phone) { showToast('⚠️ No phone'); return; }
   var clean = item.phone.replace(/[^0-9]/g,'');
   var ph = clean.startsWith('91') ? clean : '91'+clean;
   openWA(ph, item.msg);
-  var btn = document.getElementById('exam-wa-btn-'+i);
+  var btn = document.getElementById('exam-wa-btn-'+sid);
   if (btn) { btn.textContent='✅ Sent'; btn.style.background='#dcfce7'; btn.style.color='#166534'; btn.disabled=true; }
   showToast('📱 WA opening for ' + item.name);
 }
@@ -11841,6 +11979,7 @@ function isTodayHoliday(dateStr) {
 function setTodayHoliday() {
   const todayStr = new Date().toISOString().slice(0,10);
   try { erpSet(_todayHolidayKey(todayStr), '1'); } catch(e) {}
+  try { erpRemove(_todaySpecialClassKey(todayStr)); } catch(e) {} // clear any Special Class state — full holiday wins
   const barr = (typeof batches !== 'undefined' && Array.isArray(batches)) ? batches : [];
   let dayNum = '';
   try { dayNum = erpGet('_erp_last_dayorder_' + todayStr) || ''; } catch(e) {}
@@ -11863,6 +12002,95 @@ function clearTodayHoliday() {
   _refreshAfterTodayHolidayChange(todayStr);
   showToast('✅ Holiday removed for today');
 }
+
+/* ── Special Class Day: ONE chosen batch takes attendance as normal (with
+   its own Day Order), while every OTHER batch is auto-marked Holiday for
+   both sessions today. Reuses the exact same per-batch/session holiday
+   storage key (_holidayKey) that Attendance, the WA absent-alert flow, and
+   the Time Table lookup all already read — so nothing else needs to change
+   to respect this; those pages just see "these batches are on holiday
+   today" the same way they would from the regular Holiday toggle. ── */
+function _todaySpecialClassKey(dateStr) { return '_erp_special_class_' + dateStr; }
+function getTodaySpecialClassBatchId(dateStr) {
+  try { return erpGet(_todaySpecialClassKey(dateStr)) || ''; } catch(e) { return ''; }
+}
+function promptSpecialClassDay() {
+  const barr = (typeof batches !== 'undefined' && Array.isArray(batches)) ? batches : [];
+  if (!barr.length) { showToast('⚠️ No batches set up yet — add batches first'); return; }
+  const maxDays = (typeof _erpMaxDayOrderNum === 'function') ? _erpMaxDayOrderNum() : 6;
+  const dayNums = []; for (let i = 1; i <= maxDays; i++) dayNums.push(String(i));
+  const root = document.getElementById('modal-root');
+  root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal" style="max-width:380px">
+    <div class="modal-title">🎯 Special Class Today</div>
+    <div style="font-size:12px;color:var(--tx2);margin-bottom:12px">
+      Pick the ONE class taking a special class today — every other batch will be automatically marked <b>Holiday</b> for both sessions.
+    </div>
+    <div class="fg"><label class="fl">Which class is taking the special class?</label>
+      <select class="fi" id="spc-batch">
+        ${barr.map(b => `<option value="${b.id}">${escHtml(b.name)} – ${escHtml(b.time)}</option>`).join('')}
+      </select>
+    </div>
+    <div class="fg"><label class="fl">Day Order for this class</label>
+      <select class="fi" id="spc-dayorder">
+        <option value="" disabled selected>Select…</option>
+        ${dayNums.map(n => `<option value="${n}">Day ${n}</option>`).join('')}
+      </select>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-p" style="flex:1;justify-content:center" onclick="_applySpecialClassDay()">✅ Confirm</button>
+      <button class="btn" onclick="closeModal()">Cancel</button>
+    </div>
+  </div></div>`;
+}
+function _applySpecialClassDay() {
+  const batchId = document.getElementById('spc-batch')?.value || '';
+  const dayNum  = document.getElementById('spc-dayorder')?.value || '';
+  if (!batchId) { showToast('⚠️ Pick a class'); return; }
+  if (!dayNum)  { showToast('⚠️ Pick a Day Order'); return; }
+
+  const todayStr = new Date().toISOString().slice(0,10);
+  const barr = (typeof batches !== 'undefined' && Array.isArray(batches)) ? batches : [];
+
+  // A "fully holiday" day and a "special class" day are mutually exclusive —
+  // clear the full-holiday flag since only SOME batches are off today.
+  try { erpRemove(_todayHolidayKey(todayStr)); } catch(e) {}
+
+  barr.forEach(b => {
+    if (b.id === batchId) {
+      // The special class itself — make sure it's NOT marked holiday (in
+      // case a previous Holiday toggle left it set), so attendance works.
+      ['morning','evening'].forEach(s => { try { erpRemove(_holidayKey(todayStr, b.id, s)); } catch(e) {} });
+    } else {
+      ['morning','evening'].forEach(s => {
+        try { erpSet(_holidayKey(todayStr, b.id, s), '1'); } catch(e) {}
+      });
+    }
+  });
+
+  try { erpSet(_todaySpecialClassKey(todayStr), batchId); } catch(e) {}
+
+  // Set today's Day Order the same way the normal picker does.
+  window.__ERP_TODAY_DAYORDER_CACHE[todayStr] = String(dayNum);
+  try { erpSet('_erp_last_dayorder_' + todayStr, String(dayNum)); } catch(e) {}
+  try { sessionStorage.setItem('_erp_last_dayorder_' + todayStr, String(dayNum)); } catch(e) {}
+  if (typeof _erpPersistTodayDayOrderIDB === 'function') _erpPersistTodayDayOrderIDB(todayStr, String(dayNum));
+
+  closeModal();
+  const b = barr.find(x => x.id === batchId);
+  showToast('🎯 Special Class: ' + (b ? b.name : '') + ' — Day ' + dayNum + '. Every other batch marked Holiday today.');
+  _refreshAfterTodayHolidayChange(todayStr);
+}
+function clearSpecialClassDay() {
+  const todayStr = new Date().toISOString().slice(0,10);
+  const barr = (typeof batches !== 'undefined' && Array.isArray(batches)) ? batches : [];
+  barr.forEach(b => {
+    ['morning','evening'].forEach(s => { try { erpRemove(_holidayKey(todayStr, b.id, s)); } catch(e) {} });
+  });
+  try { erpRemove(_todaySpecialClassKey(todayStr)); } catch(e) {}
+  _refreshAfterTodayHolidayChange(todayStr);
+  showToast('✅ Special Class cleared — normal day for every batch');
+}
+
 function _refreshAfterTodayHolidayChange(todayStr) {
   if (typeof renderDashDayOrderSummary === 'function') renderDashDayOrderSummary();
   if (typeof renderAdminDayOrderSummary === 'function') renderAdminDayOrderSummary();
@@ -11917,14 +12145,22 @@ function renderDayOrderSummary(dateElId, gridElId, pickerElId, showGrid) {
   for (let i = 1; i <= maxDays; i++) dayNums.push(String(i));
 
   if (pickerEl) {
+    const specialBatchId = getTodaySpecialClassBatchId(todayStr);
     if (isTodayHoliday(todayStr)) {
       pickerEl.innerHTML = '<span style="display:inline-flex;align-items:center;gap:8px;padding:6px 12px;background:#fef3c7;border:1.5px solid #fde68a;border-radius:8px;font-size:12px;font-weight:700;color:#92400e">'
         + '🏖 Today is a Holiday for every batch'
         + '<button onclick="clearTodayHoliday()" style="font-size:10px;padding:3px 9px;border-radius:6px;border:.5px solid #d97706;background:#fff7ed;color:#92400e;cursor:pointer;font-weight:700;font-family:inherit">✕ Remove</button>'
         + '</span>';
+    } else if (specialBatchId) {
+      const barr2 = (typeof batches !== 'undefined' && Array.isArray(batches)) ? batches : [];
+      const sb = barr2.find(b => b.id === specialBatchId);
+      pickerEl.innerHTML = '<span style="display:inline-flex;align-items:center;gap:8px;padding:6px 12px;background:#ede9fe;border:1.5px solid #c4b5fd;border-radius:8px;font-size:12px;font-weight:700;color:#5b21b6">'
+        + '🎯 Special Class: ' + escHtml(sb ? sb.name : 'Unknown') + (todaysDayOrder ? ' (Day ' + escHtml(String(todaysDayOrder)) + ')' : '') + ' — others Holiday'
+        + '<button onclick="clearSpecialClassDay()" style="font-size:10px;padding:3px 9px;border-radius:6px;border:.5px solid #7c3aed;background:#fff;color:#5b21b6;cursor:pointer;font-weight:700;font-family:inherit">✕ Remove</button>'
+        + '</span>';
     } else {
       pickerEl.innerHTML = '<span style="font-size:11px;color:var(--tx2);font-weight:600;margin-right:2px">Set today\'s Day Order:</span>'
-        + '<select onchange="this.value===\'HOLIDAY\'?setTodayHoliday():setTodayDayOrder(this.value)" style="'
+        + '<select onchange="this.value===\'HOLIDAY\'?setTodayHoliday():this.value===\'SPECIAL\'?promptSpecialClassDay():setTodayDayOrder(this.value)" style="'
           + 'font-size:12px;font-weight:700;padding:5px 10px;border-radius:8px;cursor:pointer;font-family:inherit;'
           + 'border:1.5px solid ' + (todaysDayOrder ? '#7c3aed' : '#dc2626') + ';'
           + 'background:' + (todaysDayOrder ? '#7c3aed' : '#fff1f2') + ';'
@@ -11932,6 +12168,7 @@ function renderDayOrderSummary(dateElId, gridElId, pickerElId, showGrid) {
           + '<option value="" ' + (todaysDayOrder ? '' : 'selected') + ' disabled>Select…</option>'
           + dayNums.map(n => '<option value="' + n + '" ' + (String(n) === String(todaysDayOrder) ? 'selected' : '') + '>Day ' + escHtml(String(n)) + '</option>').join('')
           + '<option value="HOLIDAY">🏖 Holiday</option>'
+          + '<option value="SPECIAL">🎯 Special Class (others Holiday)</option>'
         + '</select>'
         + (todaysDayOrder ? '' : '<span style="font-size:10.5px;color:#dc2626;font-weight:600;margin-left:4px">⚠️ not set yet</span>');
     }

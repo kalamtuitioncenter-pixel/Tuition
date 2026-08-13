@@ -16880,7 +16880,8 @@ function initCharts() {
       ]
     },
     options:{
-      responsive:true,maintainAspectRatio:false,
+      responsive:true,maintainAspectRatio:false,resizeDelay:250,
+      animation:false, // no draw-in animation — was being perceived as flicker
       plugins:{legend:{display:false}},
       scales:{
         x:{ticks:{font:{size:10},autoSkip:false},grid:{display:false}},
@@ -16910,7 +16911,8 @@ function initCharts() {
       }]
     },
     options:{
-      responsive:true,maintainAspectRatio:false,cutout:'68%',
+      responsive:true,maintainAspectRatio:false,cutout:'68%',resizeDelay:250,
+      animation:false, // no draw-in animation — was being perceived as flicker
       plugins:{
         legend:{display:false},
         tooltip:{callbacks:{label:ctx=>`₹${(ctx.parsed||0).toLocaleString('en-IN')}`}}
@@ -19439,7 +19441,15 @@ function _safeInit() {
   if (typeof renderDashDayOrderSummary === 'function') renderDashDayOrderSummary();
   renderBatchSelect();
   loadAllCustomWATemplates();
-  setTimeout(function(){ if(window.Chart) initCharts(); }, 300);
+  // BUGFIX (audit round 2): this used to ALSO schedule its own separate
+  // initCharts() call at 300ms, on top of the one updateDashStats() (just
+  // above) already schedules at 80ms — the exact same double-render bug
+  // fixed for navTo('dashboard') last round, just in this second spot
+  // (app startup) that was missed. Since Dashboard is the landing page,
+  // this was likely the MOST visible instance of the flicker, firing on
+  // every single app open. updateDashStats() already handles chart init
+  // (including lazy-loading Chart.js) on its own now — removed the
+  // duplicate here.
   setTimeout(initBackup, 800);
   initSummaryPage();
   // Auto-backup reminder — show once every 7 days if data exists

@@ -8458,10 +8458,15 @@ function submitGenerateFees() {
     if (feeAmt <= 0) { skipped++; return; }
 
     // Check if record already exists for this student + month
-    const existingIdx = fees.findIndex(f =>
-      (f.studentId === s.id || f.student === s.name) &&
-      f.month === month && f.type !== 'admission'
-    );
+    // BUGFIX: use the same normalised key as findDuplicateFeeGroups() so a
+    // stray whitespace/casing difference in an old record's `student` name
+    // (or a missing studentId on a legacy record) can no longer slip past
+    // this check and create a second, separate fee record for the same
+    // student+month — that silently-created duplicate is exactly what was
+    // causing "paid student still shows as pending" (payment collected on
+    // one record, the other stale duplicate still shows unpaid).
+    const newKey = _feeDupKey({ studentId: s.id, student: s.name, month, type: 'monthly' });
+    const existingIdx = fees.findIndex(f => f && f.type !== 'admission' && _feeDupKey(f) === newKey);
 
     const feeRecord = {
       rcpt      : 'RCP-MF-' + Date.now().toString().slice(-5) + Math.random().toString(36).slice(-2),
@@ -8497,6 +8502,149 @@ function submitGenerateFees() {
 
   showToast(`✅ ${created} created, ${updated} updated, ${skipped} skipped for ${month}`);
   runBackup('change');
+}
+
+/* ═══════════════════════════════════════════════════════
+   DUPLICATE FEE RECORD CHECKER
+   Root-cause tool for "paid student still shows as pending":
+   if two fee records exist for the same student + same month (e.g. from
+   Generate Monthly Fees running twice with a slightly different name/ID
+   match, or an old legacy record with no studentId), collecting payment on
+   ONE of them correctly marks THAT record paid — but the OTHER, still-
+   unpaid duplicate keeps showing up in the Pending list for the exact same
+   student, which looks exactly like "I paid but it still shows unpaid".
+   This finds those groups and lets the admin merge them safely.
+═══════════════════════════════════════════════════════ */
+function _feeDupKey(f) {
+  const who = (f.studentId && String(f.studentId)) || (f.student || '').trim().toLowerCase();
+  const mon = (f.month || '').trim().toLowerCase();
+  const typ = f.type || 'monthly';
+  return who + '|' + mon + '|' + typ;
+}
+function findDuplicateFeeGroups() {
+  const map = {};
+  fees.forEach((f, idx) => {
+    if (!f || !f.rcpt) return;
+    const key = _feeDupKey(f);
+    if (!map[key]) map[key] = [];
+    map[key].push(idx);
+  });
+  return Object.values(map).filter(idxs => idxs.length > 1);
+}
+function openDuplicateFeeCheck() {
+  const groups = findDuplicateFeeGroups();
+  const root = document.getElementById('modal-root');
+  if (groups.length === 0) {
+    root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal" style="max-width:380px">
+      <div class="modal-title">🔍 Duplicate Fee Check</div>
+      <div style="font-size:13px;color:var(--tx2);padding:14px 0;text-align:center">✅ No duplicate fee records found — every student's fee entries are clean.</div>
+      <div class="modal-foot"><button class="btn" onclick="closeModal()" style="width:100%;justify-content:center">Close</button></div>
+    </div></div>`;
+    return;
+  }
+
+  const rows = groups.map((idxs, gi) => {
+    const recs = idxs.map(i => fees[i]);
+    const name = recs[0].student || 'Unknown';
+    const month = recs[0].month || '—';
+    const recRows = recs.map((f, ri) => {
+      const badge = f.status === 'paid'
+        ? '<span style="color:#16a34a;font-weight:700">✅ Paid</span>'
+        : f.status === 'partial'
+        ? '<span style="color:#ca8a04;font-weight:700">◐ Partial</span>'
+        : '<span style="color:#dc2626;font-weight:700">❌ Pending</span>';
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-top:${ri===0?'none':'.5px solid var(--br)'};font-size:11px">
+        <span style="color:var(--tx2)">Rcpt <code style="font-size:10px">${escHtml(f.rcpt)}</code> · ₹${(f.paid||0).toLocaleString('en-IN')}/${(f.total||0).toLocaleString('en-IN')}</span>
+        ${badge}
+      </div>`;
+    }).join('');
+    return `<div style="border:.5px solid var(--br);border-radius:8px;padding:10px 12px;margin-bottom:8px">
+      <div style="font-weight:700;font-size:12px;color:var(--tx);margin-bottom:2px">${escHtml(name)} — ${escHtml(month)}</div>
+      ${recRows}
+      <button class="btn btn-p btn-sm" style="margin-top:8px;width:100%;justify-content:center;font-size:11px;padding:6px" onclick="mergeDuplicateFeeGroup(${gi})">🔧 Keep best record, remove ${idxs.length-1} duplicate${idxs.length>2?'s':''}</button>
+    </div>`;
+  }).join('');
+
+  window._dupFeeGroups = groups;
+  root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal" style="max-width:460px">
+    <div class="modal-title">🔍 Duplicate Fee Check</div>
+    <div style="font-size:11px;color:var(--tx2);margin-bottom:10px">
+      Found <b>${groups.length}</b> student${groups.length>1?'s':''} with more than one fee record for the same month. If you collected payment on one of these, the other duplicate may still be showing them as pending.
+    </div>
+    <div style="max-height:400px;overflow-y:auto">${rows}</div>
+    <div class="modal-foot" style="margin-top:8px">
+      <button class="btn btn-p" style="flex:1;justify-content:center" onclick="mergeAllDuplicateFeeGroups()">🔧 Fix All Automatically</button>
+      <button class="btn" onclick="closeModal()">Close</button>
+    </div>
+  </div></div>`;
+}
+/* Keeps the "best" record in a duplicate group (prefers paid > partial >
+   pending, then higher amount paid, then most recently paid) and removes
+   the rest. Never deletes actual payment history — the kept record already
+   carries forward whichever one has the most money collected on it. */
+function _pickBestFeeRecord(idxs) {
+  const recs = idxs.map(i => ({ i, f: fees[i] }));
+  recs.sort((a, b) => {
+    const rank = s => s === 'paid' ? 2 : s === 'partial' ? 1 : 0;
+    const rb = rank(b.f.status) - rank(a.f.status);
+    if (rb !== 0) return rb;
+    const pb = (b.f.paid || 0) - (a.f.paid || 0);
+    if (pb !== 0) return pb;
+    return (b.f.paidAtTs || 0) - (a.f.paidAtTs || 0);
+  });
+  return recs[0].i;
+}
+function mergeDuplicateFeeGroup(gi) {
+  const groups = window._dupFeeGroups || [];
+  const idxs = groups[gi];
+  if (!idxs || idxs.length < 2) return;
+  const keepIdx = _pickBestFeeRecord(idxs);
+  const removeIdxs = idxs.filter(i => i !== keepIdx).sort((a,b) => b - a); // remove from the end first, keeps other indices valid
+  removeIdxs.forEach(i => fees.splice(i, 1));
+  saveFees();
+  showToast('✅ Merged — kept the correct record, removed ' + removeIdxs.length + ' duplicate(s)');
+  updateDashStats();
+  openDuplicateFeeCheck(); // re-open to show remaining groups (indices shift after each merge)
+}
+function mergeAllDuplicateFeeGroups() {
+  let groups = findDuplicateFeeGroups();
+  let mergedCount = 0;
+  while (groups.length > 0) {
+    const idxs = groups[0];
+    const keepIdx = _pickBestFeeRecord(idxs);
+    const removeIdxs = idxs.filter(i => i !== keepIdx).sort((a,b) => b - a);
+    removeIdxs.forEach(i => fees.splice(i, 1));
+    mergedCount += removeIdxs.length;
+    groups = findDuplicateFeeGroups(); // re-scan since indices shifted
+  }
+  saveFees();
+  updateDashStats();
+  closeModal();
+  const activeTab = document.querySelector('#fee-tabs .seg-b.on');
+  if (activeTab) activeTab.click(); else renderFees(fees);
+  showToast('✅ Fixed — removed ' + mergedCount + ' duplicate fee record(s)');
+  runBackup('change');
+}
+
+/* Silent auto-clean, called from inside saveFees() itself every time the
+   fees log is saved — no button needed. Mutates `fees` in place only; does
+   NOT call saveFees() (that would recurse, since saveFees calls this) —
+   the caller's own erpSet(...) right after this call persists the result. */
+function _autoMergeDuplicateFees() {
+  let groups = findDuplicateFeeGroups();
+  if (groups.length === 0) return;
+  let mergedCount = 0;
+  while (groups.length > 0) {
+    const idxs = groups[0];
+    const keepIdx = _pickBestFeeRecord(idxs);
+    const removeIdxs = idxs.filter(i => i !== keepIdx).sort((a,b) => b - a);
+    removeIdxs.forEach(i => fees.splice(i, 1));
+    mergedCount += removeIdxs.length;
+    groups = findDuplicateFeeGroups();
+  }
+  if (mergedCount > 0 && typeof showToast === 'function') {
+    showToast('🧹 Cleaned up ' + mergedCount + ' duplicate fee record' + (mergedCount>1?'s':'') + ' automatically');
+  }
 }
 /* ═══════════════════════════════════════════════════════
    EDIT FEE RECORD — Admin can adjust total / waive / delete
@@ -19153,6 +19301,12 @@ const EXAMS_KEY   = '_erp_exams';
 const NOTIFS_KEY  = '_erp_notifs';
 
 function saveFees() {
+  // Auto-clean any duplicate fee records (same student + same month) every
+  // time the fees log is saved — this is what actually causes "paid
+  // student still shows pending" (payment collected on one duplicate,
+  // the other stale copy keeps showing unpaid). No manual button needed;
+  // this keeps the log itself always correct on its own.
+  try { if (typeof _autoMergeDuplicateFees === 'function') _autoMergeDuplicateFees(); } catch(e) {}
   try { erpSet(FEES_KEY, JSON.stringify(fees)); } catch(e){}
 }
 function saveStaffData() {
@@ -19238,6 +19392,14 @@ function loadAllData() {
     if (fv) {
       var fp = JSON.parse(fv);
       if (Array.isArray(fp)) { fees.length = 0; fp.forEach(function(x){ if(x&&x.rcpt) fees.push(x); }); }
+    }
+    // Clean up any duplicate fee records already sitting in saved data
+    // (e.g. from before this auto-clean existed) right on load, not just
+    // the next time something happens to trigger a save.
+    if (typeof _autoMergeDuplicateFees === 'function') {
+      var _feeCountBefore = fees.length;
+      _autoMergeDuplicateFees();
+      if (fees.length !== _feeCountBefore && typeof saveFees === 'function') saveFees();
     }
   } catch(e) {}
 

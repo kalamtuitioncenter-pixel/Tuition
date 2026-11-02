@@ -1523,7 +1523,6 @@ tbody tr:hover td{background:var(--bg)}
     <button class="seg-b on" id="sf-tab-list" onclick="switchStaffTab('list',this)" style="flex:1;padding:8px;border-radius:8px;border:none;background:var(--card);color:var(--tx);cursor:pointer;font-size:12px;font-weight:600;font-family:inherit;border:.5px solid var(--br)">👥 Staff List</button>
     <button class="seg-b" id="sf-tab-att" onclick="switchStaffTab('att',this)" style="flex:1;padding:8px;border-radius:8px;border:none;background:transparent;color:var(--tx2);cursor:pointer;font-size:12px;font-weight:500;font-family:inherit">📅 Attendance</button>
     <button class="seg-b" id="sf-tab-pay" onclick="switchStaffTab('pay',this)" style="flex:1;padding:8px;border-radius:8px;border:none;background:transparent;color:var(--tx2);cursor:pointer;font-size:12px;font-weight:500;font-family:inherit">💰 Payroll</button>
-    <button class="seg-b" id="sf-tab-report" onclick="switchStaffTab('report',this)" style="flex:1;padding:8px;border-radius:8px;border:none;background:transparent;color:var(--tx2);cursor:pointer;font-size:12px;font-weight:500;font-family:inherit">📊 Report</button>
   </div>
 
   <!-- TAB 1: Staff List -->
@@ -1583,46 +1582,6 @@ tbody tr:hover td{background:var(--bg)}
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:14px" id="sf-pay-summary"></div>
     <!-- Payroll cards list -->
     <div id="sf-pay-body"></div>
-  </div>
-
-  <!-- TAB 4: Staff Report (date-wise, session-wise) -->
-  <div id="sf-panel-report" style="display:none">
-    <div class="card" style="margin-bottom:12px;padding:12px 16px">
-      <div style="display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap">
-        <div>
-          <div style="font-size:11px;font-weight:600;color:var(--tx2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px">Month</div>
-          <input type="month" class="fi" id="sf-rep-month" style="max-width:170px;font-size:13px;font-weight:600" onchange="renderStaffReport()">
-        </div>
-        <div>
-          <div style="font-size:11px;font-weight:600;color:var(--tx2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px">Staff</div>
-          <select class="fi" id="sf-rep-staff" style="font-size:13px" onchange="renderStaffReport()"><option value="">All Staff</option></select>
-        </div>
-        <div>
-          <div style="font-size:11px;font-weight:600;color:var(--tx2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px">Status</div>
-          <select class="fi" id="sf-rep-status" style="font-size:13px" onchange="renderStaffReport()">
-            <option value="">All</option>
-            <option value="P">✅ Present</option>
-            <option value="A">❌ Absent</option>
-            <option value="LOP">💸 LOP</option>
-            <option value="L">⏰ Late</option>
-            <option value="CL">🌿 CL</option>
-            <option value="H">🏖 Holiday</option>
-            <option value="NP">Not Present (all except Present)</option>
-          </select>
-        </div>
-        <div>
-          <div style="font-size:11px;font-weight:600;color:var(--tx2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px">Session</div>
-          <select class="fi" id="sf-rep-session" style="font-size:13px" onchange="renderStaffReport()">
-            <option value="">Both</option>
-            <option value="morning">☀️ Morning</option>
-            <option value="evening">🌙 Evening</option>
-          </select>
-        </div>
-        <button class="btn btn-g" style="margin-left:auto" onclick="exportStaffReportCSV()">⬇ Export CSV</button>
-      </div>
-    </div>
-    <div id="sf-rep-summary" style="margin-bottom:12px"></div>
-    <div id="sf-rep-detail"></div>
   </div>
 </div>
 
@@ -8107,7 +8066,7 @@ function confirmDeleteStaff(idx) {
   runBackup('change');
 }
 function switchStaffTab(tab, btn) {
-  ['list','att','pay','report'].forEach(t => {
+  ['list','att','pay'].forEach(t => {
     document.getElementById('sf-panel-'+t).style.display = t===tab ? 'block' : 'none';
     document.getElementById('sf-tab-'+t).style.background  = t===tab ? 'var(--card)' : 'transparent';
     document.getElementById('sf-tab-'+t).style.color       = t===tab ? 'var(--tx)' : 'var(--tx2)';
@@ -8116,7 +8075,6 @@ function switchStaffTab(tab, btn) {
   });
   if (tab==='att') renderStaffAttGrid();
   if (tab==='pay') { generatePayroll(); }
-  if (tab==='report') { renderStaffReport(); }
 }
 
 function renderStaffAttGrid() {
@@ -8278,147 +8236,8 @@ function saveStaffAtt() {
   runBackup('change');
 }
 
-/* ── Month pickers auto-roll to the new month ──────────────
-   If a picker still shows the month that was auto-filled earlier
-   and the calendar month has since changed, move it to this month.
-   A month the user picked by hand is never overridden. */
-function _rollMonthPickers() {
-  var ym = _feeMonthYM();
-  ['sf-pay-month','adm-staff-summary-month','sf-rep-month'].forEach(function(id) {
-    var el = document.getElementById(id);
-    if (!el) return;
-    var auto = el.dataset.autoYm || '';
-    if (!el.value || (auto && auto !== ym && el.value === auto)) el.value = ym;
-    el.dataset.autoYm = ym;
-  });
-}
-
-/* ── Staff Report: date-wise, session-wise attendance ─────── */
-var _STAFF_REP_LBL = {
-  P:  {t:'✅ Present', bg:'#dcfce7', cl:'#166534'},
-  A:  {t:'❌ Absent',  bg:'#fee2e2', cl:'#991b1b'},
-  L:  {t:'⏰ Late',    bg:'#fef9c3', cl:'#78350f'},
-  CL: {t:'🌿 CL',      bg:'#fef3c7', cl:'#92400e'},
-  LOP:{t:'💸 LOP',     bg:'#ede9fe', cl:'#5b21b6'},
-  H:  {t:'🏖 Holiday', bg:'#dbeafe', cl:'#1e40af'}
-};
-function _staffReportData() {
-  _rollMonthPickers();
-  var monthVal = (document.getElementById('sf-rep-month') || {}).value || _feeMonthYM();
-  var fStaff   = (document.getElementById('sf-rep-staff')   || {}).value || '';
-  var fStatus  = (document.getElementById('sf-rep-status')  || {}).value || '';
-  var fSess    = (document.getElementById('sf-rep-session') || {}).value || '';
-  var yr = parseInt(monthVal.split('-')[0]), mo = parseInt(monthVal.split('-')[1]);
-  var now = new Date();
-  var isCur = (now.getFullYear() === yr && (now.getMonth()+1) === mo);
-  var lastDay = isCur ? now.getDate() : new Date(yr, mo, 0).getDate();
-  var counts = {}, rows = [];
-  staffData.forEach(function(s) {
-    if (fStaff && String(s.id) !== String(fStaff)) return;
-    var sess = s.session || 'both';
-    var sessions = sess === 'morning' ? ['morning'] : sess === 'evening' ? ['evening'] : ['morning','evening'];
-    var c = counts[s.id] = {s:s, P:0, A:0, L:0, CL:0, LOP:0, H:0};
-    var joinDate = s.joinDate ? new Date(s.joinDate + 'T00:00:00') : null;
-    for (var d = 1; d <= lastDay; d++) {
-      var dt = yr + '-' + String(mo).padStart(2,'0') + '-' + String(d).padStart(2,'0');
-      var dObj = new Date(dt + 'T00:00:00');
-      if (joinDate && dObj < joinDate) continue;
-      sessions.forEach(function(sn) {
-        if (fSess && fSess !== sn) return;
-        var v = staffAtt[s.id + '|' + dt + '|' + sn] || '';
-        if (!v && sessions.length === 1) v = staffAtt[s.id + '|' + dt] || '';
-        var code = (v === '' || v === 'P') ? 'P' : v;
-        if (c[code] === undefined) code = 'P';
-        c[code]++;
-        if (fStatus === 'NP' ? code === 'P' : (fStatus && fStatus !== code)) return;
-        rows.push({s:s, date:dt, dObj:dObj, session:sn, code:code});
-      });
-    }
-  });
-  rows.sort(function(a,b){ return a.date < b.date ? 1 : a.date > b.date ? -1 : 0; });
-  return {monthVal:monthVal, yr:yr, mo:mo, counts:counts, rows:rows};
-}
-function renderStaffReport() {
-  var selEl = document.getElementById('sf-rep-staff');
-  if (selEl && selEl.options.length !== staffData.length + 1) {
-    var prev = selEl.value;
-    selEl.innerHTML = '<option value="">All Staff</option>' + staffData.map(function(s) {
-      return '<option value="' + escHtml(s.id) + '">' + escHtml(s.name || s.id) + '</option>';
-    }).join('');
-    selEl.value = prev;
-  }
-  var sumEl = document.getElementById('sf-rep-summary');
-  var detEl = document.getElementById('sf-rep-detail');
-  if (!sumEl || !detEl) return;
-  if (!staffData.length) {
-    sumEl.innerHTML = '';
-    detEl.innerHTML = '<div class="card" style="text-align:center;padding:30px;color:var(--tx3)">No staff members added yet.</div>';
-    return;
-  }
-  var r = _staffReportData();
-  var days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  var mons = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  var th = 'padding:8px 10px;font-size:10px;font-weight:600;color:var(--tx2);text-transform:uppercase;text-align:left;border-bottom:.5px solid var(--br)';
-  var td = 'padding:8px 10px;font-size:12px;border-bottom:.5px solid var(--br);color:var(--tx)';
-  var tdc = td + ';text-align:center;font-weight:700';
-
-  // Summary (counts are session slots: a full-day staff has 2 per day)
-  var sh = '<div class="card" style="padding:0;overflow:hidden"><div style="padding:10px 14px;font-size:12px;font-weight:700;color:var(--tx)">📊 Summary — ' + mons[r.mo-1] + ' ' + r.yr + ' <span style="font-weight:400;color:var(--tx3);font-size:10px">(counted per session; unmarked = Present)</span></div>'
-    + '<div style="overflow-x:auto"><table style="width:100%;min-width:520px;border-collapse:collapse"><thead><tr>'
-    + '<th style="' + th + '">Staff</th><th style="' + th + ';text-align:center">✅ P</th><th style="' + th + ';text-align:center">❌ A</th><th style="' + th + ';text-align:center">💸 LOP</th><th style="' + th + ';text-align:center">⏰ Late</th><th style="' + th + ';text-align:center">🌿 CL</th><th style="' + th + ';text-align:center">🏖 H</th>'
-    + '</tr></thead><tbody>';
-  Object.keys(r.counts).forEach(function(k) {
-    var c = r.counts[k];
-    sh += '<tr><td style="' + td + ';font-weight:600">' + escHtml(c.s.name || c.s.id) + '</td>'
-      + '<td style="' + tdc + ';color:#16a34a">' + c.P + '</td><td style="' + tdc + ';color:#dc2626">' + c.A + '</td>'
-      + '<td style="' + tdc + ';color:#5b21b6">' + c.LOP + '</td><td style="' + tdc + ';color:#ca8a04">' + c.L + '</td>'
-      + '<td style="' + tdc + ';color:#92400e">' + c.CL + '</td><td style="' + tdc + ';color:#1e40af">' + c.H + '</td></tr>';
-  });
-  sh += '</tbody></table></div></div>';
-  sumEl.innerHTML = sh;
-
-  // Detail list
-  if (!r.rows.length) {
-    detEl.innerHTML = '<div class="card" style="text-align:center;padding:24px;color:var(--tx3);font-size:12px">No records match these filters.</div>';
-    return;
-  }
-  var dh = '<div class="card" style="padding:0;overflow:hidden"><div style="padding:10px 14px;font-size:12px;font-weight:700;color:var(--tx)">📋 Details <span style="font-weight:400;color:var(--tx3);font-size:10px">(' + r.rows.length + ' entries, newest first)</span></div>'
-    + '<div style="overflow-x:auto;max-height:520px;overflow-y:auto"><table style="width:100%;min-width:480px;border-collapse:collapse"><thead><tr>'
-    + '<th style="' + th + '">Date</th><th style="' + th + '">Staff</th><th style="' + th + '">Session</th><th style="' + th + '">Status</th></tr></thead><tbody>';
-  r.rows.forEach(function(x) {
-    var L = _STAFF_REP_LBL[x.code];
-    var dd = String(x.dObj.getDate()).padStart(2,'0') + ' ' + mons[x.dObj.getMonth()] + ' ' + x.dObj.getFullYear() + ' · ' + days[x.dObj.getDay()];
-    dh += '<tr><td style="' + td + '">' + dd + '</td><td style="' + td + ';font-weight:600">' + escHtml(x.s.name || x.s.id) + '</td>'
-      + '<td style="' + td + '">' + (x.session === 'morning' ? '☀️ Morning' : '🌙 Evening') + '</td>'
-      + '<td style="' + td + '"><span style="background:' + L.bg + ';color:' + L.cl + ';padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700">' + L.t + '</span></td></tr>';
-  });
-  dh += '</tbody></table></div></div>';
-  detEl.innerHTML = dh;
-}
-function exportStaffReportCSV() {
-  var r = _staffReportData();
-  if (!r.rows.length) { showToast('No records to export'); return; }
-  var names = {P:'Present', A:'Absent', L:'Late', CL:'Casual Leave', LOP:'LOP', H:'Holiday'};
-  var rows = [['Date','Day','Staff ID','Name','Designation','Session','Status']];
-  var days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  r.rows.slice().reverse().forEach(function(x) {
-    rows.push([x.date, days[x.dObj.getDay()], x.s.id || '', x.s.name || '', x.s.desg || '',
-               x.session === 'morning' ? 'Morning' : 'Evening', names[x.code]]);
-  });
-  var csv = '\uFEFF' + rows.map(function(row) {
-    return row.map(function(v) { return '"' + String(v).replace(/"/g, '""') + '"'; }).join(',');
-  }).join('\n');
-  var blob = new Blob([csv], {type:'text/csv'});
-  var url = URL.createObjectURL(blob);
-  var a = document.createElement('a');
-  a.href = url; a.download = 'staff-report-' + r.monthVal + '.csv'; a.click();
-  URL.revokeObjectURL(url);
-  showToast('⬇ Downloaded staff report');
-}
-
 /* ── Payroll ──────────────────────────────────────────── */
 function generatePayroll() {
-  _rollMonthPickers();
   var monthEl = document.getElementById('sf-pay-month');
   if (!monthEl || !monthEl.value) {
     var now = new Date();
@@ -9029,7 +8848,6 @@ function renderAdminStaffSummary() {
   const gridEl   = document.getElementById('adm-staff-summary-grid');
   if (!totalsEl || !gridEl) return;
 
-  _rollMonthPickers();
   const monthEl = document.getElementById('adm-staff-summary-month');
   if (monthEl && !monthEl.value) {
     const n = new Date();
@@ -12518,7 +12336,7 @@ function closeMontlyResetBanner() {
 /* ── Day-1 Monthly Reset ──────────────────────────────── */
 /*
  * What this does:
- *  1. Runs on the first app open of each month (once per month, tracked in localStorage)
+ *  1. Runs on Day 1 of each month (once per month, tracked in localStorage)
  *  2. For every active student who has NO fee record for the NEW month:
  *     auto-creates a "pending" record using their class fee structure
  *  3. Old unpaid records are left as-is (they remain in the fees array
@@ -12534,11 +12352,9 @@ function checkAndDoMonthlyReset() {
   renderPendingCarryOver();
   renderIncomeSummary();
 
-  // Auto-generate once per month, on the first app open in the new month
-  // (not only on Day 1 — the app may not be opened on the 1st).
+  // Only auto-generate on Day 1 and only once per month
+  if (now.getDate() !== 1) return;
   if (_getLastResetYM() === curYM) return;
-  // Data not loaded yet (storage still hydrating) — try again on the next call
-  if (!students.length) return;
   _setLastResetYM(curYM);
 
   // Auto-generate pending fee records for active students who don't have one yet

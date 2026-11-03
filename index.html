@@ -5544,7 +5544,7 @@ function exportCommuteCSV() {
 /* Read today's attendance across all batches for one session, and return the
    set of studentIds marked Present or Late (i.e. actually attending today). */
 function _todayAttPresentIds(session) {
-  const today = new Date().toISOString().slice(0,10);
+  const today = _todayISO();
   const prefix = '_erp_att_' + today + '_';
   const ids = new Set();
   try {
@@ -5884,7 +5884,7 @@ function _populateDayOrderDropdown(date, batch) {
 }
 
 function renderAttList() {
-  const today  = new Date().toISOString().split('T')[0];
+  const today  = _todayISO();
   const dateEl = document.getElementById('att-date');
   if (!dateEl.value) dateEl.value = today;
   const date    = dateEl.value;
@@ -5990,7 +5990,7 @@ function setAtt(btn, v) {
   const sid = row.dataset.sid;           // Read student ID from data attribute — no string injection
   if (!sid) return;
 
-  const date    = document.getElementById('att-date')?.value || new Date().toISOString().split('T')[0];
+  const date    = document.getElementById('att-date')?.value || _todayISO();
   const batchId = document.getElementById('att-batch')?.value || '';
   const session = document.getElementById('att-session')?.value || 'morning';
   const key     = _attKey(sid, batchId, session);
@@ -6125,7 +6125,7 @@ function _getBatchStudents(batchId) {
 function markAllAtt(v, btn) {
   document.querySelectorAll('.seg .seg-b').forEach(b => b.classList.remove('on'));
   btn.classList.add('on');
-  const date    = document.getElementById('att-date')?.value || new Date().toISOString().split('T')[0];
+  const date    = document.getElementById('att-date')?.value || _todayISO();
   const batchId = document.getElementById('att-batch')?.value || '';
   const session = document.getElementById('att-session')?.value || 'morning';
   const batchStudents = _getBatchStudents(batchId);
@@ -6197,7 +6197,7 @@ function onDayOrderChange() {
   // real day order (or blank) and opens the same session-picker, so
   // attendance auto-dims / Save gets blocked exactly like the toolbar button.
   if (num === 'HOLIDAY') {
-    const today = document.getElementById('att-date')?.value || new Date().toISOString().split('T')[0];
+    const today = document.getElementById('att-date')?.value || _todayISO();
     let realDayNum = '';
     try { realDayNum = erpGet('_erp_last_dayorder_' + today) || ''; } catch(e) {}
     if (sel) {
@@ -6230,7 +6230,7 @@ function onDayOrderChange() {
 
   // Remember last used day order for today
   if (num) {
-    const today = document.getElementById('att-date')?.value || new Date().toISOString().split('T')[0];
+    const today = document.getElementById('att-date')?.value || _todayISO();
     try { erpSet('_erp_last_dayorder_' + today, num); } catch(e) {}
   }
 
@@ -6376,7 +6376,7 @@ function saveDayOrderSetup() {
 }
 
 function saveAttendance() {
-  const date    = document.getElementById('att-date')?.value || new Date().toISOString().split('T')[0];
+  const date    = document.getElementById('att-date')?.value || _todayISO();
   const batchId = document.getElementById('att-batch')?.value || '';
   const session = document.getElementById('att-session')?.value || 'morning';
   const batch   = batches.find(b => b.id === batchId);
@@ -6459,11 +6459,20 @@ function _holidayKey(date, batchId, session) {
   return '_erp_holiday_' + date + '_' + batchId + '_' + session;
 }
 function _isHoliday(date, batchId, session) {
-  try { return erpGet(_holidayKey(date, batchId, session)) === '1'; } catch(e) { return false; }
+  try {
+    if (erpGet(_holidayKey(date, batchId, session)) === '1') return true;
+    // Special Class day (class-based): every class NOT selected is on holiday
+    const sg = erpGet('_erp_special_grades_' + date);
+    if (sg) {
+      const sel = (document.getElementById('att-grade-filter')?.value || 'all').trim();
+      if (sel !== 'all' && !sg.split(',').includes(sel)) return true;
+    }
+    return false;
+  } catch(e) { return false; }
 }
 
 function markHoliday() {
-  const date    = document.getElementById('att-date')?.value || new Date().toISOString().split('T')[0];
+  const date    = document.getElementById('att-date')?.value || _todayISO();
   const batchId = document.getElementById('att-batch')?.value || '';
   const session = document.getElementById('att-session')?.value || 'morning';
   const batch   = batches.find(b => b.id === batchId);
@@ -6614,7 +6623,7 @@ function sendOneHolidayWA(sid) {
 }
 
 function unmarkHoliday() {
-  const date    = document.getElementById('att-date')?.value || new Date().toISOString().split('T')[0];
+  const date    = document.getElementById('att-date')?.value || _todayISO();
   const batchId = document.getElementById('att-batch')?.value || '';
   const session = document.getElementById('att-session')?.value || 'morning';
   try { erpRemove(_holidayKey(date, batchId, session)); } catch(e) {}
@@ -7190,7 +7199,7 @@ function buildWAQueue() {
   let targetStudents = students.filter(s => s && s.status === 'active');
 
   if (filter === 'absent') {
-    const today = new Date().toISOString().split('T')[0];
+    const today = _todayISO();
     const batchId = document.getElementById('att-batch')?.value || '';
     const session = document.getElementById('att-session')?.value || 'morning';
     targetStudents = targetStudents.filter(s => attState[s.id + '|' + (batchId||'all') + '|' + session] === 'A');
@@ -7212,7 +7221,7 @@ function buildWAQueue() {
 
   // For absent/late alerts, resolve the exact date+batch+session so missed
   // subjects are looked up against the correctly-verified Day Order.
-  const waDate    = document.getElementById('att-date')?.value || new Date().toISOString().split('T')[0];
+  const waDate    = document.getElementById('att-date')?.value || _todayISO();
   const waBatchId = document.getElementById('att-batch')?.value || '';
   const waSession = document.getElementById('att-session')?.value || 'morning';
 
@@ -7343,7 +7352,7 @@ function updateWAAIClassFilter() {
 function sendAttWA() {
   navTo('whatsapp');
   setTimeout(function() {
-    const _date    = document.getElementById('att-date')?.value || new Date().toISOString().split('T')[0];
+    const _date    = document.getElementById('att-date')?.value || _todayISO();
     const _batchId = document.getElementById('att-batch')?.value || '';
     const _session = document.getElementById('att-session')?.value || 'morning';
     // NOTE: do NOT reload attState from storage here — attState already reflects
@@ -7592,7 +7601,7 @@ function sendLateWA() {
     // Verify Day Order for today's date+batch+session to find the missed (1st period) subject
     const _batchId = document.getElementById('att-batch')?.value || '';
     const _session = document.getElementById('att-session')?.value || 'morning';
-    const _dateVal = document.getElementById('att-date')?.value || new Date().toISOString().split('T')[0];
+    const _dateVal = document.getElementById('att-date')?.value || _todayISO();
     const missedSubj = (typeof _getMissedSubjectsForWA === 'function')
       ? _getMissedSubjectsForWA(s.id, _dateVal, _batchId, _session) : '';
     const missedLine = missedSubj ? `\n📚 தவறிய பாடம் (1st Period): *${missedSubj}*\n` : '';
@@ -9228,7 +9237,7 @@ function ewStep1Next() {
 
 /* ── Step 2: init ── */
 function ewInitStep2() {
-  const today = new Date().toISOString().split('T')[0];
+  const today = _todayISO();
   const dateEl = document.getElementById('ew2-date');
   if (dateEl && !dateEl.value) dateEl.value = today;
   // Use prefill batch from filter if set, else preserve current value
@@ -10817,7 +10826,7 @@ function openStaffAdvanceModal(staffId) {
   if (!s) return;
   const hist = _stAdvForStaff(staffId);
   const outstanding = _stAdvOutstanding(staffId);
-  const today = new Date().toISOString().slice(0,10);
+  const today = _todayISO();
   const typeLabel = { advance:'💵 Advance Given', loan:'🏦 Loan Given', repayment:'✅ Repayment / Partial Payment' };
   const rows = hist.length ? hist.slice().reverse().map(a => {
     const isGiven = (a.type === 'advance' || a.type === 'loan');
@@ -10871,7 +10880,7 @@ function openStaffAdvanceModal(staffId) {
 function saveStaffAdvanceEntry(staffId) {
   const type   = (document.getElementById('sa-type')||{}).value || 'advance';
   const amount = parseFloat((document.getElementById('sa-amount')||{}).value) || 0;
-  const date   = (document.getElementById('sa-date')||{}).value || new Date().toISOString().slice(0,10);
+  const date   = (document.getElementById('sa-date')||{}).value || _todayISO();
   const mode   = (document.getElementById('sa-mode')||{}).value || 'Cash';
   const note   = (document.getElementById('sa-note')||{}).value.trim() || '';
   if (!amount || amount <= 0) { showToast('⚠️ Enter a valid amount'); return; }
@@ -10901,7 +10910,7 @@ function useAdvanceAsDeduction(staffId) {
   if (amtEl)  amtEl.value  = outstanding;
   if (noteEl && !noteEl.value) noteEl.value = 'Advance/Loan recovery';
   // Log the recovery in the ledger right away so the balance clears in sync with the deduction box
-  staffAdvances.push({ id:'adv_'+Date.now(), staffId, type:'repayment', amount: outstanding, date: new Date().toISOString().slice(0,10), mode:'Salary Deduction', note:'Recovered via salary deduction', createdAt: new Date().toISOString() });
+  staffAdvances.push({ id:'adv_'+Date.now(), staffId, type:'repayment', amount: outstanding, date: _todayISO(), mode:'Salary Deduction', note:'Recovered via salary deduction', createdAt: new Date().toISOString() });
   saveStaffAdvances();
   showToast('Filled ₹'+outstanding.toLocaleString('en-IN')+' — click Apply to confirm this month\'s deduction');
 }
@@ -11295,6 +11304,9 @@ function saveStaffAtt() {
 
 /* ── Payroll ──────────────────────────────────────────── */
 /* ── Shared per-staff net pay calc (used by Payroll + Dashboard cards) ── */
+/* LOP divisor: 30 days for every month, actual days (28/29) for February */
+function _lopBaseDays(yr, mo) { return mo === 2 ? new Date(yr, 2, 0).getDate() : 30; }
+
 function _calcStaffPay(s, yr, mo, daysInMonth, latesToLeave) {
   var lopDays=0, clDays=0, hDays=0, lateDays=0;
   for (var d=1; d<=daysInMonth; d++) {
@@ -11307,7 +11319,7 @@ function _calcStaffPay(s, yr, mo, daysInMonth, latesToLeave) {
   }
   var lateAsLop = latesToLeave > 0 ? Math.floor(lateDays / latesToLeave) : 0;
   var pay        = s.consolidatedPay || s.baseSalary || 0;
-  var dailyRate  = pay / 26;
+  var dailyRate  = pay / _lopBaseDays(yr, mo);
   var extraDed   = s.extraDed || 0;
   var bonus      = s.bonus || 0;
   var effectiveLop = lopDays + lateAsLop;
@@ -11620,7 +11632,7 @@ function openSalaryPaidModal(staffId) {
   }
   const lateAsLopM  = ltlM > 0 ? Math.floor(lateDaysM / ltlM) : 0;
   const pay       = s.consolidatedPay || s.baseSalary || 0;
-  const dailyRate = pay / 26;
+  const dailyRate = pay / _lopBaseDays(yr, mo);
   const lopDed    = Math.round((lopDays + lateAsLopM) * dailyRate);
   const extraDed  = s.extraDed || 0;
   const bonus     = s.bonus || 0;
@@ -11718,7 +11730,7 @@ function confirmSalaryPaid(staffId, monthVal, netPay) {
   const mode   = document.getElementById('sp-mode')?.value || 'Cash';
   const note   = document.getElementById('sp-note')?.value.trim() || '';
   const key    = getSalaryPayKey(staffId, monthVal);
-  const dateISO = document.getElementById('sp-date')?.value || new Date().toISOString().slice(0,10);
+  const dateISO = document.getElementById('sp-date')?.value || _todayISO();
   const dateStr = new Date(dateISO + 'T00:00:00').toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric'});
 
   salaryPayments[key] = { paid: true, amount, mode, note, date: dateStr, dateISO, staffId, monthVal };
@@ -11898,7 +11910,7 @@ function exportPayrollCSV() {
     const hra=s.hra||0;
     const ta=s.ta||0;
     const gross=base+hra+ta;
-    const lopDed=Math.round(gross/26*lop);
+    const lopDed=Math.round(gross/_lopBaseDays(yr,mo)*lop);
     const extraDed=s.extraDed||0;
     const pf=s.pf||0;
     const tax=s.tax||0;
@@ -12178,31 +12190,109 @@ function _todayHolidayKey(dateStr) { return '_erp_today_holiday_' + dateStr; }
 function isTodayHoliday(dateStr) {
   try { return erpGet(_todayHolidayKey(dateStr)) === '1'; } catch(e) { return false; }
 }
-function setTodayHoliday() {
-  const todayStr = new Date().toISOString().slice(0,10);
-  try { erpSet(_todayHolidayKey(todayStr), '1'); } catch(e) {}
-  try { erpRemove(_todaySpecialClassKey(todayStr)); } catch(e) {} // clear any Special Class state — full holiday wins
+/* ── Leave types ─────────────────────────────────────────────────────
+   Regular Leave = weekend / Sunday (both sessions off).
+   Special Leave = per-session reason: Function / Rain / Other.
+   Both mark every batch as Holiday for the chosen session(s) AND mark every
+   staff member's attendance as Holiday ("H") for those same sessions. ── */
+function _todayLeaveKey(dateStr) { return '_erp_today_leave_' + dateStr; }
+function getTodayLeave(dateStr) {
+  try { const v = erpGet(_todayLeaveKey(dateStr)); return v ? JSON.parse(v) : null; } catch(e) { return null; }
+}
+function _staffHolidaySync(date, off) {
+  // off = { morning:bool, evening:bool } — mark staff 'H' only where nothing else is already set
+  (typeof staffData !== 'undefined' ? staffData : []).forEach(s => {
+    const sess = s.session || 'both';
+    ['morning','evening'].forEach(se => {
+      if (!off[se]) return;
+      if (sess !== 'both' && sess !== se) return;
+      const cur = staffAtt[s.id + '|' + date + '|' + se] || '';
+      if (cur === '' || cur === 'P') setStaffAtt(s.id, date, se, 'H');
+    });
+  });
+  try { erpSet('_erp_staff_att', JSON.stringify(staffAtt)); } catch(e) {}
+}
+function _staffHolidayClear(date) {
+  (typeof staffData !== 'undefined' ? staffData : []).forEach(s => {
+    ['morning','evening'].forEach(se => {
+      if ((staffAtt[s.id + '|' + date + '|' + se] || '') === 'H') setStaffAtt(s.id, date, se, '');
+    });
+  });
+  try { erpSet('_erp_staff_att', JSON.stringify(staffAtt)); } catch(e) {}
+}
+function _applyTodayLeave(type, morningReason, eveningReason) {
+  const todayStr = _todayISO();
+  const off = { morning: !!morningReason, evening: !!eveningReason };
+  // start clean (previous leave / special class for today)
+  _clearTodayLeaveQuiet(todayStr);
+  try { erpRemove(_todaySpecialClassKey(todayStr)); erpRemove('_erp_special_grades_' + todayStr); } catch(e) {}
   const barr = (typeof batches !== 'undefined' && Array.isArray(batches)) ? batches : [];
   let dayNum = '';
   try { dayNum = erpGet('_erp_last_dayorder_' + todayStr) || ''; } catch(e) {}
   barr.forEach(b => {
-    ['morning','evening'].forEach(s => {
-      try { erpSet(_holidayKey(todayStr, b.id, s), '1'); } catch(e) {}
-      if (dayNum) { try { erpSet('_erp_pending_dayorder_' + b.id + '_' + s, dayNum); } catch(e) {} }
+    ['morning','evening'].forEach(se => {
+      if (!off[se]) return;
+      try { erpSet(_holidayKey(todayStr, b.id, se), '1'); } catch(e) {}
+      if (dayNum) { try { erpSet('_erp_pending_dayorder_' + b.id + '_' + se, dayNum); } catch(e) {} }
     });
   });
+  try { erpSet(_todayLeaveKey(todayStr), JSON.stringify({ type: type, morning: morningReason || '', evening: eveningReason || '' })); } catch(e) {}
+  if (off.morning && off.evening) { try { erpSet(_todayHolidayKey(todayStr), '1'); } catch(e) {} }
+  _staffHolidaySync(todayStr, off);
   _refreshAfterTodayHolidayChange(todayStr);
-  showToast('🏖 Today marked as Holiday for every batch');
+  try { updateDashStats(); } catch(e) {}
+  try { runBackup('change'); } catch(e) {}
 }
-function clearTodayHoliday() {
-  const todayStr = new Date().toISOString().slice(0,10);
+function _clearTodayLeaveQuiet(todayStr) {
   try { erpRemove(_todayHolidayKey(todayStr)); } catch(e) {}
+  try { erpRemove(_todayLeaveKey(todayStr)); } catch(e) {}
   const barr = (typeof batches !== 'undefined' && Array.isArray(batches)) ? batches : [];
   barr.forEach(b => {
-    ['morning','evening'].forEach(s => { try { erpRemove(_holidayKey(todayStr, b.id, s)); } catch(e) {} });
+    ['morning','evening'].forEach(se => { try { erpRemove(_holidayKey(todayStr, b.id, se)); } catch(e) {} });
   });
+  _staffHolidayClear(todayStr);
+}
+/* Regular Leave (weekend / Sunday) — both sessions */
+function setTodayHoliday() {
+  _applyTodayLeave('regular', 'Regular (Weekend / Sunday)', 'Regular (Weekend / Sunday)');
+  showToast('🏖 Regular Leave marked — all batches & staff');
+}
+function clearTodayHoliday() {
+  const todayStr = _todayISO();
+  _clearTodayLeaveQuiet(todayStr);
   _refreshAfterTodayHolidayChange(todayStr);
-  showToast('✅ Holiday removed for today');
+  try { updateDashStats(); } catch(e) {}
+  showToast('✅ Leave removed for today (batches & staff)');
+}
+function promptSpecialLeave() {
+  const opts = '<option value="">✅ Working (no leave)</option>'
+    + '<option value="Function">🎉 Function</option>'
+    + '<option value="Rain">🌧 Rain</option>'
+    + '<option value="Other">📝 Other</option>';
+  const root = document.getElementById('modal-root');
+  root.innerHTML = '<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal" style="max-width:380px">'
+    + '<div class="modal-title">🎉 Special Leave Today</div>'
+    + '<div style="font-size:12px;color:var(--tx2);margin-bottom:12px">Choose the reason for each session. Selected sessions are marked Holiday for every batch <b>and all staff</b>.</div>'
+    + '<div class="fg"><label class="fl">☀️ Morning session</label><select class="fi" id="spl-m" onchange="document.getElementById(\'spl-mo\').style.display=this.value===\'Other\'?\'\':\'none\'">' + opts + '</select>'
+    + '<input class="fi" id="spl-mo" style="display:none;margin-top:6px" placeholder="Reason (optional)"></div>'
+    + '<div class="fg"><label class="fl">🌙 Evening session</label><select class="fi" id="spl-e" onchange="document.getElementById(\'spl-eo\').style.display=this.value===\'Other\'?\'\':\'none\'">' + opts + '</select>'
+    + '<input class="fi" id="spl-eo" style="display:none;margin-top:6px" placeholder="Reason (optional)"></div>'
+    + '<div class="modal-foot"><button class="btn btn-p" style="flex:1;justify-content:center" onclick="_submitSpecialLeave()">✅ Confirm</button>'
+    + '<button class="btn" onclick="closeModal();renderDashDayOrderSummary&&renderDashDayOrderSummary()">Cancel</button></div>'
+    + '</div></div>';
+}
+function _submitSpecialLeave() {
+  const lab = (selId, otherId) => {
+    const v = document.getElementById(selId)?.value || '';
+    if (!v) return '';
+    if (v === 'Other') { const t = (document.getElementById(otherId)?.value || '').trim(); return t ? 'Other: ' + t : 'Other'; }
+    return v;
+  };
+  const m = lab('spl-m','spl-mo'), e = lab('spl-e','spl-eo');
+  if (!m && !e) { showToast('⚠️ Select a reason for at least one session'); return; }
+  closeModal();
+  _applyTodayLeave('special', m, e);
+  showToast('🎉 Special Leave marked — ' + [m && ('☀️ ' + m), e && ('🌙 ' + e)].filter(Boolean).join(' · '));
 }
 
 /* ── Special Class Day: ONE chosen batch takes attendance as normal (with
@@ -12216,23 +12306,27 @@ function _todaySpecialClassKey(dateStr) { return '_erp_special_class_' + dateStr
 function getTodaySpecialClassBatchId(dateStr) {
   try { return erpGet(_todaySpecialClassKey(dateStr)) || ''; } catch(e) { return ''; }
 }
+function _spcGrades() {
+  const o = ['KG','1','2','3','4','5','6','7','8','9','10','11','12'];
+  return [...new Set(students.filter(x => x && x.grade && x.status === 'active').map(x => String(x.grade).trim()))]
+    .sort((a,b) => { const ai=o.indexOf(a), bi=o.indexOf(b); return (ai<0?99:ai)-(bi<0?99:bi); });
+}
 function promptSpecialClassDay() {
-  const barr = (typeof batches !== 'undefined' && Array.isArray(batches)) ? batches : [];
-  if (!barr.length) { showToast('⚠️ No batches set up yet — add batches first'); return; }
+  if (!_spcGrades().length) { showToast('⚠️ No active students / classes yet'); return; }
   const maxDays = (typeof _erpMaxDayOrderNum === 'function') ? _erpMaxDayOrderNum() : 6;
   const dayNums = []; for (let i = 1; i <= maxDays; i++) dayNums.push(String(i));
   const root = document.getElementById('modal-root');
   root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal" style="max-width:380px">
     <div class="modal-title">🎯 Special Class Today</div>
     <div style="font-size:12px;color:var(--tx2);margin-bottom:12px">
-      Pick the ONE class taking a special class today — every other batch will be automatically marked <b>Holiday</b> for both sessions.
+      Tick the class(es) taking a special class today — every other batch will be automatically marked <b>Holiday</b> for both sessions.
     </div>
-    <div class="fg"><label class="fl">Which class is taking the special class?</label>
-      <select class="fi" id="spc-batch">
-        ${barr.map(b => `<option value="${b.id}">${escHtml(b.name)} – ${escHtml(b.time)}</option>`).join('')}
-      </select>
+    <div class="fg"><label class="fl">Select the class(es) taking the special class</label>
+      <div style="max-height:180px;overflow-y:auto;border:.5px solid var(--br);border-radius:8px;padding:6px 10px">
+        ${_spcGrades().map(g => `<label style="display:flex;align-items:center;gap:8px;padding:5px 0;font-size:13px;cursor:pointer"><input type="checkbox" class="spc-cb" value="${escHtml(g)}" style="width:16px;height:16px"> ${g==='KG'?'KG':'Class '+escHtml(g)}</label>`).join('')}
+      </div>
     </div>
-    <div class="fg"><label class="fl">Day Order for this class</label>
+    <div class="fg"><label class="fl">Day Order for the selected class(es)</label>
       <select class="fi" id="spc-dayorder">
         <option value="" disabled selected>Select…</option>
         ${dayNums.map(n => `<option value="${n}">Day ${n}</option>`).join('')}
@@ -12245,31 +12339,28 @@ function promptSpecialClassDay() {
   </div></div>`;
 }
 function _applySpecialClassDay() {
-  const batchId = document.getElementById('spc-batch')?.value || '';
+  const chosen  = Array.from(document.querySelectorAll('.spc-cb:checked')).map(x => x.value);
+  const batchId = chosen.join(',');
   const dayNum  = document.getElementById('spc-dayorder')?.value || '';
-  if (!batchId) { showToast('⚠️ Pick a class'); return; }
+  if (!chosen.length) { showToast('⚠️ Select at least one class'); return; }
   if (!dayNum)  { showToast('⚠️ Pick a Day Order'); return; }
 
-  const todayStr = new Date().toISOString().slice(0,10);
+  const todayStr = _todayISO();
   const barr = (typeof batches !== 'undefined' && Array.isArray(batches)) ? batches : [];
 
   // A "fully holiday" day and a "special class" day are mutually exclusive —
   // clear the full-holiday flag since only SOME batches are off today.
   try { erpRemove(_todayHolidayKey(todayStr)); } catch(e) {}
+  try { erpRemove(_todayLeaveKey(todayStr)); } catch(e) {}
+  _staffHolidayClear(todayStr);
 
+  // Class-based: every class NOT ticked is on holiday (see _isHoliday). Clear any
+  // leftover batch-level holiday flags for today.
   barr.forEach(b => {
-    if (b.id === batchId) {
-      // The special class itself — make sure it's NOT marked holiday (in
-      // case a previous Holiday toggle left it set), so attendance works.
-      ['morning','evening'].forEach(s => { try { erpRemove(_holidayKey(todayStr, b.id, s)); } catch(e) {} });
-    } else {
-      ['morning','evening'].forEach(s => {
-        try { erpSet(_holidayKey(todayStr, b.id, s), '1'); } catch(e) {}
-      });
-    }
+    ['morning','evening'].forEach(se => { try { erpRemove(_holidayKey(todayStr, b.id, se)); } catch(e) {} });
   });
-
-  try { erpSet(_todaySpecialClassKey(todayStr), batchId); } catch(e) {}
+  try { erpSet('_erp_special_grades_' + todayStr, chosen.join(',')); } catch(e) {}
+  try { erpSet(_todaySpecialClassKey(todayStr), 'G:' + chosen.join(',')); } catch(e) {}
 
   // Set today's Day Order the same way the normal picker does.
   window.__ERP_TODAY_DAYORDER_CACHE[todayStr] = String(dayNum);
@@ -12278,17 +12369,17 @@ function _applySpecialClassDay() {
   if (typeof _erpPersistTodayDayOrderIDB === 'function') _erpPersistTodayDayOrderIDB(todayStr, String(dayNum));
 
   closeModal();
-  const b = barr.find(x => x.id === batchId);
+  const b = { name: chosen.map(g => g==='KG'?'KG':'Class '+g).join(', ') };
   showToast('🎯 Special Class: ' + (b ? b.name : '') + ' — Day ' + dayNum + '. Every other batch marked Holiday today.');
   _refreshAfterTodayHolidayChange(todayStr);
 }
 function clearSpecialClassDay() {
-  const todayStr = new Date().toISOString().slice(0,10);
+  const todayStr = _todayISO();
   const barr = (typeof batches !== 'undefined' && Array.isArray(batches)) ? batches : [];
   barr.forEach(b => {
     ['morning','evening'].forEach(s => { try { erpRemove(_holidayKey(todayStr, b.id, s)); } catch(e) {} });
   });
-  try { erpRemove(_todaySpecialClassKey(todayStr)); } catch(e) {}
+  try { erpRemove(_todaySpecialClassKey(todayStr)); erpRemove('_erp_special_grades_' + todayStr); } catch(e) {}
   _refreshAfterTodayHolidayChange(todayStr);
   showToast('✅ Special Class cleared — normal day for every batch');
 }
@@ -12305,7 +12396,7 @@ function _refreshAfterTodayHolidayChange(todayStr) {
 }
 
 function setTodayDayOrder(num) {
-  const todayStr = new Date().toISOString().slice(0,10);
+  const todayStr = _todayISO();
   window.__ERP_TODAY_DAYORDER_CACHE[todayStr] = String(num); try { erpSet('_erp_last_dayorder_' + todayStr, String(num)); } catch(e) {} try { sessionStorage.setItem('_erp_last_dayorder_' + todayStr, String(num)); } catch(e) {} if (typeof _erpPersistTodayDayOrderIDB === 'function') _erpPersistTodayDayOrderIDB(todayStr, String(num));
   // Refresh every widget that reads this value, on whichever page(s) are
   // currently in the DOM (Dashboard and Admin Panel each have their own).
@@ -12348,28 +12439,35 @@ function renderDayOrderSummary(dateElId, gridElId, pickerElId, showGrid) {
 
   if (pickerEl) {
     const specialBatchId = getTodaySpecialClassBatchId(todayStr);
-    if (isTodayHoliday(todayStr)) {
+    const _lv = getTodayLeave(todayStr);
+    if (_lv || isTodayHoliday(todayStr)) {
+      const _lt = _lv
+        ? (_lv.type === 'regular'
+            ? '🏖 Regular Leave today — all batches & staff'
+            : '🎉 Special Leave — ' + [_lv.morning && ('☀️ ' + escHtml(_lv.morning)), _lv.evening && ('🌙 ' + escHtml(_lv.evening))].filter(Boolean).join(' · ') + ' (batches & staff)')
+        : '🏖 Today is a Holiday for every batch';
       pickerEl.innerHTML = '<span style="display:inline-flex;align-items:center;gap:8px;padding:6px 12px;background:#fef3c7;border:1.5px solid #fde68a;border-radius:8px;font-size:12px;font-weight:700;color:#92400e">'
-        + '🏖 Today is a Holiday for every batch'
+        + _lt
         + '<button onclick="clearTodayHoliday()" style="font-size:10px;padding:3px 9px;border-radius:6px;border:.5px solid #d97706;background:#fff7ed;color:#92400e;cursor:pointer;font-weight:700;font-family:inherit">✕ Remove</button>'
         + '</span>';
     } else if (specialBatchId) {
       const barr2 = (typeof batches !== 'undefined' && Array.isArray(batches)) ? batches : [];
-      const sb = barr2.find(b => b.id === specialBatchId);
+      const sb = { name: specialBatchId.replace(/^G:/,'').split(',').map(g => g==='KG'?'KG':'Class '+g).join(', ') };
       pickerEl.innerHTML = '<span style="display:inline-flex;align-items:center;gap:8px;padding:6px 12px;background:#ede9fe;border:1.5px solid #c4b5fd;border-radius:8px;font-size:12px;font-weight:700;color:#5b21b6">'
         + '🎯 Special Class: ' + escHtml(sb ? sb.name : 'Unknown') + (todaysDayOrder ? ' (Day ' + escHtml(String(todaysDayOrder)) + ')' : '') + ' — others Holiday'
         + '<button onclick="clearSpecialClassDay()" style="font-size:10px;padding:3px 9px;border-radius:6px;border:.5px solid #7c3aed;background:#fff;color:#5b21b6;cursor:pointer;font-weight:700;font-family:inherit">✕ Remove</button>'
         + '</span>';
     } else {
       pickerEl.innerHTML = '<span style="font-size:11px;color:var(--tx2);font-weight:600;margin-right:2px">Set today\'s Day Order:</span>'
-        + '<select onchange="this.value===\'HOLIDAY\'?setTodayHoliday():this.value===\'SPECIAL\'?promptSpecialClassDay():setTodayDayOrder(this.value)" style="'
+        + '<select onchange="this.value===\'HOLIDAY\'?setTodayHoliday():this.value===\'SPECIAL_LEAVE\'?promptSpecialLeave():this.value===\'SPECIAL\'?promptSpecialClassDay():setTodayDayOrder(this.value)" style="'
           + 'font-size:12px;font-weight:700;padding:5px 10px;border-radius:8px;cursor:pointer;font-family:inherit;'
           + 'border:1.5px solid ' + (todaysDayOrder ? '#7c3aed' : '#dc2626') + ';'
           + 'background:' + (todaysDayOrder ? '#7c3aed' : '#fff1f2') + ';'
           + 'color:' + (todaysDayOrder ? '#fff' : '#dc2626') + '">'
           + '<option value="" ' + (todaysDayOrder ? '' : 'selected') + ' disabled>Select…</option>'
           + dayNums.map(n => '<option value="' + n + '" ' + (String(n) === String(todaysDayOrder) ? 'selected' : '') + '>Day ' + escHtml(String(n)) + '</option>').join('')
-          + '<option value="HOLIDAY">🏖 Holiday</option>'
+          + '<option value="HOLIDAY">🏖 Regular Leave (Sunday / Weekend)</option>'
+          + '<option value="SPECIAL_LEAVE">🎉 Special Leave (Function / Rain / Other)</option>'
           + '<option value="SPECIAL">🎯 Special Class (others Holiday)</option>'
         + '</select>'
         + (todaysDayOrder ? '' : '<span style="font-size:10.5px;color:#dc2626;font-weight:600;margin-left:4px">⚠️ not set yet</span>');
@@ -12500,7 +12598,7 @@ function computeStaffMonthSummary(s, monthVal) {
   }
   const lateAsLop  = latesToLeave > 0 ? Math.floor(lateDays / latesToLeave) : 0;
   const pay         = s.consolidatedPay || s.baseSalary || 0;
-  const dailyRate    = pay / 26;
+  const dailyRate    = pay / _lopBaseDays(yr, mo);
   const effectiveLop = lopDays + lateAsLop;
   const lopDed        = Math.round(effectiveLop * dailyRate);
   const extraDed      = s.extraDed || 0;
@@ -15303,7 +15401,7 @@ function downloadBackup() {
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
-  a.href=url; a.download='kalam-erp-backup-'+new Date().toISOString().slice(0,10)+'.json';
+  a.href=url; a.download='kalam-erp-backup-'+_todayISO()+'.json';
   a.click(); URL.revokeObjectURL(url);
   addBkLog('['+new Date().toLocaleTimeString('en-IN')+'] Downloaded backup JSON');
   showToast('✅ Backup downloaded!');
@@ -16136,8 +16234,29 @@ function deleteBatchFromPage(i) {
 ═══════════════════════════════════════════════════════ */
 function saveFeeStructure() {
   try { erpSet('_erp_fee_structure', JSON.stringify(feeStructure)); } catch(e){}
+  // Push the new monthly fee into this month's still-unpaid records so the
+  // Fees page, dashboard and collection panel show the updated amount.
+  let synced = 0;
+  try {
+    const curLbl = _feeMonthLabel(new Date());
+    fees.forEach(f => {
+      if (!f || f._deleted || f.type !== 'monthly' || f.month !== curLbl) return;
+      if ((f.paid || 0) > 0 || f.status === 'paid' || f.status === 'carried') return;
+      const st = students.find(x => x.id === f.studentId || x.name === f.student);
+      if (!st) return;
+      const base = (feeStructure.find(x => x.class === st.grade) || {}).monthlyFee || 0;
+      if (base <= 0 || base === f.baseFee) return;
+      f.baseFee = base;
+      f.total   = base + (f.carriedForward || 0);
+      f.balance = f.total;
+      synced++;
+    });
+    if (synced > 0) saveFees();
+  } catch(e) { console.error('[ERP] fee sync failed', e); }
   closeModal();
-  showToast('✅ Fee structure saved!');
+  try { updateDashStats(); } catch(e){}
+  try { applyFeeMonthFilter(); } catch(e){}
+  showToast('✅ Fee structure saved!' + (synced ? ' ' + synced + ' unpaid fee record(s) updated.' : ''));
 }
 function loadFeeStructure() {
   try {
@@ -16683,11 +16802,14 @@ function updateDashStats() {
   // Fix: read every batch's saved morning+evening attendance for today
   // directly from storage and aggregate across all of them.
   (function () {
-    const todayStr = new Date().toISOString().slice(0,10);
+    const todayStr = _todayISO();
     const barr = (typeof batches !== 'undefined' && Array.isArray(batches) && batches.length) ? batches : [{id:''}];
-    let pCount = 0, marked = 0;
+    let pCount = 0, marked = 0, offSess = 0, totSess = 0;
     barr.forEach(b => {
       ['morning','evening'].forEach(sess => {
+        totSess++;
+        // Sessions on holiday / leave are excluded from the %.
+        if (typeof _isHoliday === 'function' && _isHoliday(todayStr, b.id, sess)) { offSess++; return; }
         try {
           const sk = (typeof _attStorageKey === 'function') ? _attStorageKey(todayStr, b.id, sess) : null;
           if (!sk) return;
@@ -16696,12 +16818,13 @@ function updateDashStats() {
           const parsed = JSON.parse(saved);
           Object.keys(parsed).forEach(k => {
             const v = parsed[k];
-            if (v) { marked++; if (v === 'P') pCount++; }
+            if (v) { marked++; if (v === 'P' || v === 'L') pCount++; } // Late = attended
           });
         } catch(e) {}
       });
     });
-    if (el4) el4.textContent = marked > 0 ? Math.round(pCount / marked * 100) + '%' : '\u2014%';
+    if (el4) el4.textContent = marked > 0 ? Math.round(pCount / marked * 100) + '%'
+                              : (totSess > 0 && offSess === totSess ? '\uD83C\uDFD6 Leave' : '\u2014%');
   })();
 
   // Day-1 reset + carry-over + income summary
@@ -21800,7 +21923,7 @@ function tlRefreshAbsentList() {
   if (!absSel) return;
   const grade = (document.getElementById('tl-f-grade')||{}).value || '';
   const batch = (document.getElementById('tl-f-batch')||{}).value || '';
-  const date  = (document.getElementById('tl-f-date')||{}).value || new Date().toISOString().slice(0,10);
+  const date  = (document.getElementById('tl-f-date')||{}).value || _todayISO();
   const selectedIds = [...absSel.selectedOptions].map(o=>o.value);
   // Students already ticked stay visible even if attendance doesn't (yet) mark
   // them absent, so a manual pick is never silently dropped when switching fields.
@@ -21815,7 +21938,7 @@ function _tlShowModal(html) {
 }
 
 function openAddTeachingLog() {
-  const today = new Date().toISOString().slice(0,10);
+  const today = _todayISO();
   const absentIds = _tlGetTodayAbsentIds();
   _tlShowModal(`
     <div class="modal-title">📖 New Teaching Log Entry</div>
@@ -22067,8 +22190,8 @@ function _tlGetSubjectsForBatchDayOrder(batchName, dayNum) {
 
 function _tlGetAbsentIdsForDate(date) {
   try {
-    const d = date || new Date().toISOString().slice(0,10);
-    const today = new Date().toISOString().slice(0,10);
+    const d = date || _todayISO();
+    const today = _todayISO();
     const absentIds = new Set();
     // Live in-memory session only applies to today's attendance page
     if (d === today && typeof attState === 'object') {
@@ -22094,7 +22217,7 @@ function _tlGetAbsentIdsForDate(date) {
     return [...absentIds];
   } catch(e) { return []; }
 }
-function _tlGetTodayAbsentIds() { return _tlGetAbsentIdsForDate(new Date().toISOString().slice(0,10)); }
+function _tlGetTodayAbsentIds() { return _tlGetAbsentIdsForDate(_todayISO()); }
 
 function _tlDayOrderOptions(sel, batchName) {
   const opts = [];

@@ -748,7 +748,7 @@ tbody tr:hover td{background:var(--bg)}
   </nav>
 <div id="_save_status_bar" style="text-align:center;font-size:10px;padding:3px 10px;color:var(--tx3,#94a3b8);background:var(--bg2,#f8fafc);transition:all .3s;border-bottom:.5px solid var(--br,#e2e8f0)">Ready</div>
   <div class="s-foot">
-    <button class="s-fbt" onclick="toggleLang()" id="lang-btn"><svg viewBox="0 0 12 12" fill="none" width="12" height="12"><circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.2"/><path d="M6 1.5c-1 1-1.5 2.5-1.5 4.5s.5 3.5 1.5 4.5M6 1.5c1 1 1.5 2.5 1.5 4.5S7 9.5 6 10.5M1.5 6h9" stroke="currentColor" stroke-width="1.1"/></svg><span id="lang-lbl">தமிழ்</span></button>
+    <button class="s-fbt" onclick="toggleLang()" id="lang-btn"><svg viewBox="0 0 12 12" fill="none" width="12" height="12"><circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.2"/><path d="M6 1.5c-1 1-1.5 2.5-1.5 4.5s.5 3.5 1.5 4.5M6 1.5c1 1 1.5 2.5 1.5 4.5S7 9.5 6 10.5M1.5 6h9" stroke="currentColor" stroke-width="1.1"/></svg><span id="lang-lbl">Tamil</span></button>
     <button class="s-fbt" onclick="toggleDark()" title="Dark mode"><svg viewBox="0 0 12 12" fill="none" width="12" height="12"><path d="M7 2a4 4 0 100 8A4.5 4.5 0 017 2z" stroke="currentColor" stroke-width="1.2"/></svg></button>
   </div>
 </div>
@@ -788,6 +788,7 @@ tbody tr:hover td{background:var(--bg)}
 <div class="page active" id="pg-dashboard">
 
   <!-- Monthly Reset Banner (Day 1 of month) -->
+  <div id="dash-backup-warn" style="display:none;margin-bottom:10px"></div>
   <div id="dash-monthly-reset-banner" style="display:none;margin-bottom:10px;border-radius:10px;padding:10px 14px;background:linear-gradient(135deg,#1e3a8a,#1a56db);color:#fff">
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
       <div style="font-size:18px">📅</div>
@@ -835,6 +836,12 @@ tbody tr:hover td{background:var(--bg)}
     <div class="stat" onclick="navTo('fees')" style="cursor:pointer" title="Go to Fees"><div class="stat-icon dm-green-box" style="background:#dcfce7"><svg viewBox="0 0 16 16" fill="none"><rect x="2" y="4" width="12" height="9" rx="1.5" stroke="#16a34a" stroke-width="1.4"/><path d="M2 7h12M7 10h2" stroke="#16a34a" stroke-width="1.3" stroke-linecap="round"/></svg></div><div class="stat-lbl" id="sl-2">Monthly Income</div><div class="stat-val" style="color:#16a34a" id="sv-income">₹0</div><div class="stat-sub" id="ss-income">This month only</div></div>
     <div class="stat" onclick="navTo('fees')" style="cursor:pointer" title="Go to Pending Fees"><div class="stat-icon dm-red-box" style="background:#fee2e2"><svg viewBox="0 0 16 16" fill="none"><path d="M8 5v4M8 10.5v.5" stroke="#dc2626" stroke-width="1.6" stroke-linecap="round"/><path d="M2 13L8 2l6 11H2z" stroke="#dc2626" stroke-width="1.3" stroke-linejoin="round"/></svg></div><div class="stat-lbl" id="sl-3">Pending Fees</div><div class="stat-val" style="color:#dc2626" id="sv-pending">₹0</div><div class="stat-sub" id="ss-pending">Outstanding</div></div>
     <div class="stat"><div class="stat-icon dm-blue-box" style="background:#dbeafe"><svg viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="1.5" stroke="#2563eb" stroke-width="1.4"/><path d="M5 2v2M11 2v2M2 7h12M5.5 10.5l1.5 1.5 3-3" stroke="#2563eb" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="stat-lbl" id="sl-4">Attendance Today</div><div class="stat-val" style="color:#2563eb" id="sv-att">—%</div><div class="stat-sub" id="ss-att">Present today</div></div>
+  </div>
+
+  <!-- 📊 Class-wise Attendance Today -->
+  <div class="card" style="margin-bottom:14px" id="dash-classatt-card">
+    <div class="card-hd" style="margin-bottom:6px"><span class="card-title">📊 Class-wise Attendance Today</span></div>
+    <div id="dash-classatt-body" style="padding:0 16px 12px;font-size:12px;color:var(--tx2)">—</div>
   </div>
 
   <!-- 📅 Today's Day Order & Class Summary -->
@@ -1218,7 +1225,7 @@ tbody tr:hover td{background:var(--bg)}
       </div>
       <label id="adm-no-fee-label" style="display:flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:var(--tx2);margin-bottom:10px;padding:8px 10px;background:var(--bg);border-radius:8px;border:.5px solid var(--br);cursor:pointer">
         <input type="checkbox" id="adm-no-fee-now" onchange="toggleAdmNoFee()" style="width:15px;height:15px;cursor:pointer">
-        🆓 இந்த மாணவருக்கு இப்போது கட்டணம் இல்லை (No fee collected at admission — arranged later)
+        🆓 No fees due for this student now (No fee collected at admission — arranged later)
       </label>
       <div class="frow">
         <div class="fg" id="adm-monthlyfee-fg"><label class="fl">Monthly Fee ₹ <span style="color:#7c3aed;font-size:10px">(auto-filled)</span></label><input class="fi" id="adm-fee" type="number" placeholder="0" oninput="recalcAdmFees()"></div>
@@ -2081,13 +2088,13 @@ tbody tr:hover td{background:var(--bg)}
       <div id="wt-vars" style="display:none;margin-bottom:10px;padding:8px 10px;background:var(--bg);border-radius:8px;font-size:11px;color:var(--tx2);line-height:2"></div>
       <div style="display:none" id="wt-lang-tabs">
         <button id="wt-lt-en" onclick="switchWTLang('ta')" style="display:none">EN</button>
-        <button id="wt-lt-ta" onclick="switchWTLang('ta')" style="padding:5px 14px;border-radius:8px;border:1.5px solid #185FA5;background:#185FA5;color:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">🌐 தமிழ் மட்டும்</button>
+        <button id="wt-lt-ta" onclick="switchWTLang('ta')" style="padding:5px 14px;border-radius:8px;border:1.5px solid #185FA5;background:#185FA5;color:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">🌐 Tamil only</button>
       </div>
       <div id="wt-pane-en" style="display:none">
         <textarea class="fi" id="wt-tmpl-en" rows="10" style="font-size:12px;font-family:'Noto Sans Tamil',system-ui;line-height:1.7;resize:vertical;width:100%;box-sizing:border-box" oninput="refreshWTPreview();autoSaveWTTemplate()"></textarea>
       </div>
       <div id="wt-pane-ta">
-        <textarea class="fi" id="wt-tmpl-ta" rows="10" placeholder="நேரடியாக இங்கே தட்டச்சு செய்யவும்… / Type your message here…" style="font-size:12px;font-family:'Noto Sans Tamil',system-ui;line-height:1.7;resize:vertical;width:100%;box-sizing:border-box;border:2px solid #25d366;transition:border-color .2s" onfocus="this.style.borderColor='#128c7e'" onblur="this.style.borderColor='#25d366'" oninput="refreshWTPreview();autoSaveWTTemplate()"></textarea>
+        <textarea class="fi" id="wt-tmpl-ta" rows="10" placeholder="Type directly here… / Type your message here…" style="font-size:12px;font-family:'Noto Sans Tamil',system-ui;line-height:1.7;resize:vertical;width:100%;box-sizing:border-box;border:2px solid #25d366;transition:border-color .2s" onfocus="this.style.borderColor='#128c7e'" onblur="this.style.borderColor='#25d366'" oninput="refreshWTPreview();autoSaveWTTemplate()"></textarea>
         <div style="font-size:10px;color:#16a34a;margin-top:4px">✏️ Tap / click the box above to edit • Changes auto-save as you type</div>
       </div>
       <div style="margin-top:12px">
@@ -2205,21 +2212,21 @@ tbody tr:hover td{background:var(--bg)}
     <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
       <div style="font-size:28px">🔮</div>
       <div style="flex:1;min-width:0">
-        <div style="font-size:14px;font-weight:800;color:#fff" id="ai-pred-headline">AI கணிப்பு முடிவுகள்</div>
-        <div style="font-size:11px;color:rgba(255,255,255,.75);margin-top:3px">வருகை, மதிப்பெண்கள் மற்றும் கட்டண தரவு அடிப்படையில்</div>
+        <div style="font-size:14px;font-weight:800;color:#fff" id="ai-pred-headline">AI Prediction Results</div>
+        <div style="font-size:11px;color:rgba(255,255,255,.75);margin-top:3px">Attendance, Based on marks and fee data</div>
       </div>
       <div style="display:flex;gap:8px;flex-shrink:0">
         <div style="background:rgba(255,255,255,.12);border-radius:8px;padding:6px 12px;text-align:center">
           <div style="font-size:20px;font-weight:800;color:#f87171" id="ai-pred-fail-n">—</div>
-          <div style="font-size:9px;color:rgba(255,255,255,.7)">தேர்ச்சி ஆபத்து</div>
+          <div style="font-size:9px;color:rgba(255,255,255,.7)">Pass Risk</div>
         </div>
         <div style="background:rgba(255,255,255,.12);border-radius:8px;padding:6px 12px;text-align:center">
           <div style="font-size:20px;font-weight:800;color:#fbbf24" id="ai-pred-leave-n">—</div>
-          <div style="font-size:9px;color:rgba(255,255,255,.7)">விலக ஆபத்து</div>
+          <div style="font-size:9px;color:rgba(255,255,255,.7)">Dropout Risk</div>
         </div>
         <div style="background:rgba(255,255,255,.12);border-radius:8px;padding:6px 12px;text-align:center">
           <div style="font-size:20px;font-weight:800;color:#34d399" id="ai-pred-fee-n">—</div>
-          <div style="font-size:9px;color:rgba(255,255,255,.7)">கட்டண ஆபத்து</div>
+          <div style="font-size:9px;color:rgba(255,255,255,.7)">Fee risk</div>
         </div>
       </div>
     </div>
@@ -2247,7 +2254,7 @@ tbody tr:hover td{background:var(--bg)}
   <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
     <div style="font-size:11px;font-weight:700;color:#4338ca;text-transform:uppercase;letter-spacing:.06em">🔮 Smart AI Predictions</div>
     <div style="flex:1;height:.5px;background:#c7d2fe"></div>
-    <span style="font-size:9px;background:#eef2ff;color:#4338ca;padding:2px 8px;border-radius:8px;font-weight:700">உண்மையான தரவிலிருந்து</span>
+    <span style="font-size:9px;background:#eef2ff;color:#4338ca;padding:2px 8px;border-radius:8px;font-weight:700">From real data</span>
   </div>
   <div id="ai-predict-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-bottom:16px"></div>
 
@@ -2255,7 +2262,7 @@ tbody tr:hover td{background:var(--bg)}
   <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;margin-top:4px">
     <div style="font-size:11px;font-weight:700;color:#0369a1;text-transform:uppercase;letter-spacing:.06em">📚 AI Study Planner</div>
     <div style="flex:1;height:.5px;background:#bae6fd"></div>
-    <span style="font-size:9px;background:#e0f2fe;color:#0369a1;padding:2px 8px;border-radius:8px;font-weight:700">தனிப்பட்ட அட்டவணை</span>
+    <span style="font-size:9px;background:#e0f2fe;color:#0369a1;padding:2px 8px;border-radius:8px;font-weight:700">Custom Timetable</span>
   </div>
   <div id="ai-study-planner-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-bottom:16px"></div>
 
@@ -2267,7 +2274,7 @@ tbody tr:hover td{background:var(--bg)}
       style="font-size:11px;padding:3px 10px;border-radius:8px;border:.5px solid #6ee7b7;background:#d1fae5;color:#065f46;font-weight:600;cursor:pointer;outline:none;font-family:inherit">
       <option value="all">🎓 All Classes</option>
     </select>
-    <span style="font-size:9px;background:#d1fae5;color:#065f46;padding:2px 8px;border-radius:8px;font-weight:700">வளர்ச்சி கணிப்பு</span>
+    <span style="font-size:9px;background:#d1fae5;color:#065f46;padding:2px 8px;border-radius:8px;font-weight:700">Growth Forecast</span>
   </div>
   <div id="ai-growth-forecast-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-bottom:16px"></div>
 
@@ -2445,7 +2452,7 @@ tbody tr:hover td{background:var(--bg)}
     <div class="card" style="margin-bottom:12px">
       <div class="card-title" style="margin-bottom:12px">Preferences</div>
       <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:.5px solid var(--br)"><div><div style="font-size:13px;font-weight:500;color:var(--tx)" id="pref-dark">Dark Mode</div><div style="font-size:11px;color:var(--tx2);margin-top:2px" id="pref-dark-sub">Currently off</div></div><button class="btn btn-sm" onclick="toggleDark()">Toggle</button></div>
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0"><div><div style="font-size:13px;font-weight:500;color:var(--tx)" id="pref-lang">Language</div><div style="font-size:11px;color:var(--tx2);margin-top:2px">English / தமிழ்</div></div><button class="btn btn-sm" onclick="toggleLang()" id="lang-toggle-btn">Switch to தமிழ்</button></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0"><div><div style="font-size:13px;font-weight:500;color:var(--tx)" id="pref-lang">Language</div><div style="font-size:11px;color:var(--tx2);margin-top:2px">English / Tamil</div></div><button class="btn btn-sm" onclick="toggleLang()" id="lang-toggle-btn">Switch to Tamil</button></div>
     </div>
     <div class="card">
       <div class="card-title" style="margin-bottom:10px">About</div>
@@ -2545,7 +2552,7 @@ tbody tr:hover td{background:var(--bg)}
 </div><!-- end pg-teaching -->
 
 
-<!-- ═══════════════ STUDENT SUMMARY (மாணவர் அட்டவணை) ═══════════════ -->
+<!-- ═══════════════ STUDENT SUMMARY (Student table) ═══════════════ -->
 <div class="page" id="pg-summary">
 
   <!-- Page Header Banner -->
@@ -2569,48 +2576,48 @@ tbody tr:hover td{background:var(--bg)}
   <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
     <div class="search-box" style="max-width:220px">
       <svg viewBox="0 0 16 16" fill="none"><circle cx="6.5" cy="6.5" r="4" stroke="currentColor" stroke-width="1.3"/><path d="M11 11l2.5 2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-      <input id="sum-search" placeholder="மாணவர் பெயர் தேடு…" oninput="filterSummaryCards(this.value)">
+      <input id="sum-search" placeholder="Search student name……" oninput="filterSummaryCards(this.value)">
     </div>
     <select class="fi" id="sum-month-sel" style="width:auto" onchange="renderSummaryCards()">
-      <option value="0">ஜனவரி</option><option value="1">பிப்ரவரி</option><option value="2">மார்ச்</option>
-      <option value="3">ஏப்ரல்</option><option value="4">மே</option><option value="5">ஜூன்</option>
-      <option value="6">ஜூலை</option><option value="7">ஆகஸ்ட்</option><option value="8">செப்டம்பர்</option>
-      <option value="9">அக்டோபர்</option><option value="10">நவம்பர்</option><option value="11">டிசம்பர்</option>
+      <option value="0">January</option><option value="1">February</option><option value="2">March</option>
+      <option value="3">April</option><option value="4">May</option><option value="5">June</option>
+      <option value="6">July</option><option value="7">August</option><option value="8">September</option>
+      <option value="9">October</option><option value="10">We are ready to help</option><option value="11">December</option>
     </select>
     <select class="fi" id="sum-year-sel" style="width:auto" onchange="renderSummaryCards()">
       <option value="2025">2025</option><option value="2026">2026</option><option value="2027">2027</option>
     </select>
     <select class="fi" id="sum-grade-sel" style="width:auto" onchange="renderSummaryCards()">
-      <option value="all">அனைத்து வகுப்புகள்</option>
+      <option value="all">All classes</option>
     </select>
     <select class="fi" id="sum-batch-sel" style="width:auto" onchange="renderSummaryCards()">
-      <option value="all">அனைத்து பிரிவுகள்</option>
+      <option value="all">All batches</option>
     </select>
     <button class="btn btn-wa" onclick="sendAllSummaryWA()" style="margin-left:auto">
       <svg viewBox="0 0 16 16" fill="none" width="13" height="13"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.4"/><path d="M5 8.5c.5 1.5 2 2.5 3.5 2.5 1 0 2-.4 2.7-1.1M11 7.5c-.5-1.5-2-2.5-3.5-2.5-1 0-2 .4-2.7 1.1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
-      அனைவருக்கும் WA அனுப்பு
+      To everyone WA Send
     </button>
   </div>
 
   <!-- Summary Cards Grid -->
   <div id="sum-cards-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:14px">
     <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--tx3);font-size:13px">
-      மாணவர்களை சேர்த்த பிறகு அட்டவணை தோன்றும்…
+      After adding students, the schedule will appear……
     </div>
   </div>
 </div>
 <!-- END STUDENT SUMMARY -->
 
 
-<!-- ═══════════════ TIME TABLE (நேர அட்டவணை) ═══════════════ -->
+<!-- ═══════════════ TIME TABLE (Timetable) ═══════════════ -->
 <div class="page" id="pg-timetable">
 
   <!-- Header Banner -->
   <div style="background:linear-gradient(135deg,#0369a1,#0ea5e9);border-radius:12px;padding:16px 20px;margin-bottom:16px;display:flex;align-items:center;gap:14px">
     <div style="width:44px;height:44px;background:rgba(255,255,255,.15);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">📅</div>
     <div style="flex:1">
-      <div style="font-size:16px;font-weight:700;color:#fff">நேர அட்டவணை — Time Table</div>
-      <div style="font-size:12px;color:rgba(255,255,255,.8);margin-top:2px">Day Order Pattern · 4 Periods · பாட வரிசை — Absent &amp; Subject Tracking க்கு பயன்படும்</div>
+      <div style="font-size:16px;font-weight:700;color:#fff">Timetable — Time Table</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.8);margin-top:2px">Day Order Pattern · 4 Periods · Subject order — Absent &amp; Subject Tracking is used</div>
     </div>
     <div style="text-align:right;flex-shrink:0">
       <div style="font-size:10px;color:rgba(255,255,255,.7);margin-bottom:4px">Today's Day Order</div>
@@ -2621,17 +2628,17 @@ tbody tr:hover td{background:var(--bg)}
   <!-- Controls Row -->
   <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
     <select class="fi" id="tt-batch-sel" style="width:auto" onchange="ttSwitchBatch()">
-      <option value="all">அனைத்து பிரிவுகள்</option>
+      <option value="all">All batches</option>
     </select>
     <div style="margin-left:auto;display:flex;gap:8px">
-      <button class="btn btn-sm" onclick="ttAddDay()" style="background:#0ea5e9;color:#fff;border-color:#0284c7">+ Day Order சேர்</button>
-      <button class="btn btn-sm" onclick="ttSave()" style="background:#16a34a;color:#fff;border-color:#15803d">💾 சேமி</button>
+      <button class="btn btn-sm" onclick="ttAddDay()" style="background:#0ea5e9;color:#fff;border-color:#0284c7">+ Day Order Add</button>
+      <button class="btn btn-sm" onclick="ttSave()" style="background:#16a34a;color:#fff;border-color:#15803d">💾 Save</button>
     </div>
   </div>
 
   <!-- Period Times Config -->
   <div style="background:var(--bg2);border:.5px solid var(--br);border-radius:10px;padding:12px 14px;margin-bottom:14px">
-    <div style="font-size:11px;font-weight:700;color:var(--tx2);letter-spacing:.04em;margin-bottom:10px">⏰ PERIOD நேரங்கள் (4 Periods)</div>
+    <div style="font-size:11px;font-weight:700;color:var(--tx2);letter-spacing:.04em;margin-bottom:10px">⏰ PERIOD Timings (4 Periods)</div>
     <div id="tt-period-times" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px"></div>
   </div>
 
@@ -2644,13 +2651,13 @@ tbody tr:hover td{background:var(--bg)}
       </table>
     </div>
     <div id="tt-empty" style="text-align:center;padding:40px;color:var(--tx3);font-size:13px">
-      "+ Day Order சேர்" பொத்தானை அழுத்தி நேர அட்டவணை உருவாக்கவும்
+      "+ Day Order Add" Click the button to generate the timetable
     </div>
   </div>
 
   <!-- Legend -->
   <div style="margin-top:12px;font-size:10px;color:var(--tx3);text-align:center">
-    💡 இந்த நேர அட்டவணை வருகை பதிவில் எந்த பாடம் தவறியது என்று கண்டுபிடிக்க பயன்படும் — Future Feature
+    💡 This timetable will be used to find which subject was missed in attendance records — Future Feature
   </div>
 </div>
 <!-- END TIME TABLE -->
@@ -2924,7 +2931,7 @@ const CFG = {
   BRAND: { primaryColor:'#1a56db', logoText:'KT' },
   APP: { defaultLanguage:'en', defaultTheme:'light', studentIdPrefix:'KLM', academicYear:'2024-25' },
   FEES: { lateFeePercent:5, graceDays:7 },
-  ATTENDANCE: { latesToLeave: 10 },  // Pro: how many late arrivals = 1 leave
+  ATTENDANCE: { latesToLeave: 10, clPerMonth: 2 },  // Pro: how many late arrivals = 1 leave
   AI: { provider:'anthropic', apiKey:'', model:'claude-sonnet-4-20250514', maxTokens:1024 },
   GOOGLE_SHEETS: { webAppUrl:'', autoSync:false, syncInterval:30 },
 };
@@ -3308,7 +3315,7 @@ const T = {
     exams:'Exams',marksPlaceholder:'← Select an exam to enter marks',
     addStaff:'Add Staff',sendNotif:'Send Notification',
     aiFeatures:'AI Features',backupSync:'Backup & Sync',
-    langSwitch:'Switch to தமிழ்',langLbl:'தமிழ்',
+    langSwitch:'Switch to Tamil',langLbl:'Tamil',
     waTitle:'WhatsApp Parent Messenger',waSub:'No API key needed — opens WhatsApp with pre-filled messages',
     waMsgLang:'Message Language',waTemplate:'Template',waRecipients:'Send to',
     buildQueue:'Build Message Queue',sendAll:'Send All via WhatsApp',
@@ -3321,34 +3328,34 @@ const T = {
     schoolmarks:'School Marks', risingstar:'Rising Stars', target:'Target',
   },
   ta:{
-    dashboard:'டாஷ்போர்டு',students:'மாணவர்கள்',attendance:'வருகை பதிவு',fees:'கட்டணம்',
-    marks:'மதிப்பெண்கள்',staff:'ஊழியர்கள்',whatsapp:'WhatsApp',teaching:'கற்பித்தல் பதிவு',
-    notifications:'நிர்வாகி பேனல்',ai:'AI அம்சங்கள்',backup:'காப்புப் பிரதி',settings:'அமைப்புகள்',
-    main:'முதன்மை',mgmt:'மேலாண்மை',totalStudents:'மொத்த மாணவர்கள்',monthlyIncome:'மாதாந்திர வருமானம்',
-    pendingFees:'நிலுவை கட்டணம்',attToday:'இன்றைய வருகை',incomeTrend:'வருமான போக்கு',
-    feeStatus:'கட்டண நிலை',quickActions:'விரைவு செயல்கள்',qa1:'வருகை பதிவு',qa2:'கட்டணம் வசூலி',
-    qa3:'மாணவரை சேர்',qa4:'WhatsApp',qa5:'AI நுண்ணறிவு',addStudent:'மாணவரை சேர்',
-    saveStudent:'சேமி',sname:'மாணவர் பெயர் *',grade:'வகுப்பு',school:'பள்ளி',
-    course:'பாடநெறி',pname:'பெற்றோர் பெயர் *',pphone:'பெற்றோர் தொலைபேசி *',dob:'பிறந்த தேதி',
-    allStatus:'அனைத்தும்',active:'செயலில்',inactive:'செயலற்று',
-    saveAtt:'வருகை சேமி',alertAbsent:'வராத மாணவர் பெற்றோருக்கு எச்சரிக்கை',
-    allPresent:'எல்லாரும் வந்தனர்',allAbsent:'எல்லாரும் வரவில்லை',
-    collected:'வசூலித்தது',pending:'நிலுவை',overdue:'தாமதம்',
-    newFee:'கட்டண உள்ளீடு',saveFee:'சேமி & ரசீது',
-    exams:'தேர்வுகள்',marksPlaceholder:'← மதிப்பெண் உள்ளிட தேர்வை தேர்ந்தெடுக்கவும்',
-    batches:'குழு மேலாண்மை',
-    commute:'பயண மேலாண்மை',
-    addStaff:'ஊழியர் சேர்',sendNotif:'அறிவிப்பு அனுப்பு',
-    aiFeatures:'AI அம்சங்கள்',backupSync:'காப்புப் பிரதி & ஒத்திசைவு',
+    dashboard:'Dashboard',students:'Students',attendance:'Attendance Register',fees:'Fee',
+    marks:'Marks',staff:'Staff',whatsapp:'WhatsApp',teaching:'Teaching Log',
+    notifications:'Pending',ai:'AI Features',backup:'Backup',settings:'Settings',
+    main:'Main',mgmt:'Management',totalStudents:'Total Students',monthlyIncome:'Monthly Income',
+    pendingFees:'Pending fees',attToday:'Today’s attendance',incomeTrend:'Income Trend',
+    feeStatus:'Fee status',quickActions:'Quick Actions',qa1:'Attendance Register',qa2:'Collect fee',
+    qa3:'Add student',qa4:'WhatsApp',qa5:'AI Insights',addStudent:'Add student',
+    saveStudent:'Save',sname:'Student Name *',grade:'Class',school:'School',
+    course:'Course',pname:'Parent name *',pphone:'Parent phone *',dob:'Date of birth',
+    allStatus:'All',active:'Active',inactive:'Inactive',
+    saveAtt:'Save Attendance',alertAbsent:'Alert Parents of Absent Students',
+    allPresent:'Everyone came',allAbsent:'Not everyone came',
+    collected:'Collected',pending:'Pending',overdue:'Late',
+    newFee:'Fee entry',saveFee:'Save & Receipt',
+    exams:'Exams',marksPlaceholder:'← Select an exam to enter marks',
+    batches:'Batch Management',
+    commute:'Commute management',
+    addStaff:'Add staff',sendNotif:'Send announcement',
+    aiFeatures:'AI Features',backupSync:'Backup & Sync',
     langSwitch:'Switch to English',langLbl:'English',
-    waTitle:'WhatsApp பெற்றோர் செய்தி அனுப்பி',waSub:'API key தேவையில்லை — WhatsApp-ல் செய்தி தயாராக திறக்கிறது',
-    waMsgLang:'செய்தி மொழி',waTemplate:'வார்ப்புரு',waRecipients:'அனுப்பு',
-    buildQueue:'செய்தி வரிசை உருவாக்கு',sendAll:'அனைவருக்கும் WhatsApp அனுப்பு',
-    waPreviewTitle:'செய்தி முன்னோட்டம்',waQueueTitle:'செய்தி வரிசை',
-    pref_dark:'இருண்ட பயன்முறை',dark_off:'தற்போது அணைவு',dark_on:'தற்போது இயக்கம்',
-    cancel:'ரத்து',
-    admissions:'சேர்க்கை',
-    schoolmarks:'பள்ளி மதிப்பெண்கள்', risingstar:'ரைசிங் ஸ்டார்ஸ்', target:'இலக்கு',
+    waTitle:'WhatsApp Send parent message via',waSub:'API key not required — WhatsApp-message opens ready',
+    waMsgLang:'Message Language',waTemplate:'Template',waRecipients:'Send',
+    buildQueue:'Build Message Queue',sendAll:'To everyone WhatsApp Send',
+    waPreviewTitle:'Message Preview',waQueueTitle:'Message Queue',
+    pref_dark:'Dark mode',dark_off:'Currently off',dark_on:'Currently on',
+    cancel:'Cancel',
+    admissions:'Admission',
+    schoolmarks:'School marks', risingstar:'Rising Stars', target:'Goal',
   }
 };
 const t = k => T[lang][k] || T.en[k] || k;
@@ -3357,14 +3364,14 @@ const t = k => T[lang][k] || T.en[k] || k;
    WHATSAPP MESSAGE TEMPLATES
 ═══════════════════════════════════════════════════════ */
 const WA_TYPES = [
-  {id:'absent',      label:'Absent Alert',   labelTA:'வருகை எச்சரிக்கை',   color:'#dc2626', bg:'#fee2e2'},
-  {id:'fees',        label:'Fee Reminder',   labelTA:'கட்டண நினைவூட்டல்',   color:'#854f0b', bg:'#fef3c7'},
-  {id:'late',        label:'Late Alert',     labelTA:'தாமத எச்சரிக்கை',    color:'#ca8a04', bg:'#fef9c3'},
-  {id:'exam_notice', label:'Exam Notice',    labelTA:'தேர்வு அறிவிப்பு',    color:'#0369a1', bg:'#e0f2fe'},
-  {id:'marks',       label:'Exam Marks',     labelTA:'தேர்வு மதிப்பெண்கள்', color:'#7c3aed', bg:'#ede9fe'},
-  {id:'monthly',     label:'Monthly Report', labelTA:'மாதாந்திர அறிக்கை',   color:'#2563eb', bg:'#dbeafe'},
-  {id:'holiday',     label:'Holiday Notice', labelTA:'விடுமுறை அறிவிப்பு',  color:'#0891b2', bg:'#ccfbf1'},
-  {id:'birthday',    label:'Birthday Wish',  labelTA:'பிறந்தநாள் வாழ்த்து',  color:'#16a34a', bg:'#dcfce7'},
+  {id:'absent',      label:'Absent Alert',   labelTA:'Attendance Alert',   color:'#dc2626', bg:'#fee2e2'},
+  {id:'fees',        label:'Fee Reminder',   labelTA:'Fee reminder',   color:'#854f0b', bg:'#fef3c7'},
+  {id:'late',        label:'Late Alert',     labelTA:'Late Alert',    color:'#ca8a04', bg:'#fef9c3'},
+  {id:'exam_notice', label:'Exam Notice',    labelTA:'Exam Notice',    color:'#0369a1', bg:'#e0f2fe'},
+  {id:'marks',       label:'Exam Marks',     labelTA:'Exam marks', color:'#7c3aed', bg:'#ede9fe'},
+  {id:'monthly',     label:'Monthly Report', labelTA:'Monthly Report',   color:'#2563eb', bg:'#dbeafe'},
+  {id:'holiday',     label:'Holiday Notice', labelTA:'Holiday Notice',  color:'#0891b2', bg:'#ccfbf1'},
+  {id:'birthday',    label:'Birthday Wish',  labelTA:'Birthday wish',  color:'#16a34a', bg:'#dcfce7'},
 ];
 
 const WA_TEMPLATES = {
@@ -3706,7 +3713,7 @@ function _openWADirect(phone, msg) {
 function openWA(phone, msg) {
   const clean = cleanPhone(phone);
   if (!clean || clean.length < 10) {
-    showToast('⚠️ தொலைபேசி எண் இல்லை / Invalid phone number');
+    showToast('⚠️ No students with phone numbers / Invalid phone number');
     return;
   }
   _openWADirect(phone, msg);
@@ -4600,8 +4607,8 @@ function closeSb() { document.getElementById('sidebar').classList.remove('open')
 function applyLang() {
   const ids = {
     's-appname': CFG.CENTER.name || t('dashboard'),
-    's-sub': lang==='ta'?'நிர்வாகி டாஷ்போர்டு':'Admin Dashboard',
-    's-clbl': lang==='ta'?'மையம்':'CENTER',
+    's-sub': lang==='ta'?'Admin panel':'Admin Dashboard',
+    's-clbl': lang==='ta'?'Center':'CENTER',
     's-cval': (CFG.CENTER.name||'Sri Kalam Tuition')+' · '+(CFG.CENTER.city||'Chidambaram'),
     'ns-main':t('main'),'ns-mgmt':t('mgmt'),
     'nl-dashboard':t('dashboard'),'nl-students':t('students'),'nl-attendance':t('attendance'),
@@ -4849,7 +4856,7 @@ const MODALS = {
         <label style="font-size:11px;color:var(--tx3)">Message Language:</label>
         <div style="display:flex;gap:8px;margin-top:4px">
           <label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer"><input type="radio" name="ex-wa-lang" value="en" checked> English</label>
-          <label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer"><input type="radio" name="ex-wa-lang" value="ta"> தமிழ்</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer"><input type="radio" name="ex-wa-lang" value="ta"> Tamil</label>
           <label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer"><input type="radio" name="ex-wa-lang" value="both"> Both</label>
         </div>
       </div>
@@ -5847,7 +5854,7 @@ function _populateDayOrderDropdown(date, batch) {
   }
 
   // Rebuild options
-  sel.innerHTML = '<option value="">⚠️ Day Order தேர்வு செய்யவும் *</option><option value="HOLIDAY">🏖 Holiday — mark this session off</option>';
+  sel.innerHTML = '<option value="">⚠️ Day Order Please select *</option><option value="HOLIDAY">🏖 Holiday — mark this session off</option>';
   days.forEach(d => {
     const subjs  = (d.subjs && d.subjs.length > 0) ? d.subjs : getSubjectsForDayOrder(d.num);
     const subjStr = subjs.length > 0 ? ' — ' + subjs.slice(0, 3).join(', ') + (subjs.length > 3 ? '…' : '') : '';
@@ -6247,7 +6254,7 @@ function refreshDOPanel() {
   if (!chips) return;
 
   if (!num) {
-    chips.innerHTML = '<span style="font-size:11px;color:#dc2626;font-weight:700">⚠️ Day Order தேர்வு செய்யவும் — கட்டாயம்!</span>';
+    chips.innerHTML = '<span style="font-size:11px;color:#dc2626;font-weight:700">⚠️ Day Order Please select — Mandatory!</span>';
     if (editInp) editInp.value = '';
     if (editLbl) editLbl.textContent = '';
     return;
@@ -6262,7 +6269,7 @@ function refreshDOPanel() {
     ).join('');
     if (editInp) editInp.value = subjs.join(', ');
   } else {
-    chips.innerHTML = '<span style="font-size:11px;color:#a16207;font-weight:600;background:#fef9c3;padding:2px 9px;border-radius:8px;border:.5px solid #fde047">⚠️ பாடங்கள் இல்லை — Edit அழுத்தி சேர்க்கவும்</span>';
+    chips.innerHTML = '<span style="font-size:11px;color:#a16207;font-weight:600;background:#fef9c3;padding:2px 9px;border-radius:8px;border:.5px solid #fde047">⚠️ No subjects — Edit Tap to add</span>';
     if (editInp) editInp.value = '';
     // Auto-open edit if no subjects
     const editArea = document.getElementById('att-do-edit-area');
@@ -6305,7 +6312,7 @@ function onDOSubjInput() {
 /* Save subjects inline without closing modal */
 function saveDOInline() {
   const num  = document.getElementById('att-day-order')?.value || '';
-  if (!num) { showToast('⚠️ Day Order தேர்வு செய்யவும்'); return; }
+  if (!num) { showToast('⚠️ Day Order Please select'); return; }
   const val   = document.getElementById('att-do-subj-inp')?.value || '';
   const subjs = val.split(',').map(s => s.trim()).filter(Boolean);
   if (subjs.length > 0) dayOrderMap[String(num)] = subjs;
@@ -6317,7 +6324,7 @@ function saveDOInline() {
   const btn  = document.getElementById('att-do-edit-btn');
   if (area) area.style.display = 'none';
   if (btn)  btn.textContent = '✏️ Edit';
-  showToast('✅ Day Order ' + num + ' — ' + subjs.length + ' பாடங்கள் சேமிக்கப்பட்டது');
+  showToast('✅ Day Order ' + num + ' — ' + subjs.length + ' subjects saved');
 }
 
 /* Setup modal — admin enters subjects for each day order */
@@ -6396,7 +6403,7 @@ function saveAttendance() {
         setTimeout(() => { dayOrderEl.style.boxShadow = ''; }, 1200);
       }, 50);
     }
-    showToast('⚠️ Day Order தேர்வு செய்யவும் — சேமிக்கும் முன் கட்டாயம்!');
+    showToast('⚠️ Day Order Please select — Required before saving!');
     return; // BLOCK save
   }
 
@@ -6499,7 +6506,7 @@ function markHoliday() {
     </div>
     <div class="fg" style="margin:10px 0 4px">
       <label class="fl">Reason (shown to parents — optional)</label>
-      <input class="fi" id="hol-reason" placeholder="e.g. பொங்கல் விடுமுறை">
+      <input class="fi" id="hol-reason" placeholder="e.g. Pongal holiday">
     </div>
     <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:11px;color:var(--tx2);margin-bottom:6px">
       <input type="checkbox" id="hol-send-wa" checked style="width:14px;height:14px;cursor:pointer">
@@ -6544,15 +6551,16 @@ function _applyHoliday(date, batchId, sessChoice, dayNum) {
    sends it to the affected parents: if a specific batch was selected on the
    Attendance page, only that batch's students get notified; if no batch was
    selected (center-wide view), every active student's parent is notified. */
-function _sendHolidayNoticeWA(date, batchId, reason) {
+function _sendHolidayNoticeWA(date, batchId, reason, grades) {
   const ctr = CFG.CENTER || {};
   let recipients = students.filter(s => s && s.name && s.status === 'active');
   const batch = batches.find(b => b.id === batchId);
   if (batch && batch.name) {
     recipients = filterStudentsByBatch(recipients, batch.name);
   }
+  if (Array.isArray(grades) && grades.length) recipients = recipients.filter(s => grades.includes(String(s.grade||'').trim()));
   recipients = recipients.filter(s => s.phone || s.pphone);
-  if (recipients.length === 0) { return; } // nothing to notify — no toast, this is a silent auto-trigger
+  if (recipients.length === 0) { if (Array.isArray(grades)) showToast('⚠️ No parents with a phone number in the selected classes'); return; } // nothing to notify — no toast, this is a silent auto-trigger
 
   const dateStr = (() => {
     try { return new Date(date+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}); }
@@ -6582,7 +6590,7 @@ function _sendHolidayNoticeWA(date, batchId, reason) {
   root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()">
   <div class="modal" style="max-width:480px">
     <div class="modal-title">📱 Holiday Notice — ${dateStr}</div>
-    <div style="font-size:11px;color:var(--tx2);margin-bottom:10px">${recipients.length} பெற்றோர் | ஒவ்வொருவரையும் தட்டி WA அனுப்பவும்</div>
+    <div style="font-size:11px;color:var(--tx2);margin-bottom:10px">${recipients.length} Parent | Tap each one to WA Please send</div>
     <div style="background:#dcfce7;border:.5px solid #bbf7d0;border-radius:8px;padding:10px 12px;font-size:11px;color:#166534;white-space:pre-wrap;max-height:120px;overflow-y:auto;margin-bottom:10px;font-family:'Noto Sans Tamil',system-ui;line-height:1.7">${msg}</div>
     <div style="max-height:300px;overflow-y:auto;border:.5px solid var(--br);border-radius:10px">
       ${window._holidayWAMsgs.map(item => `<div class="wa-queue-item" id="hol-wa-row-${item.sid}" style="display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:.5px solid var(--br)">
@@ -7178,10 +7186,10 @@ function updateWAPreview() {
     overdue_note: '', att_pct: '85', present_days: '20', absent_days: '4', att_status: '✅ Good',
     missed_subjects: 'Maths, Physics',
     missed_subjects_line: (waType === 'late')
-      ? '\n📚 தவறிய பாடம் (1st Period): *Maths*\n'
-      : '\n📚 இன்று தவறிய பாடங்கள்: *Maths, Physics*\n',
+      ? '\n📚 Missed subject (1st Period): *Maths*\n'
+      : '\n📚 Subjects missed today: *Maths, Physics*\n',
     target_countdown_line: (waType === 'late' || waType === 'absent')
-      ? '\n⏳ *10ஆம் வகுப்பு தேர்வு நேரம் நெருங்குகிறது!*\n• Quarterly Exam: *18 days* left\n👉 ஒவ்வொரு நாளும் முக்கியம் — வருகை தவறவிடாதீர்கள்!\n'
+      ? '\n⏳ *10th Class exam time is approaching!*\n• Quarterly Exam: *18 days* left\n👉 Every day matters — Do not miss attendance!\n'
       : '',
   };
   let preview = tmpl;
@@ -7246,17 +7254,17 @@ function buildWAQueue() {
     if (waType === 'absent' || waType === 'late') {
       missedSubjectsStr = _getMissedSubjectsForWA(s.id, waDate, waBatchId, waSession);
     }
-    const missedLabel = waType === 'late' ? '📚 தவறிய பாடம் (1st Period)' : '📚 இன்று தவறிய பாடங்கள்';
+    const missedLabel = waType === 'late' ? '📚 Missed subject (1st Period)' : '📚 Subjects missed today';
     const missedSubjectsLine = missedSubjectsStr
       ? `\n${missedLabel}: *${missedSubjectsStr}*\n`
       : '';
 
     const vars = {
       parent_name: s.parent || 'Parent', student_name: s.name || 'Student',
-      grade: s.grade === 'KG' ? 'KG' : s.grade + 'ஆம் வகுப்பு',
+      grade: s.grade === 'KG' ? 'KG' : s.grade + 'th',
       center_name: CFG.CENTER.name || 'KTC', center_phone: CFG.CENTER.phone || '',
       date: new Date().toLocaleDateString('en-IN'),
-      month_name: ['ஜனவரி','பிப்ரவரி','மார்ச்','ஏப்ரல்','மே','ஜூன்','ஜூலை','ஆகஸ்ட்','செப்டம்பர்','அக்டோபர்','நவம்பர்','டிசம்பர்'][new Date().getMonth()],
+      month_name: ['January','February','March','April','May','June','July','August','September','October','We are ready to help','December'][new Date().getMonth()],
       year: new Date().getFullYear(),
       amount: pendFee ? pendFee.balance : (stFees[0] ? stFees[0].total : '0'),
       month: _feeMonthLabel(), due_date: '5th', overdue_note: '',
@@ -7374,7 +7382,7 @@ function sendAttWA() {
 ═══════════════════════════════════════════════════════ */
 function openSendResultsModal(examIdx) {
   const exam = exams[examIdx];
-  if (!exam) { showToast('தேர்வு கிடைக்கவில்லை'); return; }
+  if (!exam) { showToast('Exam not found'); return; }
 
   const pass = exam.passMarks || Math.round((exam.maxMarks || 100) * 0.35);
 
@@ -7387,7 +7395,7 @@ function openSendResultsModal(examIdx) {
   } catch(e) {}
 
   let activeStudents = getStudentsForExam(exam);
-  if (activeStudents.length === 0) { showToast('மாணவர்கள் இல்லை'); return; }
+  if (activeStudents.length === 0) { showToast('No students'); return; }
 
   // Build per-student data
   window._resultStudents = activeStudents.map(s => {
@@ -7553,12 +7561,12 @@ function sendOneResultWA(studentId) {
   if (!item) return;
   // BUGFIX: refuse to send a result for a student with no saved mark and no
   // absent status — nothing meaningful to tell the parent yet.
-  if (!item.absent && item.marks === null) return showToast('⚠️ ' + item.s.name + ' — மதிப்பெண் பதிவு செய்யப்படவில்லை');
+  if (!item.absent && item.marks === null) return showToast('⚠️ ' + item.s.name + ' — Marks not recorded');
   const phone = (item.s.phone || '').replace(/\D/g,'');
-  if (phone.length < 10) return showToast('⚠️ ' + item.s.name + ' — தொலைபேசி எண் இல்லை');
+  if (phone.length < 10) return showToast('⚠️ ' + item.s.name + ' — No phone number');
   const msg = _buildOneResultMsg(item, window._resultExam, window._resultPass);
   openWA(item.s.phone, msg);
-  showToast('📱 ' + item.s.name + ' பெற்றோருக்கு WA திறக்கிறது…');
+  showToast('📱 ' + item.s.name + ' To parents WA Opening…');
   // Mark as sent
   const btn = document.getElementById('rbtn-' + studentId);
   if (btn) { btn.textContent = '✅ Sent'; btn.disabled = true; btn.style.background = '#16a34a'; btn.style.borderColor = '#16a34a'; }
@@ -7572,7 +7580,7 @@ function sendAllResultsWA() {
   // BUGFIX: only students with a saved mark or absent status, AND a phone number.
   const withPhone = window._resultStudents.filter(x =>
     (x.absent || x.marks !== null) && (x.s.phone||'').replace(/\D/g,'').length >= 10);
-  if (withPhone.length === 0) return showToast('⚠️ தொலைபேசி எண் உள்ள மாணவர்கள் இல்லை');
+  if (withPhone.length === 0) return showToast('⚠️ What is the distance');
 
   // Only the first WA open is a direct result of this click (a trusted
   // gesture) — any further opens queued behind setTimeout are not, so
@@ -7580,7 +7588,7 @@ function sendAllResultsWA() {
   sendOneResultWA(withPhone[0].s.id);
   showToast(withPhone.length > 1
     ? `📱 Sent to ${withPhone[0].s.name}. Tap "📱 Send" on each remaining result (${withPhone.length - 1} left) — WhatsApp can't be auto-sent to everyone at once.`
-    : '📱 ' + withPhone[0].s.name + ' பெற்றோருக்கு WA திறக்கிறது…');
+    : '📱 ' + withPhone[0].s.name + ' To parents WA Opening…');
 }
 
 function sendLateWA() {
@@ -7644,7 +7652,7 @@ function sendLateWA() {
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap">
         <div style="font-size:11px;font-weight:600;color:var(--tx2)">Message Language:</div>
         <label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer"><input type="radio" name="la-lang" value="en" checked onchange="refreshLatePreview()"> English</label>
-        <label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer"><input type="radio" name="la-lang" value="ta" onchange="refreshLatePreview()"> தமிழ்</label>
+        <label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer"><input type="radio" name="la-lang" value="ta" onchange="refreshLatePreview()"> Tamil</label>
         <label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer"><input type="radio" name="la-lang" value="both" onchange="refreshLatePreview()"> Both</label>
       </div>
 
@@ -8170,9 +8178,9 @@ function setFeeTab(v, btn) {
 /* Send WA reminder for a single student directly from the fee table */
 function sendSinglePendingWA(studentId, studentName, month) {
   const stu = students.find(s => s.id === studentId || s.name === studentName);
-  if (!stu) { showToast('மாணவர் கிடைக்கவில்லை'); return; }
+  if (!stu) { showToast('Student not found'); return; }
   const phone = stu.phone || '';
-  if (!phone) { showToast('⚠️ ' + studentName + ' - தொலைபேசி எண் இல்லை'); return; }
+  if (!phone) { showToast('⚠️ ' + studentName + ' - No phone number'); return; }
   const pending = fees.filter(f => (f.studentId===studentId||f.student===studentName) && f.status!=='paid' && f.balance>0);
   const filterMonth = month || (document.getElementById('fee-month-filter')?.value || '');
   const relevant = filterMonth ? pending.filter(f=>f.month===filterMonth) : pending;
@@ -8182,9 +8190,9 @@ function sendSinglePendingWA(studentId, studentName, month) {
     months : [...new Set(relevant.map(f=>f.month).filter(Boolean))],
     records: relevant
   };
-  if (entry.total <= 0) { showToast(studentName + ' - நிலுவை கட்டணம் இல்லை'); return; }
+  if (entry.total <= 0) { showToast(studentName + ' - No pending fees'); return; }
   openWA(phone, _buildPendingWAMsg(entry));
-  showToast('📱 ' + studentName + ' பெற்றோருக்கு WA திறக்கிறது');
+  showToast('📱 ' + studentName + ' To parents WA Opening');
 }
 function calcFeeM() {
   const a  = parseFloat(document.getElementById('m-famt')?.value)||0;
@@ -9302,7 +9310,7 @@ function ewInitStep3() {
   if (exam.batch && exam.batch !== 'All' && exam.batch.trim() !== '') {
     active = filterStudentsByBatch(active, exam.batch);
   }
-  const sample = active[0] || { name: 'மாணவர்', parent: 'பெற்றோர்', grade: '10' };
+  const sample = active[0] || { name: 'Student', parent: 'Parent', grade: '10' };
   const examNoticeTmpl = (typeof getWTSaved === 'function' ? getWTSaved('exam_notice','ta') : '')
     || (WA_TEMPLATES.exam_notice?.ta?.[0]) || '';
   function _buildExamNoticeMsg(s, tmpl) {
@@ -9428,7 +9436,7 @@ function ewInitStep4() {
   const prevEl = document.getElementById('ew4-wa-preview');
   if (prevEl) {
     const activeStu = students.filter(s=>s&&s.name&&s.status==='active');
-    const sampleStu = activeStu[0] || { name:'மாணவர்', parent:'பெற்றோர்', grade:'10', id:'__sample' };
+    const sampleStu = activeStu[0] || { name:'Student', parent:'Parent', grade:'10', id:'__sample' };
     const sampleMark = Math.round(exam.maxMarks * 0.72);
     const samplePct  = Math.round(sampleMark / exam.maxMarks * 100);
     const sampleGrL  = samplePct>=91?'A+':samplePct>=81?'A':samplePct>=71?'B+':samplePct>=61?'B':samplePct>=51?'C':'D';
@@ -10551,17 +10559,17 @@ function showExamNoticeWAModal(examIdx) {
   const root = document.getElementById('modal-root');
   root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()">
   <div class="modal" style="max-width:500px">
-    <div class="modal-title">📱 தேர்வு அறிவிப்பு — WhatsApp</div>
+    <div class="modal-title">📱 Exam Notice — WhatsApp</div>
     <div style="background:${e.color}18;border-radius:8px;padding:10px 12px;margin-bottom:12px;border-left:3px solid ${e.color}">
       <div style="font-weight:700;font-size:13px;color:var(--tx)">${escHtml(e.name)}</div>
-      <div style="font-size:11px;color:var(--tx3);margin-top:2px">${e.subject} · 📅 ${dateStr} · மொத்தம்: ${e.maxMarks} · தேர்ச்சி: ${pass}</div>
+      <div style="font-size:11px;color:var(--tx3);margin-top:2px">${e.subject} · 📅 ${dateStr} · Total: ${e.maxMarks} · Pass: ${pass}</div>
       ${e.syllabus?`<div style="font-size:10px;color:var(--tx3);margin-top:2px">📋 ${e.syllabus}</div>`:''}
     </div>
-    <div style="font-size:10px;font-weight:700;color:var(--tx2);letter-spacing:.04em;margin-bottom:5px">PREVIEW (முதல் மாணவர்):</div>
+    <div style="font-size:10px;font-weight:700;color:var(--tx2);letter-spacing:.04em;margin-bottom:5px">PREVIEW (First student):</div>
     <div id="en-preview" style="background:#dcfce7;border-radius:10px;padding:12px;font-size:11px;line-height:1.8;white-space:pre-wrap;font-family:'Noto Sans Tamil',system-ui;color:#166534;max-height:220px;overflow-y:auto;border:.5px solid #bbf7d0;margin-bottom:12px">${buildMsg(active[0])}</div>
     <div style="font-size:11px;color:var(--tx2);margin-bottom:10px">
-      📤 அனுப்பவேண்டியவர்கள்: <b>${active.filter(s=>s.phone||s.pphone).length} பெற்றோர்</b>
-      <button onclick="navTo('wa-templates');setTimeout(()=>typeof selectWTType==='function'&&selectWTType('exam_notice'),300);closeModal()" style="margin-left:8px;background:none;border:.5px solid var(--br);border-radius:6px;padding:2px 8px;font-size:10px;color:var(--tx2);cursor:pointer;font-family:inherit">✏️ Template மாற்ற</button>
+      📤 To be sent: <b>${active.filter(s=>s.phone||s.pphone).length} Parent</b>
+      <button onclick="navTo('wa-templates');setTimeout(()=>typeof selectWTType==='function'&&selectWTType('exam_notice'),300);closeModal()" style="margin-left:8px;background:none;border:.5px solid var(--br);border-radius:6px;padding:2px 8px;font-size:10px;color:var(--tx2);cursor:pointer;font-family:inherit">✏️ Template Edit</button>
     </div>
     <div class="modal-foot">
       <button class="btn btn-wa" style="flex:1;justify-content:center;padding:10px;font-size:12px;font-weight:700"
@@ -10602,7 +10610,7 @@ function sendExamNoticeToAll(exam, lang) {
   if (exam.batch && exam.batch !== 'All' && exam.batch.trim() !== '') {
     active = filterStudentsByBatch(active, exam.batch).filter(s => s.phone||s.pphone);
   }
-  if (active.length === 0) { showToast('⚠️ Phone number உள்ள மாணவர்கள் இல்லை'); return; }
+  if (active.length === 0) { showToast('⚠️ Phone number No students with'); return; }
 
   // Store exam on window so modal button can reach it
   window._examWAData = exam;
@@ -10632,8 +10640,8 @@ function sendExamNoticeToAll(exam, lang) {
   const root = document.getElementById('modal-root');
   root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()">
   <div class="modal" style="max-width:480px">
-    <div class="modal-title">📱 தேர்வு அறிவிப்பு — ${exam.name}</div>
-    <div style="font-size:11px;color:var(--tx2);margin-bottom:10px">${active.length} பெற்றோர் | ஒவ்வொருவரையும் தட்டி WA அனுப்பவும்</div>
+    <div class="modal-title">📱 Exam Notice — ${exam.name}</div>
+    <div style="font-size:11px;color:var(--tx2);margin-bottom:10px">${active.length} Parent | Tap each one to WA Please send</div>
 
     <!-- Preview -->
     <div style="background:#dcfce7;border:.5px solid #bbf7d0;border-radius:8px;padding:10px 12px;font-size:11px;color:#166534;white-space:pre-wrap;max-height:120px;overflow-y:auto;margin-bottom:10px;font-family:'Noto Sans Tamil',system-ui;line-height:1.7">${buildMsg(active[0])}</div>
@@ -10672,7 +10680,7 @@ function sendExamNoticeToAll(exam, lang) {
 function sendAllExamNoticeWA() {
   const full = window._examWAMsgs || [];
   const list = full.filter(x => x.phone);
-  if (!list.length) { showToast('Phone number இல்லை'); return; }
+  if (!list.length) { showToast('Phone number not available'); return; }
 
   // Send the first one now (this click is the trusted user gesture); a
   // setTimeout-chained window.open for the rest gets silently popup-blocked
@@ -10685,8 +10693,8 @@ function sendAllExamNoticeWA() {
   if (btn0) { btn0.textContent='✅ Sent'; btn0.style.background='#dcfce7'; btn0.style.color='#166534'; btn0.disabled=true; }
 
   showToast(list.length > 1
-    ? `📱 ${x0.name}-க்கு அனுப்பப்பட்டது. மீதமுள்ள ${list.length - 1} பெற்றோருக்கும் "📱 Send" தட்டவும்.`
-    : `📱 ${x0.name}-க்கு அனுப்புகிறது…`);
+    ? `📱 ${x0.name}-sent. Remaining ${list.length - 1} To all parents "📱 Send" Tap.`
+    : `📱 ${x0.name}-sending…`);
 }
 
 /* Safe individual exam notice send using stored _examWAMsgs, matched by
@@ -10719,7 +10727,7 @@ function sendExamNoticeOne(btn, exam, waLang) {
   const tmpl  = saved || (WA_TEMPLATES.exam_notice?.ta?.[0]) || '';
   const msg   = tmpl
     ? tmpl
-        .replace(/{parent_name}/g,  s.parent    ||'பெற்றோர்')
+        .replace(/{parent_name}/g,  s.parent    ||'Parent')
         .replace(/{student_name}/g, s.name      ||'')
         .replace(/{grade}/g,        s.grade     ||'')
         .replace(/{exam_name}/g,    exam.name   ||'')
@@ -10727,10 +10735,10 @@ function sendExamNoticeOne(btn, exam, waLang) {
         .replace(/{exam_date}/g,    dateStr)
         .replace(/{max_marks}/g,    exam.maxMarks||100)
         .replace(/{pass_marks}/g,   pass)
-        .replace(/{syllabus}/g,     exam.syllabus||'முழு பாடத்திட்டம்')
+        .replace(/{syllabus}/g,     exam.syllabus||'Full syllabus')
         .replace(/{center_name}/g,  ctr.name    ||'')
         .replace(/{center_phone}/g, ctr.phone   ||'')
-    : `அன்பான ${s.parent||'பெற்றோர்'},\n\n📝 *தேர்வு அறிவிப்பு*\n🏫 ${ctr.name||''}\n\n👤 மாணவர்: *${s.name}*\n📅 தேதி: *${dateStr}*\n📚 பாடம்: *${exam.subject||''}*\n✏️ மொத்த: *${exam.maxMarks||100}* | தேர்ச்சி: *${pass}*\n\n💪 நன்கு படிக்கட்டும்!\n📞 ${ctr.phone||''}`;
+    : `Dear ${s.parent||'Parent'},\n\n📝 *Exam Notice*\n🏫 ${ctr.name||''}\n\n👤 Student: *${s.name}*\n📅 Date: *${dateStr}*\n📚 Subject: *${exam.subject||''}*\n✏️ Total: *${exam.maxMarks||100}* | Pass: *${pass}*\n\n💪 Doing well!\n📞 ${ctr.phone||''}`;
   openWA(phone, msg);
   if (btn) { btn.textContent='✅ Sent'; btn.disabled=true; btn.style.background='#16a34a'; }
 }
@@ -11147,7 +11155,7 @@ function renderStaffAttGrid() {
   var dateEl = document.getElementById('sf-att-date');
   if (!dateEl.value) {
     var n = new Date();
-    dateEl.value = n.toISOString().split('T')[0];
+    dateEl.value = _todayISO();
   }
   var date    = dateEl.value;
   var dateObj = new Date(date + 'T00:00:00');
@@ -11227,6 +11235,8 @@ function renderStaffAttGrid() {
     rows += '    <div class="av" style="background:'+s.color+';width:36px;height:36px;font-size:15px;font-weight:700;flex-shrink:0">'+(s.name||'?')[0]+'</div>';
     rows += '    <div style="flex:1;min-width:0">';
     rows += '      <div style="font-size:13px;font-weight:600;color:var(--tx)">'+s.name+'</div>';
+    var _cb = getStaffCLBalance(s, yr, dateObj.getMonth() + 1);
+    rows += '      <div style="font-size:10px;color:#92400e;font-weight:600">🌿 CL this month: '+_cb.used+' / '+_cb.quota+' used · <span style="color:'+(_cb.over?'#dc2626':'#16a34a')+'">'+_cb.left+' left</span></div>';
     rows += '      <div style="font-size:10px;color:var(--tx3)">'+s.desg
               +' &nbsp;·&nbsp; <span style="background:'+(sess==='morning'?'#fef9c3':sess==='evening'?'#ede9fe':'#dbeafe')+';color:'+(sess==='morning'?'#92400e':sess==='evening'?'#5b21b6':'#1e40af')+';padding:1px 6px;border-radius:6px;font-weight:600">'
               +(sess==='morning'?'☀️ Morning':sess==='evening'?'🌙 Evening':'☀️🌙 Both')+'</span></div>';
@@ -12277,6 +12287,11 @@ function promptSpecialLeave() {
     + '<input class="fi" id="spl-mo" style="display:none;margin-top:6px" placeholder="Reason (optional)"></div>'
     + '<div class="fg"><label class="fl">🌙 Evening session</label><select class="fi" id="spl-e" onchange="document.getElementById(\'spl-eo\').style.display=this.value===\'Other\'?\'\':\'none\'">' + opts + '</select>'
     + '<input class="fi" id="spl-eo" style="display:none;margin-top:6px" placeholder="Reason (optional)"></div>'
+    + '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:11px;color:var(--tx2);margin:4px 0 6px"><input type="checkbox" id="spl-wa" checked style="width:14px;height:14px;cursor:pointer"> 📱 Send Holiday Notice WhatsApp to parents</label>'
+    + '<div style="font-size:11px;color:var(--tx2);margin-bottom:4px">Send notice to these classes:</div>'
+    + '<div style="display:flex;flex-wrap:wrap;gap:6px 12px;border:.5px solid var(--br);border-radius:8px;padding:8px 10px;margin-bottom:8px">'
+    + _spcGrades().map(g => '<label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer"><input type="checkbox" class="spl-g" value="' + escHtml(g) + '" checked style="width:14px;height:14px"> ' + (g==='KG'?'KG':'Class ' + escHtml(g)) + '</label>').join('')
+    + '</div>'
     + '<div class="modal-foot"><button class="btn btn-p" style="flex:1;justify-content:center" onclick="_submitSpecialLeave()">✅ Confirm</button>'
     + '<button class="btn" onclick="closeModal();renderDashDayOrderSummary&&renderDashDayOrderSummary()">Cancel</button></div>'
     + '</div></div>';
@@ -12290,9 +12305,17 @@ function _submitSpecialLeave() {
   };
   const m = lab('spl-m','spl-mo'), e = lab('spl-e','spl-eo');
   if (!m && !e) { showToast('⚠️ Select a reason for at least one session'); return; }
+  const sendWA = document.getElementById('spl-wa')?.checked !== false;
+  const waGrades = Array.from(document.querySelectorAll('.spl-g:checked')).map(x => x.value);
+  if (sendWA && !waGrades.length) { showToast('⚠️ Select at least one class for the WhatsApp notice'); return; }
   closeModal();
   _applyTodayLeave('special', m, e);
   showToast('🎉 Special Leave marked — ' + [m && ('☀️ ' + m), e && ('🌙 ' + e)].filter(Boolean).join(' · '));
+  if (sendWA) {
+    const reason = (m && e && m === e) ? m + ' (Morning & Evening)'
+      : [m && ('Morning: ' + m), e && ('Evening: ' + e)].filter(Boolean).join(', ');
+    _sendHolidayNoticeWA(_todayISO(), '', reason, waGrades);
+  }
 }
 
 /* ── Special Class Day: ONE chosen batch takes attendance as normal (with
@@ -12610,6 +12633,27 @@ function computeStaffMonthSummary(s, monthVal) {
             dPresent, dAbsent, dLate, dCL, dLOP, dHol };
 }
 
+/* CL (Casual Leave) balance for ONE month. Each session marked CL = 1 CL.
+   Monthly quota: staff.clQuota, else CFG.ATTENDANCE.clPerMonth (2). */
+function getStaffCLBalance(s, yr, mo) {
+  const quota = (s.clQuota !== undefined && s.clQuota !== '' && !isNaN(parseFloat(s.clQuota))) ? parseFloat(s.clQuota) : ((CFG.ATTENDANCE && CFG.ATTENDANCE.clPerMonth) || 2);
+  const pre = s.id + '|' + yr + '-' + String(mo).padStart(2, '0') + '-';
+  let used = 0;
+  const sessDates = {};
+  Object.keys(staffAtt).forEach(k => {
+    if (staffAtt[k] !== 'CL' || k.indexOf(pre) !== 0) return;
+    const parts = k.split('|');
+    if (parts.length === 3) { used++; sessDates[parts[1]] = true; }
+  });
+  // legacy day-level key (no per-session data) = 1 CL
+  Object.keys(staffAtt).forEach(k => {
+    if (staffAtt[k] !== 'CL' || k.indexOf(pre) !== 0) return;
+    const parts = k.split('|');
+    if (parts.length === 2 && !sessDates[parts[1]]) used++;
+  });
+  return { quota: quota, used: used, left: Math.max(0, quota - used), over: Math.max(0, used - quota) };
+}
+
 function _sfDayList(arr) { return (arr && arr.length) ? arr.join(', ') : '—'; }
 
 function renderAdminStaffSummary() {
@@ -12693,6 +12737,7 @@ function renderAdminStaffSummary() {
           <div><b style="color:#92400e">🌿 CL dates:</b> ${_sfDayList(item.dCL)}</div>
           <div><b style="color:#ca8a04">⏰ Late dates:</b> ${_sfDayList(item.dLate)}</div>
           <div><b style="color:#5b21b6">💸 LOP dates:</b> ${_sfDayList(item.dLOP)}</div>
+          ${(() => { const cb = getStaffCLBalance(item.s, parseInt(monthVal), parseInt(String(monthVal).split('-')[1])); return '<div style="margin-top:4px"><b style="color:#92400e">🌿 CL balance (' + monthLabel + '):</b> ' + cb.used + ' used / ' + cb.quota + ' &nbsp;→&nbsp; <b style="color:' + (cb.over ? '#dc2626' : '#16a34a') + '">' + cb.left + ' left</b>' + (cb.over ? ' <span style="color:#dc2626">(' + cb.over + ' extra)</span>' : '') + '</div>'; })()}
         </div>
       </div>
 
@@ -12859,47 +12904,47 @@ const AI_FEATS = [
   // ── BASIC — Attendance AI only ──────────────────────────
   {id:'attend_late',    planMin:'BASIC',   c:'#2563eb',bg:'#dbeafe',
    en:{name:'Attendance & Late Finder',       desc:'Finds students with low attendance or frequent late arrivals'},
-   ta:{name:'வருகை & தாமத கண்டறிதல்',        desc:'குறைந்த வருகை மற்றும் தாமதமான மாணவர்கள்'}},
+   ta:{name:'Attendance & Late detection',        desc:'Students with low attendance and late arrivals'}},
   // ── PRO — AI Growth Prediction + Timetable ─────────────
   {id:'weak_subject',   planMin:'PRO',     c:'#dc2626',bg:'#fee2e2',
    en:{name:'Weak Subject Analyser (AI Growth)',desc:'Identifies weak subjects per student — AI Growth Prediction'},
-   ta:{name:'பலவீன பாட பகுப்பாய்வு (AI வளர்ச்சி)',desc:'மதிப்பெண்கள் மூலம் AI வளர்ச்சி கணிப்பு'}},
+   ta:{name:'Weak subject and student analysis (AI Growth)',desc:'Through marks AI Growth Forecast'}},
   {id:'late_pattern',   planMin:'PRO',     c:'#ca8a04',bg:'#fef9c3',
    en:{name:'Late Arrival Pattern Analyser',   desc:'Analyses late arrival trends by student, day, and time period'},
-   ta:{name:'தாமத வருகை வடிவ பகுப்பாய்வு',    desc:'மாணவர், நாள் மற்றும் காலம் வாரியாக தாமத போக்கு'}},
+   ta:{name:'Late arrival pattern analysis',    desc:'Student, days before'}},
   {id:'timetable',      planMin:'PRO',     c:'#7c3aed',bg:'#ede9fe',
    en:{name:'Smart Timetable Generator',       desc:'Optimised Mon-Sat schedule following TN board weightage'},
-   ta:{name:'நேர அட்டவணை உருவாக்கி',           desc:'TN பாடத்திட்ட முன்னுரிமை அட்டவணை'}},
+   ta:{name:'Timetable generator',           desc:'TN Syllabus priority schedule'}},
   // ── PREMIUM — adds frequent absent ─────────────────────
   {id:'frequent_absent',planMin:'PREMIUM', c:'#dc2626',bg:'#fff1f2',
    en:{name:'Frequent Absentee Analyser',      desc:'Patterns of repeated absences with parent alert templates'},
-   ta:{name:'அடிக்கடி வராதவர் பகுப்பாய்வு',   desc:'மீண்டும் மீண்டும் வராத மாணவர்கள் & பெற்றோர் எச்சரிக்கை'}},
+   ta:{name:'Frequent absentee analysis',   desc:'Students who are repeatedly absent & Parent alert'}},
   // ── ULTIMATE — all remaining AI ────────────────────────
   {id:'fee_forecast',   planMin:'ULTIMATE',c:'#0891b2',bg:'#ccfbf1',
    en:{name:'Fee Forecast AI',                 desc:'Predicts which students are likely fee-defaulters'},
-   ta:{name:'கட்டண கணிப்பு AI',               desc:'கட்டண நிலுவை ஆபத்தில் உள்ள மாணவர்கள்'}},
+   ta:{name:'Fee forecast AI',               desc:'Students at risk of fee dues'}},
   {id:'concentration',  planMin:'ULTIMATE',c:'#7c3aed',bg:'#ede9fe',
    en:{name:'Individual Concentration Report', desc:'Generates personalised study focus report per student via WhatsApp'},
-   ta:{name:'தனிப்பட்ட கவனிப்பு அறிக்கை',     desc:'ஒவ்வொரு மாணவருக்கும் WhatsApp மூலம் தனிப்பட்ட படிப்பு அறிக்கை'}},
+   ta:{name:'Individual Attention Report',     desc:'To each student WhatsApp Personal study report via'}},
   {id:'msgdraft',       planMin:'ULTIMATE',c:'#0d9488',bg:'#ccfbf1',
    en:{name:'Message Template Drafter',        desc:'Tamil + English professional templates for all communication types'},
-   ta:{name:'செய்தி வார்ப்புரு வரைவு',          desc:'தமிழ் & ஆங்கில தொடர்பு வார்ப்புருக்கள்'}},
+   ta:{name:'Message Template Draft',          desc:'Tamil & English communication templates'}},
 ];
 
 /* ── SMART PREDICTION FEATURES ── */
 const AI_PREDICT_FEATS = [
   {id:'predict_fail',      planMin:'BASIC', c:'#dc2626', bg:'#fee2e2', icon:'📉',
    en:{name:'Fail Risk Prediction',          desc:'Students most likely to fail — based on attendance, marks & lateness patterns'},
-   ta:{name:'தேர்ச்சி ஆபத்து கணிப்பு',     desc:'வருகை, மதிப்பெண்கள் & தாமதம் — தேர்ச்சி பெறாத ஆபத்தில் உள்ளவர்கள்'}},
+   ta:{name:'Pass Risk Prediction',     desc:'Attendance, Marks & Late — Students at risk of failing'}},
   {id:'predict_leave',     planMin:'BASIC', c:'#d97706', bg:'#fef3c7', icon:'🚪',
    en:{name:'Dropout Risk Prediction',       desc:'Students at risk of leaving tuition — fee defaults + low attendance signals'},
-   ta:{name:'விலக ஆபத்து கணிப்பு',          desc:'கட்டண தாமதம் + குறைந்த வருகை — tuition விட்டு போகும் வாய்ப்பு உள்ளவர்கள்'}},
+   ta:{name:'Dropout Risk Prediction',          desc:'Fee delay + Low attendance — tuition Students likely to leave'}},
   {id:'predict_fee_delay', planMin:'BASIC', c:'#0891b2', bg:'#ccfbf1', icon:'💸',
    en:{name:'Fee Delay Prediction',          desc:'Predicts who will delay next fees based on current payment history patterns'},
-   ta:{name:'கட்டண தாமத கணிப்பு',           desc:'கட்டண வரலாறு மூலம் — அடுத்த மாதம் தாமதமாக செலுத்தக்கூடியவர்கள்'}},
+   ta:{name:'Fee delay forecast',           desc:'Based on fee history — Students likely to pay late next month'}},
   {id:'predict_att_risk',  planMin:'BASIC', c:'#7c3aed', bg:'#ede9fe', icon:'📊',
    en:{name:'Attendance Risk Analysis',      desc:'Full risk scoring for every student — borderline, high-risk & critical levels'},
-   ta:{name:'வருகை ஆபத்து பகுப்பாய்வு',    desc:'ஒவ்வொரு மாணவரும் — எல்லை, அதிக ஆபத்து & நெருக்கடி நிலை மதிப்பீடு'}},
+   ta:{name:'Attendance Risk Analysis',    desc:'Each student — Borderline, High risk & Critical status assessment'}},
 ];
 
 function renderAICards() {
@@ -13064,10 +13109,10 @@ function computePredictions() {
 }
 
 function _riskLevel(score) {
-  if (score >= 70) return { label:'நெருக்கடி ⚠️',  en:'Critical',   color:'#dc2626', bg:'#fee2e2' };
-  if (score >= 45) return { label:'அதிக ஆபத்து 🔶', en:'High Risk',  color:'#d97706', bg:'#fef3c7' };
-  if (score >= 25) return { label:'எல்லை 🔷',       en:'Borderline', color:'#0891b2', bg:'#e0f2fe' };
-  return               { label:'பாதுகாப்பு ✅',      en:'Safe',       color:'#16a34a', bg:'#dcfce7' };
+  if (score >= 70) return { label:'Critical ⚠️',  en:'Critical',   color:'#dc2626', bg:'#fee2e2' };
+  if (score >= 45) return { label:'High risk 🔶', en:'High Risk',  color:'#d97706', bg:'#fef3c7' };
+  if (score >= 25) return { label:'Borderline 🔷',       en:'Borderline', color:'#0891b2', bg:'#e0f2fe' };
+  return               { label:'Safe ✅',      en:'Safe',       color:'#16a34a', bg:'#dcfce7' };
 }
 
 function _riskBar(score, color) {
@@ -13084,7 +13129,7 @@ function renderPredictCards() {
 
   const preds = computePredictions();
   if (preds.length === 0) {
-    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:32px;color:var(--tx3);font-size:13px;background:var(--card);border-radius:12px;border:.5px solid var(--br)">மாணவர்களை சேர்த்த பிறகு AI கணிப்புகள் தோன்றும்…</div>';
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:32px;color:var(--tx3);font-size:13px;background:var(--card);border-radius:12px;border:.5px solid var(--br)">After adding students, AI predictions will appear… AI Predictions will appear…</div>';
     return;
   }
 
@@ -13115,10 +13160,10 @@ function buildPredictCard(feat, preds) {
   const total    = critical.length + high.length;
 
   const riskSummary = total === 0
-    ? `<span style="font-size:11px;color:#16a34a;font-weight:600">✅ ${ta?'ஆபத்து இல்லை':'No students at risk'}</span>`
-    : `<span style="font-size:11px;color:#dc2626;font-weight:700">${critical.length} ${ta?'நெருக்கடி':'critical'}</span>
+    ? `<span style="font-size:11px;color:#16a34a;font-weight:600">✅ ${ta?'No risk':'No students at risk'}</span>`
+    : `<span style="font-size:11px;color:#dc2626;font-weight:700">${critical.length} ${ta?'Critical':'critical'}</span>
        <span style="font-size:10px;color:var(--tx3)"> + </span>
-       <span style="font-size:11px;color:#d97706;font-weight:700">${high.length} ${ta?'அதிக ஆபத்து':'high risk'}</span>`;
+       <span style="font-size:11px;color:#d97706;font-weight:700">${high.length} ${ta?'High risk':'high risk'}</span>`;
 
   // Top 3 at-risk students preview
   const topRisk = sorted.slice(0, 3).filter(p => p[scoreKey] >= 25);
@@ -13129,11 +13174,11 @@ function buildPredictCard(feat, preds) {
       <div class="av" style="background:${p.student.color};width:24px;height:24px;font-size:10px;flex-shrink:0">${escHtml((p.student.name||'?')[0])}</div>
       <div style="flex:1;min-width:0">
         <div style="font-size:11px;font-weight:600;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(p.student.name)}</div>
-        <div style="font-size:9px;color:var(--tx3)">${p.att.pct}% ${ta?'வருகை':'att'} · ${p.avgPct >= 0 ? p.avgPct+'% '+( ta?'மதிப்பெண்':'marks') : (ta?'மதிப்பெண் இல்லை':'no marks')}</div>
+        <div style="font-size:9px;color:var(--tx3)">${p.att.pct}% ${ta?'Attendance':'att'} · ${p.avgPct >= 0 ? p.avgPct+'% '+( ta?'Marks':'marks') : (ta?'No marks':'no marks')}</div>
       </div>
       <span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:8px;background:${rl.bg};color:${rl.color};flex-shrink:0">${score}%</span>
     </div>`;
-  }).join('') : `<div style="font-size:11px;color:#16a34a;text-align:center;padding:10px 0">✅ ${ta?'எல்லா மாணவர்களும் பாதுகாப்பாக உள்ளனர்':'All students are safe'}</div>`;
+  }).join('') : `<div style="font-size:11px;color:#16a34a;text-align:center;padding:10px 0">✅ ${ta?'All students are safe':'All students are safe'}</div>`;
 
   return `<div class="sum-card" style="cursor:pointer" onclick="runPredictAI('${feat.id}')">
     <div class="sum-card-header" style="background:${feat.bg}22">
@@ -13146,14 +13191,14 @@ function buildPredictCard(feat, preds) {
     </div>
     <div class="sum-section">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <div style="font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em">${ta?'ஆபத்தில் உள்ளவர்கள்':'Students at risk'}</div>
+        <div style="font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em">${ta?'Students at risk':'Students at risk'}</div>
         <div>${riskSummary}</div>
       </div>
       ${previewHtml}
     </div>
     <div style="padding:8px 14px;display:flex;justify-content:space-between;align-items:center;background:var(--bg)">
-      <span style="font-size:10px;color:var(--tx3)">${preds.length} ${ta?'மாணவர்கள் பகுப்பாய்வு செய்யப்பட்டனர்':'students analysed'}</span>
-      <button class="btn btn-sm" style="font-size:11px;background:${feat.c};color:#fff;border-color:${feat.c}" onclick="event.stopPropagation();runPredictAI('${feat.id}')">▶ ${ta?'முழு அறிக்கை':'Full Report'}</button>
+      <span style="font-size:10px;color:var(--tx3)">${preds.length} ${ta?'Students analysed':'students analysed'}</span>
+      <button class="btn btn-sm" style="font-size:11px;background:${feat.c};color:#fff;border-color:${feat.c}" onclick="event.stopPropagation();runPredictAI('${feat.id}')">▶ ${ta?'Full Report':'Full Report'}</button>
     </div>
   </div>`;
 }
@@ -13211,13 +13256,13 @@ function buildPredictReport(id, ta) {
 
     const fmt = (arr, label) => arr.length === 0 ? '' :
       `\n${label} (${arr.length}):\n${arr.map((p,i) => {
-        const m = p.avgPct >= 0 ? p.avgPct+'%' : (ta?'மதிப்பெண் இல்லை':'no marks');
-        const a = p.att.total > 0 ? p.att.pct+'%' : (ta?'வருகை இல்லை':'no att');
-        return `  ${i+1}. ${p.student.name} — ${ta?'ஆபத்து':'Risk'}: ${p.failScore}%\n     ${ta?'வருகை':'Att'}: ${a} | ${ta?'மதிப்பெண்':'Marks'}: ${m} | ${ta?'தாமதம்':'Late'}: ${p.att.late} ${ta?'நாட்கள்':'days'}`;
+        const m = p.avgPct >= 0 ? p.avgPct+'%' : (ta?'No marks':'no marks');
+        const a = p.att.total > 0 ? p.att.pct+'%' : (ta?'No attendance':'no att');
+        return `  ${i+1}. ${p.student.name} — ${ta?'Risk':'Risk'}: ${p.failScore}%\n     ${ta?'Attendance':'Att'}: ${a} | ${ta?'Marks':'Marks'}: ${m} | ${ta?'Late':'Late'}: ${p.att.late} ${ta?'days of high delay':'days'}`;
       }).join('\n')}`;
 
     return ta
-      ? `📉 ${ctr} — தேர்ச்சி ஆபத்து கணிப்பு\n${sep}\n\nமொத்த மாணவர்கள் பகுப்பாய்வு: ${preds.length}\n\n🔴 நெருக்கடி நிலை (70%+): ${critical.length} மாணவர்கள்${fmt(critical,'🔴 நெருக்கடி நிலை')}\n\n🟠 அதிக ஆபத்து (45-70%): ${high.length} மாணவர்கள்${fmt(high,'🟠 அதிக ஆபத்து')}\n\n🔵 எல்லை நிலை (25-45%): ${border.length} மாணவர்கள்${fmt(border,'🔵 எல்லை நிலை')}\n\n✅ பாதுகாப்பு நிலை: ${safe.length} மாணவர்கள்\n\n${dash}\n📋 பரிந்துரைக்கப்பட்ட நடவடிக்கைகள்:\n${dash}\n\n1. 🔴 நெருக்கடி நிலை மாணவர்களுக்கு உடனடி தனி வகுப்பு நடத்தவும்\n2. பெற்றோருக்கு WhatsApp மூலம் தனிப்பட்ட செய்தி அனுப்பவும்\n3. 75% கீழ் வருகை உள்ளவர்களுக்கு கட்டாய வருகை திட்டம்\n4. வாராந்திர model test நடத்தி மதிப்பெண் கண்காணிக்கவும்\n5. 5 நாட்களுக்கு ஒரு முறை பெற்றோரிடம் progress பேசவும்`
+      ? `📉 ${ctr} — Pass Risk Prediction\n${sep}\n\nTotal Students Analysed: ${preds.length}\n\n🔴 Critical status (70%+): ${critical.length} Students${fmt(critical,'🔴 Critical status')}\n\n🟠 High risk (45-70%): ${high.length} Students${fmt(high,'🟠 High risk')}\n\n🔵 Borderline status (25-45%): ${border.length} Students${fmt(border,'🔵 Borderline status')}\n\n✅ Safe status: ${safe.length} Students\n\n${dash}\n📋 Recommended actions:\n${dash}\n\n1. 🔴 Hold immediate separate classes for critical-status students\n2. To parents WhatsApp Send personal messages via\n3. 75% Mandatory attendance plan for those with attendance below\n4. Weekly model test Actions\n5. 5 days progress Talk`
       : `📉 ${ctr} — Fail Risk Prediction Report\n${sep}\n\nStudents Analysed: ${preds.length}\n\n🔴 Critical Risk (70%+): ${critical.length} students${fmt(critical,'🔴 Critical Risk')}\n\n🟠 High Risk (45-70%): ${high.length} students${fmt(high,'🟠 High Risk')}\n\n🔵 Borderline (25-45%): ${border.length} students${fmt(border,'🔵 Borderline')}\n\n✅ Safe: ${safe.length} students\n\n${dash}\n📋 Recommended Actions:\n${dash}\n\n1. Schedule immediate personal coaching for all Critical students\n2. Send individual WhatsApp reports to parents this week\n3. Students below 75% attendance — mandatory catch-up plan\n4. Run weekly model test to track marks improvement\n5. Review progress every 5 days — adjust teaching pace`;
   }
 
@@ -13229,12 +13274,12 @@ function buildPredictReport(id, ta) {
     const safe     = sorted.filter(p => p.leaveScore < 25);
 
     const fmt = arr => arr.map((p,i) => {
-      const feeInfo = p.overFees.length > 0 ? (ta?`⚠️ ₹${p.pendAmt} நிலுவை`:`⚠️ ₹${p.pendAmt} overdue`) : p.pendFees.length > 0 ? (ta?'கட்டணம் நிலுவை':'fee pending') : (ta?'கட்டணம் சரி':'fees ok');
-      return `  ${i+1}. ${p.student.name} — ${ta?'ஆபத்து':'Risk'}: ${p.leaveScore}%\n     ${ta?'வருகை':'Att'}: ${p.att.total>0?p.att.pct+'%':(ta?'இல்லை':'none')} | ${feeInfo} | ${ta?'பெற்றோர்':'Parent'}: ${p.student.parent} 📞 ${p.student.phone||'—'}`;
+      const feeInfo = p.overFees.length > 0 ? (ta?`⚠️ ₹${p.pendAmt} Pending`:`⚠️ ₹${p.pendAmt} overdue`) : p.pendFees.length > 0 ? (ta?'Fee due':'fee pending') : (ta?'Fee OK':'fees ok');
+      return `  ${i+1}. ${p.student.name} — ${ta?'Risk':'Risk'}: ${p.leaveScore}%\n     ${ta?'Attendance':'Att'}: ${p.att.total>0?p.att.pct+'%':(ta?'not available':'none')} | ${feeInfo} | ${ta?'Parent':'Parent'}: ${p.student.parent} 📞 ${p.student.phone||'—'}`;
     }).join('\n');
 
     return ta
-      ? `🚪 ${ctr} — விலக ஆபத்து கணிப்பு\n${sep}\n\nமொத்த மாணவர்கள்: ${preds.length}\n\nஆபத்து கணிப்பு முறை:\n• குறைந்த வருகை + கட்டண நிலுவை = அதிக விலக ஆபத்து\n• தொடர் வருகையின்மை = dropout சமிக்ஞை\n\n🔴 நெருக்கடி — இப்போதே அழைக்கவும் (${critical.length}):\n${fmt(critical)||'  — இல்லை'}\n\n🟠 அதிக ஆபத்து — இந்த வாரம் தொடர்பு கொள்ளவும் (${high.length}):\n${fmt(high)||'  — இல்லை'}\n\n🔵 எல்லை நிலை — கண்காணிக்கவும் (${border.length}):\n${fmt(border.slice(0,3))||'  — இல்லை'}\n\n✅ பாதுகாப்பு நிலை: ${safe.length} மாணவர்கள்\n\n${dash}\n📋 தக்கவைத்துக்கொள்ள நடவடிக்கைகள்:\n${dash}\n\n1. 🔴 நெருக்கடி மாணவர்களை நேரில் சந்திக்கவும்\n2. கட்டண நிலுவை இருந்தால் EMI / தள்ளுபடி வழங்கவும்\n3. வாராந்திர progress report பெற்றோருக்கு அனுப்பவும்\n4. சிறப்பு கவனிப்பு மூலம் மாணவர் ஆர்வம் அதிகரிக்கவும்\n5. 2 வார இடைவெளியில் ஒரு முறை நேரடி call செய்யவும்`
+      ? `🚪 ${ctr} — Dropout Risk Prediction\n${sep}\n\nTotal Students: ${preds.length}\n\nRisk prediction method:\n• Low attendance + Fee dues = High dropout risk\n• Keep up the same enthusiasm in your studies = dropout Signal\n\n🔴 Critical — Call now (${critical.length}):\n${fmt(critical)||'  — not available'}\n\n🟠 High risk — Contact this week (${high.length}):\n${fmt(high)||'  — not available'}\n\n🔵 Borderline status — Please monitor (${border.length}):\n${fmt(border.slice(0,3))||'  — not available'}\n\n✅ Safe status: ${safe.length} Students\n\n${dash}\n📋 Retention actions:\n${dash}\n\n1. 🔴 Meet critical-status students in person\n2. If fees are due EMI / Offer a discount\n3. Weekly progress report Send to parents\n4. Increase student interest through special attention\n5. 2 Make a direct call once every 2 weeks call Please do`
       : `🚪 ${ctr} — Dropout Risk Prediction Report\n${sep}\n\nTotal Students: ${preds.length}\n\nRisk Model:\n• Low attendance + fee default = high dropout probability\n• Consecutive absences = early dropout signal\n\n🔴 Critical — Call immediately (${critical.length}):\n${fmt(critical)||'  — None'}\n\n🟠 High Risk — Contact this week (${high.length}):\n${fmt(high)||'  — None'}\n\n🔵 Borderline — Monitor closely (${border.length}):\n${fmt(border.slice(0,3))||'  — None'}\n\n✅ Safe: ${safe.length} students\n\n${dash}\n📋 Retention Action Plan:\n${dash}\n\n1. Meet 🔴 Critical students or parents in person this week\n2. Offer EMI / partial fee plan for fee-defaulting students\n3. Send weekly progress report to all parents via WhatsApp\n4. Increase engagement — activities, praise, personal attention\n5. Follow-up call every 2 weeks for at-risk students`;
   }
 
@@ -13248,11 +13293,11 @@ function buildPredictReport(id, ta) {
 
     const fmtF = arr => arr.map((p,i) => {
       const f = fees.find(f2 => f2.student === p.student.name || f2.studentId === p.student.id);
-      return `  ${i+1}. ${p.student.name} — ₹${p.pendAmt} ${ta?'நிலுவை':'due'} | ${ta?'ஆபத்து':'Risk'}: ${p.feeScore}%\n     📞 ${p.student.phone||'—'} | ${ta?'பெற்றோர்':'Parent'}: ${p.student.parent}`;
+      return `  ${i+1}. ${p.student.name} — ₹${p.pendAmt} ${ta?'Pending':'due'} | ${ta?'Risk':'Risk'}: ${p.feeScore}%\n     📞 ${p.student.phone||'—'} | ${ta?'Parent':'Parent'}: ${p.student.parent}`;
     }).join('\n');
 
     return ta
-      ? `💸 ${ctr} — கட்டண தாமத கணிப்பு\n${sep}\n\nமொத்த மாணவர்கள்: ${preds.length}\nமொத்த நிலுவை தொகை: ₹${totalPendAmt.toLocaleString('en-IN')}\n\n🔴 தாமத நிலுவை (overdue) — ${overdue.length} மாணவர்கள்:\n${fmtF(overdue)||'  — இல்லை'}\n\n🟠 நிலுவை (pending) — ${pending.length} மாணவர்கள்:\n${fmtF(pending)||'  — இல்லை'}\n\n🔵 தாமத ஆபத்து — ${atrisk.length} மாணவர்கள் (வருகை குறைவு):\n${fmtF(atrisk.slice(0,3))||'  — இல்லை'}\n\n✅ சரியாக செலுத்துபவர்கள்: ${safe.length} மாணவர்கள்\n\n${dash}\n📋 வசூல் உத்திகள்:\n${dash}\n\n1. 🔴 Overdue மாணவர்களை இன்றே அழைக்கவும்\n2. மாதம் 1ம் தேதி WhatsApp கட்டண நினைவூட்டல் அனுப்பவும்\n3. UPI QR code மூலம் உடனடி செலுத்துதல் வழிசெய்யவும்\n4. 2 மாதம் நிலுவை → நேரடி சந்திப்பு அவசியம்\n5. முன்கூட்டி செலுத்தினால் ₹100-200 தள்ளுபடி கொடுக்கவும்`
+      ? `💸 ${ctr} — Fee delay forecast\n${sep}\n\nTotal Students: ${preds.length}\nTotal Pending Amount: ₹${totalPendAmt.toLocaleString('en-IN')}\n\n🔴 Late dues (overdue) — ${overdue.length} Students:\n${fmtF(overdue)||'  — not available'}\n\n🟠 Pending (pending) — ${pending.length} Students:\n${fmtF(pending)||'  — not available'}\n\n🔵 Late risk — ${atrisk.length} Students (Low Attendance):\n${fmtF(atrisk.slice(0,3))||'  — not available'}\n\n✅ Regular payers: ${safe.length} Students\n\n${dash}\n📋 Collection Strategies:\n${dash}\n\n1. 🔴 Overdue Call the students today\n2. Month 1th WhatsApp Send fee reminder\n3. UPI QR code Arrange immediate payment via\n4. 2 2 months overdue → In-person meeting required\n5. If paid in advance ₹100-200 Offer a discount`
       : `💸 ${ctr} — Fee Delay Prediction Report\n${sep}\n\nTotal Students: ${preds.length}\nTotal Outstanding: ₹${totalPendAmt.toLocaleString('en-IN')}\n\n🔴 Overdue (unpaid past due date) — ${overdue.length} students:\n${fmtF(overdue)||'  — None'}\n\n🟠 Pending (due soon) — ${pending.length} students:\n${fmtF(pending)||'  — None'}\n\n🔵 Delay Risk (low attendance = likely to delay) — ${atrisk.length}:\n${fmtF(atrisk.slice(0,3))||'  — None'}\n\n✅ Paying on time: ${safe.length} students\n\n${dash}\n📋 Collection Strategies:\n${dash}\n\n1. Call all 🔴 Overdue students or parents today\n2. Send WhatsApp fee reminder every 1st of the month\n3. Share UPI QR code for instant digital payment\n4. 2 months overdue → in-person meeting required\n5. Offer ₹100-200 discount for early payments`;
   }
 
@@ -13265,16 +13310,16 @@ function buildPredictReport(id, ta) {
     const noData   = sorted.filter(p => p.att.total === 0);
 
     const fmtA = arr => arr.map((p,i) => {
-      const a = p.att.total > 0 ? `${p.att.pct}% (${ta?'வந்தது':'present'}: ${p.att.present}, ${ta?'வரவில்லை':'absent'}: ${p.att.absent}, ${ta?'தாமதம்':'late'}: ${p.att.late})` : (ta?'இந்த மாதம் தரவு இல்லை':'no data this month');
-      return `  ${i+1}. ${p.student.name} — ${ta?'ஆபத்து':'Risk'}: ${p.attScore}%\n     ${a}`;
+      const a = p.att.total > 0 ? `${p.att.pct}% (${ta?'Present':'present'}: ${p.att.present}, ${ta?'Absent':'absent'}: ${p.att.absent}, ${ta?'Late':'late'}: ${p.att.late})` : (ta?'No data this month':'no data this month');
+      return `  ${i+1}. ${p.student.name} — ${ta?'Risk':'Risk'}: ${p.attScore}%\n     ${a}`;
     }).join('\n');
 
     return ta
-      ? `📊 ${ctr} — வருகை ஆபத்து பகுப்பாய்வு\n${sep}\n\nமொத்த மாணவர்கள்: ${preds.length}\nதரவு இல்லாதவர்கள்: ${noData.length} (இந்த மாதம் வருகை பதிவு இல்லை)\n\n${dash}\n🔴 நெருக்கடி (<60% வருகை) — ${critical.length} மாணவர்கள்:\n${fmtA(critical)||'  — இல்லை'}\n\n🟠 அதிக ஆபத்து (60-75%) — ${high.length} மாணவர்கள்:\n${fmtA(high)||'  — இல்லை'}\n\n🔵 எல்லை நிலை (75-85%) — ${border.length} மாணவர்கள்:\n${fmtA(border)||'  — இல்லை'}\n\n✅ பாதுகாப்பு (85%+): ${safe.length} மாணவர்கள்\n\n${dash}\n📋 வருகை மேம்பட நடவடிக்கைகள்:\n${dash}\n\n1. 60% கீழ் → பெற்றோருக்கு இப்போதே அழைக்கவும்\n2. வாராந்திர வருகை SMS/WhatsApp தானாக அனுப்பவும்\n3. தொடர் 3 நாள் வராதவர்களை உடனே தொடர்பு கொள்ளவும்\n4. 85%+ வருகை மாணவர்களை வகுப்பில் பாராட்டவும்\n5. போக்குவரத்து சிக்கல் இருந்தால் Batch நேரம் சரிசெய்யவும்`
+      ? `📊 ${ctr} — Attendance Risk Analysis\n${sep}\n\nTotal Students: ${preds.length}\nStudents with no data: ${noData.length} (No attendance records this month)\n\n${dash}\n🔴 Critical (<60% Attendance) — ${critical.length} Students:\n${fmtA(critical)||'  — not available'}\n\n🟠 High risk (60-75%) — ${high.length} Students:\n${fmtA(high)||'  — not available'}\n\n🔵 Borderline status (75-85%) — ${border.length} Students:\n${fmtA(border)||'  — not available'}\n\n✅ Safe (85%+): ${safe.length} Students\n\n${dash}\n📋 Attendance Improvement Actions:\n${dash}\n\n1. 60% Below → Call parents immediately\n2. Weekly Attendance SMS/WhatsApp Send automatically\n3. Continuous 3 m\n4. 85%+ Praise students with 85%+ attendance in class\n5. If there is a transport issue Batch Adjust time`
       : `📊 ${ctr} — Attendance Risk Analysis Report\n${sep}\n\nTotal Students: ${preds.length}\nNo Data This Month: ${noData.length} (attendance not yet marked)\n\n${dash}\n🔴 Critical (<60% attendance) — ${critical.length} students:\n${fmtA(critical)||'  — None'}\n\n🟠 High Risk (60-75%) — ${high.length} students:\n${fmtA(high)||'  — None'}\n\n🔵 Borderline (75-85%) — ${border.length} students:\n${fmtA(border)||'  — None'}\n\n✅ Safe (85%+): ${safe.length} students\n\n${dash}\n📋 Attendance Improvement Plan:\n${dash}\n\n1. Call parents of all students below 60% today\n2. Auto-send weekly attendance WhatsApp to all parents\n3. Contact immediately if absent 3+ consecutive days\n4. Publicly praise students with 85%+ attendance in class\n5. Check for transport issues — adjust batch timings if needed`;
   }
 
-  return ta ? `✅ கணிப்பு முடிந்தது.` : `✅ Prediction complete.`;
+  return ta ? `✅ Prediction complete.` : `✅ Prediction complete.`;
 }
 
 /* ── AI Class / Batch Filter helpers ──────────────────────────────── */
@@ -13394,16 +13439,16 @@ function builtInAI(id) {
     });
 
     // ── Header ─────────────────────────────────────────────────
-    const header = `📊 ${ctr} — பலவீன பாட & மாணவர் பகுப்பாய்வு\n${'='.repeat(45)}\n\nமொத்த மாணவர்கள்: ${students.length} | வருகை: ${attPct}%\n\n`;
+    const header = `📊 ${ctr} — Weak subject & Student analysis\n${'='.repeat(45)}\n\nTotal Students: ${students.length} | Attendance: ${attPct}%\n\n`;
 
     // ── Today's absent/late ────────────────────────────────────
     const todaySection = atRisk.length > 0
-      ? `⚠️ இன்று வரவில்லை / தாமதம் (${atRisk.length} பேர்):\n` +
-        atRisk.map((s,i) => `  ${i+1}. ${s.name} | வகுப்பு ${s.grade} | 📞 ${s.phone}`).join('\n') + '\n\n'
-      : `✅ இன்று அனைத்து மாணவர்களும் வந்தனர்!\n\n`;
+      ? `⚠️ Did not come today / Late (${atRisk.length} people):\n` +
+        atRisk.map((s,i) => `  ${i+1}. ${s.name} | Class ${s.grade} | 📞 ${s.phone}`).join('\n') + '\n\n'
+      : `✅ All students came today!\n\n`;
 
     // ── Per-class subject risk summary ─────────────────────────
-    let classSection = `📚 வகுப்பு வாரியாக பாட ஆபத்து நிலை:\n${'─'.repeat(45)}\n`;
+    let classSection = `📚 Subject Risk Level by Class:\n${'─'.repeat(45)}\n`;
     const sortedGrades = Object.keys(classSubjRisk).sort((a,b) => {
       const order = ['KG','1','2','3','4','5','6','7','8','9','10','11','12'];
       return order.indexOf(a) - order.indexOf(b);
@@ -13419,17 +13464,17 @@ function builtInAI(id) {
         .sort((a,b) => (b.miss*10 + (100-(b.avgM||60))) - (a.miss*10 + (100-(a.avgM||60))))
         .slice(0, 5);
       if (topSubjs.length === 0) return;
-      classSection += `\n🏫 வகுப்பு ${grade}:\n`;
+      classSection += `\n🏫 Class ${grade}:\n`;
       topSubjs.forEach((x, i) => {
-        const marksStr = x.avgM !== null ? ` | சராசரி: ${x.avgM}%${x.avgM < 40 ? ' 🔴' : x.avgM < 60 ? ' 🟡' : ' 🟢'}` : '';
-        const missStr  = x.miss > 0 ? ` | ${x.miss} வகுப்பு தவறியது` : '';
-        classSection += `  ${i+1}. ${x.subj}${missStr}${marksStr} (${x.students} மாணவர்)\n`;
+        const marksStr = x.avgM !== null ? ` | Average: ${x.avgM}%${x.avgM < 40 ? ' 🔴' : x.avgM < 60 ? ' 🟡' : ' 🟢'}` : '';
+        const missStr  = x.miss > 0 ? ` | ${x.miss} Classes Missed` : '';
+        classSection += `  ${i+1}. ${x.subj}${missStr}${marksStr} (${x.students} Student)\n`;
       });
     });
     classSection += '\n';
 
     // ── Top at-risk students ───────────────────────────────────
-    let studentSection = `🔴 கவலைப்படத்தக்க மாணவர்கள் (Risk Score முதலில்):\n${'─'.repeat(45)}\n`;
+    let studentSection = `🔴 Students of concern (Risk Score First):\n${'─'.repeat(45)}\n`;
     riskProfiles.slice(0, 10).forEach(({s, subjectRisks}, i) => {
       const top3 = subjectRisks.slice(0, 3).map(x => {
         const marksTag = x.avgMark !== undefined
@@ -13438,12 +13483,12 @@ function builtInAI(id) {
         const missTag  = x.missCount > 0 ? ` (${x.missCount} classes missed)` : '';
         return `${x.subj}${missTag}${marksTag}`;
       }).join(', ');
-      studentSection += `${i+1}. ${s.name} | வகுப்பு ${s.grade}\n   ⚠️ ${top3}\n`;
+      studentSection += `${i+1}. ${s.name} | Class ${s.grade}\n   ⚠️ ${top3}\n`;
     });
     studentSection += '\n';
 
     // ── Recommendations ────────────────────────────────────────
-    const recs = `📋 பரிந்துரைகள்:\n1. அதிக தவறிய மாணவர்களுக்கு extra class நடத்தவும்\n2. 40% கீழ் மதிப்பெண் பெற்ற மாணவர்களுக்கு தனிப் பயிற்சி\n3. வராத மாணவர் பெற்றோரை இன்றே அழைக்கவும்\n4. தவறிய பாடங்களில் revision test நடத்தவும்\n5. மாதாந்திர WA report பெற்றோருக்கு அனுப்பவும்`;
+    const recs = `📋 Recommendations:\n1. To students who missed the most extra class Conduct tests and monitor marks\n2. 40% Individual coaching for students scoring below\n3. Call the parents of absent students today\n4. In missed subjects revision test Conduct tests and monitor marks\n5. Monthly WA report Send to parents`;
 
     return header + todaySection + classSection + studentSection + recs;
   }
@@ -13453,33 +13498,33 @@ function builtInAI(id) {
     const n = students.length;
     const aPlus=Math.round(n*0.15), a=Math.round(n*0.22), b=Math.round(n*0.30), c=Math.round(n*0.20), fail=Math.max(0,n-aPlus-a-b-c);
     return ta
-      ? `🔮 ${ctr} — தேர்வு செயல்திறன் கணிப்பு\n${'='.repeat(40)}\n\n[தரவு: வருகை ${attPct}% | கட்டணம் ${feeRate}% | மாணவர்கள் ${n}]\n\n📊 கணிக்கப்பட்ட முடிவுகள்:\n\nதேர்ச்சி சதவீதம்  : ${predictPass}%\nA+ (91-100%)       : ~${aPlus} மாணவர்கள்\nA  (81-90%)        : ~${a} மாணவர்கள்\nB+ (71-80%)        : ~${b} மாணவர்கள்\nC  (51-70%)        : ~${c} மாணவர்கள்\nதேர்ச்சி பெறாதவர் : ~${fail} மாணவர்கள்\n\n⚠️ கவலைப்படும் பாடங்கள்:\n• தமிழ் இலக்கணம்\n• கணித வடிவியல்\n• வேதியியல் சமன்பாடுகள்\n\n🎯 மேம்பட 3 நடவடிக்கைகள்:\n1. வாராந்திர model test நடத்தவும்\n2. பலவீன பாடங்களுக்கு கூடுதல் நேரம்\n3. 85% கீழ் மாணவர்களுக்கு தனி வகுப்பு`
+      ? `🔮 ${ctr} — Exam Performance Prediction\n${'='.repeat(40)}\n\n[Data: Attendance ${attPct}% | Fee ${feeRate}% | Students ${n}]\n\n📊 Predicted results:\n\nPass percentage  : ${predictPass}%\nA+ (91-100%)       : ~${aPlus} Students\nA  (81-90%)        : ~${a} Students\nB+ (71-80%)        : ~${b} Students\nC  (51-70%)        : ~${c} Students\nFailed : ~${fail} Students\n\n⚠️ Subjects of concern:\n• Tamil Grammar\n• Mathematical geometry\n• Chemical equations\n\n🎯 To improve 3 Medium:\n1. Weekly model test Conduct tests and monitor marks\n2. Extra time for weak subjects\n3. 85% Special class for students below`
       : `🔮 ${ctr} — Board Exam Performance Prediction\n${'='.repeat(44)}\n\n[Data: Attendance ${attPct}% | Fee rate ${feeRate}% | Students ${n}]\n\n📊 Predicted Results:\n\nExpected Pass %    : ${predictPass}%\nA+ Grade (91-100%) : ~${aPlus} students\nA  Grade (81-90%)  : ~${a} students\nB+ Grade (71-80%)  : ~${b} students\nC  Grade (51-70%)  : ~${c} students\nExpected Fail      : ~${fail} students\n\n⚠️ Subjects at Risk:\n• Tamil Grammar (Eluttu, Sol, Porul)\n• Mathematics (Geometry & Algebra)\n• Science (Chemistry equations)\n\n🎯 Top 3 Interventions:\n1. Weekly model tests in exam conditions\n2. Extra 30 min for weak subjects on Saturday\n3. Personal coaching for below-75% attendance students`;
   }
 
   if (id==='timetable') {
     const days_e = ['Monday   ','Tuesday  ','Wednesday','Thursday ','Friday   ','Saturday '];
-    const days_t = ['திங்கள்  ','செவ்வாய் ','புதன்    ','வியாழன்  ','வெள்ளி   ','சனி       '];
+    const days_t = ['Monday  ','Tuesday ','Wednesday    ','Thursday  ','Friday   ','Saturday       '];
     const sub_e = ['Mathematics','Science    ','Tamil      ','English    ','Social Sci '];
-    const sub_t = ['கணிதம்      ','அறிவியல்  ','தமிழ்      ','ஆங்கிலம்  ','சமூக அறிவி'];
+    const sub_t = ['Maths      ','Science  ','Tamil      ','English  ','Social Sci'];
     const days = ta ? days_t : days_e;
     const sub = ta ? sub_t : sub_e;
-    const rev = ta ? 'மீளாய்வு              ' : 'Revision & Quiz       ';
+    const rev = ta ? 'Revision              ' : 'Revision & Quiz       ';
     const mod = ta ? 'Model Test            ' : 'Model Test            ';
     const rows = days.map((d,i)=>`${d} | 4:00-5:30  ${sub[i%5]} | 5:45-7:00  ${i===4?rev:i===5?mod:sub[(i+2)%5]}`).join('\n');
     return (ta
-      ? `📅 ${ctr} — வாராந்திர நேர அட்டவணை\n${'='.repeat(42)}\nநேரம்: திங்கள்-சனி | 4:00-7:00 PM | இடைவேளை: 5:30-5:45\n\n`
+      ? `📅 ${ctr} — Weekly Timetable\n${'='.repeat(42)}\nTime: Monday-Saturday | 4:00-7:00 PM | Break: 5:30-5:45\n\n`
       : `📅 ${ctr} — Optimised Weekly Timetable\n${'='.repeat(44)}\nHours: Mon-Sat | 4:00-7:00 PM | Break: 5:30-5:45 PM\n\n`) +
-      (ta?'நாள்         | முதல் பாகம்            | இரண்டாம் பாகம்\n':'Day         | First Half (4:00-5:30)    | Second Half (5:45-7:00)\n') +
+      (ta?'Day schedule         | First half            | Part two\n':'Day         | First Half (4:00-5:30)    | Second Half (5:45-7:00)\n') +
       '-'.repeat(55)+'\n'+rows+
-      (ta?`\n\n📌 விதிகள்:\n• திங்கள்/புதன்: கணிதம் & அறிவியல் முதலில்\n• வெள்ளி: முழு மீளாய்வு\n• சனி: Model Test + கடினமான பாடங்கள்\n• ஒரே பாடம் தொடர் நாட்களில் வைக்காதீர்கள்`
+      (ta?`\n\n📌 Rules:\n• Monday/Wednesday: Maths & Science first\n• Friday: Full revision\n• Saturday: Model Test + Difficult subjects\n• Do not schedule the same subject on consecutive days`
       : `\n\n📌 Rules Applied:\n• Mon/Wed: Math & Science in peak-focus first slot\n• Friday: Full revision day for all subjects\n• Saturday: Model test + weakest subject deep-dive\n• No same subject on consecutive days (TN board pattern)`);
   }
 
   if (id==='qp') {
     const gr = students[0]?.grade||'10';
     return (ta
-      ? `📝 தமிழ்நாடு மாநில பாடத்திட்டம் — வினாத்தாள்\n${ctr} | வகுப்பு ${gr} | கணிதம்\nமொத்தம்: 100 மதிப்பெண்கள் | நேரம்: 3 மணி நேரம்\n${'='.repeat(42)}\n\nபகுதி அ — மிகவும் குறுகிய விடை (20 × 1 = 20)\n\n1. இரு எண்களின் ஹெச்.சி.எஃப் 12, எல்.சி.எம் 360 — பெருக்கல் என்ன?\n2. x² + 5x + 6 = 0 — மூலங்கள் யாவை?\n3. AP: 5, 8, 11... — 10வது உறுப்பு?\n4. sin30° + cos60° = ?\n5. r=7cm வட்டம் — பரப்பளவு? (π=22/7)\n6. AP-ன் n கூறுகளின் கூட்டுத்தொகை சூத்திரம்?\n7. P(E) = 0.35 எனில் P(E') = ?\n8. பித்தகோரஸ் தேற்றம் கூறு.\n9. (a+b)² — வடிவியல் அடையாளம் விரிவாக்கவும்.\n10. (0,0) மற்றும் (3,4) — தொலைவு என்ன?\n[கேள்விகள் 11-20 தொடரும்...]\n\nபகுதி ஆ — குறுகிய விடை (5 × 3 = 15)\n\n1. மரத்தின் நிழல் 15மீ, ஏற்றக்கோண் 45° — மரத்தின் உயரம்?\n2. 1 முதல் 100 வரை இரட்டை எண்களின் கூட்டுத்தொகை?\n3. 2 நாணயங்கள் — P(குறைந்தது ஒரு பட்டம்)?\n4. 2x+3y=13, 3x-2y=0 — தீர்வு காண்.\n5. √2 விகிதமற்றது என நிரூபி.\n\nபகுதி இ — நீண்ட விடை (5 × 5 = 25)\n\n[ஒவ்வொன்றும் படிப்படியான தீர்வுடன்]\n\nபகுதி ஈ — கட்டுரை/சிக்கல்கள் (4 × 10 = 40)\n\nகடினத்தன்மை: எளிய 40% | நடுத்தரம் 40% | கடினம் 20%`
+      ? `📝 Tamil Nadu State Syllabus — Question Paper\n${ctr} | Class ${gr} | Maths\nTotal: 100 Marks | Time: 3 hours\n${'='.repeat(42)}\n\nPart A — Very short answer (20 × 1 = 20)\n\n1. HCF of two numbers.C.F 12, L.C.M 360 — What is the product?\n2. x² + 5x + 6 = 0 — What are the roots?\n3. AP: 5, 8, 11... — 10th term?\n4. sin30° + cos60° = ?\n5. r=7cm circle — Area? (π=22/7)\n6. AP-’s n Formula for the sum of n terms?\n7. P(E) = 0.35 If P(E') = ?\n8. State the Pythagorean theorem.\n9. (a+b)² — Expand the geometric identity.\n10. (0,0) and (3,4) — will appear?\n[Questions 11-20 To be continued...]\n\nPart B — Short answer (5 × 3 = 15)\n\n1. Shadow of the tree 15m, Angle of elevation 45° — Height of the tree?\n2. 1 From 100 Sum of even numbers from 1 to 100?\n3. 2 Please pay within 5 days — P(At least one head)?\n4. 2x+3y=13, 3x-2y=0 — Solve.\n5. √2 Prove that it is irrational.\n\nPart C — Long answer (5 × 5 = 25)\n\n[Each with step-by-step solutions]\n\nPart D — Essay/Issues (4 × 10 = 40)\n\nDifficulty: Easy 40% | Star saved 40% | Difficult 20%`
       : `📝 Tamil Nadu State Board — Question Paper\n${ctr} | Grade ${gr} | Mathematics\nMax Marks: 100 | Time: 3 Hours\n${'='.repeat(44)}\n\nSECTION A — Very Short Answer (20 × 1 = 20 Marks)\n\n1.  If HCF of two numbers is 12 and LCM is 360, find their product.\n2.  Find the roots of x² + 5x + 6 = 0.\n3.  Find the 10th term of AP: 5, 8, 11, 14...\n4.  Evaluate: sin 30° + cos 60°\n5.  If radius = 7 cm, find area of circle. (π = 22/7)\n6.  Write formula for sum of n terms of an AP.\n7.  If P(E) = 0.35, find P(E').\n8.  State Pythagoras theorem.\n9.  Expand (a + b)² using algebraic identity.\n10. Find distance between (0,0) and (3,4).\n[Questions 11-20 continue in teacher key...]\n\nSECTION B — Short Answer (5 × 3 = 15 Marks)\n\n1. A tree casts a 15m shadow. Elevation angle 45°. Find height.\n2. Find sum of all even numbers from 1 to 100.\n3. Two coins tossed. Find P(at least one head).\n4. Solve: 2x + 3y = 13 and 3x - 2y = 0.\n5. Prove that √2 is irrational.\n\nSECTION C — Long Answer (5 × 5 = 25 Marks)\n\n[Full questions with step-by-step answer hints]\n\nSECTION D — Essay / Problems (4 × 10 = 40 Marks)\n\nDifficulty: Easy 40% | Medium 40% | Hard 20%\nAnswer key provided separately for teacher use.`);
   }
 
@@ -13488,15 +13533,15 @@ function builtInAI(id) {
     const paid = fees.filter(f=>f.status==='paid').length;
     const fr = fees.length>0?Math.round(paid/fees.length*100):0;
     const rows = students.slice(0,5).map((s,i)=>{
-      const sAtt = getStudentAtt(s.id)==='P'?(ta?'வந்தனர்':'Present'):getStudentAtt(s.id)==='A'?(ta?'வரவில்லை':'Absent'):(ta?'தாமதம்':'Late');
+      const sAtt = getStudentAtt(s.id)==='P'?(ta?'Present':'Present'):getStudentAtt(s.id)==='A'?(ta?'Absent':'Absent'):(ta?'Late':'Late');
       const sFee = fees.find(f=>f.student===s.name);
-      const feeStatus = sFee?(sFee.status==='paid'?(ta?'✅ செலுத்தியது':'✅ Paid'):(ta?'⚠️ நிலுவை':'⚠️ '+sFee.status)):(ta?'—':'—');
+      const feeStatus = sFee?(sFee.status==='paid'?(ta?'✅ Paid':'✅ Paid'):(ta?'⚠️ Pending':'⚠️ '+sFee.status)):(ta?'—':'—');
       return ta
-        ? `${i+1}. ${s.name} (${s.id}) — வகுப்பு ${s.grade}\n   பெற்றோர்: ${s.parent} 📞 ${s.phone}\n   வருகை: ${sAtt} | கட்டணம்: ${feeStatus}`
+        ? `${i+1}. ${s.name} (${s.id}) — Class ${s.grade}\n   Parent: ${s.parent} 📞 ${s.phone}\n   Attendance: ${sAtt} | Fee: ${feeStatus}`
         : `${i+1}. ${s.name} (${s.id}) | Grade ${s.grade}\n   Parent: ${s.parent}  📞 ${s.phone}\n   Attendance: ${sAtt} | Fees: ${feeStatus}`;
     }).join('\n\n');
     return ta
-      ? `📋 ${ctr} — ${now} மாதாந்திர அறிக்கை\n${'='.repeat(40)}\n\nமொத்த மாணவர்கள்: ${students.length}\nவருகை: ${attPct}% ${attPct>=75?'✅':'⚠️'} | கட்டணம்: ${fr}% ${fr>=80?'✅':'⚠️'}\n\n${'─'.repeat(40)}\nமாணவர் நிலை:\n${'─'.repeat(40)}\n\n${rows}\n\n${'─'.repeat(40)}\nஆசிரியர் குறிப்பு:\nமாணவர்களின் ஒட்டுமொத்த முன்னேற்றம் திருப்திகரமாக உள்ளது.\nதொடர் வருகை மற்றும் சரியான நேர கட்டண செலுத்தல் மிக முக்கியம்.\n\n— ${CFG.CENTER.ownerName||'Admin'}, ${ctr}`
+      ? `📋 ${ctr} — ${now} Monthly Report\n${'='.repeat(40)}\n\nTotal Students: ${students.length}\nAttendance: ${attPct}% ${attPct>=75?'✅':'⚠️'} | Fee: ${fr}% ${fr>=80?'✅':'⚠️'}\n\n${'─'.repeat(40)}\nStudent status:\n${'─'.repeat(40)}\n\n${rows}\n\n${'─'.repeat(40)}\nTeacher’s note:\nOverall student progress is satisfactory.\nContinuous absence.\n\n— ${CFG.CENTER.ownerName||'Admin'}, ${ctr}`
       : `📋 ${ctr} — ${now} Monthly Progress Report\n${'='.repeat(44)}\n\nTotal Students   : ${students.length}\nAvg Attendance   : ${attPct}% ${attPct>=75?'✅ Good':'⚠️ Needs attention'}\nFee Collection   : ${fr}% ${fr>=80?'✅ Good':'⚠️ Follow up needed'}\n\n${'─'.repeat(44)}\nSTUDENT STATUS SUMMARY:\n${'─'.repeat(44)}\n\n${rows}\n\n${'─'.repeat(44)}\nTeacher's Remarks:\nOverall academic progress is satisfactory. Students are encouraged\nto maintain regular attendance and pay fees on time.\n\n— ${CFG.CENTER.ownerName||'Admin'}, ${ctr}`;
   }
 
@@ -13508,38 +13553,38 @@ function builtInAI(id) {
     const totalPend = pend.concat(over).reduce((s,f)=>s+(f.balance||0),0);
     const rate = fees.length>0?Math.round(paid.length/fees.length*100):0;
     return ta
-      ? `💰 ${ctr} — கட்டண வசூல் பகுப்பாய்வு\n${'='.repeat(40)}\n\nமொத்த பதிவுகள்  : ${fees.length}\nசெலுத்தியவர்கள் : ${paid.length} → ₹${totalPaid.toLocaleString('en-IN')} வசூல்\nநிலுவை மாணவர்  : ${pend.length} (${pend.map(f=>f.student).join(', ')||'இல்லை'})\nதாமத மாணவர்    : ${over.length} (${over.map(f=>f.student).join(', ')||'இல்லை'})\nவசூல் விகிதம்   : ${rate}% ${rate>=80?'✅ சிறப்பு':'⚠️ மேம்பட வேண்டும்'}\nநிலுவை தொகை    : ₹${totalPend.toLocaleString('en-IN')}\n\n📱 WhatsApp நினைவூட்டல் (தமிழ்):\n"அன்பான [பெற்றோர்], ${ctr}-ல் [மாதம்] கட்டணம் நிலுவையில் உள்ளது. 5 நாளுக்குள் செலுத்தவும். 📞 ${cPhone}"\n\n📱 WhatsApp Reminder (English):\n"Dear [Parent], [Month] fees pending at ${ctr}. Please pay within 5 days. 📞 ${cPhone}"\n\n🎯 வசூல் மேம்படுத்த 5 வழிகள்:\n1. மாதம் 1ம் தேதி WhatsApp அனுப்பவும்\n2. 5ம் தேதி பிறகு நேரடியாக அழைக்கவும்\n3. 5% தாமதக் கட்டணம் கண்டிப்பாக விதிக்கவும்\n4. UPI QR code மூலம் எளிதாக செலுத்த வழிசெய்யவும்\n5. முன்கூட்டி செலுத்தினால் 2% தள்ளுபடி கொடுக்கவும்`
-      : `💰 ${ctr} — Fee Collection Analysis\n${'='.repeat(44)}\n\nTotal Records    : ${fees.length}\nPaid             : ${paid.length} students → ₹${totalPaid.toLocaleString('en-IN')} collected\nPending          : ${pend.length} (${pend.map(f=>f.student).join(', ')||'None'})\nOverdue          : ${over.length} (${over.map(f=>f.student).join(', ')||'None'})\nCollection Rate  : ${rate}% ${rate>=80?'✅ Excellent':'⚠️ Needs improvement'}\nOutstanding      : ₹${totalPend.toLocaleString('en-IN')}\n\n📱 WhatsApp Reminder Template (Tamil):\n"அன்பான [பெற்றோர்], ${ctr}-ல் கட்டணம் நிலுவையில் உள்ளது. 5 நாளுக்குள் செலுத்தவும். 📞 ${cPhone}"\n\n📱 WhatsApp Reminder Template (English):\n"Dear [Parent], fees pending at ${ctr}. Pay within 5 days to avoid late fee. 📞 ${cPhone}"\n\n🎯 5 Strategies to Improve Collection:\n1. Send WhatsApp reminder every 1st of month\n2. Call personally after 5th for unpaid accounts\n3. Enforce 5% late fee strictly — creates urgency\n4. Offer UPI QR code for easy digital payments\n5. 2% discount for payments before due date`;
+      ? `💰 ${ctr} — Fee collection analysis\n${'='.repeat(40)}\n\nTotal Records  : ${fees.length}\nPaid : ${paid.length} → ₹${totalPaid.toLocaleString('en-IN')} Collected\nPending students  : ${pend.length} (${pend.map(f=>f.student).join(', ')||'not available'})\nLate students    : ${over.length} (${over.map(f=>f.student).join(', ')||'not available'})\nCollection Rate   : ${rate}% ${rate>=80?'✅ Special':'⚠️ Needs improvement'}\nPending amount    : ₹${totalPend.toLocaleString('en-IN')}\n\n📱 WhatsApp Send reminders (Tamil):\n"Dear [Parent], ${ctr}-at [Month] Fee is due. 5 Please send on time tomorrow. 📞 ${cPhone}"\n\n📱 WhatsApp Reminder (English):\n"Dear [Parent], [Month] fees pending at ${ctr}. Please pay within 5 days. 📞 ${cPhone}"\n\n🎯 5 Ways to Improve Collection 5 Ways:\n1. Month 1th WhatsApp Please send\n2. 5th, then call directly\n3. 5% Strictly charge a late fee\n4. UPI QR code Arrange easy payment via\n5. If paid in advance 2% Offer a discount`
+      : `💰 ${ctr} — Fee Collection Analysis\n${'='.repeat(44)}\n\nTotal Records    : ${fees.length}\nPaid             : ${paid.length} students → ₹${totalPaid.toLocaleString('en-IN')} collected\nPending          : ${pend.length} (${pend.map(f=>f.student).join(', ')||'None'})\nOverdue          : ${over.length} (${over.map(f=>f.student).join(', ')||'None'})\nCollection Rate  : ${rate}% ${rate>=80?'✅ Excellent':'⚠️ Needs improvement'}\nOutstanding      : ₹${totalPend.toLocaleString('en-IN')}\n\n📱 WhatsApp Reminder Template (Tamil):\n"Dear [Parent], ${ctr}-has a pending fee. 5 Please send on time tomorrow. 📞 ${cPhone}"\n\n📱 WhatsApp Reminder Template (English):\n"Dear [Parent], fees pending at ${ctr}. Pay within 5 days to avoid late fee. 📞 ${cPhone}"\n\n🎯 5 Strategies to Improve Collection:\n1. Send WhatsApp reminder every 1st of month\n2. Call personally after 5th for unpaid accounts\n3. Enforce 5% late fee strictly — creates urgency\n4. Offer UPI QR code for easy digital payments\n5. 2% discount for payments before due date`;
   }
 
   if (id==='studyplan') {
     const days_e = ['Monday   ','Tuesday  ','Wednesday','Thursday ','Friday   ','Saturday ','Sunday   '];
-    const days_t = ['திங்கள்  ','செவ்வாய் ','புதன்    ','வியாழன்  ','வெள்ளி   ','சனி       ','ஞாயிறு  '];
+    const days_t = ['Monday  ','Tuesday ','Wednesday    ','Thursday  ','Friday   ','Saturday       ','Sunday  '];
     const sube = ['Mathematics ','Science     ','Tamil       ','English     ','Social Sci  ','All Subjects','Rest/Review '];
-    const subt = ['கணிதம்      ','அறிவியல்   ','தமிழ்       ','ஆங்கிலம்   ','சமூக அறிவி  ','அனைத்தும்  ','ஓய்வு/மீளாய்'];
+    const subt = ['Maths      ','Science   ','Tamil       ','English   ','Social Sci  ','All  ','Rest/Revision'];
     const days = ta?days_t:days_e, sub = ta?subt:sube;
     const rows = days.map((d,i)=>`${d} | ${sub[i]} | ${i===6?'Revision only':'4:00-6:30 PM'}`).join('\n');
     return (ta
-      ? `📚 ${ctr} — 30 நாள் படிப்பு திட்டம்\n${'='.repeat(40)}\nமாணவர்கள்: ${students.length} | வகுப்புகள்: ${[...new Set(students.map(s=>s.grade))].join(', ')}\n\n[வாரம் 1-2: அடிப்படைகளை வலுப்படுத்து]\n\n`
+      ? `📚 ${ctr} — 30 Day- and period-wise delay trend\n${'='.repeat(40)}\nStudents: ${students.length} | Classes: ${[...new Set(students.map(s=>s.grade))].join(', ')}\n\n[Week 1-2: Strengthen the basics]\n\n`
       : `📚 ${ctr} — 30-Day Exam Study Plan\n${'='.repeat(44)}\nStudents: ${students.length} | Grades: ${[...new Set(students.map(s=>s.grade))].join(', ')}\n\n[Week 1-2: Foundation & Core Concepts]\n\n`) +
-      (ta?'நாள்         | பாடம்          | நேரம்\n':'Day         | Subject         | Time\n') +
+      (ta?'Day schedule         | Subject          | Time\n':'Day         | Subject         | Time\n') +
       '─'.repeat(44)+'\n'+rows+
-      (ta?`\n\n[வாரம் 3-4: கடினமான அத்தியாயங்கள் & சிக்கல்கள்]\n[வாரம் 5: Model Test & இறுதி மீளாய்வு]\n\n📌 குறிப்புகள்:\n• தினமும் 2.5 மணி நேரம் படிக்கவும்\n• ஒவ்வொரு பாடத்தையும் குறிப்பெடுக்கவும்\n• சனி: Full model test நடத்தவும்\n• ஞாயிறு: ஓய்வு — கஷ்டமான கேள்விகள் மட்டும்\n• பெற்றோர்: screen time குறைக்கவும்`
+      (ta?`\n\n[Week 3-4: Difficult chapters & Issues]\n[Week 5: Model Test & Final revision]\n\n📌 Notes:\n• Daily 2.5 Study for hours\n• Take notes on every subject\n• Saturday: Full model test Conduct tests and monitor marks\n• Sunday: Rest — Only difficult questions\n• Parent: screen time Reduce`
       : `\n\n[Week 3-4: Hard Chapters & Problem Solving]\n[Week 5: Model Tests & Final Revision]\n\n📌 Study Tips:\n• Study 2.5 hours daily — quality over quantity\n• Write notes for every topic studied\n• Saturday: Full model test under exam conditions\n• Sunday: Rest + review hardest questions only\n• Parents: Reduce screen time, monitor study hours`);
   }
 
   if (id==='msgdraft') {
-    return (ta?`📨 ${ctr} — செய்தி வார்ப்புரு தொகுப்பு\n${'='.repeat(40)}\n\n`:`📨 ${ctr} — Professional Message Templates\n${'='.repeat(44)}\n\n`) +
+    return (ta?`📨 ${ctr} — Message Template Set\n${'='.repeat(40)}\n\n`:`📨 ${ctr} — Professional Message Templates\n${'='.repeat(44)}\n\n`) +
       `━━ 1. FEE REMINDER (English) ━━\n"Dear [Parent], fees for [Month] at ${ctr} are pending. Total due: ₹[Amount]. Pay by [Date]. 📞 ${cPhone}. Thank you!"\n\n` +
-      `━━ 1. கட்டண நினைவூட்டல் (Tamil) ━━\n"அன்பான [பெற்றோர்], ${ctr}-ல் [மாதம்] கட்டணம் நிலுவையில் உள்ளது. ₹[தொகை]. [தேதி]க்குள் செலுத்தவும். 📞 ${cPhone}"\n\n` +
+      `━━ 1. Fee reminder (Tamil) ━━\n"Dear [Parent], ${ctr}-at [Month] Fee is due. ₹[Amount]. [Date]please pay by. 📞 ${cPhone}"\n\n` +
       `━━ 2. ABSENT ALERT (English) ━━\n"Dear [Parent], [Name] was ABSENT today at ${ctr}. If unwell, please inform us. Regular attendance matters. 📞 ${cPhone}"\n\n` +
-      `━━ 2. வருகை எச்சரிக்கை (Tamil) ━━\n"அன்பான [பெற்றோர்], [மாணவர்] இன்று ${ctr}-ல் வரவில்லை. காரணம் தெரியப்படுத்தவும். 📞 ${cPhone}"\n\n` +
+      `━━ 2. Attendance Alert (Tamil) ━━\n"Dear [Parent], [Student] Today ${ctr}-did not attend. Please let us know the reason. 📞 ${cPhone}"\n\n` +
       `━━ 3. EXAM NOTICE (English) ━━\n"Dear Parents, [Exam] for Grade [X] at ${ctr} on [Date]. Syllabus: [Topics]. Prepare well. 📞 ${cPhone}"\n\n` +
-      `━━ 3. தேர்வு அறிவிப்பு (Tamil) ━━\n"அன்பான பெற்றோரே, வகுப்பு [X]-க்கு [தேர்வு] — [தேதி] அன்று. பாடங்கள்: [விவரங்கள்]. 📞 ${cPhone}"\n\n` +
+      `━━ 3. Exam Notice (Tamil) ━━\n"Dear Parent, Class [X]-for [Exam] — [Date] On. Subjects: [Details]. 📞 ${cPhone}"\n\n` +
       `━━ 4. HOLIDAY NOTICE (English) ━━\n"Dear Parents, ${ctr} CLOSED on [Date] for [Holiday]. Resumes [Resume Date]. Happy [Holiday]! 🙏"\n\n` +
-      `━━ 4. விடுமுறை அறிவிப்பு (Tamil) ━━\n"அன்பார்ந்த பெற்றோரே, ${ctr} [தேதி] அன்று [விடுமுறை] காரணமாக மூடப்படும். [தேதி] மீண்டும் திறக்கும். 🙏"\n\n` +
+      `━━ 4. Holiday Notice (Tamil) ━━\n"Dear Parent, ${ctr} [Date] On [Holiday] Closed due to. [Date] Will reopen. 🙏"\n\n` +
       `━━ 5. BIRTHDAY WISH (English) ━━\n"🎂 Happy Birthday [Student]! May you shine bright in studies and life! — ${ctr} family 🎉"\n\n` +
-      `━━ 5. பிறந்தநாள் வாழ்த்து (Tamil) ━━\n"🎂 [மாணவர்]க்கு இனிய பிறந்தநாள் வாழ்த்துக்கள்! படிப்பிலும் வாழ்விலும் சிறந்து விளங்கட்டும்! — ${ctr} குடும்பம் 🎉"`;
+      `━━ 5. Birthday wish (Tamil) ━━\n"🎂 [Student]Happy Birthday wishes! May they excel in studies and in life! — ${ctr} Family 🎉"`;
   }
 
   // ── NEW MODULE IDs ──────────────────────────────────────
@@ -13564,7 +13609,7 @@ function builtInAI(id) {
     const clsLabel = s => s.grade ? (s.grade==='KG'?'KG':'Class '+s.grade) : '—';
 
     return ta
-      ? `📊 ${ctr}${filterTag} — வருகை & தாமத பகுப்பாய்வு\n${'='.repeat(42)}\n\nவருகை: ${activePct}% | மொத்த செயலில் உள்ள மாணவர்கள்: ${totalActive}\n\n⚠️ இன்று வரவில்லை (${absentStudents.length}):${absentStudents.map(s=>`\n• ${s.name} (${clsLabel(s)}) — ${s.parent} 📞 ${s.phone}`).join('')||' — இல்லை'}\n\n🕐 தாமதமாக வந்தவர்கள் (${lateStudents.length}):${lateMissedInfo.map(({s,lateMissed})=>`\n• ${s.name} (${clsLabel(s)})${lateMissed.length ? ' — 1st period miss: '+lateMissed.join(', ') : ''}`).join('')||' — இல்லை'}\n\n📋 பரிந்துரைகள்:\n1. 3 நாட்கள் தொடர்ச்சியாக வராதவர்களை உடனே அழைக்கவும்\n2. அடிக்கடி தாமதமாக வருபவர்களுக்கு எச்சரிக்கை அனுப்பவும்\n3. தாமதத்தால் 1st period பாடம் தொடர்ந்து miss ஆனால் கூடுதல் கவனிப்பு தேவை\n4. 75% கீழ் வருகை உள்ளவர்களுக்கு தனிக் கவனிப்பு தேவை`
+      ? `📊 ${ctr}${filterTag} — Attendance & Late analysis\n${'='.repeat(42)}\n\nAttendance: ${activePct}% | Total students currently active: ${totalActive}\n\n⚠️ Did not come today (${absentStudents.length}):${absentStudents.map(s=>`\n• ${s.name} (${clsLabel(s)}) — ${s.parent} 📞 ${s.phone}`).join('')||' — not available'}\n\n🕐 Late arrivals (${lateStudents.length}):${lateMissedInfo.map(({s,lateMissed})=>`\n• ${s.name} (${clsLabel(s)})${lateMissed.length ? ' — 1st period miss: '+lateMissed.join(', ') : ''}`).join('')||' — not available'}\n\n📋 Recommendations:\n1. 3 coins\n2. Send a warning to frequent latecomers\n3. Due to lateness 1st period Continuing the subject miss But needs extra attention\n4. 75% Individual attention needed for those with attendance below`
       : `📊 ${ctr}${filterTag} — Attendance & Late Arrival Analysis\n${'='.repeat(44)}\n\nToday's Attendance: ${activePct}% | Active Students: ${totalActive}\n\n⚠️ Absent Today (${absentStudents.length}):${absentStudents.map(s=>`\n• ${s.name} (${clsLabel(s)}) — Parent: ${s.parent} 📞 ${s.phone}`).join('')||' — None'}\n\n🕐 Late Arrivals (${lateStudents.length}) — 1st Period Subject Missed:${lateMissedInfo.map(({s,lateMissed})=>`\n• ${s.name} (${clsLabel(s)})${lateMissed.length ? ' — missed: '+lateMissed.join(', ') : ' — (no subject data yet)'}`).join('')||' — None'}\n\n📋 Action Steps:\n1. Call parents of students absent 3+ consecutive days\n2. Send WhatsApp late arrival warning (use WA module)\n3. Late students missing same 1st-period subject repeatedly → schedule makeup session\n4. Students below 75% attendance need personal intervention\n5. Check if late arrivals are from same area (transport issue)`;
   }
 
@@ -13572,7 +13617,7 @@ function builtInAI(id) {
     const highRisk = students.filter(s=>s.status==='inactive');
     const clsLabel = s => s.grade ? (s.grade==='KG'?'KG':'Class '+s.grade) : '—';
     return ta
-      ? `🔴 ${ctr}${filterTag} — அடிக்கடி வராத மாணவர் பகுப்பாய்வு\n${'='.repeat(42)}\n\nமொத்த மாணவர்கள்: ${students.length}\nசெயலற்ற / அதிக இடைவெளி: ${highRisk.length}\n\n${highRisk.map((s,i)=>`${i+1}. ${s.name} (${clsLabel(s)}) — ${s.id}\n   பெற்றோர்: ${s.parent} 📞 ${s.phone}\n   நிலை: ${s.status}`).join('\n\n')||'இல்லை'}\n\n📋 நடவடிக்கைகள்:\n1. இந்த மாணவர்களின் பெற்றோரை அழைக்கவும்\n2. மீண்டும் சேர்க்கைக்கு சிறப்பு தள்ளுபடி கொடுக்கவும்\n3. வாராந்திர வருகை சதவீதம் பெற்றோருக்கு அனுப்பவும்`
+      ? `🔴 ${ctr}${filterTag} — Frequent absentee analysis\n${'='.repeat(42)}\n\nTotal Students: ${students.length}\nInactive / Large gap: ${highRisk.length}\n\n${highRisk.map((s,i)=>`${i+1}. ${s.name} (${clsLabel(s)}) — ${s.id}\n   Parent: ${s.parent} 📞 ${s.phone}\n   Status: ${s.status}`).join('\n\n')||'not available'}\n\n📋 Medium:\n1. Call the parents of these students\n2. Special discount for re-admission\n3. Send weekly attendance percentage to parents`
       : `🔴 ${ctr}${filterTag} — Frequent Absentee Analysis\n${'='.repeat(44)}\n\nTotal Students: ${students.length}\nHigh-Risk / Inactive: ${highRisk.length}\n\n${highRisk.map((s,i)=>`${i+1}. ${s.name} (${clsLabel(s)}) — ${s.id}\n   Parent: ${s.parent} 📞 ${s.phone}\n   Status: ${s.status}`).join('\n\n')||'None identified'}\n\n📋 Recommended Actions:\n1. Call parents of frequently absent students this week\n2. Offer special re-enrollment discount or counseling\n3. Send weekly attendance % report to parents via WhatsApp\n4. Investigate root cause: health, family, transport, or engagement issue`;
   }
 
@@ -13581,7 +13626,7 @@ function builtInAI(id) {
     const pendStudents = students.filter(s=>pend.some(f=>f.student===s.name||f.studentId===s.id));
     const clsLabel = s => s.grade ? (s.grade==='KG'?'KG':'Class '+s.grade) : '—';
     return ta
-      ? `💰 ${ctr}${filterTag} — கட்டண கணிப்பு பகுப்பாய்வு\n${'='.repeat(40)}\n\nகட்டண வசூல்: ${feeRate}%\nநிலுவை மாணவர்கள்: ${pendStudents.length}\n\n${pendStudents.map((s,i)=>{const f=pend.find(p=>p.student===s.name||p.studentId===s.id);return `${i+1}. ${s.name} (${clsLabel(s)}) — ₹${f?.balance||0} நிலுவை\n   📞 ${s.phone}`;}).join('\n')||'நிலுவை இல்லை'}\n\n📋 வசூல் உத்திகள்:\n1. மாதம் 1ம் தேதி WhatsApp நினைவூட்டல் அனுப்பவும்\n2. 2 மாதம் நிலுவை இருந்தால் நேரடியாக அழைக்கவும்\n3. UPI QR code கொடுத்து எளிதாக செலுத்த வழிசெய்யவும்`
+      ? `💰 ${ctr}${filterTag} — Fee forecast analysis\n${'='.repeat(40)}\n\nFee collection: ${feeRate}%\nPending students: ${pendStudents.length}\n\n${pendStudents.map((s,i)=>{const f=pend.find(p=>p.student===s.name||p.studentId===s.id);return `${i+1}. ${s.name} (${clsLabel(s)}) — ₹${f?.balance||0} Pending\n   📞 ${s.phone}`;}).join('\n')||'No pending'}\n\n📋 Collection Strategies:\n1. Month 1th WhatsApp minute break\n2. 2 If 2 months are overdue, call directly\n3. UPI QR code Provide a UPI QR code for easy payment`
       : `💰 ${ctr}${filterTag} — Fee Defaulter Forecast\n${'='.repeat(44)}\n\nCollection Rate: ${feeRate}%\nStudents with Pending Fees: ${pendStudents.length}\n\n${pendStudents.map((s,i)=>{const f=pend.find(p=>p.student===s.name||p.studentId===s.id);return `${i+1}. ${s.name} (${clsLabel(s)}) — ₹${f?.balance||0} pending\n   Parent: ${s.parent} 📞 ${s.phone}`;}).join('\n')||'No pending fees — excellent!'}\n\n📋 Collection Strategies:\n1. Send WhatsApp fee reminder on 1st of every month\n2. Call directly after 5th for unpaid students\n3. Share UPI QR for easy digital payment\n4. Enforce 5% late fee after grace period — creates urgency`;
   }
 
@@ -13589,7 +13634,7 @@ function builtInAI(id) {
     const lateToday = students.filter(s=>s&&s.name&&s.status==='active'&&getStudentAtt(s.id)==='L');
     const clsLabel = s => s.grade ? (s.grade==='KG'?'KG':'Class '+s.grade) : '—';
     return ta
-      ? `🕐 ${ctr}${filterTag} — தாமத வருகை வடிவ பகுப்பாய்வு\n${'='.repeat(42)}\n\nவருகை: ${attPct}%\nதாமதமாக வந்தவர்கள் (இன்று): ${lateToday.length}\n\n${lateToday.map((s,i)=>`${i+1}. ${s.name} (${clsLabel(s)}) — ${s.parent} 📞 ${s.phone}`).join('\n')||'இன்று தாமதம் இல்லை'}\n\n📊 தாமத வடிவ கண்டுபிடிப்பு:\n• திங்கள் & வெள்ளி: அதிக தாமதம் (தொடக்கம் & முடிவு வாரம்)\n• காலை நேர வகுப்பு: கோடை காலத்தில் அதிக தாமதம்\n\n📋 தீர்வு நடவடிக்கைகள்:\n1. அடிக்கடி தாமதமாக வருபவர்களுக்கு WhatsApp எச்சரிக்கை\n2. பெற்றோரிடம் தாமத காரணம் கேட்கவும்\n3. பேருந்து / போக்குவரத்து சிக்கல் என்றால் Batch நேரம் மாற்றவும்`
+      ? `🕐 ${ctr}${filterTag} — Late arrival pattern analysis\n${'='.repeat(42)}\n\nAttendance: ${attPct}%\nLate arrivals (Today): ${lateToday.length}\n\n${lateToday.map((s,i)=>`${i+1}. ${s.name} (${clsLabel(s)}) — ${s.parent} 📞 ${s.phone}`).join('\n')||'No late arrivals today'}\n\n📊 Late pattern detection:\n• Monday & Friday: High lateness (Start & End of week)\n• Morning class: Higher late arrivals in summer\n\n📋 Corrective actions:\n1. To frequent latecomers WhatsApp Warning\n2. Ask parents the reason for the delay\n3. Bus / If it is a transport issue Batch Change time`
       : `🕐 ${ctr}${filterTag} — Late Arrival Pattern Analysis\n${'='.repeat(44)}\n\nAttendance: ${attPct}%\nLate Today: ${lateToday.length}\n\n${lateToday.map((s,i)=>`${i+1}. ${s.name} (${clsLabel(s)}) — Parent: ${s.parent} 📞 ${s.phone}`).join('\n')||'No late arrivals today'}\n\n📊 Pattern Observations:\n• Monday & Friday: Highest late rate (start/end of week)\n• Morning batches: More late arrivals in summer months\n\n📋 Corrective Actions:\n1. Send WhatsApp warning to frequent late-comers\n2. Ask parents reason for repeated lateness\n3. If transport issue — adjust batch timing\n4. Track if late patterns correlate with poor marks`;
   }
 
@@ -13598,18 +13643,18 @@ function builtInAI(id) {
     const needHelp     = students.filter(s=>s.status==='inactive').slice(0,3);
     const clsLabel = s => s.grade ? (s.grade==='KG'?'KG':'Class '+s.grade) : '—';
     return ta
-      ? `📚 ${ctr}${filterTag} — தனிப்பட்ட கவனிப்பு அறிக்கை\n${'='.repeat(42)}\n\nஒவ்வொரு மாணவருக்கும் WhatsApp மூலம் தனிப்பட்ட படிப்பு வழிகாட்டல் அனுப்பவும்:\n\n✅ சிறப்பாக செய்யும் மாணவர்கள்:\n${topStudents.map((s,i)=>`${i+1}. ${s.name} (${clsLabel(s)}) — தொடர்ந்து சிறப்பாக படிக்கிறார்`).join('\n')}\n\n⚠️ கூடுதல் கவனிப்பு தேவையானவர்கள்:\n${needHelp.map((s,i)=>`${i+1}. ${s.name} (${clsLabel(s)}) — ${s.parent}க்கு தனிப்பட்ட செய்தி அனுப்பவும்`).join('\n')}\n\n📱 WhatsApp வார்ப்புரு:\n"அன்பான [பெற்றோர்], உங்கள் பிள்ளை [மாணவர் பெயர்] சிறப்பாக படிக்கிறார். [பலவீன பாடம்]-ல் கூடுதல் கவனிப்பு தேவை. நாங்கள் உதவ தயாராக இருக்கிறோம்! 📞 ${cPhone}"`
+      ? `📚 ${ctr}${filterTag} — Individual Attention Report\n${'='.repeat(42)}\n\nTo each student WhatsApp Send personalised study guidance via:\n\n✅ Students doing well:\n${topStudents.map((s,i)=>`${i+1}. ${s.name} (${clsLabel(s)}) — Keep studying well`).join('\n')}\n\n⚠️ Students needing extra attention:\n${needHelp.map((s,i)=>`${i+1}. ${s.name} (${clsLabel(s)}) — ${s.parent}send a personal message`).join('\n')}\n\n📱 WhatsApp Template:\n"Dear [Parent], Your child [Student name] is studying well. [Weak subject]-needs extra attention. We will help! 📞 ${cPhone}"`
       : `📚 ${ctr}${filterTag} — Individual Concentration Report\n${'='.repeat(44)}\n\nPersonalised study guidance via WhatsApp for each student:\n\n✅ Students Performing Well:\n${topStudents.map((s,i)=>`${i+1}. ${s.name} (${clsLabel(s)}) — Consistent performer`).join('\n')}\n\n⚠️ Students Needing Extra Attention:\n${needHelp.map((s,i)=>`${i+1}. ${s.name} (${clsLabel(s)}) — Send personal message to ${s.parent}`).join('\n')}\n\n📱 WA Template:\n"Dear [Parent], [Student] needs extra focus on [Subject]. We have scheduled individual attention sessions. Contact: 📞 ${cPhone}"\n\n📋 Action: Use WA Module → Build Queue → Send individual concentration reports to all parents`;
   }
 
-  return ta ? `✅ "${id}" பகுப்பாய்வு நிறைவடைந்தது.` : `✅ Analysis for "${id}" complete.`;
+  return ta ? `✅ "${id}" Analysis completed.` : `✅ Analysis for "${id}" complete.`;
 }
 
 async function runAI(id) {
   var lic = window.__LIC__ || {};
   if (lic.features && lic.features.aiFeatures === false) {
     openUpgrade();
-    showToast(lang==='ta'?'AI அம்சங்களுக்கு Pro plan தேவை':'AI requires Pro plan');
+    showToast(lang==='ta'?'AI For features Pro plan Required':'AI requires Pro plan');
     return;
   }
   var feat = AI_FEATS.find(function(f){return f.id===id;});
@@ -13679,7 +13724,7 @@ function closeAIReport() {
 
 async function runCustomAI() {
   const input=(document.getElementById('ai-custom')?.value||'').trim();
-  if(!input){showToast(lang==='ta'?'கேள்வி எழுதவும்':'Type a question first');return;}
+  if(!input){showToast(lang==='ta'?'Write a question':'Type a question first');return;}
   activeAI='custom'; renderAICards();
   document.getElementById('ai-ph').style.display='none';
   document.getElementById('ai-output').style.display='none';
@@ -13687,18 +13732,18 @@ async function runCustomAI() {
   await new Promise(r=>setTimeout(r,700));
   const q=input.toLowerCase();
   let result;
-  if(q.includes('student')||q.includes('மாணவ')||q.includes('attend')||q.includes('வருகை')) result=builtInAI('weak');
-  else if(q.includes('fee')||q.includes('கட்டண')||q.includes('payment')||q.includes('pay')) result=builtInAI('fees');
-  else if(q.includes('exam')||q.includes('test')||q.includes('தேர்வு')||q.includes('question')) result=builtInAI('qp');
-  else if(q.includes('schedule')||q.includes('timetable')||q.includes('time')||q.includes('அட்டவணை')) result=builtInAI('timetable');
-  else if(q.includes('message')||q.includes('whatsapp')||q.includes('sms')||q.includes('செய்தி')) result=builtInAI('msgdraft');
-  else if(q.includes('study')||q.includes('plan')||q.includes('படிப்பு')) result=builtInAI('studyplan');
-  else if(q.includes('predict')||q.includes('result')||q.includes('கணிப்பு')) result=builtInAI('predict');
+  if(q.includes('student')||q.includes('Student')||q.includes('attend')||q.includes('Attendance')) result=builtInAI('weak');
+  else if(q.includes('fee')||q.includes('Fee')||q.includes('payment')||q.includes('pay')) result=builtInAI('fees');
+  else if(q.includes('exam')||q.includes('test')||q.includes('Exam')||q.includes('question')) result=builtInAI('qp');
+  else if(q.includes('schedule')||q.includes('timetable')||q.includes('time')||q.includes('Timetable')) result=builtInAI('timetable');
+  else if(q.includes('message')||q.includes('whatsapp')||q.includes('sms')||q.includes('Message')) result=builtInAI('msgdraft');
+  else if(q.includes('study')||q.includes('plan')||q.includes('Study')) result=builtInAI('studyplan');
+  else if(q.includes('predict')||q.includes('result')||q.includes('Forecast')) result=builtInAI('predict');
   else result=builtInAI('report');
   document.getElementById('ai-loading').style.display='none';
   document.getElementById('ai-output').style.display='block';
-  document.getElementById('ai-out-title').textContent=lang==='ta'?'தனிப்பயன் பகுப்பாய்வு':'Custom Analysis';
-  document.getElementById('ai-out-model').textContent=lang==='ta'?'உள்ளமைக்கப்பட்ட AI':'Built-in AI Engine v2';
+  document.getElementById('ai-out-title').textContent=lang==='ta'?'Custom Analysis':'Custom Analysis';
+  document.getElementById('ai-out-model').textContent=lang==='ta'?'Built-in AI':'Built-in AI Engine v2';
   const streamEl=document.getElementById('ai-stream');
   streamEl.textContent='';
   let i=0;
@@ -13706,7 +13751,7 @@ async function runCustomAI() {
   document.getElementById('ai-custom').value='';
 }
 
-function copyAIResp(){const t=document.getElementById('ai-stream')?.textContent||'';navigator.clipboard.writeText(t).then(()=>showToast(lang==='ta'?'நகலெடுக்கப்பட்டது!':'Copied!')).catch(()=>{});}
+function copyAIResp(){const t=document.getElementById('ai-stream')?.textContent||'';navigator.clipboard.writeText(t).then(()=>showToast(lang==='ta'?'Conduct!':'Copied!')).catch(()=>{});}
 function clearAI(){activeAI=null;renderAICards();document.getElementById('ai-output').style.display='none';document.getElementById('ai-ph').style.display='block';}
 
 /* ── Late-to-Leave Config (Pro+) ─────────────────────── */
@@ -13934,7 +13979,7 @@ function renderStudyPlannerCards() {
   if(active.length===0){
     grid.innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:32px;color:var(--tx3);
       font-size:13px;background:var(--card);border-radius:12px;border:.5px solid var(--br)">
-      ${ta?'மாணவர்களை சேர்த்த பிறகு AI Study Planner தோன்றும்':'Add students to see AI Study Planner'}</div>`;
+      ${ta?'After adding students, AI predictions will appear… AI Study Planner Copied':'Add students to see AI Study Planner'}</div>`;
     return;
   }
 
@@ -13949,7 +13994,7 @@ function renderStudyPlannerCards() {
         <div style="flex:1;min-width:0">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
             <span style="font-size:11px;font-weight:600;color:var(--tx)">${sl.subject}</span>
-            <span style="font-size:10px;font-weight:700;color:${sl.color}">${sl.mins} ${ta?'நிமிடம்':'min'}</span>
+            <span style="font-size:10px;font-weight:700;color:${sl.color}">${sl.mins} ${ta?'minutes':'min'}</span>
           </div>
           <div style="height:4px;background:var(--bg);border-radius:2px;overflow:hidden">
             <div style="height:100%;width:${pct}%;background:${sl.color};border-radius:2px"></div>
@@ -13961,35 +14006,35 @@ function renderStudyPlannerCards() {
 
     const noMark=plan.avgPct===60&&plan.weak.length===0
       ? `<div style="font-size:10px;color:var(--tx3);margin-top:4px;font-style:italic">
-          ${ta?'மதிப்பெண் சேர்த்த பிறகு திட்டம் துல்லியமாகும்':'Add marks for a more accurate plan'}</div>` : '';
+          ${ta?'Plan will be accurate after marks are added':'Add marks for a more accurate plan'}</div>` : '';
 
     return `<div class="sum-card">
       <div class="sum-card-header">
         <div class="av" style="background:${s.color};width:36px;height:36px;font-size:14px">${escHtml((s.name||'?')[0])}</div>
         <div style="flex:1;min-width:0">
           <div style="font-size:12px;font-weight:700;color:var(--tx)">${escHtml(s.name)}</div>
-          <div style="font-size:10px;color:var(--tx3)">${ta?'வகுப்பு':'Grade'} ${s.grade} · ${plan.dayName}</div>
+          <div style="font-size:10px;color:var(--tx3)">${ta?'Class':'Grade'} ${s.grade} · ${plan.dayName}</div>
         </div>
         <div style="text-align:right;flex-shrink:0">
           <div style="font-size:16px;font-weight:800;color:#0369a1">${plan.totalMins}</div>
-          <div style="font-size:9px;color:var(--tx3)">${ta?'நிமிடம்':'min'}</div>
+          <div style="font-size:9px;color:var(--tx3)">${ta?'minutes':'min'}</div>
         </div>
       </div>
       <div class="sum-section">
         <div class="sum-section-title" style="justify-content:space-between">
-          <span>📅 ${ta?'இன்றைய படிப்பு திட்டம்':"Today's Study Plan"}</span>
+          <span>📅 ${ta?'Today’s study plan':"Today's Study Plan"}</span>
           <span style="font-size:9px;background:#e0f2fe;color:#0369a1;padding:1px 6px;border-radius:6px;font-weight:700">AUTO</span>
         </div>
         ${slotsHtml}
         ${plan.breakMins>0?`<div style="font-size:10px;color:var(--tx3);margin-top:4px;padding:4px 8px;background:var(--bg);border-radius:6px">
-          ☕ ${ta?'இடைவேளை':'Break'}: ${plan.breakMins} ${ta?'நிமிடம் (45 நிமிட படிப்புக்கு ஒரு முறை)':'min (every 45 min)'}</div>`:''}
+          ☕ ${ta?'Break':'Break'}: ${plan.breakMins} ${ta?'Admin dashboard (45 minute previous lesson review)':'min (every 45 min)'}</div>`:''}
         ${plan.urgentExam?`<div style="margin-top:6px;padding:5px 9px;border-radius:7px;background:#fee2e2;font-size:10px;font-weight:600;color:#dc2626">
-          🚨 ${ta?'தேர்வு:':'Exam:'} ${plan.urgentExam.name} — ${plan.urgentExam.date}</div>`:''}
+          🚨 ${ta?'Exam:':'Exam:'} ${plan.urgentExam.name} — ${plan.urgentExam.date}</div>`:''}
         ${noMark}
       </div>
       <div class="sum-card-foot" style="gap:6px">
         <button class="btn btn-sm" style="flex:1;justify-content:center;font-size:10px;background:#0369a1;color:#fff;border-color:#0369a1"
-          onclick="runStudyPlanReport('${s.id}')">📋 ${ta?'7 நாள் திட்டம்':'7-Day Plan'}</button>
+          onclick="runStudyPlanReport('${s.id}')">📋 ${ta?'7 day study plan':'7-Day Plan'}</button>
         <button class="btn btn-sm" style="font-size:10px"
           onclick="sendStudyPlanWA('${s.id}')">📱 WA</button>
       </div>
@@ -14000,14 +14045,14 @@ function renderStudyPlannerCards() {
     grid.innerHTML+=`<div style="display:flex;align-items:center;justify-content:center;
       background:var(--card);border:.5px solid var(--br);border-radius:12px;padding:20px;
       color:#0369a1;font-size:12px;font-weight:600">
-      +${active.length-6} ${lang==='ta'?'மாணவர்கள் — வார திட்டம் காண':'more students'}</div>`;
+      +${active.length-6} ${lang==='ta'?'Students — See weekly plan':'more students'}</div>`;
   }
 }
 
 /* ── 7-Day report ── */
 function runStudyPlanReport(studentId) {
   const s=students.find(x=>x.id===studentId);
-  if(!s) return showToast('மாணவர் கிடைக்கவில்லை');
+  if(!s) return showToast('Student not found');
   const ta=lang==='ta';
   const panel=document.getElementById('ai-report-panel');
   const loading=document.getElementById('ai-loading');
@@ -14016,8 +14061,8 @@ function runStudyPlanReport(studentId) {
   const titleEl=document.getElementById('ai-report-title');
   const subEl=document.getElementById('ai-report-sub');
   const iconEl=document.getElementById('ai-report-icon');
-  if(titleEl) titleEl.textContent=ta?`${s.name} — 7 நாள் படிப்பு திட்டம்`:`${s.name} — 7-Day Study Plan`;
-  if(subEl)   subEl.textContent=ta?'பலவீன பாடம், தேர்வு தேதி & வருகை அடிப்படையில்':'Based on weak subjects, exams & attendance';
+  if(titleEl) titleEl.textContent=ta?`${s.name} — 7 Day- and period-wise delay trend`:`${s.name} — 7-Day Study Plan`;
+  if(subEl)   subEl.textContent=ta?'Weak subject, Exam date & Based on attendance':'Based on weak subjects, exams & attendance';
   if(iconEl){ iconEl.textContent='📚'; iconEl.style.background='#e0f2fe'; }
   panel.style.display='block'; loading.style.display='block'; output.style.display='none';
   panel.scrollIntoView({behavior:'smooth',block:'start'});
@@ -14075,9 +14120,9 @@ function _spBuildReport(student, ta) {
 /* ── WA ── */
 function sendStudyPlanWA(studentId) {
   const s=students.find(x=>x.id===studentId);
-  if(!s) return showToast('மாணவர் கிடைக்கவில்லை');
+  if(!s) return showToast('Student not found');
   const phone=s.phone||s.pphone||'';
-  if(!phone) return showToast('⚠️ தொலைபேசி எண் இல்லை');
+  if(!phone) return showToast('⚠️ No phone number');
   const ta=lang==='ta';
   const plan=_spBuildDayPlan(s,0);
   const ctr=CFG.CENTER.name||'Academy';
@@ -14086,7 +14131,7 @@ function sendStudyPlanWA(studentId) {
     ?`🙏 வணக்கம் *${s.parent}* அவர்களுக்கு,\n\n📚 *${s.name}* — இன்றைய AI படிப்பு திட்டம்\n🏫 *${ctr}*\n\n${slotStr}\n\n☕ 45 நிமிடத்திற்கு ஒரு முறை 5 நிமிட இடைவேளை\nமொத்தம்: *${plan.totalMins} நிமிடம்*\n\n📞 ${CFG.CENTER.phone}`
     :`Dear *${s.parent}*, here is *${s.name}*'s AI Study Plan for today:\n🏫 *${ctr}*\n\n${slotStr}\n\n☕ 5-min break every 45 min\nTotal: *${plan.totalMins} min*\n\n📞 ${CFG.CENTER.phone}`;
   openWA(phone, msg);
-  showToast('📱 Study Plan WhatsApp திறக்கிறது…');
+  showToast('📱 Study Plan WhatsApp Opening…');
 }
 
 
@@ -14247,8 +14292,8 @@ function renderGrowthForecastCards() {
       return (ai===-1?99:ai)-(bi===-1?99:bi);
     });
     const curVal=sel.value||'all';
-    sel.innerHTML='<option value="all">🎓 '+(ta?'அனைத்து வகுப்புகள்':'All Classes')+'</option>'
-      +existGrades.map(g=>`<option value="${g}" ${curVal===g?'selected':''}>${ta?'வகுப்பு ':'Grade '}${g} (${allActive.filter(s=>String(s.grade||'').trim()===g).length})</option>`).join('');
+    sel.innerHTML='<option value="all">🎓 '+(ta?'All classes':'All Classes')+'</option>'
+      +existGrades.map(g=>`<option value="${g}" ${curVal===g?'selected':''}>${ta?'Class ':'Grade '}${g} (${allActive.filter(s=>String(s.grade||'').trim()===g).length})</option>`).join('');
     if(curVal!=='all') sel.value=curVal;
   }
 
@@ -14261,13 +14306,13 @@ function renderGrowthForecastCards() {
   if(allActive.length===0){
     grid.innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:32px;color:var(--tx3);
       font-size:13px;background:var(--card);border-radius:12px;border:.5px solid var(--br)">
-      ${ta?'மாணவர்களை சேர்த்த பிறகு AI Growth Forecast தோன்றும்':'Add students to see AI Growth Forecast'}</div>`;
+      ${ta?'After adding students, AI predictions will appear… AI Growth Forecast Copied':'Add students to see AI Growth Forecast'}</div>`;
     return;
   }
   if(active.length===0){
     grid.innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--tx3);
       font-size:13px;background:var(--card);border-radius:12px;border:.5px solid var(--br)">
-      ${ta?'இந்த வகுப்பில் மாணவர்கள் இல்லை':'No students found for this grade'}</div>`;
+      ${ta?'No students in this class':'No students found for this grade'}</div>`;
     return;
   }
 
@@ -14287,16 +14332,16 @@ function renderGrowthForecastCards() {
     const fc=_gfCompute(s);
     const trendIcon =fc.monthTrend==='improving'?'📈':fc.monthTrend==='declining'?'📉':'➡️';
     const trendColor=fc.monthTrend==='improving'?'#16a34a':fc.monthTrend==='declining'?'#dc2626':'#ca8a04';
-    const trendLabel=fc.monthTrend==='improving'?(ta?'முன்னேற்றம்':'Improving'):fc.monthTrend==='declining'?(ta?'சரிவு':'Declining'):(ta?'நிலையான':'Stable');
+    const trendLabel=fc.monthTrend==='improving'?(ta?'Improvement':'Improving'):fc.monthTrend==='declining'?(ta?'Decline':'Declining'):(ta?'Stable':'Stable');
     const noData=!fc.hasData
       ?`<div style="font-size:10px;color:var(--tx3);text-align:center;padding:6px;font-style:italic">
-          ${ta?'மதிப்பெண்கள் சேர்த்த பிறகு துல்லியமான கணிப்பு கிடைக்கும்':'Add marks data for accurate forecast'}</div>`:''
+          ${ta?'An accurate prediction will be available after marks are added':'Add marks data for accurate forecast'}</div>`:''
 
     // Monthly history mini-chart
     const histWithData = fc.monthHistory.filter(h => h.avg !== null);
     const monthHistHtml = histWithData.length >= 2
       ? `<div style="margin-top:8px">
-          <div style="font-size:9px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">${ta?'மாத ஒப்பீடு':'Monthly Comparison'}</div>
+          <div style="font-size:9px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">${ta?'Monthly Comparison':'Monthly Comparison'}</div>
           <div style="display:flex;align-items:flex-end;gap:4px;height:40px">
             ${fc.monthHistory.map(h => {
               const pct = h.avg !== null ? h.avg : 0;
@@ -14311,7 +14356,7 @@ function renderGrowthForecastCards() {
             }).join('')}
           </div>
           ${fc.monthTrendDelta !== 0 ? `<div style="font-size:10px;font-weight:700;color:${trendColor};margin-top:5px;text-align:center">
-            ${trendIcon} ${fc.monthTrendDelta > 0 ? '+' : ''}${fc.monthTrendDelta}% ${ta ? 'கடந்த மாதத்தை விட' : 'vs last month'}
+            ${trendIcon} ${fc.monthTrendDelta > 0 ? '+' : ''}${fc.monthTrendDelta}% ${ta ? 'Compared to last month' : 'vs last month'}
           </div>` : ''}
         </div>` : '';
 
@@ -14320,7 +14365,7 @@ function renderGrowthForecastCards() {
         <div class="av" style="background:${s.color};width:36px;height:36px;font-size:14px">${escHtml((s.name||'?')[0])}</div>
         <div style="flex:1;min-width:0">
           <div style="font-size:12px;font-weight:700;color:var(--tx)">${escHtml(s.name)}</div>
-          <div style="font-size:10px;color:var(--tx3)">${ta?'வகுப்பு':'Grade'} ${s.grade}</div>
+          <div style="font-size:10px;color:var(--tx3)">${ta?'Class':'Grade'} ${s.grade}</div>
         </div>
         <div style="text-align:right">
           <div style="font-size:20px">${trendIcon}</div>
@@ -14329,9 +14374,9 @@ function renderGrowthForecastCards() {
       </div>
 
       <div class="sum-section">
-        <div class="sum-section-title">📊 ${ta?'தற்போதைய நிலை':'Current Performance'}</div>
+        <div class="sum-section-title">📊 ${ta?'Current status':'Current Performance'}</div>
         <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--tx2);margin-bottom:3px">
-          <span>${ta?'சராசரி மதிப்பெண்':'Avg Marks'}</span>
+          <span>${ta?'Average Marks':'Avg Marks'}</span>
           <b style="color:var(--tx)">${fc.avgPct}%</b>
         </div>
         ${bar(fc.avgPct,100,'#2563eb')}
@@ -14340,19 +14385,19 @@ function renderGrowthForecastCards() {
       </div>
 
       <div class="sum-section">
-        <div class="sum-section-title">🔮 ${ta?'அடுத்த மாத கணிப்பு':'Next Month Forecast'}</div>
+        <div class="sum-section-title">🔮 ${ta?'Next month forecast':'Next Month Forecast'}</div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-          <span style="font-size:11px;color:var(--tx2)">${ta?'கணிக்கப்பட்ட சராசரி':'Predicted Average'}</span>
+          <span style="font-size:11px;color:var(--tx2)">${ta?'Predicted average':'Predicted Average'}</span>
           <span style="font-size:15px;font-weight:800;color:${fc.predictedAvg>=fc.avgPct?'#16a34a':'#dc2626'}">${fc.predictedAvg}%</span>
         </div>
         ${bar(fc.predictedAvg,100,fc.predictedAvg>=fc.avgPct?'#16a34a':'#dc2626')}
         <div style="font-size:10px;color:${trendColor};margin-top:4px;font-weight:600">
-          ${trendIcon} ${fc.monthTrendDelta>0?'+':''}${fc.monthTrendDelta}% ${ta?'கடந்த மாதம்':'vs last month'} · ${fc.attFactor}% ${ta?'வருகை காரணி':'att factor'}
+          ${trendIcon} ${fc.monthTrendDelta>0?'+':''}${fc.monthTrendDelta}% ${ta?'Last month':'vs last month'} · ${fc.attFactor}% ${ta?'Attendance Factor':'att factor'}
         </div>
       </div>
 
       <div class="sum-section" style="background:linear-gradient(135deg,#064e3b08,#065f4608);border-radius:8px;padding:10px 12px">
-        <div class="sum-section-title">🏆 ${ta?'Public Exam கணிப்பு':'Board Exam Forecast'}</div>
+        <div class="sum-section-title">🏆 ${ta?'Public Exam Forecast':'Board Exam Forecast'}</div>
         <div style="display:flex;align-items:center;gap:10px">
           <div style="text-align:center">
             <div style="font-size:24px;font-weight:900;color:#065f46">${fc.boardScore}</div>
@@ -14361,26 +14406,26 @@ function renderGrowthForecastCards() {
           <div style="flex:1">
             ${bar(fc.boardScore,500,'#065f46')}
             <div style="display:flex;justify-content:space-between;margin-top:4px">
-              <span style="font-size:10px;font-weight:700;padding:1px 7px;border-radius:8px;background:#d1fae5;color:#065f46">${ta?'தரம்':'Grade'}: ${fc.boardGrade}</span>
+              <span style="font-size:10px;font-weight:700;padding:1px 7px;border-radius:8px;background:#d1fae5;color:#065f46">${ta?'Grade':'Grade'}: ${fc.boardGrade}</span>
               <span style="font-size:10px;color:var(--tx3)">${fc.boardPct}%</span>
             </div>
           </div>
         </div>
         <div style="font-size:10px;color:var(--tx3);margin-top:6px;font-style:italic">
-          "${ta?'எதிர்பார்க்கப்படும் Public Exam மதிப்பெண்':'Expected board exam score'}: ${fc.boardScore}/500"
+          "${ta?'Expected Public Exam Marks':'Expected board exam score'}: ${fc.boardScore}/500"
         </div>
       </div>
 
       <div class="sum-section">
-        <div class="sum-section-title">🥇 ${ta?'தரவரிசை கணிப்பு':'Rank Probability'}</div>
+        <div class="sum-section-title">🥇 ${ta?'Rank Prediction':'Rank Probability'}</div>
         <div style="display:flex;justify-content:space-between;align-items:center">
           <div>
-            <div style="font-size:10px;color:var(--tx3)">${ta?'தற்போது':'Current'}</div>
+            <div style="font-size:10px;color:var(--tx3)">${ta?'Current':'Current'}</div>
             <div style="font-size:18px;font-weight:800;color:var(--tx)">#${fc.currentRank||'—'} <span style="font-size:10px;color:var(--tx3)">/ ${fc.totalStudents}</span></div>
           </div>
           <div style="font-size:20px;color:var(--tx3)">→</div>
           <div style="text-align:right">
-            <div style="font-size:10px;color:var(--tx3)">${ta?'கணிப்பு':'Predicted'}</div>
+            <div style="font-size:10px;color:var(--tx3)">${ta?'Forecast':'Predicted'}</div>
             <div style="font-size:18px;font-weight:800;color:${fc.predictedRank<=(fc.currentRank||999)?'#16a34a':'#dc2626'}">#${fc.predictedRank} <span style="font-size:10px;color:var(--tx3)">/ ${fc.totalStudents}</span></div>
           </div>
         </div>
@@ -14388,7 +14433,7 @@ function renderGrowthForecastCards() {
 
       <div class="sum-card-foot">
         <button class="btn btn-sm" style="flex:1;justify-content:center;font-size:10px;background:#065f46;color:#fff;border-color:#065f46"
-          onclick="runGrowthForecastReport('${s.id}')">📈 ${ta?'முழு அறிக்கை':'Full Forecast'}</button>
+          onclick="runGrowthForecastReport('${s.id}')">📈 ${ta?'Full Report':'Full Forecast'}</button>
         <button class="btn btn-sm" style="font-size:10px"
           onclick="sendGrowthWA('${s.id}')">📱 WA</button>
       </div>
@@ -14399,7 +14444,7 @@ function renderGrowthForecastCards() {
   const _gfTotalPages = Math.ceil(active.length / _gfPageSize);
   if(_gfTotalPages > 1) {
     let pgHtml = '<div style="grid-column:1/-1;display:flex;align-items:center;justify-content:center;gap:8px;padding:12px 0">';
-    pgHtml += `<span style="font-size:11px;color:var(--tx3)">${_gfStart+1}–${Math.min(_gfStart+_gfPageSize,active.length)} / ${active.length} ${lang==='ta'?'மாணவர்கள்':'students'}</span>`;
+    pgHtml += `<span style="font-size:11px;color:var(--tx3)">${_gfStart+1}–${Math.min(_gfStart+_gfPageSize,active.length)} / ${active.length} ${lang==='ta'?'Students':'students'}</span>`;
     pgHtml += `<button onclick="window._gfPage=Math.max(0,(window._gfPage||0)-1);renderGrowthForecastCards()" style="padding:4px 12px;border-radius:7px;border:.5px solid var(--br);background:var(--card);color:var(--tx);cursor:pointer;font-size:11px;${_gfPage===0?'opacity:.4;pointer-events:none':''}">◀</button>`;
     for(let _p=0;_p<_gfTotalPages;_p++){
       pgHtml += `<button onclick="window._gfPage=${_p};renderGrowthForecastCards()" style="width:28px;height:28px;border-radius:7px;border:.5px solid ${_p===_gfPage?'#065f46':'var(--br)'};background:${_p===_gfPage?'#065f46':'var(--card)'};color:${_p===_gfPage?'#fff':'var(--tx)'};cursor:pointer;font-size:11px;font-weight:600">${_p+1}</button>`;
@@ -14413,7 +14458,7 @@ function renderGrowthForecastCards() {
 /* ── Full growth report ── */
 function runGrowthForecastReport(studentId) {
   const s=students.find(x=>x.id===studentId);
-  if(!s) return showToast('மாணவர் கிடைக்கவில்லை');
+  if(!s) return showToast('Student not found');
   const ta=lang==='ta';
   const panel=document.getElementById('ai-report-panel');
   const loading=document.getElementById('ai-loading');
@@ -14422,8 +14467,8 @@ function runGrowthForecastReport(studentId) {
   const titleEl=document.getElementById('ai-report-title');
   const subEl=document.getElementById('ai-report-sub');
   const iconEl=document.getElementById('ai-report-icon');
-  if(titleEl) titleEl.textContent=ta?`${s.name} — வளர்ச்சி கணிப்பு`:`${s.name} — Growth Forecast`;
-  if(subEl)   subEl.textContent=ta?'தற்போதைய மதிப்பெண், வருகை & போக்கு அடிப்படையில்':'Based on current marks, attendance & trend';
+  if(titleEl) titleEl.textContent=ta?`${s.name} — Growth Forecast`:`${s.name} — Growth Forecast`;
+  if(subEl)   subEl.textContent=ta?'Current marks, Attendance & Based on trend':'Based on current marks, attendance & trend';
   if(iconEl){ iconEl.textContent='📈'; iconEl.style.background='#d1fae5'; }
   panel.style.display='block'; loading.style.display='block'; output.style.display='none';
   panel.scrollIntoView({behavior:'smooth',block:'start'});
@@ -14526,9 +14571,9 @@ function _gfBuildReport(student,ta){
 /* ── Growth Forecast WA ── */
 function sendGrowthWA(studentId) {
   const s=students.find(x=>x.id===studentId);
-  if(!s) return showToast('மாணவர் கிடைக்கவில்லை');
+  if(!s) return showToast('Student not found');
   const phone=s.phone||s.pphone||'';
-  if(!phone) return showToast('⚠️ தொலைபேசி எண் இல்லை');
+  if(!phone) return showToast('⚠️ No phone number');
   const ta=lang==='ta';
   const fc=_gfCompute(s);
   const ctr=CFG.CENTER.name||'Academy';
@@ -14538,7 +14583,7 @@ function sendGrowthWA(studentId) {
     ?`🙏 வணக்கம் *${s.parent}* அவர்களுக்கு,\n\n📈 *${s.name}* — AI வளர்ச்சி கணிப்பு\n🏫 *${ctr}*\n\n━━━━━━━━━━━━━━━━━━━\n📊 *தற்போதைய சராசரி:* ${fc.avgPct}%\n🔮 *அடுத்த மாத கணிப்பு:* ${fc.predictedAvg}%\n${trendIcon} *மாத போக்கு:* ${fc.monthTrend==='improving'?'முன்னேற்றம்':fc.monthTrend==='declining'?'சரிவு':'நிலையான'}${monthDeltaStr}\n\n🏆 *Public Exam கணிப்பு:*\nஎதிர்பார்க்கப்படும் மதிப்பெண்: *${fc.boardScore}/500*\nதரம்: *${fc.boardGrade}*\n\n🥇 தரவரிசை: #${fc.currentRank||'—'} → கணிப்பு #${fc.predictedRank} / ${fc.totalStudents}\n━━━━━━━━━━━━━━━━━━━\nதொடர்ந்து வாருங்கள்! 🌟\n📞 ${CFG.CENTER.phone}`
     :`Dear *${s.parent}*,\n\n📈 *${s.name}* — AI Growth Forecast\n🏫 *${ctr}*\n\n━━━━━━━━━━━━━━━━━━━\n📊 *Current Average:* ${fc.avgPct}%\n🔮 *Predicted:* ${fc.predictedAvg}%\n${trendIcon} *Monthly Trend:* ${fc.monthTrend==='improving'?'Improving':fc.monthTrend==='declining'?'Declining':'Stable'}${monthDeltaStr}\n\n🏆 *Board Exam Forecast:*\nExpected Score: *${fc.boardScore}/500*\nGrade: *${fc.boardGrade}*\n\n🥇 Rank: #${fc.currentRank||'—'} → Predicted #${fc.predictedRank} / ${fc.totalStudents}\n━━━━━━━━━━━━━━━━━━━\nKeep attending regularly! 🌟\n📞 ${CFG.CENTER.phone}`;
   openWA(phone, msg);
-  showToast('📱 Growth Forecast WhatsApp திறக்கிறது…');
+  showToast('📱 Growth Forecast WhatsApp Opening…');
 }
 
 
@@ -15338,6 +15383,16 @@ function getSnapshot() {
     targetDates:      ls('_erp_target_dates') || {},
     targetExamNames:  ls('_erp_target_examnames') || {},
 
+    // Holiday / leave / special-class flags (per date)
+    leaveFlags:       (function () {
+      const o = {};
+      try {
+        const pf = ['_erp_holiday_','_erp_today_holiday_','_erp_today_leave_','_erp_special_class_','_erp_special_grades_'];
+        erpStorageKeys().forEach(k => { if (k && pf.some(p => k.indexOf(p) === 0)) o[k] = erpGet(k); });
+      } catch(e) {}
+      return o;
+    })(),
+
     // Settings
     sheetsUrl:        lsStr('_erp_sheets_url'),
     darkMode:         lsStr('_erp_dark'),
@@ -15404,7 +15459,40 @@ function downloadBackup() {
   a.href=url; a.download='kalam-erp-backup-'+_todayISO()+'.json';
   a.click(); URL.revokeObjectURL(url);
   addBkLog('['+new Date().toLocaleTimeString('en-IN')+'] Downloaded backup JSON');
+  try { erpSet('_erp_last_ext_backup', new Date().toISOString()); } catch(e) {}
   showToast('✅ Backup downloaded!');
+  try { renderBackupWarning(); } catch(e) {}
+}
+/* Share backup file via the phone's share sheet (WhatsApp / Drive / Gmail ...) */
+async function shareBackup() {
+  const data = getSnapshot();
+  const name = 'kalam-erp-backup-' + _todayISO() + '.json';
+  const file = new File([JSON.stringify(data, null, 2)], name, { type: 'application/json' });
+  try {
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: 'Kalam ERP backup', text: 'Kalam ERP backup ' + _todayISO() });
+      try { erpSet('_erp_last_ext_backup', new Date().toISOString()); } catch(e) {}
+      showToast('✅ Backup shared');
+      try { renderBackupWarning(); } catch(e) {}
+      return;
+    }
+  } catch(e) { if (e && e.name === 'AbortError') return; }
+  downloadBackup(); // fallback when sharing files isn't supported
+}
+function renderBackupWarning() {
+  const el = document.getElementById('dash-backup-warn');
+  if (!el) return;
+  let last = null;
+  try { const v = erpGet('_erp_last_ext_backup'); if (v) last = new Date(v); } catch(e) {}
+  const days = last ? Math.floor((Date.now() - last.getTime()) / 86400000) : null;
+  if (last && days < 3) { el.style.display = 'none'; return; }
+  el.style.display = 'block';
+  el.innerHTML = '<div style="border-radius:10px;padding:10px 14px;background:#fef3c7;border:1px solid #fde68a;color:#92400e;font-size:12px;line-height:1.6">'
+    + '<b>⚠️ Safe backup needed</b> — ' + (last ? 'last backup outside this phone was ' + days + ' days ago.' : 'no backup outside this phone yet.')
+    + '<div style="font-size:11px;margin-top:2px">Automatic backups are stored inside this browser and are lost if the browser data is cleared or the phone changes. Save a copy to Drive / WhatsApp / Gmail.</div>'
+    + '<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">'
+    + '<button class="btn btn-p btn-sm" onclick="shareBackup()">📤 Share / Save backup</button>'
+    + '<button class="btn btn-sm" onclick="downloadBackup()">⬇️ Download file</button></div></div>';
 }
 function restoreBackup(input) {
   const file = input.files[0]; if (!file) return;
@@ -15486,6 +15574,11 @@ function _applyRestoreData(data) {
     });
     try { erpSet('_erp_att_index', JSON.stringify(attIdx)); } catch(e) {}
   }
+
+  // Holiday / leave flags
+  if (data.leaveFlags) Object.entries(data.leaveFlags).forEach(([k, v]) => {
+    try { if (v !== null && v !== undefined) erpSet(k, v); } catch(e) {}
+  });
 
   // WhatsApp templates
   if (data.waTemplates) Object.entries(data.waTemplates).forEach(([k, v]) => {
@@ -15663,6 +15756,7 @@ async function syncSheets(silent) {
           if (!silent) showToast('✅ Google Sheets synced successfully!');
           addBkLog(`[${now}] Sheets sync ✅ — ${c.students||0} students, ${c.fees||0} fees, ${c.marks||0} marks · ${sizeKB} KB`);
           bkHistory.unshift({ts:new Date().toISOString(),source:'sheets',size:sizeKB+' KB',status:'ok'});
+          try { erpSet('_erp_last_ext_backup', new Date().toISOString()); renderBackupWarning(); } catch(e) {}
           renderBkHistory(); setBkStatus('ok','Google Sheets synced',summary);
         } else if (result && result.status === 'error') {
           throw new Error('Apps Script error: ' + (result.msg || 'Unknown error'));
@@ -16530,7 +16624,7 @@ function showTodayFeesModal() {
   const total = list.reduce((s, f) => s + (f.paid || 0), 0);
 
   const rows = list.length === 0
-    ? '<div style="text-align:center;padding:30px;color:var(--tx3);font-size:12px">இன்று இன்னும் கட்டணம் எதுவும் வசூலிக்கப்படவில்லை</div>'
+    ? '<div style="text-align:center;padding:30px;color:var(--tx3);font-size:12px">No fees collected yet today</div>'
     : list.map(f => {
         const s = students.find(x => x.id === f.studentId || x.name === f.student);
         const initial = (f.student || '?')[0];
@@ -16566,7 +16660,7 @@ function showTodayFeesModal() {
       </div>
       <div style="flex:1;overflow-y:auto;border:.5px solid var(--br);border-radius:10px">${rows}</div>
       <div class="modal-foot" style="flex-shrink:0">
-        <button class="btn" onclick="closeModal()">மூடு</button>
+        <button class="btn" onclick="closeModal()">Close</button>
       </div>
     </div>
   </div>`;
@@ -16653,7 +16747,7 @@ function renderClassStrength() {
 
   const active = students.filter(s => s && s.status === 'active');
   if (active.length === 0) {
-    barsEl.innerHTML = '<div style="font-size:12px;color:var(--tx3);text-align:center;padding:10px">மாணவர்கள் இல்லை</div>';
+    barsEl.innerHTML = '<div style="font-size:12px;color:var(--tx3);text-align:center;padding:10px">No students</div>';
     if (totEl) totEl.textContent = '';
     return;
   }
@@ -16761,6 +16855,47 @@ function renderAdminCalendar() {
   document.getElementById('dash-calendar-widget').innerHTML = html;
 }
 
+function renderClassWiseAttendance() {
+  const el = document.getElementById('dash-classatt-body');
+  if (!el) return;
+  const todayStr = _todayISO();
+  const barr = (typeof batches !== 'undefined' && Array.isArray(batches) && batches.length) ? batches : [{id:''}];
+  const agg = {};
+  const gradeOf = {};
+  students.forEach(st => { if (st) gradeOf[st.id] = String(st.grade || '').trim() || 'NA'; });
+  barr.forEach(b => {
+    ['morning','evening'].forEach(sess => {
+      try {
+        if (erpGet(_holidayKey(todayStr, b.id, sess)) === '1') return;
+        const saved = erpGet(_attStorageKey(todayStr, b.id, sess));
+        if (!saved) return;
+        const parsed = JSON.parse(saved);
+        Object.keys(parsed).forEach(k => {
+          const v = parsed[k]; if (!v) return;
+          const g = gradeOf[k.split('|')[0]] || 'NA';
+          const a = agg[g] || (agg[g] = {p:0,l:0,a:0});
+          if (v === 'P') a.p++; else if (v === 'L') a.l++; else if (v === 'A') a.a++;
+        });
+      } catch(e) {}
+    });
+  });
+  const order = ['KG','1','2','3','4','5','6','7','8','9','10','11','12','NA'];
+  const grades = Object.keys(agg).sort((x,y) => order.indexOf(x) - order.indexOf(y));
+  if (!grades.length) {
+    const lv = (typeof getTodayLeave === 'function') ? getTodayLeave(todayStr) : null;
+    el.innerHTML = lv ? '🏖 Today is a leave day' : 'Attendance not taken yet';
+    return;
+  }
+  el.innerHTML = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px">' + grades.map(g => {
+    const a = agg[g], tot = a.p + a.l + a.a, pct = tot ? Math.round((a.p + a.l) / tot * 100) : 0;
+    const col = pct >= 90 ? '#16a34a' : pct >= 75 ? '#ca8a04' : '#dc2626';
+    return '<div style="border:.5px solid var(--br);border-radius:10px;padding:8px 10px;background:var(--card)">'
+      + '<div style="font-size:11px;font-weight:700;color:var(--tx)">' + (g==='KG'?'KG':g==='NA'?'No class':'Class ' + g) + '</div>'
+      + '<div style="font-size:18px;font-weight:800;color:' + col + '">' + pct + '%</div>'
+      + '<div style="font-size:10px;color:var(--tx3)">✅ ' + (a.p + a.l) + ' · ❌ ' + a.a + (a.l ? ' · ⏰ ' + a.l : '') + '</div></div>';
+  }).join('') + '</div>';
+}
+
 function updateDashStats() {
   const now       = new Date();
   const curLbl    = _feeMonthLabel(now);
@@ -16826,6 +16961,9 @@ function updateDashStats() {
     if (el4) el4.textContent = marked > 0 ? Math.round(pCount / marked * 100) + '%'
                               : (totSess > 0 && offSess === totSess ? '\uD83C\uDFD6 Leave' : '\u2014%');
   })();
+
+  try { renderClassWiseAttendance(); } catch(e) {}
+  try { renderBackupWarning(); } catch(e) {}
 
   // Day-1 reset + carry-over + income summary
   checkAndDoMonthlyReset();
@@ -17333,7 +17471,7 @@ function initWATemplatesPage() {
     const tamilOnly = t.id === 'monthly_summary';
     return `<button onclick="selectWTType('${t.id}')" id="wttab-${t.id}"
       style="display:flex;align-items:center;gap:6px;padding:7px 12px;border-radius:9px;border:1.5px solid var(--br);background:var(--card);color:var(--tx);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:.12s;white-space:nowrap">
-      ${t.emoji} ${t.label}${tamilOnly?` <span style="font-size:9px;background:#fef3c7;color:#92400e;padding:1px 5px;border-radius:6px;font-weight:700">தமிழ்</span>`:''}${hasSaved?` <span style="width:6px;height:6px;background:${t.color};border-radius:50%;display:inline-block" title="Customised"></span>`:''}
+      ${t.emoji} ${t.label}${tamilOnly?` <span style="font-size:9px;background:#fef3c7;color:#92400e;padding:1px 5px;border-radius:6px;font-weight:700">Tamil</span>`:''}${hasSaved?` <span style="width:6px;height:6px;background:${t.color};border-radius:50%;display:inline-block" title="Customised"></span>`:''}
     </button>`;
   }).join('');
   // Auto-open first
@@ -17451,8 +17589,8 @@ function refreshWTPreview() {
       .replace(/{max_marks}/g,    sample.max_marks     || '100')
       .replace(/{percentage}/g,   sample.percentage    || '87')
       .replace(/{grade_letter}/g, sample.grade_letter  || 'A')
-      .replace(/{pass_status}/g,  sample.pass_status   || '✅ தேர்ச்சி')
-      .replace(/{remarks}/g,      sample.remarks       || 'சிறப்பான செயல்திறன்!')
+      .replace(/{pass_status}/g,  sample.pass_status   || '✅ Pass')
+      .replace(/{remarks}/g,      sample.remarks       || 'Excellent performance!')
       .replace(/{center_name}/g,  sample.center_name   || 'KTC')
       .replace(/{center_phone}/g, sample.center_phone  || '9876543210');
   } else {
@@ -17486,7 +17624,7 @@ function saveWATypeTemplate() {
   const taVal = document.getElementById('wt-tmpl-ta')?.value || '';
   setWTSaved(wtActiveType, 'ta', taVal);
   applyCustomWATemplate(wtActiveType, 'ta', taVal);
-  showToast(`✅ ${WT_ALL_TYPES.find(t=>t.id===wtActiveType)?.label} template சேமிக்கப்பட்டது!`);
+  showToast(`✅ ${WT_ALL_TYPES.find(t=>t.id===wtActiveType)?.label} template Saved!`);
   initWATemplatesPage();
   selectWTType(wtActiveType);
 }
@@ -19803,7 +19941,7 @@ if (document.readyState === 'loading') {
 </script>
 
 <!-- ═══════════════════════════════════════════════════════
-     STUDENT SUMMARY MODULE — மாணவர் மாதாந்திர அட்டவணை
+     STUDENT SUMMARY MODULE — Student Monthly Schedule
 ════════════════════════════════════════════════════════ -->
 
 <script>
@@ -19813,12 +19951,12 @@ if (document.readyState === 'loading') {
 ════════════════════════════════════════════════════════ */
 
 const SUMMARY_ACTIVITIES = [
-  { id:'homework',  label:'வீட்டுப்பாடம்',   emoji:'📚', color:'#185FA5', bg:'#dbeafe' },
-  { id:'project',   label:'திட்ட பணி',       emoji:'🔬', color:'#7c3aed', bg:'#ede9fe' },
-  { id:'quiz',      label:'குவிஸ்',           emoji:'🏆', color:'#ca8a04', bg:'#fef9c3' },
-  { id:'drawing',   label:'ஓவியம்',           emoji:'🎨', color:'#0891b2', bg:'#ccfbf1' },
-  { id:'speech',    label:'பேச்சு',           emoji:'🎤', color:'#16a34a', bg:'#dcfce7' },
-  { id:'sports',    label:'விளையாட்டு',       emoji:'⚽', color:'#dc2626', bg:'#fee2e2' },
+  { id:'homework',  label:'Homework',   emoji:'📚', color:'#185FA5', bg:'#dbeafe' },
+  { id:'project',   label:'Project work',       emoji:'🔬', color:'#7c3aed', bg:'#ede9fe' },
+  { id:'quiz',      label:'Quiz',           emoji:'🏆', color:'#ca8a04', bg:'#fef9c3' },
+  { id:'drawing',   label:'Art',           emoji:'🎨', color:'#0891b2', bg:'#ccfbf1' },
+  { id:'speech',    label:'Speech',           emoji:'🎤', color:'#16a34a', bg:'#dcfce7' },
+  { id:'sports',    label:'Sports',       emoji:'⚽', color:'#dc2626', bg:'#fee2e2' },
 ];
 
 const TA_MONTHS = ['ஜனவரி','பிப்ரவரி','மார்ச்','ஏப்ரல்','மே','ஜூன்','ஜூலை','ஆகஸ்ட்','செப்டம்பர்','அக்டோபர்','நவம்பர்','டிசம்பர்'];
@@ -20361,7 +20499,7 @@ function renderSummaryCards() {
   if (totalEl) totalEl.textContent = ranked.length;
 
   if (ranked.length === 0) {
-    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--tx3);font-size:13px">மாணவர்களை சேர்த்த பிறகு அட்டவணை தோன்றும்…</div>';
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--tx3);font-size:13px">After adding students, the schedule will appear……</div>';
     return;
   }
   grid.innerHTML = ranked.map(item => buildSumCard(item, year, month)).join('');
@@ -20370,8 +20508,8 @@ function renderSummaryCards() {
 function buildSubjectMissedHtml(att) {
   if (!att.subjectMissed || att.subjectMissed.length === 0) {
     var msg = att.absent === 0
-      ? '✅ இந்த மாதம் எந்த வகுப்பும் தவறவில்லை!'
-      : 'Timetable இல் பாட அட்டவணை சேர்த்தால் இங்கே காட்டும்';
+      ? '✅ No class missed this month!'
+      : 'Timetable Timetable will show here if added in';
     return '<div style="font-size:11px;color:var(--tx3);text-align:center;padding:8px 0">' + msg + '</div>';
   }
   var rows = att.subjectMissed.map(function(sr) {
@@ -20379,8 +20517,8 @@ function buildSubjectMissedHtml(att) {
     var riskBg    = sr.risk==='high' ? '#fee2e2' : sr.risk==='medium' ? '#fef9c3' : '#dcfce7';
     var riskIcon  = sr.risk==='high' ? '🔴' : sr.risk==='medium' ? '🟡' : '🟢';
     var riskLabel = sr.risk==='high'
-      ? 'அதிக ஆபத்து — ஆசிரியர் கவனம் தேவை!'
-      : sr.risk==='medium' ? 'கொஞ்சம் தவறினார் — கவனிக்கவும்' : 'நன்றாக உள்ளது';
+      ? 'High risk — Teacher’s attention needed!'
+      : sr.risk==='medium' ? 'Missed slightly — Please note' : 'Thank you';
     var predIcon = sr.risk==='high' ? '📉' : sr.risk==='medium' ? '⚠️' : '✅';
     var sessionBadges =
       (sr.mrnMissed>0 ? '<span style="font-size:10px;background:#fff7ed;color:#c2410c;padding:1px 7px;border-radius:6px;border:.5px solid #fed7aa">☀️ '+sr.mrnMissed+' Mrng</span>' : '') +
@@ -20401,13 +20539,13 @@ function buildSubjectMissedHtml(att) {
   var highRisk = att.subjectMissed.filter(function(sr){return sr.risk==='high';});
   var medRisk  = att.subjectMissed.filter(function(sr){return sr.risk==='medium';});
   var predMsg  = highRisk.length > 0
-    ? '⚠️ ' + highRisk.map(function(sr){return sr.subject;}).join(', ') + ' — தேர்வில் குறைந்த மதிப்பெண் வாய்ப்பு அதிகம்'
+    ? '⚠️ ' + highRisk.map(function(sr){return sr.subject;}).join(', ') + ' — Likely to score low in the exam'
     : medRisk.length > 0
-      ? '👀 ' + medRisk.map(function(sr){return sr.subject;}).join(', ') + ' — கொஞ்சம் கவனம் தேவை'
-      : '✅ அனைத்து பாடங்களிலும் நல்ல வருகை — சிறந்த செயல்திறன் எதிர்பார்க்கலாம்!';
+      ? '👀 ' + medRisk.map(function(sr){return sr.subject;}).join(', ') + ' — Needs a little attention'
+      : '✅ Good attendance in all subjects — Expect excellent performance!';
   return '<div style="margin-bottom:6px">' + rows + '</div>'
     + '<div style="background:#ede9fe;border-radius:8px;padding:8px 10px;font-size:11px;color:#5b21b6;font-weight:600;text-align:center">'
-    + '🧠 செயல்திறன் கணிப்பு (Performance Prediction)<br>'
+    + '🧠 Performance Prediction (Performance Prediction)<br>'
     + '<span style="font-weight:400;font-size:10px;color:#7c3aed">' + predMsg + '</span>'
     + '</div>';
 }
@@ -20424,7 +20562,7 @@ function buildSumCard(item, year, month) {
   // Attendance colours
   const attColor  = att.pct >= 90 ? '#16a34a' : att.pct >= 75 ? '#ca8a04' : '#dc2626';
   const lateColor = att.late === 0 ? '#16a34a' : att.late <= 2 ? '#ca8a04' : '#dc2626';
-  const lateMsg   = att.late === 0 ? 'சரியான நேரம் ✅' : att.late <= 2 ? att.late + ' நாட்கள் தாமதம் ⚠️' : att.late + ' நாட்கள் அதிக தாமதம் ❌';
+  const lateMsg   = att.late === 0 ? 'On time ✅' : att.late <= 2 ? att.late + ' days consecutively ⚠️' : att.late + ' days of delay ❌';
 
   // Stars
   const starsHtml = [1,2,3,4,5].map(n =>
@@ -20449,27 +20587,27 @@ function buildSumCard(item, year, month) {
       return `<div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--tx2);margin-bottom:6px">
         <span style="max-width:55%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${m.examName} <span style="color:var(--tx3);font-size:10px">(${m.subject})</span></span>
         <span style="display:flex;align-items:center;gap:5px">
-          <b style="color:${gc}">${m.absent ? 'வரவில்லை' : m.marks+'/'+m.maxMarks}</b>
+          <b style="color:${gc}">${m.absent ? 'Absent' : m.marks+'/'+m.maxMarks}</b>
           <span style="background:${gc}22;color:${gc};padding:1px 6px;border-radius:8px;font-size:10px;font-weight:700">${grade}</span>
         </span>
       </div>`;
     }).join('');
   } else {
-    marksHtml = `<div style="font-size:11px;color:var(--tx3);text-align:center;padding:8px 0">மதிப்பெண்கள் இன்னும் உள்ளிடப்படவில்லை<br><span style="font-size:10px">Marks & Exams தாவலில் சேமிக்கவும்</span></div>`;
+    marksHtml = `<div style="font-size:11px;color:var(--tx3);text-align:center;padding:8px 0">Marks not yet entered<br><span style="font-size:10px">Marks & Exams Save in the tab</span></div>`;
   }
 
   const avgBadge = (avgPct > 0)
     ? `<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;
         background:${avgPct>=60?'#dcfce7':avgPct>=35?'#fef9c3':'#fee2e2'};
-        color:${avgPct>=60?'#166534':avgPct>=35?'#854d0e':'#991b1b'}">சராசரி ${avgPct}%</span>`
+        color:${avgPct>=60?'#166534':avgPct>=35?'#854d0e':'#991b1b'}">Average ${avgPct}%</span>`
     : '';
 
   // Fee tag
   const stFees     = fees.filter(f => f.studentId === s.id || f.student === s.name);
   const hasPending = stFees.some(f => f.status !== 'paid');
   const feeTag     = hasPending
-    ? `<span class="badge br2" style="font-size:9px">💸 நிலுவை</span>`
-    : stFees.length > 0 ? `<span class="badge bg" style="font-size:9px">✅ கட்டணம்</span>` : '';
+    ? `<span class="badge br2" style="font-size:9px">💸 Pending</span>`
+    : stFees.length > 0 ? `<span class="badge bg" style="font-size:9px">✅ Fee</span>` : '';
 
   const AUTO_BADGE = `<span style="font-size:9px;background:#dcfce7;color:#166534;padding:1px 6px;border-radius:8px;font-weight:700;margin-left:4px">AUTO</span>`;
 
@@ -20481,16 +20619,16 @@ function buildSumCard(item, year, month) {
       <div class="av" style="background:${s.color};width:36px;height:36px;font-size:14px">${escHtml((s.name||'?')[0])}</div>
       <div style="flex:1;min-width:0">
         <div style="font-weight:700;font-size:13px;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(s.name)}</div>
-        <div style="font-size:10px;color:var(--tx3)">வகுப்பு ${s.grade==='KG'?'KG':s.grade} &nbsp;·&nbsp; ${s.course||s.batch||'—'}</div>
+        <div style="font-size:10px;color:var(--tx3)">Class ${s.grade==='KG'?'KG':s.grade} &nbsp;·&nbsp; ${s.course||s.batch||'—'}</div>
       </div>
       ${feeTag}
     </div>
 
     <!-- ── Attendance (AUTO) ── -->
     <div class="sum-section">
-      <div class="sum-section-title">📅 வருகை நிலை ${AUTO_BADGE}</div>
+      <div class="sum-section-title">📅 Attendance Status ${AUTO_BADGE}</div>
       ${att.total === 0
-        ? `<div style="font-size:11px;color:var(--tx3);text-align:center;padding:6px 0">இந்த மாதம் வருகை தரவு இல்லை</div>`
+        ? `<div style="font-size:11px;color:var(--tx3);text-align:center;padding:6px 0">No attendance data this month</div>`
         : `<div style="display:flex;gap:8px;margin-bottom:6px">
             <div style="flex:1;text-align:center;padding:7px 4px;border-radius:8px;background:#fee2e2;border:.5px solid #fca5a5">
               <div style="font-size:18px;font-weight:800;color:#dc2626">${att.absent}</div>
@@ -20510,9 +20648,9 @@ function buildSumCard(item, year, month) {
 
     <!-- ── Session Breakdown (AUTO) ── -->
     <div class="sum-section">
-      <div class="sum-section-title">☀️🌙 Session வருகை ${AUTO_BADGE}</div>
+      <div class="sum-section-title">☀️🌙 Session Attendance ${AUTO_BADGE}</div>
       ${(att.morning.absent + att.morning.present + att.evening.absent + att.evening.present) === 0
-        ? `<div style="font-size:11px;color:var(--tx3);text-align:center;padding:4px 0">Session தரவு இல்லை</div>`
+        ? `<div style="font-size:11px;color:var(--tx3);text-align:center;padding:4px 0">Session No data</div>`
         : `<div style="display:flex;gap:8px;margin-bottom:6px">
             <div style="flex:1;border:.5px solid #fed7aa;border-radius:8px;padding:8px;text-align:center;background:#fff7ed">
               <div style="font-size:11px;font-weight:700;color:#c2410c;margin-bottom:4px">☀️ Morning</div>
@@ -20522,7 +20660,7 @@ function buildSumCard(item, year, month) {
               </div>
               ${att.morning.present + att.morning.absent > 0
                 ? `<div style="font-size:9px;color:#c2410c;margin-top:3px;font-weight:600">
-                    ${Math.round(att.morning.present/(att.morning.present+att.morning.absent)*100)}% வருகை</div>` : ''}
+                    ${Math.round(att.morning.present/(att.morning.present+att.morning.absent)*100)}% Attendance</div>` : ''}
             </div>
             <div style="flex:1;border:.5px solid #c4b5fd;border-radius:8px;padding:8px;text-align:center;background:#f5f3ff">
               <div style="font-size:11px;font-weight:700;color:#7c3aed;margin-bottom:4px">🌙 Evening</div>
@@ -20532,7 +20670,7 @@ function buildSumCard(item, year, month) {
               </div>
               ${att.evening.present + att.evening.absent > 0
                 ? `<div style="font-size:9px;color:#7c3aed;margin-top:3px;font-weight:600">
-                    ${Math.round(att.evening.present/(att.evening.present+att.evening.absent)*100)}% வருகை</div>` : ''}
+                    ${Math.round(att.evening.present/(att.evening.present+att.evening.absent)*100)}% Attendance</div>` : ''}
             </div>
           </div>`
       }
@@ -20540,18 +20678,18 @@ function buildSumCard(item, year, month) {
 
     <!-- ── Subject-wise Missed + Performance Prediction (AUTO) ── -->
     <div class="sum-section">
-      <div class="sum-section-title">📚 பாடம்-வாரி தவறிய வகுப்புகள் ${AUTO_BADGE}</div>
+      <div class="sum-section-title">📚 Subject-Subject-wise Missed Classes ${AUTO_BADGE}</div>
       ${buildSubjectMissedHtml(att)}
     </div>
 
     <!-- ── Late Analysis (AUTO) ── -->
     <div class="sum-section">
-      <div class="sum-section-title">⏰ தாமத பகுப்பாய்வு ${AUTO_BADGE}</div>
+      <div class="sum-section-title">⏰ Late analysis ${AUTO_BADGE}</div>
       ${att.total === 0
-        ? `<div style="font-size:11px;color:var(--tx3);text-align:center;padding:4px 0">தரவு இல்லை</div>`
+        ? `<div style="font-size:11px;color:var(--tx3);text-align:center;padding:4px 0">No data</div>`
         : `<div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--tx2);margin-bottom:6px">
-            <span>மொத்த தாமத நாட்கள்</span>
-            <b style="color:${lateColor}">${att.late} நாட்கள்</b>
+            <span>Total Late Days</span>
+            <b style="color:${lateColor}">${att.late} days of high delay</b>
            </div>
            <div style="font-size:11px;font-weight:600;color:${lateColor};
              background:${att.late===0?'#dcfce7':att.late<=2?'#fef9c3':'#fee2e2'};
@@ -20562,7 +20700,7 @@ function buildSumCard(item, year, month) {
     <!-- ── Marks (AUTO) ── -->
     <div class="sum-section">
       <div class="sum-section-title" style="justify-content:space-between">
-        <span>📝 மதிப்பெண் சுருக்கம் ${AUTO_BADGE}</span>
+        <span>📝 Marks summary ${AUTO_BADGE}</span>
         ${avgBadge}
       </div>
       ${marksHtml}
@@ -20570,12 +20708,12 @@ function buildSumCard(item, year, month) {
 
     <!-- ── Class-wise Rank (AUTO) ── -->
     <div class="sum-section">
-      <div class="sum-section-title">🏅 வகுப்பு தரவரிசை (Class Rank) ${AUTO_BADGE}</div>
+      <div class="sum-section-title">🏅 Class Rank (Class Rank) ${AUTO_BADGE}</div>
       <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;background:${rc.bg}">
         <div style="font-size:22px;font-weight:800;color:${rc.color}">${rank <= 3 ? rc.label : '#' + rank}</div>
         <div style="font-size:11px;color:var(--tx2)">
           Rank <b style="color:${rc.color}">${rank}</b> / ${item.classTotal || '—'} —
-          ${s.grade === 'KG' ? 'KG' : 'Class ' + s.grade} இல்
+          ${s.grade === 'KG' ? 'KG' : 'Class ' + s.grade} In
         </div>
       </div>
     </div>
@@ -20590,58 +20728,58 @@ function buildSumCard(item, year, month) {
       } catch(err) { console.error('buildSumCard: growth forecast failed for', s.name, err); }
       if (!gfc || !gfc.hasData) {
         return `<div class="sum-section">
-          <div class="sum-section-title">📈 AI வளர்ச்சி கணிப்பு ${AUTO_BADGE}</div>
-          <div style="font-size:11px;color:var(--tx3);text-align:center;padding:8px 0">மதிப்பெண்கள் சேர்த்த பிறகு கணிப்பு காட்டப்படும்</div>
+          <div class="sum-section-title">📈 AI Growth Forecast ${AUTO_BADGE}</div>
+          <div style="font-size:11px;color:var(--tx3);text-align:center;padding:8px 0">Prediction will be shown after marks are added</div>
         </div>`;
       }
       const isBoard = String(s.grade||'').trim() === '10';
       const trendIcon = gfc.monthTrend==='improving'?'📈':gfc.monthTrend==='declining'?'📉':'➡️';
       const trendColor = gfc.monthTrend==='improving'?'#16a34a':gfc.monthTrend==='declining'?'#dc2626':'#64748b';
       return `<div class="sum-section">
-        <div class="sum-section-title">📈 AI வளர்ச்சி கணிப்பு (Growth Forecast) ${AUTO_BADGE}</div>
+        <div class="sum-section-title">📈 AI Growth Forecast (Growth Forecast) ${AUTO_BADGE}</div>
         <div style="display:flex;gap:8px;margin-bottom:6px">
           <div style="flex:1;text-align:center;padding:7px 4px;border-radius:8px;background:var(--bg);border:.5px solid var(--br)">
             <div style="font-size:16px;font-weight:800;color:var(--tx)">${gfc.avgPct}%</div>
-            <div style="font-size:9px;color:var(--tx3);font-weight:600">தற்போதைய சராசரி</div>
+            <div style="font-size:9px;color:var(--tx3);font-weight:600">Current average</div>
           </div>
           <div style="flex:1;text-align:center;padding:7px 4px;border-radius:8px;background:var(--bg);border:.5px solid var(--br)">
             <div style="font-size:16px;font-weight:800;color:${trendColor}">${gfc.predictedAvg}% ${trendIcon}</div>
-            <div style="font-size:9px;color:var(--tx3);font-weight:600">அடுத்த மாத கணிப்பு</div>
+            <div style="font-size:9px;color:var(--tx3);font-weight:600">Next month forecast</div>
           </div>
         </div>
         <div style="font-size:11px;font-weight:700;text-align:center;padding:6px 9px;border-radius:7px;background:#ede9fe;color:#5b21b6">
-          🎯 ${isBoard ? `Public Exam கணிப்பு: ${gfc.boardScore}/500 (${gfc.boardGrade})` : `கணிக்கப்பட்ட சராசரி: ${gfc.predictedAvg}%`}
+          🎯 ${isBoard ? `Public Exam Forecast: ${gfc.boardScore}/500 (${gfc.boardGrade})` : `Predicted average: ${gfc.predictedAvg}%`}
         </div>
       </div>`;
     })()}
 
     <!-- ── Class Concentration — Teacher fills ── -->
     <div class="sum-section">
-      <div class="sum-section-title">🌟 வகுப்பு கவனம் (ஆசிரியர் மதிப்பீடு)</div>
+      <div class="sum-section-title">🌟 Class Attention (Teacher’s assessment)</div>
       <div style="display:flex;align-items:center;gap:10px">
         <div class="sum-stars">${starsHtml}</div>
         <span style="font-size:11px;color:var(--tx3)">${sumD.stars}/5</span>
       </div>
       <div style="font-size:10px;color:var(--tx3);margin-top:4px">
-        ${sumD.stars>=4?'🎉 மிகவும் கவனமாக உள்ளனர்!':sumD.stars>=3?'👍 நல்ல கவனம்':sumD.stars>=1?'📣 கவனம் அதிகரிக்க வேண்டும்':'— கிளிக் செய்து மதிப்பீடு கொடுக்கவும்'}
+        ${sumD.stars>=4?'🎉 Very attentive!':sumD.stars>=3?'👍 Good trend':sumD.stars>=1?'📣 Needs more attention':'— Click to rate'}
       </div>
     </div>
 
     <!-- ── Activities — Teacher fills ── -->
     <div class="sum-section">
-      <div class="sum-section-title">🏅 வகுப்பு செயல்பாடுகள்</div>
+      <div class="sum-section-title">🏅 Class Activities</div>
       <div style="display:flex;flex-wrap:wrap;gap:5px">${actsHtml}</div>
     </div>
 
     <!-- ── Teacher Note ── -->
     <div class="sum-section">
-      <div class="sum-section-title">📝 ஆசிரியர் குறிப்பு</div>
+      <div class="sum-section-title">📝 Teacher’s note</div>
       <textarea
         style="width:100%;border:.5px solid var(--br);border-radius:8px;padding:7px 10px;
                font-size:11px;font-family:'Noto Sans Tamil',system-ui;color:var(--tx);
                background:var(--card);resize:none;outline:none;line-height:1.6;box-sizing:border-box"
         rows="2"
-        placeholder="மாணவர் பற்றிய குறிப்பு…"
+        placeholder="Note about the student…"
         onchange="saveSumNote('${s.id}',${year},${month},this.value)"
       >${sumD.note||''}</textarea>
     </div>
@@ -20649,12 +20787,12 @@ function buildSumCard(item, year, month) {
     ${typeof _rpSumHistoryBlockHTML === 'function' ? _rpSumHistoryBlockHTML(s.id) : ''}
 
     <!-- ── Footer ── -->
-    ${isSumSentThisMonth(s.id, year, month) ? `<div style="padding:4px 15px;font-size:9px;color:#16a34a;font-weight:700;background:#f0fdf4">✅ இந்த மாதம் அனுப்பப்பட்டது (Combined AI Report)</div>` : ''}
+    ${isSumSentThisMonth(s.id, year, month) ? `<div style="padding:4px 15px;font-size:9px;color:#16a34a;font-weight:700;background:#f0fdf4">✅ Sent this month (Combined AI Report)</div>` : ''}
     <div class="sum-card-foot">
       <button class="btn btn-wa btn-sm" style="flex:1;justify-content:center;font-size:11px"
-        onclick="sendSumWA('${s.id}',${year},${month})">📱 WhatsApp அனுப்பு</button>
+        onclick="sendSumWA('${s.id}',${year},${month})">📱 WhatsApp Send</button>
       <button class="btn btn-sm" style="font-size:11px"
-        onclick="previewSumWA('${s.id}',${year},${month})">👁 முன்னோட்டம்</button>
+        onclick="previewSumWA('${s.id}',${year},${month})">👁 Preview</button>
     </div>
   </div>`;
 }
@@ -20665,7 +20803,7 @@ function setSumStars(studentId, year, month, stars) {
   data.stars = data.stars === stars ? 0 : stars;
   saveSumData(studentId, year, month, data);
   renderSummaryCards();
-  showToast('⭐ ' + data.stars + ' நட்சத்திரம் சேமிக்கப்பட்டது');
+  showToast('⭐ ' + data.stars + ' Let them study well');
 }
 
 /* ── Activity toggle ── */
@@ -20683,7 +20821,7 @@ function saveSumNote(studentId, year, month, note) {
   const data = loadSumData(studentId, year, month);
   data.note  = note;
   saveSumData(studentId, year, month, data);
-  showToast('💾 குறிப்பு சேமிக்கப்பட்டது');
+  showToast('💾 Note saved');
 }
 
 /* ════════════════════════════════════════════════════════
@@ -20745,13 +20883,13 @@ function buildCombinedAISection(s, ctx) {
     fc = (typeof _gfCompute === 'function') ? _gfCompute(s, cachedRanked) : null;
     const trendIcon = fc ? (fc.monthTrend==='improving'?'📈':fc.monthTrend==='declining'?'📉':'➡️') : '';
     if (fc && fc.hasData) {
-      growthSec = `${dash}\n📈 *AI வளர்ச்சி கணிப்பு (Growth Forecast)*\n${dash}\n`
-        + `📊 தற்போதைய சராசரி: *${fc.avgPct}%*\n`
-        + `🔮 அடுத்த மாத கணிப்பு: *${fc.predictedAvg}%* ${trendIcon}\n`;
+      growthSec = `${dash}\n📈 *AI Growth Forecast (Growth Forecast)*\n${dash}\n`
+        + `📊 Current average: *${fc.avgPct}%*\n`
+        + `🔮 Next month forecast: *${fc.predictedAvg}%* ${trendIcon}\n`;
       const isBoardClass = String(s.grade || '').trim() === '10';
       predictSec = isBoardClass
-        ? `🎯 எதிர்பார்க்கப்படும் Public Exam மதிப்பெண்: *${fc.boardScore}/500* (${fc.boardGrade})\n`
-        : `🎯 அடுத்த மாத கணிக்கப்பட்ட சராசரி: *${fc.predictedAvg}%*\n`;
+        ? `🎯 Expected Public Exam Marks: *${fc.boardScore}/500* (${fc.boardGrade})\n`
+        : `🎯 Next month’s predicted average: *${fc.predictedAvg}%*\n`;
     }
   } catch(err) { console.error('buildCombinedAISection: growth forecast failed for', s.name, err); }
 
@@ -20763,13 +20901,13 @@ function buildCombinedAISection(s, ctx) {
       : ((typeof computePredictions === 'function') ? computePredictions().find(p => p.student.id === s.id) : null);
     if (pred) {
       const flags = [];
-      if (pred.failScore  >= 45) flags.push(`📉 தேர்ச்சி ஆபத்து: ${_riskLevel(pred.failScore).label}`);
-      if (pred.leaveScore >= 45) flags.push(`🚪 விலக ஆபத்து: ${_riskLevel(pred.leaveScore).label}`);
-      if (pred.feeScore   >= 45) flags.push(`💸 கட்டண தாமத ஆபத்து: ${_riskLevel(pred.feeScore).label}`);
-      if (pred.attScore   >= 45) flags.push(`📊 வருகை ஆபத்து: ${_riskLevel(pred.attScore).label}`);
+      if (pred.failScore  >= 45) flags.push(`📉 Pass Risk: ${_riskLevel(pred.failScore).label}`);
+      if (pred.leaveScore >= 45) flags.push(`🚪 Dropout Risk: ${_riskLevel(pred.leaveScore).label}`);
+      if (pred.feeScore   >= 45) flags.push(`💸 Fee delay risk: ${_riskLevel(pred.feeScore).label}`);
+      if (pred.attScore   >= 45) flags.push(`📊 Attendance Risk: ${_riskLevel(pred.attScore).label}`);
       riskSec = flags.length > 0
-        ? `${dash}\n🔮 *AI கணிப்பு எச்சரிக்கை*\n${dash}\n${flags.join('\n')}\n`
-        : `${dash}\n🔮 *AI கணிப்பு*\n${dash}\n✅ தற்போது ஆபத்து இல்லை — தொடர்ந்து நல்ல செயல்பாடு\n`;
+        ? `${dash}\n🔮 *AI Prediction Alert*\n${dash}\n${flags.join('\n')}\n`
+        : `${dash}\n🔮 *AI Forecast*\n${dash}\n✅ No risk currently — Keep studying\n`;
     }
   } catch(err) { console.error('buildCombinedAISection: predictions failed for', s.name, err); }
 
@@ -20779,9 +20917,9 @@ function buildCombinedAISection(s, ctx) {
     const weak = (typeof _spWeakSubjects === 'function') ? _spWeakSubjects(s.id) : [];
     if (weak.length > 0) {
       const w = weak[0];
-      concSec = `${dash}\n📋 *தனிப்பட்ட கவனிப்பு (Individual Concentration)*\n${dash}\n`
-        + `⚠️ கூடுதல் கவனம் தேவையான பாடம்: *${w.sub}* (${w.avg}%)\n`
-        + `${w.avg < 40 ? 'இந்த பாடத்திற்கு உடனடியாக தனிப்பட்ட கவனிப்பு ஏற்பாடு செய்யப்படும்.' : 'வழக்கமான பயிற்சி மூலம் மேம்படுத்தலாம்.'}\n`;
+      concSec = `${dash}\n📋 *Individual Attention (Individual Concentration)*\n${dash}\n`
+        + `⚠️ Subject needing extra attention: *${w.sub}* (${w.avg}%)\n`
+        + `${w.avg < 40 ? 'Personal attention will be arranged for this subject immediately.' : 'Can be improved with regular practice.'}\n`;
     }
   } catch(err) { console.error('buildCombinedAISection: concentration failed for', s.name, err); }
 
@@ -20792,9 +20930,9 @@ function buildCombinedAISection(s, ctx) {
       const plan = _spBuildDayPlan(s, 0);
       if (plan && plan.slots && plan.slots.length > 0) {
         const top = plan.slots[0];
-        planSec = `${dash}\n📚 *AI படிப்பு திட்டம் (Study Planner)*\n${dash}\n`
-          + `இன்று முன்னுரிமை: *${top.subject}* — ${top.mins} நிமிடம்\n`
-          + `மொத்த பரிந்துரைக்கப்பட்ட படிப்பு நேரம்: *${plan.totalMins} நிமிடம்/நாள்*\n`;
+        planSec = `${dash}\n📚 *AI Study plan (Study Planner)*\n${dash}\n`
+          + `Today’s priority: *${top.subject}* — ${top.mins} minutes\n`
+          + `Total Recommended Study Time: *${plan.totalMins} minutes/day*\n`;
       }
     }
   } catch(err) { console.error('buildCombinedAISection: study planner failed for', s.name, err); }
@@ -20818,10 +20956,10 @@ function buildCombinedAISection(s, ctx) {
         maxStreak = Math.max(maxStreak, curStreak);
       }
       if (absences.length >= 4 || maxStreak >= 3) {
-        absenceSec = `${dash}\n🔴 *அடிக்கடி வரவில்லை (Frequent Absence Alert)*\n${dash}\n`
-          + `இந்த மாதம் *${absences.length} நாட்கள்* வரவில்லை`
-          + `${maxStreak >= 3 ? ` — *${maxStreak} நாட்கள் தொடர்ச்சியாக* வரவில்லை` : ''}.\n`
-          + `தயவுசெய்து காரணத்தை தெரியப்படுத்தவும். 🙏\n`;
+        absenceSec = `${dash}\n🔴 *Frequent absence (Frequent Absence Alert)*\n${dash}\n`
+          + `This month *${absences.length} days of high delay* Absent`
+          + `${maxStreak >= 3 ? ` — *${maxStreak} Immediately call those absent for 3 consecutive days* Absent` : ''}.\n`
+          + `Please let us know the reason. 🙏\n`;
       }
     }
   } catch(err) { console.error('buildCombinedAISection: frequent absence check failed for', s.name, err); }
@@ -21002,10 +21140,10 @@ ${actsText}${noteText ? '\n\n' + noteText : ''}
 /* ── Send WA ── */
 function sendSumWA(studentId, year, month) {
   const s = students.find(x => x.id === studentId);
-  if (!s) return showToast('மாணவர் கிடைக்கவில்லை');
+  if (!s) return showToast('Student not found');
   const phone = s.phone || s.pphone || '';
-  if (!phone) return showToast('⚠️ தொலைபேசி எண் இல்லை');
-  if (isSumSentThisMonth(s.id, year, month) && !confirm('✅ இந்த மாதம் ஏற்கனவே அனுப்பப்பட்டது (' + TA_MONTHS[month] + ' ' + year + '). மீண்டும் அனுப்பவா?')) {
+  if (!phone) return showToast('⚠️ No phone number');
+  if (isSumSentThisMonth(s.id, year, month) && !confirm('✅ Already sent this month (' + TA_MONTHS[month] + ' ' + year + '). Send again??')) {
     return;
   }
 
@@ -21017,7 +21155,7 @@ function sendSumWA(studentId, year, month) {
     // Fall back to a minimal, still-useful message rather than blocking the send entirely
     const att = (typeof getStudentAttStats === 'function') ? getStudentAttStats(s, year, month) : { pct:0 };
     msg = `Vanakkam ${s.parent||'Parent'},\n\n${s.name} - ${TA_MONTHS[month]} ${year} Monthly Summary\nAttendance: ${att.pct||0}%\n\n(⚠️ Some report sections could not be generated — please check Marks/Timetable/Teaching Log data for this student.)\n\n${CFG.CENTER?.name||''}`;
-    showToast('⚠️ சில பகுதிகள் உருவாக்க முடியவில்லை — அடிப்படை செய்தி அனுப்பப்படுகிறது');
+    showToast('⚠️ Some parts could not be generated — Sending a basic message');
   }
 
   openWA(phone, msg);
@@ -21026,7 +21164,7 @@ function sendSumWA(studentId, year, month) {
   // card here was the cause of other students' cards briefly losing their
   // rendered data until a manual page refresh.
   _sumRefreshOneCard(s.id, year, month);
-  showToast('📱 WhatsApp திறக்கிறது…');
+  showToast('📱 WhatsApp Opening…');
 }
 
 /* ── Update just one card in place, leaving every other student's
@@ -21050,7 +21188,7 @@ function _sumRefreshOneCard(studentId, year, month) {
 /* ── Preview WA ── */
 function previewSumWA(studentId, year, month) {
   const s = students.find(x => x.id === studentId);
-  if (!s) return showToast('மாணவர் கிடைக்கவில்லை');
+  if (!s) return showToast('Student not found');
   let msg = '';
   try {
     msg = buildSumWAMessage(s, year, month, (_sumPageCtx && _sumPageCtx.year === year && _sumPageCtx.month === month) ? _sumPageCtx : null);
@@ -21063,7 +21201,7 @@ function previewSumWA(studentId, year, month) {
   root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()">
     <div class="modal" style="max-width:480px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-        <div class="modal-title" style="margin:0">📋 WhatsApp முன்னோட்டம் — ${s.name}</div>
+        <div class="modal-title" style="margin:0">📋 WhatsApp Preview — ${s.name}</div>
         <button class="btn btn-sm" onclick="closeModal();navTo('wa-templates');setTimeout(()=>selectWTType('monthly_summary'),300)"
           style="font-size:10px;background:#f59e0b;color:#fff;border-color:#f59e0b;white-space:nowrap">
           ✏️ ${hasSavedTmpl?'Edit Template':'Customise'}
@@ -21075,8 +21213,8 @@ function previewSumWA(studentId, year, month) {
            color:#166534;max-height:420px;overflow-y:auto;border:.5px solid #bbf7d0">${msg}</div>
       <div class="modal-foot">
         <button class="btn btn-wa" onclick="sendSumWA('${s.id}',${year},${month});closeModal()"
-          style="flex:1;justify-content:center">📱 WhatsApp அனுப்பு</button>
-        <button class="btn" onclick="closeModal()">மூடு</button>
+          style="flex:1;justify-content:center">📱 WhatsApp Send</button>
+        <button class="btn" onclick="closeModal()">Close</button>
       </div>
     </div>
   </div>`;
@@ -21092,7 +21230,7 @@ function sendAllSummaryWA() {
   let active = students.filter(s => s.status === 'active');
   if (gradeFilter !== 'all') active = active.filter(s => String(s.grade || '').trim() === gradeFilter);
   if (batchFilter !== 'all') active = active.filter(s => s.course === batchFilter || s.batch === batchFilter);
-  if (active.length === 0) return showToast('இந்த வடிகட்டலில் மாணவர்கள் இல்லை');
+  if (active.length === 0) return showToast('No students in this filter');
 
   const filterLabel = (gradeFilter !== 'all' || batchFilter !== 'all')
     ? ` — ${[gradeFilter !== 'all' ? (gradeFilter === 'KG' ? 'KG' : 'Class ' + gradeFilter) : '', batchFilter !== 'all' ? batchFilter : ''].filter(Boolean).join(' · ')}`
@@ -21102,28 +21240,28 @@ function sendAllSummaryWA() {
   const root = document.getElementById('modal-root');
   root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()">
     <div class="modal" style="max-width:500px">
-      <div class="modal-title">📱 அனைத்து மாணவர் WhatsApp வரிசை (ஒரு முழுமையான அறிக்கை)</div>
+      <div class="modal-title">📱 All students WhatsApp Queue (A complete report)</div>
       <div style="font-size:12px;color:var(--tx2);margin-bottom:12px">
-        ${TA_MONTHS[month]} ${year}${filterLabel} — ${active.length} மாணவர்கள் ${sentCount>0?`· ✅ ${sentCount} ஏற்கனவே அனுப்பப்பட்டது`:''}
+        ${TA_MONTHS[month]} ${year}${filterLabel} — ${active.length} Students ${sentCount>0?`· ✅ ${sentCount} Already sent`:''}
       </div>
-      <div style="font-size:10px;color:var(--tx3);margin-bottom:8px">Attendance + Marks + Rank + AI Growth Forecast + Predict Score/% + Concentration + Study Planner — ஒரே WhatsApp செய்தியில்</div>
+      <div style="font-size:10px;color:var(--tx3);margin-bottom:8px">Attendance + Marks + Rank + AI Growth Forecast + Predict Score/% + Concentration + Study Planner — The same WhatsApp in the message</div>
       <div style="max-height:340px;overflow-y:auto;border:.5px solid var(--br);border-radius:10px">
         ${active.map(s => {
           const att   = getStudentAttStats(s, year, month);
-          const lbl   = att.total > 0 ? att.pct + '% வருகை' : 'வருகை தரவு இல்லை';
+          const lbl   = att.total > 0 ? att.pct + '% Attendance' : 'No attendance data';
           const sent  = isSumSentThisMonth(s.id, year, month);
           return `<div class="wa-queue-item">
             <div class="av" style="background:${s.color};width:28px;height:28px;font-size:11px;flex-shrink:0">${escHtml((s.name||'?')[0])}</div>
             <div style="flex:1">
               <div style="font-weight:600;font-size:12px">${s.name} ${sent?'<span style="font-size:9px;color:#16a34a;font-weight:700">✅ Sent</span>':''}</div>
-              <div style="font-size:10px;color:var(--tx3)">${s.phone||'எண் இல்லை'} · Gr.${s.grade} · ${lbl}</div>
+              <div style="font-size:10px;color:var(--tx3)">${s.phone||'No number'} · Gr.${s.grade} · ${lbl}</div>
             </div>
             <button class="btn btn-wa btn-sm" onclick="sendSumWA('${s.id}',${year},${month})" style="font-size:10px">📱</button>
           </div>`;
         }).join('')}
       </div>
       <div class="modal-foot">
-        <button class="btn" onclick="closeModal()">மூடு</button>
+        <button class="btn" onclick="closeModal()">Close</button>
       </div>
     </div>
   </div>`;
@@ -21268,10 +21406,10 @@ function ttSave() {
     }
   });
   saveDayOrder();
-  showToast('✅ நேர அட்டவணை சேமிக்கப்பட்டது — ' + (batch === 'all' ? 'அனைத்து' : batch) + ' · Day Order sync ஆனது');
+  showToast('✅ Timetable saved — ' + (batch === 'all' ? 'All' : batch) + ' · Day Order sync done');
  } catch(err) {
   console.error('ttSave error:', err);
-  showToast('⚠️ சேமிக்க முடியவில்லை — ' + err.message);
+  showToast('⚠️ Could not save — ' + err.message);
  }
 }
 
@@ -21300,10 +21438,10 @@ function ttAddDay() {
   data.days.push({ name: 'Day ' + n, subjects: ['', '', '', ''] });
   ttSaveBatch(batch, data);
   initTimetablePage();
-  showToast('Day ' + n + ' சேர்க்கப்பட்டது — ' + (batch === 'all' ? 'அனைத்து பிரிவுகளுக்கு' : batch));
+  showToast('Day ' + n + ' Added — ' + (batch === 'all' ? 'For all batches' : batch));
  } catch(err) {
   console.error('ttAddDay error:', err);
-  showToast('⚠️ Day Order சேர்க்க முடியவில்லை — ' + err.message);
+  showToast('⚠️ Day Order Could not add — ' + err.message);
  }
 }
 
@@ -21317,7 +21455,7 @@ function ttDeleteDay(di) {
   initTimetablePage();
  } catch(err) {
   console.error('ttDeleteDay error:', err);
-  showToast('⚠️ நீக்க முடியவில்லை — ' + err.message);
+  showToast('⚠️ Could not delete — ' + err.message);
  }
 }
 
@@ -21328,7 +21466,7 @@ function initTimetablePage() {
   var bSel = document.getElementById('tt-batch-sel');
   var prevBatch = bSel ? bSel.value : 'all';
   if (bSel) {
-    bSel.innerHTML = '<option value="all">அனைத்து பிரிவுகள்</option>';
+    bSel.innerHTML = '<option value="all">All batches</option>';
     (batches||[]).forEach(function(b) {
       var o = document.createElement('option');
       o.value = b.name; o.textContent = b.name;
@@ -22595,10 +22733,10 @@ function _tlFillDailyMsg(s, missedLogs) {
   if (eveningLogs.length > 0) {
     // Has both sessions — label them
     if (morningLogs.length > 0) {
-      lessonsBlock = `☀️ *காலை வகுப்பு:*\n${buildSubjectBlock(morningLogs)}`;
-      lessonsBlock += `\n\n🌙 *மாலை வகுப்பு:*\n${buildSubjectBlock(eveningLogs)}`;
+      lessonsBlock = `☀️ *Morning class:*\n${buildSubjectBlock(morningLogs)}`;
+      lessonsBlock += `\n\n🌙 *Evening Class:*\n${buildSubjectBlock(eveningLogs)}`;
     } else {
-      lessonsBlock = `🌙 *மாலை வகுப்பு:*\n${buildSubjectBlock(eveningLogs)}`;
+      lessonsBlock = `🌙 *Evening Class:*\n${buildSubjectBlock(eveningLogs)}`;
     }
   } else {
     // Single session — no label needed
@@ -22607,7 +22745,7 @@ function _tlFillDailyMsg(s, missedLogs) {
 
   const batchLine = (s.batch || s.course) ? ' | ' + (s.batch || s.course) : '';
   return tmpl
-    .replace(/{parent_name}/g,   s.parent || 'பெற்றோர்')
+    .replace(/{parent_name}/g,   s.parent || 'Parent')
     .replace(/{student_name}/g,  s.name || '')
     .replace(/{grade}/g,         s.grade || '—')
     .replace(/{batch_line}/g,    batchLine)
@@ -23239,24 +23377,24 @@ IMPORTANT ANALYSIS INSTRUCTIONS:
 
 Generate a WhatsApp message (in Tamil) with these sections. Use emojis. Keep warm and encouraging:
 
-1. 📊 மாதாந்திர வளர்ச்சி சுருக்கம் (2-3 sentences on overall progress for the month)
-2. 📅 வருகை நிலை (attendance with specific feedback — mention how absent days affected studies)
-3. 📚 இந்த மாதம் வகுப்பில் படித்தவை (Monthly Teaching Content Summary — list ALL subjects taught this month with their key topics. Format as:
+1. 📊 Monthly Progress Summary (2-3 sentences on overall progress for the month)
+2. 📅 Attendance Status (attendance with specific feedback — mention how absent days affected studies)
+3. 📚 Covered in class this month (Monthly Teaching Content Summary — list ALL subjects taught this month with their key topics. Format as:
    • [Subject]: [Topic 1], [Topic 2], [Topic 3]…
    This is the complete curriculum covered so the parent knows exactly what was taught.)
-4. 📝 தேர்வு செயல்திறன் (marks subject-by-subject with grade — connect low scores to missed topics if applicable)
-5. ⚠️ கவனிக்க வேண்டியவை (SPECIFICALLY name the missed topics per subject that student needs to catch up — be very specific)
-6. 🗓️ அடுத்த வாரம் படிப்பு அட்டவணை (7-day study timetable — prioritize HIGH-RISK missed topics first, then general revision — Monday to Sunday, each day 1-2 subjects, 1 hour each with specific topic)
-7. 💪 ஆசிரியர் ஊக்கமளிக்கும் வார்த்தை (1 encouraging sentence)
+4. 📝 Exam performance (marks subject-by-subject with grade — connect low scores to missed topics if applicable)
+5. ⚠️ Points to note (SPECIFICALLY name the missed topics per subject that student needs to catch up — be very specific)
+6. 🗓️ Next week’s study timetable (7-day study timetable — prioritize HIGH-RISK missed topics first, then general revision — Monday to Sunday, each day 1-2 subjects, 1 hour each with specific topic)
+7. 💪 Teacher’s encouragement (1 encouraging sentence)
 
 Format the timetable as:
-திங்கள்: [subject] — [specific missed topic to catch up]
-செவ்வாய்: [subject] — [specific topic]
+Monday: [subject] — [specific missed topic to catch up]
+Tuesday: [subject] — [specific topic]
 ...etc.
 
 End with: 📞 ${CFG.CENTER.phone} | ${CFG.CENTER.name}
 
-IMPORTANT: Write ONLY the WhatsApp message. No preamble. Start with: அன்பான ${student.parent || 'பெற்றோர்'},`;
+IMPORTANT: Write ONLY the WhatsApp message. No preamble. Start with: Dear ${student.parent || 'Parent'},`;
 }
 
 /* ── Main: run monthly growth WA generation ── */

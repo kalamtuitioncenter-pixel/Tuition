@@ -11068,32 +11068,35 @@ function _subjMatch(a, b) {
   if (a === b) return true;
   return (a.length >= 4 && b.indexOf(a) === 0) || (b.length >= 4 && a.indexOf(b) === 0); // Maths ~ Mathematics
 }
-function _varCountStudents(subject, grades) {
+function _vpMatch(st, sub, gs, batch) {
+  return st && st.status === 'active' && gs.indexOf(String(st.grade || '').trim()) !== -1
+    && (!batch || String(st.course || '') === batch)
+    && (!sub || _stuSubjectList(st).some(x => _subjMatch(sub, x)));
+}
+function _varCountStudents(subject, grades, batch) {
   const sub = String(subject || '').trim().toLowerCase();
-  if (!sub) return 0;
+  if (!sub && !batch) return 0;
   const gs = (grades && grades.length) ? grades.map(String) : VP_GRADES;
-  return students.filter(st => st && st.status === 'active' && gs.indexOf(String(st.grade || '').trim()) !== -1
-    && _stuSubjectList(st).some(x => _subjMatch(sub, x))).length;
+  return students.filter(st => _vpMatch(st, sub, gs, batch)).length;
 }
 function _stuPaidForMonth(st, label) {
   return fees.some(f => f && !f._deleted && (f.studentId === st.id || f.student === st.name) && f.month === label
     && (f.type || 'monthly') === 'monthly' && (f.status === 'paid' || ((f.total || 0) > 0 && (f.balance || 0) <= 0)));
 }
-function _varCountStudentsPaid(subject, grades, ym) {
+function _varCountStudentsPaid(subject, grades, ym, batch) {
   const sub = String(subject || '').trim().toLowerCase();
-  if (!sub) return 0;
+  if (!sub && !batch) return 0;
   const gs = (grades && grades.length) ? grades.map(String) : VP_GRADES;
   const label = _ymLabel(ym);
-  return students.filter(st => st && st.status === 'active' && gs.indexOf(String(st.grade || '').trim()) !== -1
-    && _stuSubjectList(st).some(x => _subjMatch(sub, x)) && _stuPaidForMonth(st, label)).length;
+  return students.filter(st => _vpMatch(st, sub, gs, batch) && _stuPaidForMonth(st, label)).length;
 }
 function getStaffVariablePay(s, ym) {
   const paidOnly = !(s && s.varPaidOnly === false);
   const lines = ((s && s.varLines) || []).map(l => {
-    const enrolled = _varCountStudents(l.subject, l.grades);
-    const count = paidOnly ? _varCountStudentsPaid(l.subject, l.grades, ym) : enrolled;
+    const enrolled = _varCountStudents(l.subject, l.grades, l.batch);
+    const count = paidOnly ? _varCountStudentsPaid(l.subject, l.grades, ym, l.batch) : enrolled;
     const rate = parseFloat(l.rate) || 0;
-    return { subject: l.subject, rate: rate, grades: l.grades || VP_GRADES, count: count, enrolled: enrolled, amount: Math.round(count * rate) };
+    return { subject: l.subject, batch: l.batch || '', rate: rate, grades: l.grades || VP_GRADES, count: count, enrolled: enrolled, amount: Math.round(count * rate) };
   });
   return { lines: lines, total: lines.reduce((t, l) => t + l.amount, 0) };
 }
@@ -11112,7 +11115,8 @@ function vpRowHTML(prefix, line) {
   const gs = line.grades || VP_GRADES;
   return '<div class="vp-row" style="border:.5px solid var(--br);border-radius:9px;padding:8px 10px;margin-bottom:8px;background:var(--card)">'
     + '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">'
-    + '<input class="fi vp-sub" list="vp-subj-list" placeholder="Subject" value="' + escHtml(line.subject || '') + '" style="flex:1;min-width:110px" oninput="vpRecalc(\'' + prefix + '\')">'
+    + '<input class="fi vp-sub" list="vp-subj-list" placeholder="Subject (optional if batch)" value="' + escHtml(line.subject || '') + '" style="flex:1;min-width:110px" oninput="vpRecalc(\'' + prefix + '\')">'
+    + '<select class="fi vp-batch" style="min-width:130px;max-width:170px" onchange="vpRecalc(\'' + prefix + '\')"><option value="">Any batch</option>' + batches.map(b => { const v = b.name + ' – ' + b.time; return '<option value="' + escHtml(v) + '"' + ((line.batch || '') === v ? ' selected' : '') + '>' + escHtml(v) + '</option>'; }).join('') + '</select>'
     + '<input class="fi vp-rate" type="number" min="0" placeholder="₹ / student" value="' + (line.rate || '') + '" style="width:105px" oninput="vpRecalc(\'' + prefix + '\')">'
     + '<button type="button" class="btn btn-sm" style="color:#dc2626" onclick="this.closest(\'.vp-row\').remove();vpRecalc(\'' + prefix + '\')">✕</button></div>'
     + '<div style="display:flex;gap:10px;align-items:center;margin-top:6px;flex-wrap:wrap;font-size:11px;color:var(--tx2)">Classes: '
@@ -11137,7 +11141,8 @@ function vpCollect(prefix) {
     const subject = (r.querySelector('.vp-sub')?.value || '').trim();
     const rate = parseFloat(r.querySelector('.vp-rate')?.value) || 0;
     const grades = Array.from(r.querySelectorAll('.vp-g:checked')).map(c => c.value);
-    if (subject) out.push({ subject: subject, rate: rate, grades: grades.length ? grades : VP_GRADES.slice() });
+    const batch = r.querySelector('.vp-batch')?.value || '';
+    if (subject || batch) out.push({ subject: subject, batch: batch, rate: rate, grades: grades.length ? grades : VP_GRADES.slice() });
   });
   return out;
 }
@@ -11147,14 +11152,15 @@ function vpRecalc(prefix) {
     const subject = (r.querySelector('.vp-sub')?.value || '').trim();
     const rate = parseFloat(r.querySelector('.vp-rate')?.value) || 0;
     const grades = Array.from(r.querySelectorAll('.vp-g:checked')).map(c => c.value);
-    const en = _varCountStudents(subject, grades);
+    const batch = r.querySelector('.vp-batch')?.value || '';
+    const en = _varCountStudents(subject, grades, batch);
     const po = document.getElementById(prefix + '-vp-paidonly');
     const paidOnly = !po || po.checked;
-    const n = paidOnly ? _varCountStudentsPaid(subject, grades) : en;
+    const n = paidOnly ? _varCountStudentsPaid(subject, grades, undefined, batch) : en;
     const amt = Math.round(n * rate);
     total += amt;
     const c = r.querySelector('.vp-calc');
-    if (c) c.textContent = subject ? (n + (paidOnly ? ' paid of ' + en : '') + ' students × ₹' + rate + ' = ₹' + amt.toLocaleString('en-IN')) : '';
+    if (c) c.textContent = (subject || batch) ? (n + (paidOnly ? ' paid of ' + en : '') + ' students × ₹' + rate + ' = ₹' + amt.toLocaleString('en-IN')) : '';
   });
   const t = document.getElementById(prefix + '-vp-total');
   if (t) t.textContent = '₹' + total.toLocaleString('en-IN');
@@ -11873,7 +11879,7 @@ function generatePayroll() {
     if (s.payType === 'variable') {
       var _vp = getStaffVariablePay(s, monthVal);
       varRow = '<div style="font-size:11px;color:#0891b2;padding:4px 0;line-height:1.6">📊 Variable pay: '
-        + _vp.lines.map(function(l){ return escHtml(l.subject) + ' ' + l.count + (s.varPaidOnly === false ? '' : '/' + l.enrolled + ' paid') + '×₹' + l.rate + '=₹' + l.amount.toLocaleString('en-IN'); }).join(' · ') + '</div>';
+        + _vp.lines.map(function(l){ return escHtml((l.subject || '') + (l.batch ? ' [' + l.batch.split(' – ')[0] + ']' : '')) + ' ' + l.count + (s.varPaidOnly === false ? '' : '/' + l.enrolled + ' paid') + '×₹' + l.rate + '=₹' + l.amount.toLocaleString('en-IN'); }).join(' · ') + '</div>';
     }
     var perStuRow = varRow || (s.payType === 'perstudent' && s.feePerStudent
       ? '<div style="font-size:11px;color:#0891b2;padding:4px 0">'

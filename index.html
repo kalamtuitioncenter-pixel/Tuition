@@ -1019,9 +1019,10 @@ tbody tr:hover td{background:var(--bg)}
   " style="font-size:10px;padding:4px 10px;color:var(--tx2)">🔍 Test Storage</button>
 </div>
 <div id="save-indicator" style="display:none;background:#dcfce7;color:#166534;font-size:11px;font-weight:600;padding:6px 14px;border-radius:8px;margin-bottom:8px;border:.5px solid #bbf7d0">💾 Saved</div>
+<div id="st-nobatch-bar" style="display:none;background:#fffbeb;border:.5px solid #fde68a;color:#92400e;font-size:12px;font-weight:600;padding:8px 12px;border-radius:8px;margin-bottom:8px;cursor:pointer" onclick="showNoBatchStudents()"></div>
 <div class="toolbar">
     <div class="search-box"><svg viewBox="0 0 16 16" fill="none"><circle cx="6.5" cy="6.5" r="4" stroke="currentColor" stroke-width="1.3"/><path d="M11 11l2.5 2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg><input id="st-search" placeholder="Search name, ID, phone…" oninput="filterStudents(this.value)"></div>
-    <select class="fi" style="width:auto" onchange="filterStudentStatus(this.value)" id="st-status-sel"><option value="all" id="opt-all">All</option><option value="active" id="opt-active">Active</option><option value="inactive" id="opt-inactive">Inactive</option></select>
+    <select class="fi" style="width:auto" onchange="filterStudentStatus(this.value)" id="st-status-sel"><option value="all" id="opt-all">All</option><option value="nobatch">⚠️ No batch</option><option value="active" id="opt-active">Active</option><option value="inactive" id="opt-inactive">Inactive</option></select>
     <button class="btn btn-p" onclick="showModal('addStudent')"><svg viewBox="0 0 14 14" fill="none"><path d="M7 2v10M2 7h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><span id="btn-add-st">Add Student</span></button>
     <button class="btn" style="margin-left:auto" onclick="showToast('Exporting…')"><svg viewBox="0 0 14 14" fill="none"><path d="M7 2v8M4 7l3 3 3-3M2 11h10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Export</button>
   </div>
@@ -1187,10 +1188,11 @@ tbody tr:hover td{background:var(--bg)}
         <div class="fg"><label class="fl">Date of Birth</label><input class="fi" id="adm-dob" type="date"></div>
       </div>
       <div class="fg">
-        <label class="fl">Course / Batch</label>
+        <label class="fl">Course / Batch <span style="color:#dc2626">*</span></label>
         <select class="fi" id="adm-course">
           <option value="">— Select batch —</option>
         </select>
+        <div id="adm-batchpick-wrap"></div>
       </div>
       <div class="fg">
         <label class="fl">🚲 Commute to Tuition</label>
@@ -5375,6 +5377,7 @@ function updateAdminTodoBadge(pendOverride) {
    STUDENTS
 ═══════════════════════════════════════════════════════ */
 function renderStudents(data) {
+  try { _updateNoBatchBar(); } catch(e) {}
   // Update student limit bar
   const lic2 = window.__LIC__||{};
   const maxSt2 = lic2.maxStudents || 10;
@@ -5433,7 +5436,15 @@ function filterStudents(q) {
     (s.admNo||'').toLowerCase().includes(lq)
   ));
 }
-function filterStudentStatus(v) { renderStudents(v==='all' ? students : students.filter(s=>s.status===v)); }
+function _noBatchStudents() { return students.filter(s => s && s.status === 'active' && !s.course); }
+function showNoBatchStudents() { const sel = document.getElementById('st-status-sel'); if (sel) sel.value = 'nobatch'; filterStudentStatus('nobatch'); }
+function _updateNoBatchBar() {
+  const bar = document.getElementById('st-nobatch-bar'); if (!bar) return;
+  const n = _noBatchStudents().length;
+  bar.style.display = n ? '' : 'none';
+  if (n) bar.textContent = '⚠️ ' + n + ' active student' + (n > 1 ? 's have' : ' has') + ' no batch — tap to list them, then Edit and select a batch';
+}
+function filterStudentStatus(v) { renderStudents(v==='all' ? students : v==='nobatch' ? _noBatchStudents() : students.filter(s=>s.status===v)); }
 
 /* ═══════════════════════════════════════════════════════
    STUDENT FULL PROFILE — Fees, Commute, Marks & Attendance history
@@ -5615,6 +5626,7 @@ function saveStudent() {
   const dob    = document.getElementById('m-dob')?.value || '';
   const school = document.getElementById('m-school')?.value.trim() || '';
   const course = document.getElementById('m-course')?.value || '';
+  if (!course) { showToast('⚠️ Select a batch — required for every student'); document.getElementById('m-course')?.focus(); return; }
   const commute = document.getElementById('m-commute')?.value || '';
   // Collect subjects from chips + manual input
   const chipSubs = Array.from(document.querySelectorAll('#subject-chips button[data-sel="1"]')).map(b=>b.textContent).join(', ');
@@ -6302,15 +6314,14 @@ function _getBatchStudents(batchId) {
       const bNameWithTime = (batch.name + ' \u2013 ' + batch.time).toLowerCase();
       const bNameDash     = (batch.name + ' - ' + batch.time).toLowerCase();
 
-      const batchMatch = active.filter(s => {
-        if (!s.course) return false;
-        const sc = s.course.toLowerCase().trim();
+      const batchMatch = active.filter(s => _stuBatchList(s).some(c => {
+        const sc = c.toLowerCase().trim();
         return sc === bNameWithTime
             || sc === bNameDash
             || sc === bNameExact
             || sc.startsWith(bNameExact + ' \u2013 ')
             || sc.startsWith(bNameExact + ' - ');
-      });
+      }));
 
       if (batchMatch.length > 0) {
         active = batchMatch;
@@ -8685,7 +8696,8 @@ function openGenerateFees() {
 function buildGenFeeRows(activeStudents, monthLabel) {
   return activeStudents.map((s, i) => {
     const fs = getFeeForClass(s.grade);
-    const defaultFee = (s.grade === '11' || s.grade === '12') ? '' : (fs.monthlyFee || 0);
+    const _mbR = _stuMonthlyBase(s);
+    const defaultFee = _mbR.parts.length ? _mbR.amount : ((s.grade === '11' || s.grade === '12') ? '' : (fs.monthlyFee || 0));
     // Check if this student already has a fee record for this month
     const existing = fees.find(f =>
       (f.studentId === s.id || f.student === s.name) &&
@@ -8737,7 +8749,8 @@ function applyDefaultFeeToAll() {
         el.value = override;
       } else {
         const fs = getFeeForClass(s.grade);
-        el.value = fs.monthlyFee || 0;
+        const _mbR2 = _stuMonthlyBase(s);
+        el.value = _mbR2.parts.length ? _mbR2.amount : (fs.monthlyFee || 0);
       }
     }
   });
@@ -11068,9 +11081,44 @@ function _subjMatch(a, b) {
   if (a === b) return true;
   return (a.length >= 4 && b.indexOf(a) === 0) || (b.length >= 4 && a.indexOf(b) === 0); // Maths ~ Mathematics
 }
+
+/* ── Multi-batch: extra batches + per-batch monthly fee ─────────────── */
+function _bpVal(b) { return b.name + ' \u2013 ' + b.time; }
+function _batchPickHTML(id, s) {
+  s = s || {};
+  const extra = s.extraBatches || [], bf = s.batchFees || {};
+  return '<div id="' + id + '" style="margin-top:8px"><div style="font-size:11px;font-weight:600;color:var(--tx2);margin-bottom:4px">➕ Extra batches &amp; fee per batch <span style="font-weight:400;color:var(--tx3)">(optional — tick a batch the student also attends; fee ₹ is per month for that batch. Leave all fees empty to use the class fee)</span></div>'
+    + batches.map(b => { const v = _bpVal(b);
+      return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;font-size:11px"><label style="display:flex;align-items:center;gap:5px;flex:1;cursor:pointer"><input type="checkbox" class="bp-x" value="' + escHtml(v) + '"' + (extra.indexOf(v) !== -1 ? ' checked' : '') + '> ' + escHtml(b.name) + ' (' + escHtml(b.time) + ')</label>'
+        + '<input class="fi bp-f" data-batch="' + escHtml(v) + '" type="number" min="0" placeholder="₹ fee" value="' + (bf[v] || '') + '" style="width:90px"></div>'; }).join('')
+    + '</div>';
+}
+function _collectBatchPicks(id, primary) {
+  const root = document.getElementById(id);
+  const out = { extraBatches: [], batchFees: {} };
+  if (!root) return null;
+  root.querySelectorAll('.bp-x:checked').forEach(c => { if (c.value !== primary) out.extraBatches.push(c.value); });
+  const attends = [primary].concat(out.extraBatches).filter(Boolean);
+  root.querySelectorAll('.bp-f').forEach(i => { const v = parseFloat(i.value) || 0; if (v > 0 && attends.indexOf(i.dataset.batch) !== -1) out.batchFees[i.dataset.batch] = v; });
+  return out;
+}
+/* Monthly base fee for a student: sum of per-batch fees if set, otherwise class fee */
+function _stuMonthlyBase(s) {
+  const bf = (s && s.batchFees) || {};
+  const list = (typeof _stuBatchList === 'function') ? _stuBatchList(s) : [];
+  const parts = Object.keys(bf).filter(k => list.indexOf(k) !== -1 && bf[k] > 0).map(k => ({ batch: k, amount: bf[k] }));
+  if (parts.length) return { amount: parts.reduce((t, x) => t + x.amount, 0), parts: parts };
+  const fs = (typeof getFeeForClass === 'function') ? getFeeForClass(s.grade) : {};
+  return { amount: (fs && fs.monthlyFee) || 0, parts: [] };
+}
+function _stuBatchList(st) {
+  const l = []; if (st && st.course) l.push(String(st.course));
+  ((st && st.extraBatches) || []).forEach(x => { if (x && l.indexOf(x) === -1) l.push(x); });
+  return l;
+}
 function _vpMatch(st, sub, gs, batch) {
   return st && st.status === 'active' && gs.indexOf(String(st.grade || '').trim()) !== -1
-    && (!batch || String(st.course || '') === batch)
+    && (!batch || _stuBatchList(st).indexOf(batch) !== -1)
     && (!sub || _stuSubjectList(st).some(x => _subjMatch(sub, x)));
 }
 function _varCountStudents(subject, grades, batch) {
@@ -16831,6 +16879,7 @@ function saveBatchFull() {
   hideAddBatchPanel();
   renderBatchesPage();
   // Refresh admissions dropdown
+  const _bpw2 = document.getElementById('adm-batchpick-wrap'); if (_bpw2) _bpw2.innerHTML = _batchPickHTML('adm-batchpick', {});
   const courseEl = document.getElementById('adm-course');
   if (courseEl) {
     courseEl.innerHTML = '<option value="">— Select batch —</option>' +
@@ -17115,8 +17164,8 @@ function checkAndDoMonthlyReset() {
       }
       return;
     }
-    const fs  = (typeof getFeeForClass === 'function') ? getFeeForClass(s.grade) : {};
-    const baseAmt = fs.monthlyFee || 0;
+    const _mb = _stuMonthlyBase(s);
+    const baseAmt = _mb.amount || 0;
     if (baseAmt <= 0 && carriedForward <= 0) return; // nothing to bill this student
     const total = baseAmt + carriedForward;
     fees.unshift({
@@ -17132,6 +17181,7 @@ function checkAndDoMonthlyReset() {
       type      : 'monthly',
       paidOn    : '',
       baseFee         : baseAmt,
+      batchParts      : _mb.parts,
       carriedForward  : carriedForward,
       carriedFromMonths,
     });
@@ -17298,8 +17348,7 @@ function renderExpectedIncome() {
   const activeStudents = students.filter(s => s && s.status === 'active');
   let expectedTotal = 0;
   activeStudents.forEach(s => {
-    const fs = (typeof getFeeForClass === 'function') ? getFeeForClass(s.grade) : null;
-    if (fs && fs.monthlyFee) expectedTotal += fs.monthlyFee;
+    expectedTotal += _stuMonthlyBase(s).amount || 0;
   });
 
   // Pending carry-forward (all unpaid balances)
@@ -18495,6 +18544,7 @@ function initAdmissions() {
   } catch(e) {}
   // Populate batch dropdown from batches array
   const courseEl = document.getElementById('adm-course');
+  const _bpw = document.getElementById('adm-batchpick-wrap'); if (_bpw) _bpw.innerHTML = _batchPickHTML('adm-batchpick', {});
   if (courseEl) {
     courseEl.innerHTML = '<option value="">— Select batch —</option>' +
       batches.map(b=>`<option value="${b.name} – ${b.time}">${b.name} – ${b.time==='Morning'?'☀️ Morning':'🌙 Evening'}</option>`).join('');
@@ -19124,6 +19174,7 @@ function submitAdmission() {
   }
   if (!parent) { showToast('Enter parent name'); document.getElementById('adm-parent')?.focus(); return; }
   if (!phone)  { showToast('Enter WhatsApp number'); document.getElementById('adm-phone')?.focus(); return; }
+  if (!document.getElementById('adm-course')?.value) { showToast('⚠️ Select a batch — required for every student'); document.getElementById('adm-course')?.focus(); return; }
 
   // Check plan limit
   const lic0 = window.__LIC__||{};
@@ -19176,6 +19227,8 @@ function submitAdmission() {
     otherCourses: selectedOtherCourses.map(c=>({name:c.name, fee:c.fee, schedule:c.schedule})),
     otherCoursesFee,
   };
+  const _bp = _collectBatchPicks('adm-batchpick', course);
+  if (_bp) { newStudent.extraBatches = _bp.extraBatches; newStudent.batchFees = _bp.batchFees; }
 
   // Add to students array
   students.unshift(newStudent);
@@ -19424,6 +19477,7 @@ function resetAdmForm() {
   });
   document.getElementById('adm-grade').value = '';
   document.getElementById('adm-course').value = '';
+  { const _w = document.getElementById('adm-batchpick-wrap'); if (_w) _w.innerHTML = _batchPickHTML('adm-batchpick', {}); }
   const commuteEl = document.getElementById('adm-commute');
   if (commuteEl) commuteEl.value = '';
   document.querySelectorAll('#adm-class-chips button').forEach(b => {
@@ -19571,14 +19625,15 @@ function editStudent(idx) {
     <div class="fg">
       <label class="fl" style="display:flex;align-items:center;gap:6px">
         <span style="width:18px;height:18px;background:#ede9fe;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px">📋</span>
-        Course / Batch
+        Course / Batch <span style="color:#dc2626">*</span>
       </label>
       <select class="fi" id="edit-course">
-        <option value="">— No batch assigned —</option>
+        <option value="">— Select batch (required) —</option>
         ${batches.map(b=>`<option value="${b.name} – ${b.time}" ${(s.course||'')===(b.name+' – '+b.time)?'selected':''}>
           ${b.time==='Morning'?'☀️':b.time==='Evening'?'🌙':'☀️🌙'} ${b.name} (${b.time}) · ${b.days||''}
         </option>`).join('')}
       </select>
+      ${_batchPickHTML('edit-batchpick', s)}
       ${s.course ? `<div style="font-size:11px;color:#7c3aed;margin-top:4px;padding:4px 8px;background:#ede9fe;border-radius:6px">Currently: ${s.course}</div>` : '<div style="font-size:11px;color:var(--tx3);margin-top:4px">No batch assigned yet. Select one above.</div>'}
     </div>
     <div class="fg"><label class="fl">School</label><input class="fi" id="edit-school" value="${s.school||''}"></div>
@@ -19619,7 +19674,9 @@ function saveEditStudent(idx) {
   s.commute  = document.getElementById('edit-commute')?.value || '';
   s.status   = document.getElementById('edit-status')?.value || s.status;
   const newCourse = document.getElementById('edit-course')?.value || '';
+  if (!newCourse && (document.getElementById('edit-status')?.value || s.status) === 'active') { showToast('⚠️ Select a batch — required for every active student'); document.getElementById('edit-course')?.focus(); return; }
   if (newCourse !== undefined) s.course = newCourse;
+  { const _bp = _collectBatchPicks('edit-batchpick', s.course); if (_bp) { s.extraBatches = _bp.extraBatches; s.batchFees = _bp.batchFees; } }
   saveStudents();
   renderStudents(students);
   closeModal();

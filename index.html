@@ -16042,10 +16042,10 @@ function downloadBackup() {
   a.click();
   setTimeout(()=>{ try{document.body.removeChild(a);}catch(e){} URL.revokeObjectURL(url); }, 4000);
   // In-app WebViews silently ignore blob downloads — give a working fallback screen
-  if (/wv\)|WebView|; Android.*Version\/|WebIntoApp/i.test(navigator.userAgent)) { setTimeout(showBackupFallback, 800); }
+  if (/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || !!window.AndroidInterface || window.matchMedia('(display-mode: standalone)').matches) { setTimeout(showBackupFallback, 600); }
   addBkLog('['+new Date().toLocaleTimeString('en-IN')+'] Downloaded backup JSON');
   try { erpSet('_erp_last_ext_backup', new Date().toISOString()); } catch(e) {}
-  showToast('✅ Backup downloaded!');
+  showToast('Backup prepared');
   try { renderBackupWarning(); } catch(e) {}
 }
 /* Share backup file via the phone's share sheet (WhatsApp / Drive / Gmail ...) */

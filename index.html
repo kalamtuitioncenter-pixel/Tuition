@@ -16041,10 +16041,8 @@ function downloadBackup() {
   a.style.display='none'; document.body.appendChild(a);
   a.click();
   setTimeout(()=>{ try{document.body.removeChild(a);}catch(e){} URL.revokeObjectURL(url); }, 4000);
-  // In-app WebViews often block silent downloads — offer the share sheet as a backup route
-  if (/wv|WebView|; Android/i.test(navigator.userAgent) && typeof shareBackup === 'function') {
-    setTimeout(()=>{ if (confirm('If the file did not download, share it via WhatsApp / Drive / Gmail instead?')) shareBackup(); }, 1200);
-  }
+  // In-app WebViews silently ignore blob downloads — give a working fallback screen
+  if (/wv\)|WebView|; Android.*Version\/|WebIntoApp/i.test(navigator.userAgent)) { setTimeout(showBackupFallback, 800); }
   addBkLog('['+new Date().toLocaleTimeString('en-IN')+'] Downloaded backup JSON');
   try { erpSet('_erp_last_ext_backup', new Date().toISOString()); } catch(e) {}
   showToast('✅ Backup downloaded!');
@@ -16064,7 +16062,33 @@ async function shareBackup() {
       return;
     }
   } catch(e) { if (e && e.name === 'AbortError') return; }
-  downloadBackup(); // fallback when sharing files isn't supported
+  showBackupFallback(); // file sharing not supported here
+}
+function showBackupFallback() {
+  const txt = JSON.stringify(getSnapshot());
+  window.__bkTxt = txt;
+  const kb = (txt.length/1024).toFixed(0);
+  document.getElementById('modal-root').innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal">
+    <div class="modal-title">💾 Save backup (${kb} KB)</div>
+    <div style="font-size:12px;color:var(--tx2);line-height:1.6;margin-bottom:10px">This app cannot save files directly. Use one of these:<br>
+    1️⃣ <b>Copy</b> → paste into Google Keep / Notes / Gmail draft<br>
+    2️⃣ <b>Share text</b> → send to yourself on WhatsApp / Gmail<br>
+    3️⃣ Best: Settings → Google Sheets → <b>Sync Now</b> (stores a full backup in your Sheet)</div>
+    <div class="modal-foot">
+      <button class="btn btn-p" onclick="copyBackupText()">📋 Copy backup</button>
+      <button class="btn" onclick="shareBackupText()">📤 Share text</button>
+      <button class="btn" onclick="closeModal()">Close</button>
+    </div></div></div>`;
+}
+async function copyBackupText() {
+  try { await navigator.clipboard.writeText(window.__bkTxt || ''); }
+  catch(e) { const t=document.createElement('textarea'); t.value=window.__bkTxt||''; document.body.appendChild(t); t.select(); try{document.execCommand('copy');}catch(e2){} document.body.removeChild(t); }
+  try { erpSet('_erp_last_ext_backup', new Date().toISOString()); } catch(e) {}
+  showToast('✅ Backup copied — paste it somewhere safe');
+}
+async function shareBackupText() {
+  try { await navigator.share({ title: 'Kalam ERP backup', text: window.__bkTxt || '' }); try { erpSet('_erp_last_ext_backup', new Date().toISOString()); } catch(e) {} }
+  catch(e) { if (!e || e.name !== 'AbortError') showToast('Share not supported — use Copy'); }
 }
 function renderBackupWarning() {
   const el = document.getElementById('dash-backup-warn');

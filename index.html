@@ -3970,6 +3970,7 @@ function navTo(id) {
     renderDashDayOrderSummary();
   }
   if (id === 'batches') { renderBatchesPage(); }
+  if (id === 'staff') { try { renderStaff(); } catch(e) { console.warn(e); } }
   if (id === 'commute') { renderCommutePage(); }
   if (id === 'fees') {
     const now = new Date();
@@ -20141,7 +20142,22 @@ function _erpInitPersistentStudents() {
   });
 }
 
+var _liveT = null;
+function _liveRefresh() {
+  clearTimeout(_liveT);
+  _liveT = setTimeout(function() {
+    try {
+      const pg = document.querySelector('.page.active'); const id = pg ? pg.id : '';
+      if (id === 'pg-students') { const sel = document.getElementById('st-status-sel'); filterStudentStatus(sel ? sel.value : 'all'); }
+      else if (id === 'pg-batches') renderBatchesPage();
+      else if (id === 'pg-fees') renderFees(fees);
+      else if (id === 'pg-staff') renderStaff();
+      if (typeof updateDashStats === 'function') updateDashStats();
+    } catch(e) { console.warn('[ERP] live refresh', e); }
+  }, 60);
+}
 function saveStudents() {
+  _liveRefresh();
   const data = JSON.stringify(students);
   let saved = false;
   // WebIntoApp/WebView-safe: test each storage independently.
@@ -20279,6 +20295,7 @@ const EXAMS_KEY   = '_erp_exams';
 const NOTIFS_KEY  = '_erp_notifs';
 
 function saveFees() {
+  _liveRefresh();
   // Auto-clean any duplicate fee records (same student + same month) every
   // time the fees log is saved — this is what actually causes "paid
   // student still shows pending" (payment collected on one duplicate,

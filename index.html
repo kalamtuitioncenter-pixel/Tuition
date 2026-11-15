@@ -933,9 +933,9 @@ tbody tr:hover td{background:var(--bg)}
           <div style="font-size:9px;color:#991b1b;margin-top:2px" id="exp-expense-staffcount">0 staff</div>
         </div>
         <div style="background:#fef9c3;border-radius:10px;padding:11px 13px;border:.5px solid #fde68a">
-          <div style="font-size:10px;color:#854d0e;margin-bottom:4px">🎁 Bonuses (if set)</div>
+          <div style="font-size:10px;color:#854d0e;margin-bottom:4px">🏠🧾 Rent + Misc</div>
           <div style="font-size:20px;font-weight:800;color:#ca8a04" id="exp-expense-bonus">₹0</div>
-          <div style="font-size:9px;color:#854d0e;margin-top:2px">Included in payroll setup</div>
+          <div style="font-size:9px;color:#854d0e;margin-top:2px">From Admin panel → Expenses</div>
         </div>
         <div style="background:linear-gradient(135deg,#ede9fe,#f5f3ff);border-radius:10px;padding:11px 13px;border:.5px solid #c4b5fd">
           <div style="font-size:10px;color:#5b21b6;margin-bottom:4px">💸 Total Expected Expense</div>
@@ -2146,6 +2146,7 @@ tbody tr:hover td{background:var(--bg)}
         </div>
       </div>
     </div>
+    <div id="exp-expected" style="margin-bottom:12px"></div>
     <div id="exp-summary" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:12px"></div>
     <div class="card" style="margin-bottom:12px">
       <div class="card-hd"><span class="card-title">By Category</span></div>
@@ -12158,7 +12159,7 @@ function openSalaryPaidModal(staffId) {
     if (v === 'L')   lateDaysM++;
   }
   const lateAsLopM  = ltlM > 0 ? Math.floor(lateDaysM / ltlM) : 0;
-  const pay       = getStaffBasePay(s);
+  const pay       = getStaffBasePay(s, yr + '-' + String(mo).padStart(2, '0'));
   const dailyRate = pay / _lopBaseDays(yr, mo);
   const lopDed    = Math.round((lopDays + lateAsLopM) * dailyRate);
   const extraDed  = s.extraDed || 0;
@@ -12720,6 +12721,7 @@ function _expSalaryPaid(ym) {
 }
 function renderExpenseTab() {
   if (!expenses.length) loadExpenses();
+  try { renderExpectedExpenseCard(); } catch(e) { console.error(e); }
   const mEl = document.getElementById('exp-month');
   if (mEl && !mEl.value) mEl.value = _ymNow();
   const ym = mEl ? mEl.value : _ymNow();
@@ -12746,6 +12748,51 @@ function renderExpenseTab() {
   if (cEl) cEl.innerHTML = rows.length ? rows.map(r => '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:12px"><div style="width:140px;flex-shrink:0;color:var(--tx2)">' + escHtml(r[0]) + '</div><div style="flex:1;background:var(--bg);border-radius:6px;height:10px"><div style="width:' + Math.max(3, Math.round(r[1] / mx * 100)) + '%;height:100%;background:#dc2626;border-radius:6px"></div></div><div style="width:80px;text-align:right;font-weight:700">' + _inr(r[1]) + '</div></div>').join('') : '<div style="font-size:12px;color:var(--tx3)">No expenses for this month</div>';
   const lEl = document.getElementById('exp-list');
   if (lEl) lEl.innerHTML = list.length ? list.map(e => '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:.5px solid var(--br);font-size:12px"><div style="width:74px;color:var(--tx3);flex-shrink:0">' + escHtml(e.date) + '</div><div style="flex:1;min-width:0"><div style="font-weight:600;color:var(--tx)">' + escHtml(e.cat) + '</div>' + (e.desc ? '<div style="font-size:11px;color:var(--tx3)">' + escHtml(e.desc) + '</div>' : '') + '</div><div style="font-size:10px;color:var(--tx3)">' + escHtml(e.mode || '') + '</div><div style="font-weight:800;color:#dc2626;width:80px;text-align:right">' + _inr(e.amt) + '</div><button class="btn btn-sm" onclick="deleteExpense(\'' + e.id + '\')" title="Delete">🗑</button></div>').join('') : '<div style="font-size:12px;color:var(--tx3);padding:6px 0">No entries for this month</div>';
+}
+/* ── Expected expense for next month: Rent + Salary (this month's payroll net) + Misc ── */
+function _expCfg() { try { return Object.assign({ rent: '', on: { rent: true, salary: true, misc: true } }, JSON.parse(erpGet('_erp_exp_cfg') || '{}')); } catch(e) { return { rent: '', on: { rent: true, salary: true, misc: true } }; } }
+function _expCfgSave(c) { try { erpSet('_erp_exp_cfg', JSON.stringify(c)); } catch(e) {} }
+function _prevYM(ym, k) { const a = ym.split('-'); const d = new Date(parseInt(a[0]), parseInt(a[1]) - 1 + (k || 0), 1); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); }
+function getExpectedExpense() {
+  if (!expenses.length) loadExpenses();
+  const cur = _ymNow(), next = _prevYM(cur, 1), cfg = _expCfg();
+  // Salary = net payroll of the CURRENT month (after LOP / deductions) — that is what is paid out next month
+  const staffList = (typeof staffData !== 'undefined' ? staffData : []).filter(s => s && s.name && s.status !== 'inactive');
+  const sal = []; let salary = 0;
+  staffList.forEach(s => {
+    let net = 0; try { net = computeStaffMonthSummary(s, cur).net; } catch(e) { net = getStaffBasePay(s, cur); }
+    salary += net; sal.push({ name: s.name, net: net, type: s.payType === 'variable' ? 'Variable' : 'Consolidated' });
+  });
+  // Rent = fixed amount if set, else the latest Rent entries
+  let rent = parseFloat(cfg.rent) || 0, rentSrc = rent ? 'fixed monthly rent' : '';
+  if (!rent) {
+    const rents = expenses.filter(e => e && /rent/i.test(e.cat || '')).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    if (rents.length) { const m = (rents[0].date || '').slice(0, 7); rent = rents.filter(e => (e.date || '').slice(0, 7) === m).reduce((t, e) => t + e.amt, 0); rentSrc = 'last rent entry (' + _ymLabel(m) + ')'; }
+  }
+  // Misc = other expenses (not rent / not manual salary) of this month, else previous month
+  const miscOf = ym => expenses.filter(e => e && (e.date || '').slice(0, 7) === ym && !/rent/i.test(e.cat || '') && !/salary/i.test(e.cat || '')).reduce((t, e) => t + e.amt, 0);
+  let misc = miscOf(cur), miscSrc = _ymLabel(cur) + ' other expenses';
+  if (!misc) { misc = miscOf(_prevYM(cur, -1)); miscSrc = _ymLabel(_prevYM(cur, -1)) + ' other expenses'; }
+  const on = cfg.on || {};
+  const total = (on.rent !== false ? rent : 0) + (on.salary !== false ? salary : 0) + (on.misc !== false ? misc : 0);
+  return { next: next, cur: cur, rent: rent, rentSrc: rentSrc, salary: salary, sal: sal, misc: misc, miscSrc: miscSrc, on: on, total: total, cfg: cfg };
+}
+function expToggle(part, checked) { const c = _expCfg(); c.on = c.on || {}; c.on[part] = checked; _expCfgSave(c); renderExpectedExpenseCard(); try { renderExpectedExpense(); } catch(e) {} }
+function expSetRent(v) { const c = _expCfg(); c.rent = v; _expCfgSave(c); renderExpectedExpenseCard(); try { renderExpectedExpense(); } catch(e) {} }
+function renderExpectedExpenseCard() {
+  const el = document.getElementById('exp-expected'); if (!el) return;
+  const x = getExpectedExpense();
+  const part = (key, icon, title, amt, sub, extra) => '<div style="flex:1;min-width:150px;background:var(--bg);border:.5px solid var(--br);border-radius:10px;padding:10px 12px;' + (x.on[key] === false ? 'opacity:.5' : '') + '">'
+    + '<label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;cursor:pointer"><input type="checkbox" ' + (x.on[key] !== false ? 'checked' : '') + ' onchange="expToggle(\'' + key + '\',this.checked)"> ' + icon + ' ' + title + '</label>'
+    + '<div style="font-size:18px;font-weight:800;margin-top:4px">' + _inr(amt) + '</div><div style="font-size:10px;color:var(--tx3)">' + sub + '</div>' + (extra || '') + '</div>';
+  el.innerHTML = '<div class="card"><div class="card-hd"><span class="card-title">📤 Expected Expense — ' + _ymLabel(x.next) + '</span><span style="font-size:10px;color:var(--tx3)">Total of ticked parts</span></div>'
+    + '<div style="padding:0 16px 14px"><div style="font-size:24px;font-weight:800;color:#7c3aed;margin-bottom:10px">' + _inr(x.total) + '</div>'
+    + '<div style="display:flex;gap:10px;flex-wrap:wrap">'
+    + part('rent', '🏠', 'Rent', x.rent, x.rentSrc || 'enter a fixed rent or add a Rent expense', '<input class="fi" type="number" min="0" placeholder="Fixed rent ₹/month" value="' + (x.cfg.rent || '') + '" style="margin-top:6px;padding:4px 8px;font-size:11px" onchange="expSetRent(this.value)">')
+    + part('salary', '👥', 'Salary', x.salary, 'Payroll of ' + _ymLabel(x.cur) + ' after LOP &amp; deductions · ' + x.sal.length + ' staff',
+        '<details style="margin-top:6px;font-size:10px"><summary style="cursor:pointer;color:var(--tx2)">Staff breakdown</summary>' + x.sal.map(s => '<div style="display:flex;justify-content:space-between;padding:1px 0"><span>' + escHtml(s.name) + ' <span style="color:var(--tx3)">(' + s.type + ')</span></span><b>' + _inr(s.net) + '</b></div>').join('') + '</details>')
+    + part('misc', '🧾', 'Misc', x.misc, x.miscSrc)
+    + '</div></div></div>';
 }
 function exportExpensesCSV() {
   if (!expenses.length) loadExpenses();
@@ -13265,7 +13312,7 @@ function computeStaffMonthSummary(s, monthVal) {
     else { presentDays++; dPresent.push(d); } // default / unmarked = present
   }
   const lateAsLop  = latesToLeave > 0 ? Math.floor(lateDays / latesToLeave) : 0;
-  const pay         = getStaffBasePay(s);
+  const pay         = getStaffBasePay(s, monthVal);
   const dailyRate    = pay / _lopBaseDays(yr, mo);
   const effectiveLop = lopDays + lateAsLop;
   const lopDed        = Math.round(effectiveLop * dailyRate);
@@ -17430,33 +17477,15 @@ function renderExpectedIncome() {
    next month's attendance hasn't happened yet. This gives a "full pay"
    projection so it's directly comparable to Expected Income. */
 function renderExpectedExpense() {
-  const now    = new Date();
-  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  const nxDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-  const nxLabel = MONTHS[nxDate.getMonth()] + ' ' + nxDate.getFullYear();
-
-  const staffList = (typeof staffData !== 'undefined' ? staffData : []).filter(s => s && s.name && s.status !== 'inactive');
-  let salaryTotal = 0, bonusTotal = 0;
-  staffList.forEach(s => {
-    salaryTotal += (getStaffBasePay(s));
-    bonusTotal  += (s.bonus || 0);
-  });
-  const grandTotal = salaryTotal + bonusTotal;
-
+  const x = getExpectedExpense();
   const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-  set('exp-expense-month-label', nxLabel);
-  set('exp-expense-salary',      '₹' + salaryTotal.toLocaleString('en-IN'));
-  set('exp-expense-staffcount',  staffList.length + ' staff member' + (staffList.length !== 1 ? 's' : ''));
-  set('exp-expense-bonus',       '₹' + bonusTotal.toLocaleString('en-IN'));
-  set('exp-expense-total',       '₹' + grandTotal.toLocaleString('en-IN'));
-  const noteEl2 = document.getElementById('exp-expense-note');
-  if (noteEl2) {
-    if (salaryTotal === 0 && staffList.length > 0) {
-      noteEl2.textContent = '⚠️ Set Consolidated Pay for staff (Staff page) to see projected salary expense.';
-    } else {
-      noteEl2.textContent = 'Same base pay + bonus logic used in Staff → Payroll (before any LOP/attendance deductions), for ' + staffList.length + ' staff.';
-    }
-  }
+  set('exp-expense-month-label', _ymLabel(x.next));
+  set('exp-expense-salary',      _inr(x.on.salary !== false ? x.salary : 0));
+  set('exp-expense-staffcount',  x.sal.length + ' staff · ' + _ymLabel(x.cur) + ' payroll (after LOP)');
+  set('exp-expense-bonus',       _inr((x.on.rent !== false ? x.rent : 0) + (x.on.misc !== false ? x.misc : 0)));
+  set('exp-expense-total',       _inr(x.total));
+  const n = document.getElementById('exp-expense-note');
+  if (n) n.textContent = 'Salary = this month\'s payroll net (LOP & deductions applied). Rent + Misc from Admin panel → Expenses. Tick/untick parts there.';
 }
 
 /* ── Class-wise Strength — dashboard card ── */

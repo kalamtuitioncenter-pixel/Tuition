@@ -2147,6 +2147,7 @@ tbody tr:hover td{background:var(--bg)}
       </div>
     </div>
     <div id="exp-expected" style="margin-bottom:12px"></div>
+    <div id="exp-perstu" style="margin-bottom:12px"></div>
     <div id="exp-summary" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:12px"></div>
     <div class="card" style="margin-bottom:12px">
       <div class="card-hd"><span class="card-title">By Category</span></div>
@@ -12722,6 +12723,7 @@ function _expSalaryPaid(ym) {
 function renderExpenseTab() {
   if (!expenses.length) loadExpenses();
   try { renderExpectedExpenseCard(); } catch(e) { console.error(e); }
+  try { renderExpensePerStudent((document.getElementById('exp-month') || {}).value || _ymNow()); } catch(e) { console.error(e); }
   const mEl = document.getElementById('exp-month');
   if (mEl && !mEl.value) mEl.value = _ymNow();
   const ym = mEl ? mEl.value : _ymNow();
@@ -12730,7 +12732,7 @@ function renderExpenseTab() {
   const dEl = document.getElementById('exp-date'); if (dEl && !dEl.value) dEl.value = _todayISO();
   const list = expenses.filter(e => (e.date || '').slice(0, 7) === ym).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
   const manual = list.reduce((t, e) => t + (e.amt || 0), 0);
-  const salary = _expSalaryPaid(ym);
+  const _sfm = _expSalaryFor(ym), salary = _sfm.amt;
   const lbl = _ymLabel(ym);
   const income = fees.filter(f => f && !f._deleted && (f.paid || 0) > 0 && f.month === lbl).reduce((t, f) => t + (f.paid || 0), 0);
   const net = income - manual - salary;
@@ -12738,7 +12740,7 @@ function renderExpenseTab() {
   const sum = document.getElementById('exp-summary');
   if (sum) sum.innerHTML = card('Fees collected', _inr(income), lbl, '#dcfce7', '#166534')
     + card('Expenses (entered)', _inr(manual), list.length + ' entr' + (list.length === 1 ? 'y' : 'ies'), '#fee2e2', '#991b1b')
-    + card('Staff salary paid', _inr(salary), 'from Staff → Payroll', '#fef3c7', '#92400e')
+    + card('Staff salary', _inr(salary), _sfm.note, '#fef3c7', '#92400e')
     + card(net >= 0 ? 'Net profit' : 'Net loss', _inr(Math.abs(net)), 'Income − expenses − salary', net >= 0 ? '#dbeafe' : '#fee2e2', net >= 0 ? '#1e40af' : '#991b1b');
   const byCat = {}; list.forEach(e => { byCat[e.cat] = (byCat[e.cat] || 0) + (e.amt || 0); });
   if (salary) byCat['Staff Salary (payroll)'] = (byCat['Staff Salary (payroll)'] || 0) + salary;
@@ -12793,6 +12795,51 @@ function renderExpectedExpenseCard() {
         '<details style="margin-top:6px;font-size:10px"><summary style="cursor:pointer;color:var(--tx2)">Staff breakdown</summary>' + x.sal.map(s => '<div style="display:flex;justify-content:space-between;padding:1px 0"><span>' + escHtml(s.name) + ' <span style="color:var(--tx3)">(' + s.type + ')</span></span><b>' + _inr(s.net) + '</b></div>').join('') + '</details>')
     + part('misc', '🧾', 'Misc', x.misc, x.miscSrc)
     + '</div></div></div>';
+}
+function _parseAnyDate(v) {
+  if (!v) return null; v = String(v).trim();
+  let m = v.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/); if (m) return new Date(+m[3], +m[2] - 1, +m[1]);
+  m = v.match(/^(\d{4})-(\d{2})-(\d{2})/); if (m) return new Date(+m[1], +m[2] - 1, +m[3]);
+  const d = new Date(v); return isNaN(d) ? null : d;
+}
+/* Strength of a month = students who had joined by month end and had not left before it */
+function _strengthFor(ym) {
+  if (ym >= _ymNow()) return students.filter(s => s && s.status === 'active').length;
+  const a = ym.split('-'), end = new Date(+a[0], +a[1], 0, 23, 59, 59), start = new Date(+a[0], +a[1] - 1, 1);
+  return students.filter(s => {
+    if (!s) return false;
+    const j = _parseAnyDate(s.admDate); if (j && j > end) return false;          // joined later
+    if (s.status === 'inactive') { const l = _parseAnyDate(s.leftDate); return !!(l && l >= start); }   // left during/after this month
+    return true;
+  }).length;
+}
+/* Salary of a month: paid amount if payroll was marked paid, otherwise payroll net (after LOP) */
+function _expSalaryFor(ym) {
+  let amt = _expSalaryPaid(ym), note = 'paid payroll';
+  if (!amt) { (typeof staffData !== 'undefined' ? staffData : []).filter(s => s && s.name && s.status !== 'inactive').forEach(s => { try { amt += computeStaffMonthSummary(s, ym).net; } catch(e) {} }); note = 'payroll net (not marked paid yet)'; }
+  return { amt: amt, note: note };
+}
+function renderExpensePerStudent(ym) {
+  const el = document.getElementById('exp-perstu'); if (!el) return;
+  const lbl = _ymLabel(ym);
+  const strength = _strengthFor(ym);
+  const income = fees.filter(f => f && !f._deleted && (f.paid || 0) > 0 && f.month === lbl).reduce((t, f) => t + (f.paid || 0), 0);
+  const inMonth = e => e && (e.date || '').slice(0, 7) === ym;
+  const rent = expenses.filter(e => inMonth(e) && /rent/i.test(e.cat || '')).reduce((t, e) => t + e.amt, 0);
+  const misc = expenses.filter(e => inMonth(e) && !/rent/i.test(e.cat || '')).reduce((t, e) => t + e.amt, 0);
+  const _sf = _expSalaryFor(ym), salary = _sf.amt, salNote = _sf.note;
+  const totalExp = rent + salary + misc, profit = income - totalExp;
+  const per = v => strength ? _inr(v / strength) : '—';
+  const row = (t, tot, pv, col) => '<div style="background:var(--bg);border:.5px solid var(--br);border-radius:10px;padding:10px 12px"><div style="font-size:10px;color:var(--tx3)">' + t + '</div><div style="font-size:18px;font-weight:800;color:' + col + '">' + pv + '</div><div style="font-size:10px;color:var(--tx3)">of ' + _inr(tot) + '</div></div>';
+  el.innerHTML = '<div class="card"><div class="card-hd"><span class="card-title">👤 Per Student — ' + lbl + '</span><span style="font-size:10px;color:var(--tx3)">Strength: ' + strength + ' students</span></div>'
+    + '<div style="padding:0 16px 14px"><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px">'
+    + row('Avg income / student', income, per(income), '#166534')
+    + row('Avg salary / student', salary, per(salary), '#b45309')
+    + row('Avg rent / student', rent, per(rent), '#b45309')
+    + row('Avg misc / student', misc, per(misc), '#b45309')
+    + row('Avg total expense / student', totalExp, per(totalExp), '#b91c1c')
+    + row(profit >= 0 ? 'Profit / student' : 'Loss / student', profit, strength ? _inr(Math.abs(profit) / strength) : '—', profit >= 0 ? '#1e40af' : '#b91c1c')
+    + '</div><div style="font-size:10px;color:var(--tx3);margin-top:8px">Income = fees collected in ' + lbl + ' ÷ strength · Salary = ' + salNote + ' · Profit = (income − salary − rent − misc) ÷ strength</div></div></div>';
 }
 function exportExpensesCSV() {
   if (!expenses.length) loadExpenses();

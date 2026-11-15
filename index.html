@@ -19259,7 +19259,8 @@ function submitAdmission() {
     const fs        = getFeeForClass(grade);
     const curMonth  = _feeMonthLabel(new Date());
     const now       = new Date().toLocaleDateString('en-IN');
-    const monthlyAmt = parseFloat(fee) || fs.monthlyFee || 0;
+    const _mbAdm = _stuMonthlyBase(newStudent);
+    const monthlyAmt = _mbAdm.parts.length ? _mbAdm.amount : (parseFloat(fee) || fs.monthlyFee || 0);
     const admAmt     = parseFloat(admFee) || fs.admFee || 0;
 
     // Monthly fee record (pending)
@@ -19676,7 +19677,16 @@ function saveEditStudent(idx) {
   const newCourse = document.getElementById('edit-course')?.value || '';
   if (!newCourse && (document.getElementById('edit-status')?.value || s.status) === 'active') { showToast('⚠️ Select a batch — required for every active student'); document.getElementById('edit-course')?.focus(); return; }
   if (newCourse !== undefined) s.course = newCourse;
-  { const _bp = _collectBatchPicks('edit-batchpick', s.course); if (_bp) { s.extraBatches = _bp.extraBatches; s.batchFees = _bp.batchFees; } }
+  { const _bp = _collectBatchPicks('edit-batchpick', s.course); if (_bp) { s.extraBatches = _bp.extraBatches; s.batchFees = _bp.batchFees; }
+    // Re-price this month's still-unpaid monthly bill to match the batches/fees now chosen
+    try {
+      const _mb = _stuMonthlyBase(s), _lbl = _feeMonthLabel(new Date());
+      if (_mb.amount > 0) {
+        const _rec = fees.find(f => f && !f._deleted && (f.studentId === s.id || f.student === s.name) && f.month === _lbl && (f.type || 'monthly') === 'monthly' && (f.paid || 0) === 0 && f.status !== 'carried');
+        if (_rec) { const _cf = _rec.carriedForward || 0; _rec.baseFee = _mb.amount; _rec.batchParts = _mb.parts; _rec.total = _mb.amount + _cf; _rec.balance = _rec.total; _rec.status = 'pending'; saveFees(); }
+      }
+    } catch(e) {}
+  }
   saveStudents();
   renderStudents(students);
   closeModal();

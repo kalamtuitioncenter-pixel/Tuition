@@ -1619,7 +1619,7 @@ tbody tr:hover td{background:var(--bg)}
     <button class="btn" onclick="openFeeMonthReport()" style="gap:5px;background:#0891b2;color:#fff;border-color:#0891b2">
       <svg viewBox="0 0 14 14" fill="none" width="12" height="12"><rect x="1" y="1" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.3"/><path d="M3 4h4M3 7h8M3 10h6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>Fee Report
     </button>
-    <button class="btn" onclick="openGenerateFees()" style="gap:5px;background:#7c3aed;color:#fff;border-color:#7c3aed">
+    <button class="btn" onclick="openGenerateFees()" style="display:none;gap:5px;background:#7c3aed;color:#fff;border-color:#7c3aed">
       <svg viewBox="0 0 14 14" fill="none" width="12" height="12"><path d="M7 2v10M2 7h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>Generate Monthly Fees
     </button>
     <button class="btn btn-p" style="margin-left:auto" onclick="showModal('addFee')"><svg viewBox="0 0 14 14" fill="none"><path d="M7 2v10M2 7h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><span id="btn-add-fee">New Fee Entry</span></button>
@@ -17136,8 +17136,10 @@ function checkAndDoMonthlyReset() {
   renderPendingCarryOver();
 
   // Auto-generate on the first app open of the month (any day), once per month
-  if (_getLastResetYM() === curYM) return;
-  _setLastResetYM(curYM);
+  // Runs on every open AND after student changes, so students added/edited later in the month
+  // (or whose fee was set after the 1st) still get their bill automatically. Banner/toast: once per month.
+  const _firstRun = _getLastResetYM() !== curYM;
+  if (_firstRun) _setLastResetYM(curYM);
 
   // Auto-generate pending fee records for active students who don't have one yet.
   // Also carry forward any still-unpaid balance from earlier months into the new
@@ -17205,6 +17207,7 @@ function checkAndDoMonthlyReset() {
     saveFees();
     renderPendingCarryOver();
   }
+  if (!_firstRun) { return; }
 
   // Show reset banner
   const banner = document.getElementById('dash-monthly-reset-banner');
@@ -17223,6 +17226,8 @@ function checkAndDoMonthlyReset() {
 
   showToast('\uD83D\uDCC5 ' + curLbl + ': ' + generated + ' fee records auto-generated');
 }
+var _autoFeeT = null;
+function _autoFeesSoon() { clearTimeout(_autoFeeT); _autoFeeT = setTimeout(function(){ try { checkAndDoMonthlyReset(); } catch(e) { console.warn(e); } }, 400); }
 
 /* ── Pending carry-over card on Dashboard ─────────────── */
 function renderPendingCarryOver() {
@@ -20161,6 +20166,7 @@ function _liveRefresh() {
 }
 function saveStudents() {
   _liveRefresh();
+  try { _autoFeesSoon(); } catch(e) {}
   const data = JSON.stringify(students);
   let saved = false;
   // WebIntoApp/WebView-safe: test each storage independently.

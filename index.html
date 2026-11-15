@@ -11123,10 +11123,13 @@ function _stuBatchList(st) {
   ((st && st.extraBatches) || []).forEach(x => { if (x && l.indexOf(x) === -1) l.push(x); });
   return l;
 }
+function _vpGrade(g) { const m = String(g || '').match(/\d+/); return m ? m[0] : String(g || '').trim(); }
+function _vpBatchEq(a, b) { const n = x => String(x || '').toLowerCase().replace(/[\u2013\u2014-]/g, '-').replace(/\s+/g, ' ').trim(); return n(a) === n(b); }
 function _vpMatch(st, sub, gs, batch) {
-  return st && st.status === 'active' && gs.indexOf(String(st.grade || '').trim()) !== -1
-    && (!batch || _stuBatchList(st).indexOf(batch) !== -1)
-    && (!sub || _stuSubjectList(st).some(x => _subjMatch(sub, x)));
+  if (!st || st.status !== 'active') return false;
+  if (gs.map(_vpGrade).indexOf(_vpGrade(st.grade)) === -1) return false;
+  if (batch) return _stuBatchList(st).some(c => _vpBatchEq(c, batch));   // batch assigned to staff decides — subject text is not needed
+  return !sub || _stuSubjectList(st).some(x => _subjMatch(sub, x));
 }
 function _varCountStudents(subject, grades, batch) {
   const sub = String(subject || '').trim().toLowerCase();

@@ -11114,7 +11114,9 @@ function _stuMonthlyBase(s) {
   const parts = Object.keys(bf).filter(k => list.indexOf(k) !== -1 && bf[k] > 0).map(k => ({ batch: k, amount: bf[k] }));
   if (parts.length) return { amount: parts.reduce((t, x) => t + x.amount, 0), parts: parts };
   const fs = (typeof getFeeForClass === 'function') ? getFeeForClass(s.grade) : {};
-  return { amount: (fs && fs.monthlyFee) || 0, parts: [] };
+  let amt = (fs && fs.monthlyFee) || 0;
+  if (!amt) amt = parseFloat(s && s.fee) || 0;   // 11th/12th: class fee is per-subject, so use the fee saved with the student
+  return { amount: amt, parts: [] };
 }
 function _stuBatchList(st) {
   const l = []; if (st && st.course) l.push(String(st.course));
@@ -16926,16 +16928,17 @@ function renderBatchesPage() {
   // Count enrolled students per batch — use exact course match (mirrors _getBatchStudents)
   const enrolled = {};
   students.forEach(s => {
-    if (!s.course) return;
-    const sc = s.course.toLowerCase().trim();
+    if (!s || s.status === 'inactive') return;
     batches.forEach(b => {
       const bExact     = b.name.toLowerCase();
       const bWithTime  = (b.name + ' \u2013 ' + b.time).toLowerCase();
       const bDash      = (b.name + ' - ' + b.time).toLowerCase();
-      if (sc === bWithTime || sc === bDash || sc === bExact
-          || sc.startsWith(bExact + ' \u2013 ') || sc.startsWith(bExact + ' - ')) {
-        enrolled[b.id] = (enrolled[b.id] || 0) + 1;
-      }
+      const hit = _stuBatchList(s).some(c => {
+        const sc = c.toLowerCase().trim();
+        return sc === bWithTime || sc === bDash || sc === bExact
+          || sc.startsWith(bExact + ' \u2013 ') || sc.startsWith(bExact + ' - ');
+      });
+      if (hit) enrolled[b.id] = (enrolled[b.id] || 0) + 1;
     });
   });
 

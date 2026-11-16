@@ -16282,6 +16282,22 @@ async function shareBackupText() {
   try { await navigator.share({ title: 'Kalam ERP backup', text: window.__bkTxt || '' }); try { erpSet('_erp_last_ext_backup', new Date().toISOString()); } catch(e) {} }
   catch(e) { if (!e || e.name !== 'AbortError') showToast('Share not supported — use Copy'); }
 }
+/* Daily automatic Google Sheets backup: on app open and every 30 min while open, sync if last safe backup is > 20 h old */
+function _dailySheetsCheck() {
+  try {
+    const url = (erpGet('_erp_sheets_url') || '').trim();
+    if (!url || !/script\.google\.com\/macros\/s\/.+\/exec/.test(url)) return;
+    const last = erpGet('_erp_last_ext_backup'); const lastT = last ? new Date(last).getTime() : 0;
+    if (Date.now() - lastT < 20 * 3600 * 1000) return;
+    const tried = parseInt(erpGet('_erp_sheets_try') || '0');
+    if (Date.now() - tried < 2 * 3600 * 1000) return;           // don't hammer if it keeps failing
+    erpSet('_erp_sheets_try', String(Date.now()));
+    const urlEl = document.getElementById('sheets-url'); if (urlEl && !urlEl.value) urlEl.value = url;
+    syncSheets(true);
+  } catch(e) { console.warn('[ERP] daily sheets sync', e); }
+}
+setTimeout(_dailySheetsCheck, 6000);
+setInterval(_dailySheetsCheck, 30 * 60 * 1000);
 function renderBackupWarning() {
   const el = document.getElementById('dash-backup-warn');
   if (!el) return;
@@ -16294,7 +16310,10 @@ function renderBackupWarning() {
     + '<b>⚠️ Safe backup needed</b> — ' + (last ? 'last backup outside this phone was ' + days + ' days ago.' : 'no backup outside this phone yet.')
     + '<div style="font-size:11px;margin-top:2px">Automatic backups are stored inside this browser and are lost if the browser data is cleared or the phone changes. Save a copy to Drive / WhatsApp / Gmail.</div>'
     + '<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">'
-    + '<button class="btn btn-p btn-sm" onclick="shareBackup()">📤 Share / Save backup</button>'
+    + ((function(){ try { return !!(erpGet('_erp_sheets_url') || '').trim(); } catch(e) { return false; } })()
+        ? '<button class="btn btn-p btn-sm" onclick="syncSheets(false)">☁️ Sync to Google Sheets now</button>'
+        : '<button class="btn btn-p btn-sm" onclick="navTo(\'backup\')">☁️ Set up Google Sheets backup</button>')
+    + '<button class="btn btn-sm" onclick="shareBackup()">📤 Share / Save backup</button>'
     + '<button class="btn btn-sm" onclick="downloadBackup()">⬇️ Download file</button></div></div>';
 }
 function restoreBackup(input) {

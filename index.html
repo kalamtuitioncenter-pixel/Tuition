@@ -2375,6 +2375,24 @@ tbody tr:hover td{background:var(--bg)}
 <!-- ═══════════════ BACKUP ═══════════════ -->
 <div class="page" id="pg-backup">
   <div style="max-width:620px">
+    <!-- Teacher Sync (no cloud) -->
+    <div class="card" style="margin-bottom:12px;padding:14px 16px">
+      <div style="font-size:13px;font-weight:700;margin-bottom:2px">👩‍🏫 Teacher Sync <span style="font-weight:400;font-size:11px;color:var(--tx3)">(no cloud needed)</span></div>
+      <div style="font-size:11px;color:var(--tx2);line-height:1.6;margin-bottom:10px">Teachers mark attendance &amp; marks on their own phone and send you a report on WhatsApp. You import it here, then send messages to parents as usual.</div>
+      <div style="font-size:12px;font-weight:700;margin:8px 0 4px">1️⃣ Admin → Teacher: send the Pack (once, or when students/exams change)</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-p btn-sm" onclick="tsMakePack('copy')">📋 Copy Pack</button><button class="btn btn-sm" onclick="tsMakePack('share')">📤 Share Pack</button></div>
+      <div style="font-size:10px;color:var(--tx3);margin-top:3px">Contains student names, classes, batches and exams. No phone numbers or fees.</div>
+      <div style="font-size:12px;font-weight:700;margin:12px 0 4px">2️⃣ Teacher: import the Pack on the teacher's phone</div>
+      <textarea class="fi" id="ts-pack-in" rows="2" placeholder="Paste the Pack text here (KALAMPACK…)" style="font-size:11px"></textarea>
+      <button class="btn btn-sm" style="margin-top:6px" onclick="tsImportPack()">⬇️ Import Pack (teacher phone only)</button>
+      <div style="font-size:12px;font-weight:700;margin:12px 0 4px">3️⃣ Teacher → Admin: send the Report</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><input class="fi" id="ts-teacher" placeholder="Teacher name" style="flex:1;min-width:120px"><select class="fi" id="ts-days" style="width:auto"><option value="1">Today</option><option value="3">Last 3 days</option><option value="7" selected>Last 7 days</option><option value="31">Last 31 days</option></select></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px"><button class="btn btn-p btn-sm" onclick="tsMakeReport('copy')">📋 Copy Report</button><button class="btn btn-sm" onclick="tsMakeReport('share')">📤 Share Report</button></div>
+      <div style="font-size:12px;font-weight:700;margin:12px 0 4px">4️⃣ Admin: import the teacher's Report</div>
+      <textarea class="fi" id="ts-rpt-in" rows="3" placeholder="Paste the Report text here (KALAMRPT…)" style="font-size:11px"></textarea>
+      <button class="btn btn-p btn-sm" style="margin-top:6px" onclick="tsPreviewReport()">🔍 Preview &amp; Import</button>
+      <div id="ts-result" style="font-size:12px;margin-top:8px;line-height:1.6"></div>
+    </div>
     <!-- Storage Diagnostic Card -->
     <div class="card" style="margin-bottom:12px;padding:14px 16px;background:#f0fdf4;border:.5px solid #bbf7d0">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
@@ -11139,9 +11157,25 @@ function _varCountStudents(subject, grades, batch) {
   const gs = (grades && grades.length) ? grades.map(String) : VP_GRADES;
   return students.filter(st => _vpMatch(st, sub, gs, batch)).length;
 }
-function _stuPaidForMonth(st, label) {
+/* Fee of month X was carried into the next bill and that bill is now fully paid → X's fee counts as paid (late) */
+function _stuLateSettled(st, label) {
+  return fees.some(c => c && !c._deleted && (c.studentId === st.id || c.student === st.name) && c.month === label && c.status === 'carried' && c.carriedTo
+    && _stuDirectPaid(st, c.carriedTo));
+}
+function _stuPaidForMonth(st, label) { return _stuDirectPaid(st, label); }   // a month counts only when ITS OWN bill is paid
+/* Old months whose unpaid fee was carried forward and is cleared by the (paid) bill of `label` */
+function _stuArrearMonths(st, label) {
+  const out = [], labels = [label];
+  for (let guard = 0; guard < 8; guard++) {
+    const hit = fees.filter(c => c && !c._deleted && (c.studentId === st.id || c.student === st.name) && c.status === 'carried' && c.carriedTo && labels.indexOf(c.carriedTo) !== -1 && out.indexOf(c.month) === -1);
+    if (!hit.length) break;
+    hit.forEach(c => { out.push(c.month); labels.push(c.month); });
+  }
+  return out;
+}
+function _stuDirectPaid(st, label) {
   return fees.some(f => f && !f._deleted && (f.studentId === st.id || f.student === st.name) && f.month === label
-    && (f.type || 'monthly') === 'monthly' && (f.status === 'paid' || ((f.total || 0) > 0 && (f.balance || 0) <= 0)));
+    && (f.type || 'monthly') === 'monthly' && f.status !== 'carried' && (f.status === 'paid' || ((f.total || 0) > 0 && (f.balance || 0) <= 0 && (f.paid || 0) > 0)));
 }
 function _varCountStudentsPaid(subject, grades, ym, batch) {
   const sub = String(subject || '').trim().toLowerCase();
@@ -11167,24 +11201,35 @@ function _vpCompute(l, ym, paidOnly) {
   const label = _ymLabel(ym);
   const list = (!sub && !batch) ? [] : students.filter(st => _vpMatch(st, sub, gs, batch)).map(st => {
     const fee = _stuBatchFee(st, batch), paid = _stuPaidForMonth(st, label), collected = _stuCollected(st, label);
+    const late = false;
     const counted = paidOnly ? paid : true;
     const manual = pays[st.id] !== undefined && pays[st.id] !== '' && !isNaN(parseFloat(pays[st.id]));
     const amt = manual ? parseFloat(pays[st.id]) : rate;       // manual per-student amount, else the default amount
-    return { id: st.id, name: st.name, fee: fee, collected: collected, paid: paid, counted: counted, manual: manual, pay: counted ? Math.round(amt) : 0 };
+    return { id: st.id, name: st.name, fee: fee, collected: collected, paid: paid, late: late, amt: Math.round(amt), counted: counted, manual: manual, pay: counted ? Math.round(amt) : 0 };
   });
   return { students: list, enrolled: list.length, count: list.filter(x => x.counted).length, amount: list.reduce((t, x) => t + x.pay, 0) };
 }
 function getStaffVariablePay(s, ym) {
   const paidOnly = !(s && s.varPaidOnly === false);
+  const cur = ym || _ymNow(), curLabel = _ymLabel(cur);
+  const arrears = [];
   const lines = ((s && s.varLines) || []).map(l => {
     const c = _vpCompute(l, ym, paidOnly);
+    // Old-month fee that the student clears together with THIS month's bill → arrears, paid in THIS month's payroll
+    c.students.forEach(x => {
+      if (!x.paid) return;
+      const st = students.find(q => q.id === x.id); if (!st) return;
+      _stuArrearMonths(st, curLabel).forEach(m => arrears.push({ id: x.id, name: x.name, pay: x.amt, month: m, subject: l.subject, batch: l.batch || '' }));
+    });
     return { subject: l.subject, batch: l.batch || '', pays: l.pays || {}, rate: parseFloat(l.rate) || 0, grades: l.grades || VP_GRADES, count: c.count, enrolled: c.enrolled, students: c.students, amount: c.amount };
   });
-  return { lines: lines, total: lines.reduce((t, l) => t + l.amount, 0) };
+  const arrearsTotal = arrears.reduce((t, x) => t + x.pay, 0);
+  return { lines: lines, arrears: arrears, arrearsTotal: arrearsTotal, total: lines.reduce((t, l) => t + l.amount, 0) + arrearsTotal };
 }
+function getStaffArrears(s, ym) { return (s && s.payType === 'variable') ? (getStaffVariablePay(s, ym).arrearsTotal || 0) : 0; }
 function getStaffBasePay(s, ym) {
   if (!s) return 0;
-  if (s.payType === 'variable') return getStaffVariablePay(s, ym).total;
+  if (s.payType === 'variable') return getStaffVariablePay(s, ym).total - getStaffVariablePay(s, ym).arrearsTotal;   // LOP applies to this month's own pay only
   return s.consolidatedPay || s.baseSalary || 0;
 }
 function _vpSubjectChoices(extraStr) {
@@ -11838,14 +11883,15 @@ function _calcStaffPay(s, yr, mo, daysInMonth, latesToLeave) {
     if (v==='L')   lateDays++;
   }
   var lateAsLop = latesToLeave > 0 ? Math.floor(lateDays / latesToLeave) : 0;
-  var pay        = getStaffBasePay(s, monthVal);
+  var pay        = getStaffBasePay(s, yr + '-' + String(mo).padStart(2, '0'));
   var dailyRate  = pay / _lopBaseDays(yr, mo);
   var extraDed   = s.extraDed || 0;
   var bonus      = s.bonus || 0;
   var effectiveLop = lopDays + lateAsLop;
   var lopDed = Math.round(effectiveLop * dailyRate);
-  var net = Math.max(0, pay + bonus - lopDed - extraDed);
-  return { s:s, pay:pay, bonus:bonus, lopDays:lopDays, clDays:clDays, hDays:hDays, lateDays:lateDays, lateAsLop:lateAsLop, lopDed:lopDed, extraDed:extraDed, net:net, dailyRate:dailyRate };
+  var arrears = getStaffArrears(s, yr + '-' + String(mo).padStart(2, '0'));   // old-month fees cleared this month — no LOP on this
+  var net = Math.max(0, pay + arrears + bonus - lopDed - extraDed);
+  return { s:s, pay:pay, arrears:arrears, bonus:bonus, lopDays:lopDays, clDays:clDays, hDays:hDays, lateDays:lateDays, lateAsLop:lateAsLop, lopDed:lopDed, extraDed:extraDed, net:net, dailyRate:dailyRate };
 }
 
 /* ── Class-wise Income Summary — dashboard card ── */
@@ -11968,12 +12014,14 @@ function generatePayroll() {
     // Per-student pay info row
     var varRow = '';
     if (s.payType === 'variable') {
-      var _vp = getStaffVariablePay(s, monthVal);
+      var _vp = getStaffVariablePay(s, monthEl.value);
       varRow = '<div style="font-size:11px;color:#0891b2;padding:4px 0;line-height:1.6">📊 Variable pay'
         + _vp.lines.map(function(l){
             var head = '<div style="font-weight:700;margin-top:3px">' + escHtml((l.subject || '') + (l.batch ? ' [' + l.batch + ']' : '')) + ' — ' + ('default ₹' + l.rate) + ' · ' + l.count + (s.varPaidOnly === false ? '' : '/' + l.enrolled + ' paid') + ' = ₹' + l.amount.toLocaleString('en-IN') + '</div>';
             var rows = l.students.map(function(x){ return '<div style="padding-left:10px;' + (x.counted ? '' : 'opacity:.55;') + '">• ' + escHtml(x.name) + ' · collected ₹' + x.collected.toLocaleString('en-IN') + ' (fee ₹' + x.fee.toLocaleString('en-IN') + ') → staff ₹' + x.pay.toLocaleString('en-IN') + (x.paid ? ' ✅' : ' ⏳ unpaid') + '</div>'; }).join('');
-            return head + rows; }).join('') + '</div>';
+            return head + rows; }).join('')
+        + (_vp.arrears && _vp.arrears.length ? '<div style="font-weight:700;margin-top:3px;color:#b45309">Arrears — old-month fees paid this month = ₹' + _vp.arrearsTotal.toLocaleString('en-IN') + '</div>' + _vp.arrears.map(function(x){ return '<div style="padding-left:10px">• ' + escHtml(x.name) + ' — ' + escHtml(x.month) + ' fee (' + escHtml((x.subject || '') + (x.batch ? ' [' + x.batch + ']' : '')) + ') → staff ₹' + x.pay.toLocaleString('en-IN') + '</div>'; }).join('') : '')
+        + '</div>';
     }
     var perStuRow = varRow || (s.payType === 'perstudent' && s.feePerStudent
       ? '<div style="font-size:11px;color:#0891b2;padding:4px 0">'
@@ -13364,7 +13412,8 @@ function computeStaffMonthSummary(s, monthVal) {
   const effectiveLop = lopDays + lateAsLop;
   const lopDed        = Math.round(effectiveLop * dailyRate);
   const extraDed      = s.extraDed || 0;
-  const net            = Math.max(0, pay - lopDed - extraDed);
+  const arrears        = getStaffArrears(s, monthVal);
+  const net            = Math.max(0, pay + arrears - lopDed - extraDed);
   const salKey  = getSalaryPayKey(s.id, monthVal);
   const salPaid = salaryPayments[salKey];
   return { s, presentDays, absentDays, lateDays, clDays, lopDays, hDays, countedDays,
@@ -16298,6 +16347,130 @@ function _dailySheetsCheck() {
 }
 setTimeout(_dailySheetsCheck, 6000);
 setInterval(_dailySheetsCheck, 30 * 60 * 1000);
+
+/* ═══════ Teacher Sync: Pack (admin → teacher) and Report (teacher → admin), no cloud ═══════ */
+async function _tsEncode(obj, tag) {
+  const json = JSON.stringify(obj);
+  try {
+    if (typeof CompressionStream === 'function') {
+      const cs = new CompressionStream('gzip'); const w = cs.writable.getWriter(); w.write(new TextEncoder().encode(json)); w.close();
+      const buf = new Uint8Array(await new Response(cs.readable).arrayBuffer());
+      let bin = ''; buf.forEach(b => bin += String.fromCharCode(b)); return tag + '2:' + btoa(bin);
+    }
+  } catch(e) {}
+  return tag + '1:' + btoa(unescape(encodeURIComponent(json)));
+}
+async function _tsDecode(text, tag) {
+  text = String(text || '').trim().replace(/\s+/g, '');
+  const m = text.match(new RegExp(tag + '([12]):(.+)$')); if (!m) throw new Error('Not a valid ' + tag + ' text');
+  if (m[1] === '1') return JSON.parse(decodeURIComponent(escape(atob(m[2]))));
+  const bin = atob(m[2]); const bytes = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  const ds = new DecompressionStream('gzip'); const w = ds.writable.getWriter(); w.write(bytes); w.close();
+  return JSON.parse(await new Response(ds.readable).text());
+}
+async function _tsOut(text, mode, title) {
+  window.__bkTxt = text;
+  if (mode === 'share' && navigator.share) { try { await navigator.share({ title: title, text: text }); return; } catch(e) { if (e && e.name === 'AbortError') return; } }
+  await copyBackupText();
+}
+async function tsMakePack(mode) {
+  const pack = {
+    t: 'pack', at: new Date().toISOString(), center: (CFG.CENTER && CFG.CENTER.name) || '',
+    students: students.filter(s => s && s.status === 'active').map(s => ({ id: s.id, name: s.name, grade: s.grade, course: s.course || '', extraBatches: s.extraBatches || [], subjects: s.subjects || '', status: 'active' })),
+    batches: batches, exams: (typeof exams !== 'undefined' ? exams : [])
+  };
+  await _tsOut(await _tsEncode(pack, 'KALAMPACK'), mode, 'Kalam ERP teacher pack');
+}
+async function tsImportPack() {
+  const el = document.getElementById('ts-pack-in'); const res = document.getElementById('ts-result');
+  try {
+    const pack = await _tsDecode(el.value, 'KALAMPACK');
+    if (!pack || pack.t !== 'pack') throw new Error('This is not a Pack');
+    const msg = 'Import the Pack?\n\nThis REPLACES students, batches and exams on THIS phone with the admin\'s list (' + pack.students.length + ' students).\n\nDo this ONLY on a teacher\'s phone — NOT on the admin phone.\n\nType TEACHER to continue.';
+    if ((prompt(msg) || '').trim().toUpperCase() !== 'TEACHER') { showToast('Cancelled'); return; }
+    _saveRestoreSafetyNet();
+    students.length = 0; pack.students.forEach(s => students.push(s)); saveStudents();
+    batches.length = 0; (pack.batches || []).forEach(b => batches.push(b)); saveBatches();
+    if (typeof exams !== 'undefined') { exams.length = 0; (pack.exams || []).forEach(x => exams.push(x)); saveExams(); }
+    el.value = '';
+    res.innerHTML = '<span style="color:#16a34a">✅ Pack imported — ' + pack.students.length + ' students, ' + (pack.batches || []).length + ' batches, ' + (pack.exams || []).length + ' exams. Now mark attendance &amp; marks as usual.</span>';
+  } catch(e) { res.innerHTML = '<span style="color:#dc2626">⚠️ ' + escHtml(e.message || String(e)) + '</span>'; }
+}
+function _tsAttKeys() {
+  let idx = []; try { idx = JSON.parse(erpGet('_erp_att_index') || '[]'); } catch(e) {}
+  const set = new Set(idx);
+  try { Object.keys(window.__ERP_ATT_CACHE__ || {}).forEach(k => set.add(k)); } catch(e) {}
+  return Array.from(set);
+}
+function _tsReadAtt(sk) {
+  let d = null; try { const v = erpGet(sk); if (v) d = JSON.parse(v); } catch(e) {}
+  return d || (window.__ERP_ATT_CACHE__ || {})[sk] || null;
+}
+async function tsMakeReport(mode) {
+  const name = (document.getElementById('ts-teacher')?.value || '').trim();
+  if (!name) { showToast('⚠️ Enter teacher name'); return; }
+  const days = parseInt(document.getElementById('ts-days')?.value) || 7;
+  const since = new Date(); since.setDate(since.getDate() - days + 1); const sinceISO = since.getFullYear() + '-' + String(since.getMonth() + 1).padStart(2, '0') + '-' + String(since.getDate()).padStart(2, '0');
+  const att = [];
+  _tsAttKeys().forEach(sk => {
+    const m = sk.match(/^_erp_att_(\d{4}-\d{2}-\d{2})_(.+)_(morning|evening)$/); if (!m || m[1] < sinceISO) return;
+    const d = _tsReadAtt(sk); if (!d || !Object.keys(d).length) return;
+    att.push({ sk: sk, date: m[1], batch: m[2], session: m[3], data: d, dayOrder: erpGet('_erp_att_dayorder_' + m[1] + '_' + m[2]) || '' });
+  });
+  const marks = [];
+  (typeof exams !== 'undefined' ? exams : []).forEach(e => {
+    let rec = null; try { const v = erpGet('_erp_marks_' + e.id); if (v) rec = JSON.parse(v); } catch(err) {}
+    rec = rec || (window.__ERP_MARKS_CACHE__ || {})['_erp_marks_' + e.id];
+    if (rec && rec.marks && Object.keys(rec.marks).length && (!e.date || e.date >= sinceISO)) marks.push({ examId: e.id, examName: e.name, record: rec });
+  });
+  if (!att.length && !marks.length) { showToast('Nothing to send for this period'); return; }
+  await _tsOut(await _tsEncode({ t: 'report', teacher: name, at: new Date().toISOString(), att: att, marks: marks }, 'KALAMRPT'), mode, 'Attendance/marks report — ' + name);
+}
+var _tsPending = null;
+async function tsPreviewReport() {
+  const res = document.getElementById('ts-result');
+  try {
+    const r = await _tsDecode(document.getElementById('ts-rpt-in').value, 'KALAMRPT');
+    if (!r || r.t !== 'report') throw new Error('This is not a Report');
+    _tsPending = r;
+    const known = new Set(students.map(s => s.id));
+    let rows = 0, unknown = 0; r.att.forEach(a => Object.keys(a.data).forEach(k => { rows++; if (!known.has(k.split('|')[0])) unknown++; }));
+    const overwrite = r.att.filter(a => { try { return !!erpGet(a.sk); } catch(e) { return false; } }).length;
+    res.innerHTML = '<div style="background:var(--bg);border:.5px solid var(--br);border-radius:8px;padding:10px 12px"><b>From ' + escHtml(r.teacher) + '</b> · ' + new Date(r.at).toLocaleString('en-IN')
+      + '<br>📅 Attendance: <b>' + r.att.length + '</b> sessions (' + rows + ' student rows)' + (overwrite ? ' — <span style="color:#b45309">' + overwrite + ' already exist here and will be updated</span>' : '')
+      + '<br>📝 Marks: <b>' + r.marks.length + '</b> exams' + (unknown ? '<br><span style="color:#dc2626">⚠️ ' + unknown + ' rows are for students not found here — import the latest Pack on the teacher\'s phone.</span>' : '')
+      + '<div style="margin-top:8px"><button class="btn btn-p btn-sm" onclick="tsApplyReport()">✅ Import now</button></div></div>';
+  } catch(e) { res.innerHTML = '<span style="color:#dc2626">⚠️ ' + escHtml(e.message || String(e)) + '</span>'; }
+}
+function tsApplyReport() {
+  const r = _tsPending, res = document.getElementById('ts-result'); if (!r) return;
+  const known = new Set(students.map(s => s.id));
+  let a = 0, m = 0;
+  r.att.forEach(x => {
+    const out = {}; Object.keys(x.data).forEach(k => { if (known.has(k.split('|')[0])) out[k] = x.data[k]; });
+    if (!Object.keys(out).length) return;
+    let cur = {}; try { cur = JSON.parse(erpGet(x.sk) || '{}') || {}; } catch(e) {}
+    const merged = Object.assign({}, cur, out);
+    window.__ERP_ATT_CACHE__ = window.__ERP_ATT_CACHE__ || {}; window.__ERP_ATT_CACHE__[x.sk] = merged;
+    try { erpSet(x.sk, JSON.stringify(merged)); const idx = JSON.parse(erpGet('_erp_att_index') || '[]'); if (!idx.includes(x.sk)) { idx.push(x.sk); erpSet('_erp_att_index', JSON.stringify(idx)); } } catch(e) {}
+    if (typeof _erpIDBPut === 'function') _erpIDBPut('attendance:' + x.sk, { version: 1, savedAt: Date.now(), data: merged }).catch(function(){});
+    if (x.dayOrder && !erpGet('_erp_att_dayorder_' + x.date + '_' + x.batch)) { try { erpSet('_erp_att_dayorder_' + x.date + '_' + x.batch, String(x.dayOrder)); } catch(e) {} }
+    if (typeof _attScanCache !== 'undefined') delete _attScanCache[x.date.slice(0, 7)];
+    a++;
+  });
+  r.marks.forEach(x => {
+    const key = '_erp_marks_' + x.examId; if (!exams.some(e => e.id === x.examId)) return;
+    let cur = null; try { const v = erpGet(key); if (v) cur = JSON.parse(v); } catch(e) {}
+    const rec = Object.assign({}, x.record); rec.marks = Object.assign({}, (cur && cur.marks) || {}, x.record.marks || {});
+    window.__ERP_MARKS_CACHE__ = window.__ERP_MARKS_CACHE__ || {}; window.__ERP_MARKS_CACHE__[key] = rec;
+    try { erpSet(key, JSON.stringify(rec)); let idx = []; try { idx = JSON.parse(erpGet('_erp_marks_index') || '[]'); } catch(e) {} if (!idx.includes(key)) { idx.push(key); erpSet('_erp_marks_index', JSON.stringify(idx)); } } catch(e) {}
+    if (typeof _erpIDBPut === 'function') _erpIDBPut('marks:' + x.examId, { version: 1, savedAt: Date.now(), key: key, record: rec }).catch(function(){});
+    m++;
+  });
+  _tsPending = null; document.getElementById('ts-rpt-in').value = '';
+  res.innerHTML = '<span style="color:#16a34a">✅ Imported ' + a + ' attendance sessions and ' + m + ' exams. Now send messages to parents: </span><button class="btn btn-sm" onclick="navTo(\'whatsapp\')">📱 Open Messenger</button>';
+  try { runBackup('change'); } catch(e) {}
+}
 function renderBackupWarning() {
   const el = document.getElementById('dash-backup-warn');
   if (!el) return;

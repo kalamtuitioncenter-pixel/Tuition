@@ -2418,6 +2418,7 @@ tbody tr:hover td{background:var(--bg)}
       <div class="card-title" style="margin-bottom:12px">Local Backup</div>
       <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:.5px solid var(--br)"><div><div style="font-size:13px;font-weight:500;color:var(--tx)">Stored backups</div><div style="font-size:11px;color:var(--tx2);margin-top:2px" id="bk-local-count">0 backups in browser</div></div><div style="display:flex;gap:6px"><button class="btn btn-sm" onclick="runBackup('local')">Save Now</button><button class="btn btn-sm" onclick="downloadBackup()"><svg viewBox="0 0 14 14" fill="none" width="12" height="12"><path d="M7 2v8M4 7l3 3 3-3M2 11h10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Download JSON</button></div></div>
       <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0"><div><div style="font-size:13px;font-weight:500;color:var(--tx)">Restore from backup</div><div style="font-size:11px;color:var(--tx2);margin-top:2px">Upload a previously downloaded .json file</div></div><label class="btn btn-sm" style="cursor:pointer"><svg viewBox="0 0 14 14" fill="none" width="12" height="12"><path d="M7 10V2M4 5l3-3 3 3M2 11h10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Restore<input type="file" accept=".json" style="display:none" onchange="restoreBackup(this)"></label></div>
+      <div style="padding:9px 0;border-top:.5px solid var(--br)"><div style="font-size:13px;font-weight:500;color:var(--tx)">Restore from copied text</div><div style="font-size:11px;color:var(--tx2);margin:2px 0 6px">Paste ALL backup parts (each starts with <code>KALAMBK</code>) one after another — no file needed</div><textarea class="fi" id="bk-paste" rows="3" placeholder="Paste backup text here" style="font-size:11px;font-family:monospace"></textarea><button class="btn btn-sm" style="margin-top:6px" onclick="restoreBackupText()">♻️ Restore from pasted text</button></div>
     </div>
     <div class="card" style="margin-bottom:12px">
       <div class="card-title" style="margin-bottom:12px" style="color:#16a34a">Google Sheets Backup</div>
@@ -16305,22 +16306,56 @@ async function shareBackup() {
   } catch(e) { if (e && e.name === 'AbortError') return; }
   showBackupFallback(); // file sharing not supported here
 }
-function showBackupFallback() {
-  const txt = JSON.stringify(getSnapshot());
-  window.__bkTxt = txt;
-  const kb = (txt.length/1024).toFixed(0);
-  document.getElementById('modal-root').innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal">
-    <div class="modal-title">💾 Save backup (${kb} KB)</div>
-    <div style="font-size:12px;color:var(--tx2);line-height:1.6;margin-bottom:10px">This app cannot save files directly. Use one of these:<br>
-    1️⃣ <b>Copy</b> → paste into Google Keep / Notes / Gmail draft<br>
-    2️⃣ <b>Share text</b> → send to yourself on WhatsApp / Gmail<br>
-    3️⃣ Best: Settings → Google Sheets → <b>Sync Now</b> (stores a full backup in your Sheet)</div>
-    <div class="modal-foot">
-      <button class="btn btn-p" onclick="copyBackupText()">📋 Copy backup</button>
-      <button class="btn" onclick="shareBackupText()">📤 Share text</button>
-      <button class="btn" onclick="closeModal()">Close</button>
-    </div></div></div>`;
+/* Backup as small compressed "parts" — each part is short enough to survive WhatsApp / Notes / Keep limits */
+var _BK_PART = 8000;
+async function _bkMakeParts(snap) {
+  const json = JSON.stringify(snap); let payload;
+  try {
+    if (typeof CompressionStream === 'function') {
+      const cs = new CompressionStream('gzip'); const w = cs.writable.getWriter(); w.write(new TextEncoder().encode(json)); w.close();
+      const buf = new Uint8Array(await new Response(cs.readable).arrayBuffer()); let bin = ''; buf.forEach(x => bin += String.fromCharCode(x)); payload = 'g:' + btoa(bin);
+    }
+  } catch(e) {}
+  if (!payload) payload = 'p:' + btoa(unescape(encodeURIComponent(json)));
+  const n = Math.ceil(payload.length / _BK_PART), parts = [];
+  for (let i = 0; i < n; i++) parts.push('KALAMBK ' + (i + 1) + '/' + n + '\n' + payload.substring(i * _BK_PART, (i + 1) * _BK_PART) + '\nEND');
+  return { parts: parts, jsonSize: json.length };
 }
+async function _bkParseParts(text) {
+  const re = /KALAMBK\s+(\d+)\/(\d+)\s+([A-Za-z0-9+\/=:]+?)\s*END/g; let m; const got = {}; let total = 0;
+  while ((m = re.exec(text.replace(/\r/g, ''))) !== null) { got[+m[1]] = m[3]; total = Math.max(total, +m[2]); }
+  if (!total) return null;
+  const missing = []; for (let i = 1; i <= total; i++) if (!got[i]) missing.push(i);
+  if (missing.length) throw new Error('Part ' + missing.join(', ') + ' of ' + total + ' missing — paste all parts');
+  let payload = ''; for (let i = 1; i <= total; i++) payload += got[i];
+  if (payload.startsWith('p:')) return JSON.parse(decodeURIComponent(escape(atob(payload.slice(2)))));
+  const bin = atob(payload.slice(2)); const bytes = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  const ds = new DecompressionStream('gzip'); const w = ds.writable.getWriter(); w.write(bytes); w.close();
+  return JSON.parse(await new Response(ds.readable).text());
+}
+async function showBackupFallback() {
+  const r = await _bkMakeParts(getSnapshot());
+  window.__bkParts = r.parts;
+  window.__bkRaw = JSON.stringify(getSnapshot()); window.__bkTxt = window.__bkRaw;
+  document.getElementById('modal-root').innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal">
+    <div class="modal-title">💾 Save backup — ${r.parts.length} part${r.parts.length > 1 ? 's' : ''}</div>
+    <div style="font-size:12px;color:var(--tx2);line-height:1.6;margin-bottom:10px">Backup is split into small parts so nothing gets cut. <b>Send ALL parts</b> to yourself (WhatsApp "Message yourself" / Gmail / Keep), one message per part. To restore, paste all parts into <b>Backup → Restore from copied text</b>.</div>
+    ${r.parts.map((pt, i) => `<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px"><span style="flex:1;font-size:12px;font-weight:600">Part ${i + 1} of ${r.parts.length} <span style="font-weight:400;color:var(--tx3)">(${pt.length} chars)</span></span><button class="btn btn-sm" onclick="bkPartCopy(${i})">📋 Copy</button>${navigator.share ? `<button class="btn btn-sm btn-p" onclick="bkPartShare(${i})">📤 Send</button>` : ''}</div>`).join('')}
+    <div class="modal-foot"><button class="btn btn-p" onclick="bkDownloadFile()">💾 Download .json file</button><button class="btn" onclick="bkAllCopy()">📋 Copy all parts</button>${navigator.share ? '<button class="btn" onclick="bkAllShare()">📤 Share all</button>' : ''}<button class="btn" onclick="closeModal()">Close</button></div>
+    <div style="font-size:10px;color:var(--tx3);margin-top:6px">Tip: if 'Share all' gets cut in your app, send each part separately.</div></div></div>`;
+}
+async function bkPartCopy(i) { window.__bkTxt = window.__bkParts[i]; await copyBackupText(); showToast('✅ Part ' + (i + 1) + ' copied'); }
+async function bkPartShare(i) { window.__bkTxt = window.__bkParts[i]; await shareBackupText(); }
+function bkDownloadFile() {
+  const blob = new Blob([window.__bkRaw || JSON.stringify(getSnapshot())], { type: 'application/json' });
+  const url = URL.createObjectURL(blob), a = document.createElement('a');
+  a.href = url; a.download = 'kalam-erp-backup-' + _todayISO() + '.json'; a.style.display = 'none'; document.body.appendChild(a); a.click();
+  setTimeout(() => { try { document.body.removeChild(a); } catch(e) {} URL.revokeObjectURL(url); }, 4000);
+  try { erpSet('_erp_last_ext_backup', new Date().toISOString()); } catch(e) {}
+  showToast('💾 Saved to your Downloads folder');
+}
+async function bkAllCopy() { window.__bkTxt = window.__bkParts.join('\n\n'); await copyBackupText(); }
+async function bkAllShare() { window.__bkTxt = window.__bkParts.join('\n\n'); await shareBackupText(); }
 async function copyBackupText() {
   try { await navigator.clipboard.writeText(window.__bkTxt || ''); }
   catch(e) { const t=document.createElement('textarea'); t.value=window.__bkTxt||''; document.body.appendChild(t); t.select(); try{document.execCommand('copy');}catch(e2){} document.body.removeChild(t); }
@@ -16488,6 +16523,19 @@ function renderBackupWarning() {
         : '<button class="btn btn-p btn-sm" onclick="navTo(\'backup\')">☁️ Set up Google Sheets backup</button>')
     + '<button class="btn btn-sm" onclick="shareBackup()">📤 Share / Save backup</button>'
     + '<button class="btn btn-sm" onclick="downloadBackup()">⬇️ Download file</button></div></div>';
+}
+async function restoreBackupText() {
+  const txt = (document.getElementById('bk-paste') || {}).value || '';
+  try {
+    const data = (await _bkParseParts(txt)) || JSON.parse(txt.trim());
+    if (!Array.isArray(data.students)) throw new Error('"students" is missing — copy the whole backup text');
+    if (data.fees !== undefined && !Array.isArray(data.fees)) throw new Error('"fees" is not a list');
+    if (!confirm('Restore pasted backup' + (data.timestamp ? ' from ' + new Date(data.timestamp).toLocaleString('en-IN') : '') + '?\nThis will replace ALL current data.\n\n(Your current data will be saved first so you can undo.)')) return;
+    _saveRestoreSafetyNet();
+    _applyRestoreData(data);
+    showToast('✅ Backup restored — ' + data.students.length + ' students. Reloading…');
+    setTimeout(() => location.reload(), 1200);
+  } catch(err) { showToast('❌ Invalid backup text: ' + err.message); }
 }
 function restoreBackup(input) {
   const file = input.files[0]; if (!file) return;

@@ -701,6 +701,11 @@ tbody tr:hover td{background:var(--bg)}
 .dv-w1{animation:dvFlow 4s ease-in-out infinite alternate}.dv-w2{animation:dvFlow 5.5s ease-in-out infinite alternate-reverse;transform-origin:center}
 @keyframes dvFlow{from{transform:translate(-9px,2px)}to{transform:translate(9px,-3px)}}
 .wv-rise{transform-origin:50% 100%;transform-box:fill-box;animation:wvRise 1.2s cubic-bezier(.2,.8,.2,1) both}@keyframes wvRise{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+/* pie + scrollbars */
+.vz-pie{flex-shrink:0}.vz-pie svg{width:100%;height:100%;transform:rotate(-90deg)}.vz-pie circle{fill:none;stroke-width:60;transition:stroke-dasharray 1s cubic-bezier(.2,.8,.2,1)}
+.vz-pie circle[r="60"]{stroke-width:.6;transition:none}
+.tube-wrap{overflow-x:scroll!important;scrollbar-width:thin;padding-bottom:10px!important}
+.tube-wrap::-webkit-scrollbar{height:6px}.tube-wrap::-webkit-scrollbar-thumb{background:var(--br2);border-radius:3px}
 </style>
 <script>
 /* ═══════════════════════════════════════════════════════════════
@@ -959,15 +964,6 @@ tbody tr:hover td{background:var(--bg)}
     <div class="stat" onclick="navTo('fees')" style="cursor:pointer" title="Go to Fees"><div class="stat-icon dm-green-box" style="background:#dcfce7"><svg viewBox="0 0 16 16" fill="none"><rect x="2" y="4" width="12" height="9" rx="1.5" stroke="#16a34a" stroke-width="1.4"/><path d="M2 7h12M7 10h2" stroke="#16a34a" stroke-width="1.3" stroke-linecap="round"/></svg></div><div class="stat-lbl" id="sl-2">Monthly Income</div><div class="stat-val" style="color:#16a34a" id="sv-income">₹0</div><div class="stat-sub" id="ss-income">This month only</div></div>
     <div class="stat" onclick="navTo('fees')" style="cursor:pointer" title="Go to Pending Fees"><div class="stat-icon dm-red-box" style="background:#fee2e2"><svg viewBox="0 0 16 16" fill="none"><path d="M8 5v4M8 10.5v.5" stroke="#dc2626" stroke-width="1.6" stroke-linecap="round"/><path d="M2 13L8 2l6 11H2z" stroke="#dc2626" stroke-width="1.3" stroke-linejoin="round"/></svg></div><div class="stat-lbl" id="sl-3">Pending Fees</div><div class="stat-val" style="color:#dc2626" id="sv-pending">₹0</div><div class="stat-sub" id="ss-pending">Outstanding</div></div>
     <div class="stat"><div class="stat-icon dm-blue-box" style="background:#dbeafe"><svg viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="1.5" stroke="#2563eb" stroke-width="1.4"/><path d="M5 2v2M11 2v2M2 7h12M5.5 10.5l1.5 1.5 3-3" stroke="#2563eb" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="stat-lbl" id="sl-4">Attendance Today</div><div class="stat-val" style="color:#2563eb" id="sv-att">—%</div><div class="stat-sub" id="ss-att">Present today</div></div>
-  </div>
-
-  <!-- Fee tubes + monthly chart -->
-  <div class="viz-grid" id="dash-viz">
-    <div class="card" style="padding:0">
-      <div class="card-hd"><span class="card-title">💧 Fee Collection</span><span style="font-size:10px;color:var(--tx3)" id="dv-tube-mon"></span></div>
-      <div class="tube-wrap" id="dv-tubes"></div>
-      <div style="font-size:10px;color:var(--tx3);padding:0 16px 12px" id="dv-tube-note"></div>
-    </div>
   </div>
 
   <!-- 📊 Class-wise Attendance Today -->
@@ -25155,8 +25151,8 @@ function _wvCircle(pct,cls,label,sub,big){
 }
 function _wvFill(host){setTimeout(function(){host.querySelectorAll('.wv-l').forEach(function(w){w.style.height=w.dataset.h+'%'})},60)}
 function _wvTone(p){return p>=60?'':(p>=30?'mid':'low')}
-function _wvSmooth(pp){var o='';for(var i=0;i<pp.length-1;i++){var p0=pp[i-1]||pp[i],p1=pp[i],p2=pp[i+1],p3=pp[i+2]||p2;
-  o+=' C'+(p1[0]+(p2[0]-p0[0])/6).toFixed(1)+' '+(p1[1]+(p2[1]-p0[1])/6).toFixed(1)+' '+(p2[0]-(p3[0]-p1[0])/6).toFixed(1)+' '+(p2[1]-(p3[1]-p1[1])/6).toFixed(1)+' '+p2[0].toFixed(1)+' '+p2[1].toFixed(1)}return o}
+function _wvSmooth(pp,lo,hi){var cl=function(v){return (lo===undefined)?v:Math.max(lo,Math.min(hi,v))};var o='';for(var i=0;i<pp.length-1;i++){var p0=pp[i-1]||pp[i],p1=pp[i],p2=pp[i+1],p3=pp[i+2]||p2;
+  o+=' C'+(p1[0]+(p2[0]-p0[0])/6).toFixed(1)+' '+cl(p1[1]+(p2[1]-p0[1])/6).toFixed(1)+' '+(p2[0]-(p3[0]-p1[0])/6).toFixed(1)+' '+cl(p2[1]-(p3[1]-p1[1])/6).toFixed(1)+' '+p2[0].toFixed(1)+' '+p2[1].toFixed(1)}return o}
 
 /* Commute Overview */
 (function(){var o=window.renderCommuteDashCard;if(typeof o!=='function')return;
@@ -25202,24 +25198,96 @@ function renderWaveCharts(){
     var ix=k?mon.indexOf(k):mon.length-1;if(ix>=0)inc[ix]+=(f.paid||0)});
   if(ci){var box=ci.parentNode;ci.style.display='none';var h=document.getElementById('wv-income');if(!h){h=document.createElement('div');h.id='wv-income';box.appendChild(h)}
     var W=360,H=170,L=6,R=6,T=14,B=20,mx=Math.max.apply(null,inc.concat(pen).concat([1])),X=function(i){return L+(W-L-R)*i/5},Y=function(v){return T+(H-T-B)*(1-v/mx)};
-    function series(vals,col,id){var pts=vals.map(function(v,i){return [X(i),Y(v)]}),d='M'+pts[0][0].toFixed(1)+' '+pts[0][1].toFixed(1)+_wvSmooth(pts),
-      a='M-14 '+pts[0][1].toFixed(1)+' L'+pts[0][0].toFixed(1)+' '+pts[0][1].toFixed(1)+_wvSmooth(pts)+' L'+(W+14)+' '+pts[5][1].toFixed(1)+' L'+(W+14)+' '+(H-B)+' L-14 '+(H-B)+' Z';
+    function series(vals,col,id){var pts=vals.map(function(v,i){return [X(i),Y(v)]}),d='M'+pts[0][0].toFixed(1)+' '+pts[0][1].toFixed(1)+_wvSmooth(pts,T,H-B),
+      a='M-14 '+pts[0][1].toFixed(1)+' L'+pts[0][0].toFixed(1)+' '+pts[0][1].toFixed(1)+_wvSmooth(pts,T,H-B)+' L'+(W+14)+' '+pts[5][1].toFixed(1)+' L'+(W+14)+' '+(H-B)+' L-14 '+(H-B)+' Z';
       return '<defs><linearGradient id="'+id+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="'+col+'" stop-opacity=".4"/><stop offset="1" stop-color="'+col+'" stop-opacity=".02"/></linearGradient></defs><g class="wv-rise"><path class="dv-w2" d="'+a+'" fill="'+col+'" fill-opacity=".14"/><path class="dv-w1" d="'+a+'" fill="url(#'+id+')"/></g><path d="'+d+'" fill="none" stroke="'+col+'" stroke-width="2.2" stroke-linecap="round"/>'+
       pts.map(function(p,i){return vals[i]?'<circle cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="3.2" fill="'+col+'" stroke="var(--card)" stroke-width="1.5"><title>'+mon[i]+': ₹'+vals[i].toLocaleString('en-IN')+'</title></circle>':''}).join('')}
     var labs=mon.map(function(m,i){return '<text x="'+X(i).toFixed(1)+'" y="'+(H-5)+'" font-size="9" fill="var(--tx3)" text-anchor="middle">'+m+'</text>'}).join('');
     h.innerHTML='<svg viewBox="0 0 360 170" preserveAspectRatio="none" style="width:100%;height:175px;display:block"><defs><clipPath id="wvc"><rect x="0" y="0" width="360" height="170"/></clipPath></defs><g clip-path="url(#wvc)">'+series(pen,'#dc2626','wvgp')+series(inc,'#2563eb','wvgi')+'</g>'+labs+'</svg>';
     var tot=inc.reduce(function(a,b){return a+b},0);h.insertAdjacentHTML('beforeend','<div style="font-size:10px;color:var(--tx3);text-align:right;margin-top:2px">6-month income: '+_inr(tot)+' · tap a dot to see amount</div>')}
-  if(cf){var box2=cf.parentNode;cf.style.display='none';var h2=document.getElementById('wv-fee');if(!h2){h2=document.createElement('div');h2.id='wv-fee';box2.appendChild(h2)}
-    box2.style.height='auto';box2.style.minHeight='0';
-    var paid=fees.filter(function(f){return f&&!f._deleted&&f.status==='paid'}).reduce(function(t,f){return t+(f.paid||0)},0),
-      pend=fees.filter(function(f){return f&&!f._deleted&&(f.status==='pending'||f.status==='partial')}).reduce(function(t,f){return t+(f.balance||0)},0),
-      over=fees.filter(function(f){return f&&!f._deleted&&f.status==='overdue'}).reduce(function(t,f){return t+(f.balance||0)},0),gt=paid+pend+over,pc=gt?paid/gt*100:0;
-    h2.innerHTML='<div class="vz-row" style="justify-content:center;gap:18px"><div class="wv-grid" style="justify-content:center">'+_wvCircle(pc,pc>=70?'':(pc>=40?'mid':'low'),'Collected','',true)+'</div><div class="vz-leg" style="max-width:180px"><div class="vz-li"><i style="background:#16a34a"></i>Paid<b>'+_inr(paid)+'</b></div><div class="vz-li"><i style="background:#ca8a04"></i>Pending<b>'+_inr(pend)+'</b></div><div class="vz-li"><i style="background:#dc2626"></i>Overdue<b>'+_inr(over)+'</b></div></div></div>';
-    _wvFill(h2)}
+  if(cf){renderFeeStatusWave()}
 }
 (function(){var o=window.initCharts;if(typeof o!=='function')return;window.initCharts=function(){var r=o.apply(this,arguments);try{renderWaveCharts()}catch(e){console.error(e)}return r}})();
 window.renderDashOverview=function(){var h=document.getElementById('dash-viz2');if(h)h.remove()};
 (function(){var o=window.renderDashViz;window.renderDashViz=function(){try{o&&o()}catch(e){}try{renderWaveCharts()}catch(e){console.error(e)}}})();
+/* ===== Pie charts, fee-status month selector, tube ordering, staff viz refresh ===== */
+function vzPie(items,size){
+  var C=2*Math.PI*30,tot=items.reduce(function(t,i){return t+i.v},0),off=0,seg='';
+  items.forEach(function(it){var len=tot?it.v/tot*C:0;if(len>0)seg+='<circle cx="60" cy="60" r="30" stroke="'+it.c+'" stroke-dasharray="0 '+C+'" data-len="'+len+'" data-c="'+C+'" stroke-dashoffset="'+(-off)+'"/>';off+=len});
+  if(!tot)seg='<circle cx="60" cy="60" r="30" stroke="var(--bg2)" stroke-dasharray="'+C+' '+C+'"/>';
+  return '<div class="vz-pie" style="width:'+(size||150)+'px;height:'+(size||150)+'px"><svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="60" fill="var(--card)" stroke="var(--br)" stroke-width=".6" style="stroke-width:.6"/>'+seg+'</svg></div>';
+}
+function _pieCard(items,total,unit,onclickFn){
+  var t=total||1;
+  return '<div class="vz-row" style="justify-content:center">'+vzPie(items)+'<div class="vz-leg">'+items.map(function(i){
+    return '<div class="vz-li"'+(i.click?' onclick="'+i.click+'"':'')+'><i style="background:'+i.c+'"></i>'+i.label+'<b>'+i.v+' · '+Math.round(i.v/t*100)+'%</b></div>'}).join('')+'</div></div>'
+    +'<div style="font-size:10px;color:var(--tx3);text-align:center;margin-top:6px">Total '+total+' '+unit+'</div>';
+}
+/* Commute -> pie */
+(function(){var o=window.renderCommuteDashCard;if(typeof o!=='function')return;
+window.renderCommuteDashCard=function(){
+  var r=o.apply(this,arguments);
+  try{
+    var el=document.getElementById('dash-commute-cards');if(!el)return r;
+    var sel=document.getElementById('dash-commute-session'),mode=sel?sel.value:'all',pool=students.filter(function(s){return s&&s.status==='active'});
+    if(mode==='morning'||mode==='evening'){var ids=_todayAttPresentIds(mode);pool=pool.filter(function(s){return ids.has(s.id)})}
+    var cnt={},un=0;pool.forEach(function(s){if(s.commute&&COMMUTE_MODES.some(function(m){return m.v===s.commute}))cnt[s.commute]=(cnt[s.commute]||0)+1;else un++});
+    var items=COMMUTE_MODES.map(function(m){return {v:cnt[m.v]||0,c:m.fg,label:m.emoji+' '+m.label}});items.push({v:un,c:'#94a3b8',label:'❔ Not set'});
+    el.style.display='block';
+    el.innerHTML=pool.length?_pieCard(items,pool.length,'students'):'<div style="font-size:12px;color:var(--tx3);text-align:center;padding:14px">No students for this selection</div>';
+    vzGo(el);
+  }catch(e){console.error(e)}
+  return r}})();
+/* Class strength -> pie */
+(function(){var o=window.renderClassStrength;if(typeof o!=='function')return;
+window.renderClassStrength=function(){
+  var r=o.apply(this,arguments);
+  try{
+    var el=document.getElementById('dash-class-bars');if(!el)return r;
+    var act=students.filter(function(s){return s&&s.status==='active'});if(!act.length)return r;
+    var g={};act.forEach(function(s){var k=String(s.grade||'Unknown').trim();g[k]=(g[k]||0)+1});
+    var ord=function(k){return k==='KG'?-1:(isNaN(parseInt(k))?999:parseInt(k))},keys=Object.keys(g).sort(function(a,b){return ord(a)-ord(b)});
+    var pal=['#2563eb','#7c3aed','#16a34a','#d97706','#dc2626','#0891b2','#be185d','#4f46e5','#059669','#c026d3','#ea580c','#64748b','#ca8a04'];
+    el.style.display='block';
+    el.innerHTML=_pieCard(keys.map(function(k,i){return {v:g[k],c:pal[i%pal.length],label:k==='KG'?'🎒 KG':'📚 Class '+k}}),act.length,'students');
+    vzGo(el);
+  }catch(e){console.error(e)}
+  return r}})();
+/* Fee status: month selector, no overall summary */
+var _fsYM=null;
+function renderFeeStatusWave(){
+  var cf=document.getElementById('chart-fee');if(!cf)return;
+  var box=cf.parentNode;cf.style.display='none';box.style.height='auto';box.style.minHeight='0';
+  var h=document.getElementById('wv-fee');if(!h){h=document.createElement('div');h.id='wv-fee';box.appendChild(h)}
+  if(!_fsYM)_fsYM=_ymNow();
+  var opts='';for(var k=0;k>-12;k--){var ym=_prevYM(_ymNow(),k);opts+='<option value="'+ym+'"'+(ym===_fsYM?' selected':'')+'>'+_ymLabel(ym)+'</option>'}
+  var lbl=_ymLabel(_fsYM),rec=fees.filter(function(f){return f&&!f._deleted&&f.month===lbl&&f.status!=='carried'});
+  var paid=0,pend=0,over=0,np=0,nn=0,no=0;
+  rec.forEach(function(f){var pd=f.paid||0,bal=f.balance||0;paid+=pd;
+    if(f.status==='overdue'){over+=bal;no++}else if(f.status==='paid'||bal<=0){np++}else{pend+=bal;nn++}});
+  var gt=paid+pend+over,pc=gt?paid/gt*100:0;
+  h.innerHTML='<div style="display:flex;justify-content:flex-end;margin-bottom:8px"><select class="fi" style="width:auto;font-size:11px;padding:4px 8px" onchange="_fsYM=this.value;renderFeeStatusWave()">'+opts+'</select></div>'
+   +(rec.length?'<div class="vz-row" style="justify-content:center;gap:18px"><div class="wv-grid" style="justify-content:center">'+_wvCircle(pc,pc>=70?'':(pc>=40?'mid':'low'),'Collected','',true)+'</div><div class="vz-leg" style="max-width:190px"><div class="vz-li"><i style="background:#16a34a"></i>Paid<b>'+_inr(paid)+'</b></div><div class="vz-li"><i style="background:#ca8a04"></i>Pending<b>'+_inr(pend)+'</b></div><div class="vz-li"><i style="background:#dc2626"></i>Overdue<b>'+_inr(over)+'</b></div></div></div><div style="font-size:10px;color:var(--tx3);text-align:center;margin-top:6px">'+lbl+' · '+rec.length+' bills</div>'
+    :'<div style="text-align:center;font-size:12px;color:var(--tx3);padding:26px 0">No fee records for '+lbl+'</div>');
+  _wvFill(h);
+}
+/* Fee collection tubes: ascending by class */
+function renderTubes(){
+  var host=document.getElementById('dv-tubes');if(!host)return;
+  var lbl=_ymLabel(_ymNow());document.getElementById('dv-tube-mon').textContent=lbl;
+  var recs=fees.filter(function(f){return f&&!f._deleted&&f.month===lbl&&f.status!=='carried'}),g={},tot={b:0,p:0};
+  recs.forEach(function(f){var st=students.find(function(s){return s.id===f.studentId||s.name===f.student}),k=String((st&&st.grade)||'NA').trim()||'NA',bi=(f.paid||0)+(f.balance||0);
+    var x=g[k]||(g[k]={b:0,p:0});x.b+=bi;x.p+=(f.paid||0);tot.b+=bi;tot.p+=(f.paid||0)});
+  var ord=function(k){return k==='KG'?-1:(isNaN(parseInt(k))?999:parseInt(k))},keys=Object.keys(g).sort(function(a,b){return ord(a)-ord(b)});
+  function tube(name,x,big){var pct=x.b?Math.round(x.p/x.b*100):0,cls=pct>=80?'':(pct>=40?'mid':'low');
+    return '<div class="tube '+(big?'big ':'')+cls+'" onclick="navTo(\'fees\')"><div class="tube-g"><div class="tube-l" data-h="'+pct+'"></div><div class="tube-pct">'+pct+'%</div></div><div class="tube-v">'+_inr(x.p)+'</div><div class="tube-n">'+name+'<br><span style="color:var(--tx3)">of '+_inr(x.b)+'</span></div></div>'}
+  var h=tube('All classes',tot,true);keys.forEach(function(k){h+=tube(k==='KG'?'KG':k==='NA'?'No class':'Class '+k,g[k],false)});
+  host.innerHTML=recs.length?h:'<div style="font-size:12px;color:var(--tx3);padding:20px 0">No fee records this month yet</div>';
+  document.getElementById('dv-tube-note').textContent=recs.length?('Pending: '+_inr(tot.b-tot.p)+' · classes in order · scroll sideways →'):'';
+  vzGo(host);
+}
+/* staff attendance pie refresh after any change */
+(function(){['setStaffAtt','saveStaffAtt'].forEach(function(n){var o=window[n];if(typeof o!=='function')return;window[n]=function(){var r=o.apply(this,arguments);try{renderStaffAttViz()}catch(e){}return r}})})();
 </script>
 
 <div id="xt-bg" onclick="if(event.target===this)xtClose()"><div id="xt-box">

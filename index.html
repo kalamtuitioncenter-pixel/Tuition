@@ -709,6 +709,12 @@ tbody tr:hover td{background:var(--bg)}
 @media(max-width:600px){#wa-type-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}}
 .lic-banner,button[onclick*="openUpgrade"],a[onclick*="openUpgrade"]{display:none!important}
 #sa-card,#sa-card *{animation:none!important;transition:none!important}
+.dz-seen .vz-card,.dz-seen #dash-overview *{animation:none!important}
+html{touch-action:manipulation}
+html.lite *,html.lite *::before,html.lite *::after{animation-iteration-count:1!important;transition-duration:.01s!important}
+html.lite .card,html.lite .stat,html.lite .vz-card,html.lite .modal,html.lite .topbar,html.lite .sidebar{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+html.lite .card,html.lite .stat,html.lite .vz-card{animation:none!important}
+*,*::before,*::after{animation:none!important;animation-duration:0s!important;transition:none!important;scroll-behavior:auto!important}
 </style>
 <script>
 /* ═══════════════════════════════════════════════════════════════
@@ -2669,6 +2675,7 @@ tbody tr:hover td{background:var(--bg)}
       <div class="card-title" style="margin-bottom:12px">Preferences</div>
       <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:.5px solid var(--br)"><div><div style="font-size:13px;font-weight:500;color:var(--tx)" id="pref-dark">Dark Mode</div><div style="font-size:11px;color:var(--tx2);margin-top:2px" id="pref-dark-sub">Currently off</div></div><button class="btn btn-sm" onclick="toggleDark()">Toggle</button></div>
       <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:.5px solid var(--br)"><div><div style="font-size:13px;font-weight:500;color:var(--tx)">Glass Theme</div><div style="font-size:11px;color:var(--tx2);margin-top:2px" id="pref-glass-sub">Currently off</div></div><button class="btn btn-sm" onclick="toggleGlass()">Toggle</button></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:.5px solid var(--br)"><div><div style="font-size:13px;font-weight:500;color:var(--tx)">⚡ Fast mode</div><div style="font-size:11px;color:var(--tx2);margin-top:2px" id="pref-lite-sub">Turns off blur &amp; endless animations — use if the app feels slow</div></div><button class="btn btn-sm" onclick="toggleLite()">Toggle</button></div>
       <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0"><div><div style="font-size:13px;font-weight:500;color:var(--tx)" id="pref-lang">Language</div><div style="font-size:11px;color:var(--tx2);margin-top:2px">English / Tamil</div></div><button class="btn btn-sm" onclick="toggleLang()" id="lang-toggle-btn">Switch to Tamil</button></div>
     </div>
     <div class="card">
@@ -24810,6 +24817,7 @@ function _tlCheckLastWorkingDay() {
     if(window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches)return;
     var busy=new WeakSet();
     function anim(el){
+      return; /* static mode: no count-up */
       if(busy.has(el))return;
       var m=(el.textContent||'').match(/^([^0-9\-]*)(-?[\d,]+(?:\.\d+)?)(.*)$/);
       if(!m)return;
@@ -24930,7 +24938,7 @@ function renderMonthChart(kind){
   document.querySelectorAll('#dv-tabs button').forEach(function(b){b.classList.toggle('on',b.dataset.k===_dvKind)});
   if(!document.getElementById('dv-ch-sum'))return;var last=_dvData[_dvData.length-1];
   document.getElementById('dv-ch-sum').textContent=_ymLabel(cur)+': '+_inr(last[_dvKind]);
-  var t0=performance.now(),D=700,id=++_dvAnim;
+  var t0=performance.now(),D=1,id=++_dvAnim;
   (function step(t){
     if(id!==_dvAnim)return;
     var p=Math.min(1,(t-t0)/D),e=1-Math.pow(1-p,3);
@@ -25499,7 +25507,7 @@ async function saConnect(){
   try{await SA.app.auth().signInWithEmailAndPassword(c.adminEmail,pw)}catch(e){SA.pw='';throw 'Admin login failed: '+(e.code||e.message||e)}
   SA.pw=pw;SA.ready=true;
 }
-function saMsg(t,ok){var e=document.getElementById('sa-msg');if(e){e.textContent=t;e.style.color=ok===false?'#dc2626':(ok?'#16a34a':'var(--tx2)')}}
+function saMsg(t,ok){try{if(t&&!/\.\.\.$|…$/.test(t))showToast(t)}catch(x){}var e=document.getElementById('sa-msg');if(e){e.textContent=t;e.style.color=ok===false?'#dc2626':(ok?'#16a34a':'var(--tx2)')}}
 function saSaveCfg(){
   var raw=document.getElementById('sa-fb').value.trim(),em=document.getElementById('sa-em').value.trim(),url=document.getElementById('sa-url').value.trim(),fb=null;
   try{var m=raw.match(/\{[\s\S]*\}/);fb=m?Function('"use strict";return ('+m[0]+')')():null}catch(e){}
@@ -25541,7 +25549,7 @@ function _saAttMaps(days){
 }
 function saBuildDoc(s,maps){
   var att={};Object.keys(maps).forEach(function(d){var r=maps[d][s.id];if(r)att[d]=(r.y===0)?'A':((r.late>0&&r.y===r.n)?'L':'P')});
-  var fe=fees.filter(function(f){return f&&!f._deleted&&(f.studentId===s.id||f.student===s.name)&&f.status!=='carried'}).slice(-12).reverse().map(function(f){return {month:f.month||'',total:f.total||0,paid:f.paid||0,balance:f.balance||0,status:f.status||'pending'}});
+  var fe=fees.filter(function(f){return f&&!f._deleted&&(f.studentId===s.id||f.student===s.name)&&f.status!=='carried'}).slice(0,24).map(function(f){var pd=f.paidOn||'';if(!pd&&f.paidAtTs){try{pd=new Date(f.paidAtTs).toLocaleDateString('en-IN')}catch(e){}}return {month:f.month||'',total:f.total||0,paid:f.paid||0,balance:f.balance||0,status:f.status||'pending',rcpt:f.rcpt||'',paidOn:pd,mode:f.mode||''}});
   var mk=[];try{mk=getStudentMarks(s.id).map(function(m){return {exam:m.examName||'',subject:m.subject||'',date:m.date||'',marks:m.marks==null?0:m.marks,max:m.maxMarks||0,absent:!!m.absent}})}catch(e){}
   return {id:s.id,name:s.name,grade:String(s.grade||''),batch:s.course||'',parent:s.parent||'',ver:s.appVer||1,updated:Date.now(),att:att,fees:fe,marks:mk,results:saMyResults(s.id)};
 }
@@ -25574,6 +25582,12 @@ function saShare(id){
 }
 function saClassSel(id,st){var g={};students.forEach(function(s){if(s&&s.grade!=null&&String(s.grade).trim())g[String(s.grade).trim()]=1});var ks=Object.keys(g).sort(function(a,b){return a.localeCompare(b,undefined,{numeric:true})});
   return '<select class="fi" id="'+id+'" style="'+st+'"><option value="">All classes</option>'+ks.map(function(k){return '<option value="'+escHtml(k)+'">Class '+escHtml(k)+'</option>'}).join('')+'</select>'}
+async function saPullMsgs(){
+  try{await saConnect();saMsg('Loading messages…');var q=await SA.app.firestore().collection('messages').orderBy('ts','desc').limit(50).get();SA.msgs=q.docs.map(function(d){var x=d.data();x._id=d.id;return x});saMsg('✅ '+SA.msgs.length+' message(s)',true);saRender()}
+  catch(e){saMsg('Could not load: '+(e.code||e.message||e),false)}
+}
+async function saDelMsg(i){var m=SA.msgs&&SA.msgs[i];if(!m)return;try{await saConnect();await SA.app.firestore().collection('messages').doc(m._id).delete();SA.msgs.splice(i,1);saRender()}catch(e){saMsg('Failed: '+(e.code||e),false)}}
+function saMsgReset(i){var m=SA.msgs[i],s=students.find(function(x){return _saSan(x.id)===m.sid});if(s)saResetPin(s.id);else saMsg('Student not found',false)}
 function saToggle(){SA.open=!SA.open;saRender()}
 function saRender(){
   var h=document.getElementById('sa-card');
@@ -25584,7 +25598,7 @@ function saRender(){
   var inp='width:100%;font-size:12px;margin-bottom:6px',b='';
   b+='<div id="sa-msg" style="font-size:12px;margin:10px 0 6px;min-height:16px"></div>';
   b+='<details'+(has?'':' open')+' style="margin-bottom:10px"><summary style="font-size:12px;font-weight:700;cursor:pointer">1 · Firebase setup'+(has?' ✅':'')+'</summary><div style="padding-top:8px"><textarea class="fi" id="sa-fb" rows="5" style="'+inp+';font-family:monospace" placeholder="Paste firebaseConfig { apiKey: ..., projectId: ... }">'+(has?escHtml(JSON.stringify(c.firebase,null,1)):'')+'</textarea><input class="fi" id="sa-em" style="'+inp+'" placeholder="Admin email (the Firebase user you created)" value="'+escHtml(c.adminEmail||'')+'"><input class="fi" id="sa-url" style="'+inp+'" placeholder="Student app web link (where student.html is hosted)" value="'+escHtml(c.appUrl||'')+'"><button class="btn btn-sm" onclick="saSaveCfg()">💾 Save setup</button></div></details>';
-  b+='<div style="font-size:12px;font-weight:700;margin:10px 0 6px">2 · Logins & publish</div><div style="font-size:12px;margin-bottom:8px">Create logins for: '+allCls.map(function(k){return '<label style="margin-right:12px"><input type="checkbox" class="sa-cls" value="'+escHtml(k)+'"'+(saCls().indexOf(k)>-1?' checked':'')+' onchange="saSetCls()"> Class '+escHtml(k)+'</label>'}).join('')+'</div>'+(outside?'<div style="font-size:11px;margin-bottom:8px;color:#dc2626">'+outside+' student(s) outside these classes already have a login. <a href="#" onclick="saCleanOthers();return false">Remove them</a></div>':'')+'<div style="font-size:11px;color:var(--tx2);margin-bottom:8px">'+withPin.length+' students have a login · '+noPin+' without</div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-sm" onclick="saCreateLogins()">🔑 Create logins ('+noPin+')</button><button class="btn btn-sm btn-p" onclick="saPublish()">☁️ Publish now</button><button class="btn btn-sm" onclick="saPullActivity()">📊 Student activity</button></div>';
+  b+='<div style="font-size:12px;font-weight:700;margin:10px 0 6px">2 · Logins & publish</div><div style="font-size:12px;margin-bottom:8px">Create logins for: '+allCls.map(function(k){return '<label style="margin-right:12px"><input type="checkbox" class="sa-cls" value="'+escHtml(k)+'"'+(saCls().indexOf(k)>-1?' checked':'')+' onchange="saSetCls()"> Class '+escHtml(k)+'</label>'}).join('')+'</div>'+(outside?'<div style="font-size:11px;margin-bottom:8px;color:#dc2626">'+outside+' student(s) outside these classes already have a login. <a href="#" onclick="saCleanOthers();return false">Remove them</a></div>':'')+'<div style="font-size:11px;color:var(--tx2);margin-bottom:8px">'+withPin.length+' students have a login · '+noPin+' without</div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-sm" onclick="saCreateLogins()">🔑 Create logins ('+noPin+')</button><button class="btn btn-sm btn-p" onclick="saPublish()">☁️ Publish now</button><button class="btn btn-sm" onclick="saPullActivity()">📊 Student activity</button><button class="btn btn-sm" onclick="saPullMsgs()">📨 Messages</button></div>';
   if(withPin.length)b+='<div style="margin-top:10px;max-height:240px;overflow-y:auto;border:.5px solid var(--br);border-radius:10px">'+withPin.map(function(s){return '<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-bottom:.5px solid var(--br);font-size:12px"><div style="flex:1;min-width:0"><b>'+escHtml(s.name)+'</b><div style="font-size:10px;color:var(--tx3)">'+escHtml(s.id)+' · PIN '+escHtml(s.appPin)+'</div></div><button class="btn btn-sm" onclick="saShare(\''+s.id+'\')">📱 Send</button><button class="btn btn-sm" onclick="saResetPin(\''+s.id+'\')" title="New PIN">🔄</button></div>'}).join('')+'</div>';
   var N=saList('_erp_sa_notices'),P=saList('_erp_sa_papers');
   b+='<div style="font-size:12px;font-weight:700;margin:14px 0 6px">3 · Notices</div><input class="fi" id="sa-nt" style="'+inp+'" placeholder="Title"><textarea class="fi" id="sa-nx" rows="2" style="'+inp+'" placeholder="Message"></textarea><div style="display:flex;gap:6px">'+saClassSel('sa-ng','flex:1;font-size:12px')+'<button class="btn btn-sm" onclick="saAddNotice()">➕ Add</button></div>'
@@ -25592,6 +25606,7 @@ function saRender(){
   b+='<div style="font-size:12px;font-weight:700;margin:14px 0 6px">4 · Question papers</div><input class="fi" id="sa-pt" style="'+inp+'" placeholder="Paper title"><div style="display:flex;gap:6px;margin-bottom:6px"><input class="fi" id="sa-ps" style="flex:1;font-size:12px" placeholder="Subject">'+saClassSel('sa-pg','width:110px;font-size:12px')+'<input class="fi" id="sa-pd" type="number" style="width:90px;font-size:12px" placeholder="Minutes"></div><div style="display:flex;gap:6px"><input class="fi" id="sa-pl" style="flex:1;font-size:12px" placeholder="Paper link (Google Drive etc., optional)"><button class="btn btn-sm" onclick="saAddPaper()">➕ Add</button></div>'
    +P.map(function(x,i){return '<div style="display:flex;gap:8px;font-size:12px;padding:6px 0;border-bottom:.5px solid var(--br)"><div style="flex:1"><b>'+escHtml(x.title)+'</b> <span style="color:var(--tx3)">'+escHtml(x.subject||'')+(x.grade?' · Class '+escHtml(x.grade):'')+(x.duration?' · '+x.duration+' min':'')+'</span></div><button class="btn btn-sm" onclick="saDelPaper('+i+')">🗑</button></div>'}).join('');
   b+=saTestsHtml(inp);b+='<div style="font-size:11px;color:var(--tx3);margin-top:8px">After adding notices / papers press ☁️ Publish now.</div>';
+  if(SA.msgs){b+='<div style="font-size:12px;font-weight:700;margin:14px 0 6px">📨 Student messages</div>'+(SA.msgs.length?SA.msgs.map(function(m,i){return '<div style="font-size:12px;padding:7px 0;border-bottom:.5px solid var(--br)"><b>'+escHtml(m.name||m.sid)+'</b> · '+escHtml(m.type||'')+' <span style="color:var(--tx3)">'+new Date(m.ts).toLocaleString('en-IN',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})+'</span><div style="color:var(--tx2);white-space:pre-wrap">'+escHtml(m.text||'')+'</div><div style="margin-top:4px;display:flex;gap:6px">'+(/password|pin/i.test(m.type||'')?'<button class="btn btn-sm" onclick="saMsgReset('+i+')">🔄 New PIN</button>':'')+'<button class="btn btn-sm" onclick="saDelMsg('+i+')">✔ Done</button></div></div>'}).join(''):'<div style="font-size:12px;color:var(--tx3)">No messages</div>')}
   if(SA.act){
     var last={},ev=[];SA.act.forEach(function(a){if(a.type==='login'&&!last[a.sid])last[a.sid]=a;if(a.type!=='login')ev.push(a)});
     b+='<div style="font-size:12px;font-weight:700;margin:14px 0 6px">📊 Student activity</div>'+Object.keys(last).map(function(k){var a=last[k];return '<div style="font-size:12px;padding:5px 0;border-bottom:.5px solid var(--br)">🟢 <b>'+escHtml(a.name||k)+'</b> — last login '+new Date(a.ts).toLocaleString('en-IN',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})+'</div>'}).join('')
@@ -25648,6 +25663,13 @@ function saTestsHtml(inp){
     return '<div style="font-size:12px;padding:8px 0;border-bottom:.5px solid var(--br)"><div style="display:flex;gap:8px;align-items:center"><div style="flex:1"><b>'+escHtml(t.title)+'</b> <span style="color:var(--tx3)">'+t.qs.length+' Qs · '+t.duration+' min'+(t.grade?' · Class '+escHtml(t.grade):'')+(t.published===false?' · hidden':'')+'</span></div><button class="btn btn-sm" onclick="saTogTest('+i+')">'+(t.published===false?'Show':'Hide')+'</button><button class="btn btn-sm" onclick="saDelTest('+i+')">🗑</button></div>'+(ks.length?'<div style="margin-top:4px;padding:6px 8px;background:var(--bg2,rgba(0,0,0,.04));border-radius:8px">'+rows+'</div>':'')+'</div>'}).join('');
   return h+'<div style="margin-top:8px"><button class="btn btn-sm" onclick="saGradeTests()">🧮 Collect &amp; grade attempts</button></div>';
 }
+/* ===== Dashboard flicker fix: coalesce repeated renders ===== */
+(function(){var f=window.renderDashViz,t=null;if(typeof f!=='function')return;
+  window.renderDashViz=function(){clearTimeout(t);t=setTimeout(function(){try{f()}catch(e){console.error(e)}document.body.classList.add('dz-seen')},350)}})();
+/* ===== Fast mode ===== */
+function _applyLite(on){document.documentElement.classList.toggle('lite',!!on);var e=document.getElementById('pref-lite-sub');if(e)e.textContent=on?'On — blur & endless animations are off':'Off — turn on if the app feels slow'}
+function toggleLite(){var on=!document.documentElement.classList.contains('lite');_applyLite(on);try{erpSet('_erp_lite',on?'1':'0')}catch(e){}showToast(on?'⚡ Fast mode on':'Fast mode off')}
+(function(){var v=null;try{v=erpGet('_erp_lite')}catch(e){}var auto=(window.innerWidth<=768&&(navigator.hardwareConcurrency||8)<=6);_applyLite(v==null?auto:v==='1')})();
 </script>
 
 <div id="xt-bg" onclick="if(event.target===this)xtClose()"><div id="xt-box">

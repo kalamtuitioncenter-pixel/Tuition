@@ -706,6 +706,7 @@ tbody tr:hover td{background:var(--bg)}
 .vz-pie circle[r="60"]{stroke-width:.6;transition:none}
 .tube-wrap{overflow-x:scroll!important;scrollbar-width:thin;padding-bottom:10px!important}
 .tube-wrap::-webkit-scrollbar{height:6px}.tube-wrap::-webkit-scrollbar-thumb{background:var(--br2);border-radius:3px}
+@media(max-width:600px){#wa-type-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}}
 </style>
 <script>
 /* ═══════════════════════════════════════════════════════════════
@@ -2338,14 +2339,15 @@ tbody tr:hover td{background:var(--bg)}
     <div class="card-hd" style="flex-wrap:wrap;gap:8px;margin-bottom:6px">
       <span class="card-title" style="color:#dc2626">🚨 Individual Concentration — Danger Zone</span>
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-left:auto">
+        <label style="font-size:11px;color:var(--tx2);display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="adm-dz-on" onchange="dzToggle(this)"> Show list</label>
         <span id="adm-danger-count" style="font-size:10px;background:#fee2e2;color:#dc2626;padding:3px 10px;border-radius:8px;font-weight:700">0 critical</span>
         <select class="fi" id="adm-danger-grade" style="width:auto;font-size:11px;padding:4px 9px" onchange="renderAdminDangerZone()">
           <option value="all">🎓 All Classes</option>
         </select>
       </div>
     </div>
-    <div style="font-size:11px;color:var(--tx2);padding:0 16px 10px">Students at CRITICAL risk (fail / dropout / fee-delay / attendance ≥70) — needs immediate personal attention, grouped by class.</div>
-    <div id="adm-danger-zone-grid" style="padding:0 16px 14px;display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px"></div>
+    <div id="adm-dz-desc" style="font-size:11px;color:var(--tx2);padding:0 16px 10px;display:none">Students at CRITICAL risk (fail / dropout / fee-delay / attendance ≥70) — needs immediate personal attention, grouped by class.</div>
+    <div id="adm-danger-zone-grid" style="padding:0 16px 14px;display:none;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px"></div>
   </div>
 
   <!-- Staff Summary — Attendance + Salary overview -->
@@ -7508,16 +7510,17 @@ function renderWATypes() {
   if (!grid) return;
   const lic = window.__LIC__ || {};
   const maxTypes = lic.features ? (lic.features.waTypes || 2) : 2;
-  grid.innerHTML = WA_TYPES.map((wt, i) => {
+  grid.innerHTML = _waTypesUnified().map((wt) => {
     const isActive = waType === wt.id;
     // First 8 types keep the original plan limits; the extra template types are open on plans that allow 8.
-    const locked = i < 8 ? i >= maxTypes : maxTypes < 8;
+    const bi = _WA_BASE8.indexOf(wt.id);
+    const locked = bi >= 0 ? bi >= maxTypes : maxTypes < 8;
     return `<button onclick="${locked ? 'openUpgrade()' : `setWAType('${wt.id}')`}"
-      style="padding:7px 6px;border-radius:9px;border:1.5px solid ${isActive ? wt.color : 'var(--br)'};
+      style="padding:7px 4px;border-radius:9px;border:1.5px solid ${isActive ? wt.color : 'var(--br)'};line-height:1.25;
         background:${isActive ? wt.bg : 'var(--card)'};color:${isActive ? wt.color : 'var(--tx2)'};
         cursor:pointer;font-size:10px;font-weight:${isActive ? '700' : '500'};font-family:inherit;
         text-align:center;transition:.15s;opacity:${locked ? '.5' : '1'}">
-      ${locked ? '🔒 ' : ''}${lang === 'ta' ? wt.labelTA : wt.label}
+      ${locked ? '🔒 ' : ''}${wt.emoji} ${wt.label}
     </button>`;
   }).join('');
   try { renderWAClassChips(); _waShowDetails(); } catch(e) {}
@@ -12750,10 +12753,11 @@ function showOpsReport(period) {
   root.innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()">
     <div class="modal" style="max-width:560px">
       <div class="modal-title">${titles[period] || 'Report'}</div>
-      <div style="white-space:pre-wrap;font-size:11px;background:var(--bg);border-radius:8px;padding:12px;max-height:44vh;overflow-y:auto;font-family:monospace;color:var(--tx)">${text.replace(/</g,'&lt;')}</div>
+      <div style="white-space:pre-wrap;font-size:11px;background:var(--bg);border-radius:8px;padding:12px;max-height:44vh;overflow-y:auto;font-family:'Noto Sans Tamil',system-ui;color:#14532d;background:#e7fbe0;font-size:12.5px;line-height:1.6">${text.replace(/</g,'&lt;')}</div>
       <div class="fg" style="margin-top:10px"><label class="fl">Send To (WhatsApp Number)</label><input class="fi" id="ops-report-phone" value="${defaultPhone}" placeholder="e.g. 9876543210"></div>
       <div class="modal-foot">
         <button class="btn btn-wa" onclick="sendOpsReportWA()">📱 Send via WhatsApp</button>
+        <button class="btn" onclick="drCopyOps()">📋 Copy</button>
         <button class="btn" onclick="closeModal()">Close</button>
       </div>
     </div>
@@ -13063,7 +13067,7 @@ function renderAdminPanel() {
   // ── Today's staff/teacher attendance ───────────
   let sP=0, sA=0, sL=0, sH=0;
   staffData.forEach(s => {
-    const v = staffAtt[s.id+'|'+today] || '';
+    const v = (typeof _saDay === 'function') ? _saDay(s.id, today) : (staffAtt[s.id+'|'+today] || '');
     if (v==='P') sP++; else if (v==='A') sA++; else if (v==='L') sL++; else if (v==='H') sH++;
   });
 
@@ -24968,7 +24972,7 @@ function renderDashViz(){try{renderTubes();renderMonthChart()}catch(e){console.e
     if(!lock||Math.abs(d)<70)return;
     var id=sid(tr);if(!id)return;
     try{navigator.vibrate&&navigator.vibrate(15)}catch(e){}
-    if(d>0){waStudent(id)}
+    if(d>0){waSwipeCompose(id)}
     else{var f=pend(id);if(f)openCollectModal(f.rcpt);else showToast('✅ No pending fee for this student')}
   });
 })();
@@ -25288,6 +25292,193 @@ function renderTubes(){
 }
 /* staff attendance pie refresh after any change */
 (function(){['setStaffAtt','saveStaffAtt'].forEach(function(n){var o=window[n];if(typeof o!=='function')return;window[n]=function(){var r=o.apply(this,arguments);try{renderStaffAttViz()}catch(e){}return r}})})();
+/* ===== WhatsApp: one shared type list + swipe-right editable composer ===== */
+WA_TYPES.push({id:'student_left',label:'Student Left (Final)',labelTA:'Student Left (Final)',color:'#64748b',bg:'#f1f5f9'});
+WA_DEDICATED.student_left={go:"navTo('students')",btn:'Open Students',text:'The Final message for a student who has left is created from the <b>Left</b> button in the <b>Students</b> list (it carries the balance fee and follow-up).'};
+var _WA_BASE8=['absent','fees','late','exam_notice','marks','monthly','holiday','birthday'];
+function _waTypesUnified(){
+  return WT_ALL_TYPES.map(function(t){
+    var w=WA_TYPES.find(function(x){return x.id===t.id})||{id:t.id,color:t.color,bg:'#f1f5f9'};
+    return Object.assign({},w,{label:t.label,labelTA:t.label,emoji:t.emoji});
+  });
+}
+function _waBuildFor(s,type){
+  var saved=(typeof getWTSaved==='function')?getWTSaved(type,'ta'):null;
+  var arr=saved?[saved]:(WA_TEMPLATES[type]?(WA_TEMPLATES[type].ta||[]):[]);
+  var tmpl=arr[0]||'';
+  var stFees=fees.filter(function(f){return f&&!f._deleted&&(f.studentId===s.id||f.student===s.name)});
+  var pend=stFees.find(function(f){return f.status!=='paid'&&f.status!=='carried'&&f.balance>0});
+  var vars={parent_name:s.parent||'Parent',student_name:s.name||'Student',grade:s.grade==='KG'?'KG':s.grade+'th',
+    center_name:CFG.CENTER.name||'',center_phone:CFG.CENTER.phone||'',date:new Date().toLocaleDateString('en-IN'),
+    month_name:['January','February','March','April','May','June','July','August','September','October','November','December'][new Date().getMonth()],
+    year:new Date().getFullYear(),amount:pend?pend.balance:(stFees[0]?stFees[0].total:'0'),month:_feeMonthLabel(),due_date:'5th',overdue_note:'',
+    att_pct:'—',present_days:'—',absent_days:'—',att_status:'—',missed_subjects:'—',missed_subjects_line:'',target_countdown_line:''};
+  Object.keys(vars).forEach(function(k){tmpl=tmpl.split('{'+k+'}').join(String(vars[k]))});
+  return tmpl;
+}
+var _wsId=null;
+function _wsText(s,type){
+  if(type==='general')return 'Dear '+(s.parent||'Parent')+',\n\nThis is '+(CFG.CENTER.name||'')+'.\nStudent: *'+s.name+'* ('+s.id+')\n\nPlease contact us for any queries.\n📞 '+(CFG.CENTER.phone||'');
+  if(type==='custom')return '';
+  return _waBuildFor(s,type);
+}
+function waSwipeCompose(id){
+  var s=students.find(function(x){return x.id===id});if(!s)return;_wsId=id;
+  var hasPend=fees.some(function(f){return f&&!f._deleted&&(f.studentId===id||f.student===s.name)&&f.status!=='paid'&&f.status!=='carried'&&f.balance>0});
+  var opts=[['general','📝 General message'],['fees','💰 Fee Reminder'],['absent','🚫 Absent Alert'],['late','⏰ Late Alert'],['birthday','🎂 Birthday Wish'],['custom','✏️ Write my own']];
+  var def=hasPend?'fees':'general';
+  var bg=document.getElementById('wa-sw-bg');if(bg)bg.remove();
+  bg=document.createElement('div');bg.id='wa-sw-bg';
+  bg.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:350;display:flex;align-items:flex-end;justify-content:center;padding:0';
+  bg.onclick=function(e){if(e.target===bg)bg.remove()};
+  bg.innerHTML='<div style="background:var(--card);color:var(--tx);width:100%;max-width:520px;border-radius:16px 16px 0 0;padding:16px;max-height:92vh;overflow-y:auto;animation:sheetUp .25s ease">'
+   +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><div style="font-weight:700;font-size:14px">📱 WhatsApp — '+escHtml(s.name)+'</div><button class="btn btn-sm" onclick="document.getElementById(\'wa-sw-bg\').remove()">✕</button></div>'
+   +'<label class="fl">Phone</label><input class="fi" id="wa-sw-phone" type="tel" value="'+escHtml(s.phone||s.pphone||'')+'" style="margin-bottom:8px">'
+   +'<label class="fl">Message type</label><select class="fi" id="wa-sw-type" style="margin-bottom:8px" onchange="_wsChange()">'+opts.map(function(o){return '<option value="'+o[0]+'"'+(o[0]===def?' selected':'')+'>'+o[1]+'</option>'}).join('')+'</select>'
+   +'<label class="fl">Message <span style="font-weight:400;color:var(--tx3)">(edit as you like)</span></label><textarea class="fi fi-ta" id="wa-sw-msg" rows="11" style="font-family:\'Noto Sans Tamil\',system-ui;line-height:1.6"></textarea>'
+   +'<div style="display:flex;gap:8px;margin-top:10px"><button class="btn" style="flex:1;justify-content:center" onclick="_wsChange()">↺ Reset text</button><button class="btn btn-wa" style="flex:2;justify-content:center;padding:10px" onclick="_wsSend()">📱 Send on WhatsApp</button></div></div>';
+  document.body.appendChild(bg);
+  document.getElementById('wa-sw-msg').value=_wsText(s,def);
+}
+function _wsChange(){var s=students.find(function(x){return x.id===_wsId});if(!s)return;document.getElementById('wa-sw-msg').value=_wsText(s,document.getElementById('wa-sw-type').value)}
+function _wsSend(){
+  var s=students.find(function(x){return x.id===_wsId});if(!s)return;
+  var ph=document.getElementById('wa-sw-phone').value,msg=document.getElementById('wa-sw-msg').value.trim();
+  if(!msg){showToast('⚠️ Message is empty');return}
+  if(ph&&ph!==(s.phone||'')&&ph.replace(/\D/g,'').length>=10){s.phone=ph;try{saveStudents()}catch(e){}}
+  openWA(ph,msg);
+}
+/* ===== Admin: Danger Zone tick + WhatsApp-style Daily Report ===== */
+function dzApply(){
+  var on=false;try{on=erpGet('_erp_dz_on')==='1'}catch(e){}
+  var cb=document.getElementById('adm-dz-on');if(cb)cb.checked=on;
+  ['adm-danger-zone-grid','adm-dz-desc','adm-danger-grade'].forEach(function(id){var e=document.getElementById(id);if(e)e.style.display=on?(id==='adm-danger-zone-grid'?'grid':(id==='adm-danger-grade'?'':'block')):'none'});
+}
+function dzToggle(cb){try{erpSet('_erp_dz_on',cb.checked?'1':'0')}catch(e){}dzApply();if(cb.checked)try{renderAdminDangerZone()}catch(e){}}
+
+function _drAbsentStudents(date){
+  var out={},barr=(batches&&batches.length)?batches:[{id:''}];
+  barr.forEach(function(b){['morning','evening'].forEach(function(se){
+    try{
+      if(erpGet(_holidayKey(date,b.id,se))==='1')return;
+      var sv=erpGet(_attStorageKey(date,b.id,se));if(!sv)return;var o=JSON.parse(sv);
+      Object.keys(o).forEach(function(k){var id=k.split('|')[0],v=o[k];if(!v)return;
+        var r=out[id]||(out[id]={abs:[],tot:0});r.tot++;if(v==='A')r.abs.push(se)});
+    }catch(e){}
+  })});
+  return out;
+}
+function buildDailyReport(){
+  var d=new Date(),date=_todayISO(),days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var staff=(staffData||[]).filter(function(s){return s&&s.name&&s.status!=='inactive'&&s.status!=='left'});
+  var sp=0,sa=[],sm=0;
+  staff.forEach(function(s){var v=_saDay(s.id,date);if(v==='P'){sp++;sm++}else if(v==='A'){sa.push(s.name);sm++}});
+  var sPct=sm?Math.round(sp/staff.length*100):null;
+  var att=_dayAtt(date),aPct=_dayAttPct(att),ab=_drAbsentStudents(date),absL=[];
+  Object.keys(ab).forEach(function(id){var r=ab[id];if(!r.abs.length)return;var st=students.find(function(x){return x.id===id});if(!st)return;
+    absL.push('• '+st.name+' ('+(st.grade==='KG'?'KG':st.grade)+')'+(r.abs.length<r.tot?' — '+(r.abs[0]==='morning'?'☀️ Morning':'🌙 Evening')+' மட்டும்':''))});
+  var t0=new Date(date+'T00:00:00').getTime(),t1=t0+86400000,paid=[],tot=0;
+  fees.forEach(function(f){if(!f||f._deleted)return;var ts=_feeParsePaidOn(f);if(ts>=t0&&ts<t1&&(f.paid||0)>0){paid.push('• '+(f.student||'')+' — ₹'+(f.paid||0).toLocaleString('en-IN')+(f.month?' ('+f.month+')':''));tot+=(f.paid||0)}});
+  var L=[];
+  L.push('📋 *தினசரி அறிக்கை — '+(CFG.CENTER.name||'')+'*');
+  L.push('📅 '+days[d.getDay()]+', '+d.getDate()+' '+mo[d.getMonth()]+' '+d.getFullYear());L.push('');
+  L.push('🧑‍🏫 *Staff Attendance:* '+(sPct===null?'Not marked':sp+'/'+staff.length+' — '+sPct+'%'));
+  L.push('👨‍🎓 *Student Attendance:* '+(aPct===null?'Not marked':Math.round(aPct)+'%'));L.push('');
+  L.push('🚫 *Absent Staff'+(sa.length?' ('+sa.length+')':'')+':*');L.push(sa.length?sa.map(function(n){return '• '+n}).join('\n'):(sm?'None 👍':'—'));L.push('');
+  L.push('🚫 *Absent Students'+(absL.length?' ('+absL.length+')':'')+':*');L.push(absL.length?absL.join('\n'):(aPct===null?'—':'None 👍'));L.push('');
+  L.push('💰 *Today Fees Collected: ₹'+tot.toLocaleString('en-IN')+'*');if(paid.length)L.push(paid.join('\n'));else L.push('—');
+  return L.join('\n');
+}
+function renderDailyReport(){
+  var ref=document.getElementById('adm-summary-grid');if(!ref)return;
+  var h=document.getElementById('adm-daily-report');
+  if(!h){h=document.createElement('div');h.id='adm-daily-report';ref.parentNode.insertBefore(h,ref)}
+  var msg=buildDailyReport();
+  h.innerHTML='<div class="vz-card" style="margin-bottom:12px"><div class="vz-hd" style="cursor:pointer;margin-bottom:0" onclick="drToggle()">📋 Daily Report <span>'+(_drOpen?'▾ tap to hide':'▸ tap to open')+'</span></div>'
+   +(_drOpen?'<div style="margin-top:10px"><div style="background:#e7fbe0;color:#14532d;border-radius:4px 14px 14px 14px;padding:12px 14px;font-size:12.5px;line-height:1.65;white-space:pre-wrap;font-family:\'Noto Sans Tamil\',system-ui;max-width:100%;overflow-wrap:anywhere;box-shadow:0 1px 2px rgba(0,0,0,.12);border:.5px solid #bbf7d0" id="adm-dr-text">'+escHtml(msg)+'</div>'
+   +'<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><button class="btn" onclick="drCopy()">📋 Copy</button><button class="btn" onclick="renderDailyReport()">↻ Refresh</button><button class="btn btn-wa" style="flex:1;justify-content:center" onclick="drSend()">📱 Send on WhatsApp</button></div></div>':'')+'</div>';
+}
+var _drOpen=false;
+function drToggle(){_drOpen=!_drOpen;renderDailyReport()}
+function drCopy(){var t=document.getElementById('adm-dr-text').textContent;
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(function(){showToast('✅ Report copied')},function(){_drFallbackCopy(t)})}else _drFallbackCopy(t)}
+function _drFallbackCopy(t){var a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();try{document.execCommand('copy');showToast('✅ Report copied')}catch(e){showToast('⚠️ Copy failed')}a.remove()}
+function drSend(){var t=document.getElementById('adm-dr-text').textContent,ph=(CFG.CENTER&&CFG.CENTER.phone)||'';
+  if(cleanPhone(ph).length>=10)openWA(ph,t);else window.open('https://wa.me/?text='+encodeURIComponent(t),'_blank')}
+(function(){var o=window.renderAdminPanel;if(typeof o!=='function')return;
+  window.renderAdminPanel=function(){var r=o.apply(this,arguments);try{renderDailyReport();dzApply()}catch(e){console.error(e)}return r}})();
+/* ===== Birthdays + tick-to-show summaries ===== */
+function _bdParse(dob){
+  if(!dob)return null;var m=String(dob).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(m)return {m:+m[2],d:+m[3]};
+  var t=new Date(dob);return isNaN(t)?null:{m:t.getMonth()+1,d:t.getDate()};
+}
+function _bdList(withinDays){
+  var now=new Date(),out=[];
+  students.forEach(function(s){
+    if(!s||s.status==='inactive'||s.status==='left'||s.leftDate)return;
+    var b=_bdParse(s.dob);if(!b)return;
+    var next=new Date(now.getFullYear(),b.m-1,b.d),t0=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+    if(next<t0)next=new Date(now.getFullYear()+1,b.m-1,b.d);
+    var diff=Math.round((next-t0)/86400000);
+    if(diff<=withinDays){var yr=String(s.dob).match(/^(\d{4})/);out.push({s:s,diff:diff,age:yr?next.getFullYear()-(+yr[1]):null})}
+  });
+  return out.sort(function(a,b){return a.diff-b.diff||a.s.name.localeCompare(b.s.name)});
+}
+function renderBirthdayAlert(){
+  var ref=document.querySelector('#pg-dashboard .stat-grid');if(!ref)return;
+  var h=document.getElementById('dash-bday');
+  if(!h){h=document.createElement('div');h.id='dash-bday';ref.parentNode.insertBefore(h,ref)}
+  var l=_bdList(3);
+  if(!l.length){h.innerHTML='';return}
+  var lbl=function(d){return d===0?'🎉 Today':(d===1?'Tomorrow':'in '+d+' days')};
+  h.innerHTML='<div style="background:linear-gradient(135deg,#fdf2f8,#fef3c7);border:1px solid #f9a8d4;border-radius:12px;padding:12px 14px;margin-bottom:14px;animation:cardIn .4s ease both">'
+   +'<div style="font-weight:700;font-size:13px;color:#9d174d;margin-bottom:8px">🎂 Birthdays</div>'
+   +l.map(function(x){return '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-top:.5px solid #fbcfe8;color:#831843;font-size:12.5px"><span style="flex:1;min-width:0"><b>'+escHtml(x.s.name)+'</b> · '+(x.s.grade==='KG'?'KG':'Class '+escHtml(String(x.s.grade||'')))+(x.age?' · turns '+x.age:'')+' <span style="color:#be185d">— '+lbl(x.diff)+'</span></span>'
+     +(x.diff===0?'<button class="btn btn-wa btn-sm" style="flex-shrink:0" onclick="waSwipeCompose(\''+x.s.id+'\',\'birthday\')">🎂 Wish</button>':'')+'</div>'}).join('')+'</div>';
+}
+/* wish composer can open on a chosen type */
+(function(){var o=window.waSwipeCompose;window.waSwipeCompose=function(id,type){o(id);if(type){var sel=document.getElementById('wa-sw-type');if(sel){sel.value=type;_wsChange()}}}})();
+(function(){var u=window.updateDashStats;window.updateDashStats=function(){var r=u.apply(this,arguments);try{renderBirthdayAlert()}catch(e){}return r};
+  var d=window.renderDashViz;window.renderDashViz=function(){try{d&&d()}catch(e){}try{renderBirthdayAlert()}catch(e){}};
+  document.addEventListener('DOMContentLoaded',function(){setTimeout(renderBirthdayAlert,900)})})();
+
+/* daily report: add birthdays */
+(function(){var o=window.buildDailyReport;window.buildDailyReport=function(){
+  var t=o();var l=_bdList(0);
+  if(l.length){t+='\n\n🎂 *Today Birthdays ('+l.length+'):*\n'+l.map(function(x){return '• '+x.s.name+' ('+(x.s.grade==='KG'?'KG':x.s.grade)+')'}).join('\n')}
+  return t}})();
+
+/* Admin panel: tick to show Summary cards / Staff summary */
+function admSumApply(){
+  var a=false,b=false;try{a=erpGet('_erp_adm_sum')==='1';b=erpGet('_erp_adm_stf')==='1'}catch(e){}
+  var c1=document.getElementById('adm-sum-on'),c2=document.getElementById('adm-stf-on');if(c1)c1.checked=a;if(c2)c2.checked=b;
+  var g=document.getElementById('adm-summary-grid');if(g)g.style.display=a?'grid':'none';
+  var st=document.getElementById('adm-staff-summary-card');if(st)st.style.display=b?'':'none';
+}
+function admSumToggle(key,cb){try{erpSet(key,cb.checked?'1':'0')}catch(e){}admSumApply()}
+(function(){var o=window.renderAdminPanel;if(typeof o!=='function')return;
+  window.renderAdminPanel=function(){var r=o.apply(this,arguments);try{
+    var ref=document.getElementById('adm-summary-grid');
+    if(ref&&!document.getElementById('adm-sum-ctl')){var c=document.createElement('div');c.id='adm-sum-ctl';c.style.cssText='display:flex;gap:16px;flex-wrap:wrap;margin-bottom:10px;font-size:12px;color:var(--tx2)';
+      c.innerHTML='<label style="display:flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" id="adm-sum-on" onchange="admSumToggle(\'_erp_adm_sum\',this)"> Show Summary cards</label><label style="display:flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" id="adm-stf-on" onchange="admSumToggle(\'_erp_adm_stf\',this)"> Show Staff summary</label>';
+      ref.parentNode.insertBefore(c,ref)}
+    admSumApply()}catch(e){console.error(e)}return r}})();
+/* ===== One Daily Report: merged into the Reports card ===== */
+window.renderDailyReport=function(){var h=document.getElementById('adm-daily-report');if(h)h.remove()};
+(function(){var o=window.buildOpsReport;window.buildOpsReport=function(period){
+  var base=o(period);
+  if(period!=='daily')return base;
+  var blocks=base.split('\n\n'),pick=function(ch){return blocks.find(function(b){return b.indexOf(ch)===0})||''};
+  var tl=pick('📖'),cm=pick('🚲'),fb=pick('💰'),out=(fb.split('\n').find(function(l){return l.indexOf('Outstanding')>=0})||'').trim();
+  var t=buildDailyReport();
+  if(out){var bi=t.indexOf('\n\n🎂');var ol='⏳ *Outstanding (all-time): '+out.replace(/.*:\s*/,'')+'*';t=bi>=0?t.slice(0,bi)+'\n'+ol+t.slice(bi):t+'\n'+ol}
+  if(tl)t+='\n\n'+tl;
+  if(cm)t+='\n\n'+cm;
+  return t;
+}})();
+function drCopyOps(){var t=window._lastOpsReport||'';if(!t)return;
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(function(){showToast('✅ Report copied')},function(){_drFallbackCopy(t)})}else _drFallbackCopy(t)}
 </script>
 
 <div id="xt-bg" onclick="if(event.target===this)xtClose()"><div id="xt-box">

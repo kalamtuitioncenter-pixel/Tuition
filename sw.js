@@ -2,7 +2,7 @@
    Network-first for the app page so a new index.html is ALWAYS picked up
    when online; cached copy is used only when offline.
    To force an update on every device later, just change CACHE_VERSION. */
-const CACHE_VERSION = 'kalam-erp-v2026-11-14-a';
+const CACHE_VERSION = 'kalam-erp-v2026-11-21-static';
 const CORE = ['./', './index.html'];
 
 self.addEventListener('install', e => {

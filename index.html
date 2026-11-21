@@ -707,6 +707,7 @@ tbody tr:hover td{background:var(--bg)}
 .tube-wrap{overflow-x:scroll!important;scrollbar-width:thin;padding-bottom:10px!important}
 .tube-wrap::-webkit-scrollbar{height:6px}.tube-wrap::-webkit-scrollbar-thumb{background:var(--br2);border-radius:3px}
 @media(max-width:600px){#wa-type-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}}
+.lic-banner,button[onclick*="openUpgrade"],a[onclick*="openUpgrade"]{display:none!important}
 </style>
 <script>
 /* ═══════════════════════════════════════════════════════════════
@@ -3142,6 +3143,7 @@ if (isPWA) {
 ═══════════════════════════════════════════════════════ */
 const CFG = {
   LICENSE_KEY: 'TRIAL',
+  OWNER_MODE: true,   // Sri Kalam Tuition's own copy: full access, no trial / plan limits
   CENTER: { name:'Sri Kalam Tuition', ownerName:'S. Rajendran', phone:'+91 98765 43210', city:'Chidambaram', state:'Tamil Nadu', email:'info@kalamtuition.com' },
   BRAND: { primaryColor:'#1a56db', logoText:'KT' },
   APP: { defaultLanguage:'en', defaultTheme:'light', studentIdPrefix:'KLM', academicYear:'2024-25' },
@@ -3206,12 +3208,12 @@ var PLANS={
     teachingLog:true,monthlyGrowthWA:true,aiGrowthClass:true,
   }}
 };
-var _dt=false;function _chk(){var t=new Date();debugger;if(new Date()-t>100)_dt=true;}setTimeout(_chk,8000);
+var _dt=false;function _chk(){}
 function _sha256(msg){var K=[0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];function _r(x,n){return(x>>>n)|(x<<(32-n));}function _s(x,n){return x>>>n;}function _ch(x,y,z){return(x&y)^(~x&z);}function _mj(x,y,z){return(x&y)^(x&z)^(y&z);}function _s0(x){return _r(x,2)^_r(x,13)^_r(x,22);}function _s1(x){return _r(x,6)^_r(x,11)^_r(x,25);}function _t0(x){return _r(x,7)^_r(x,18)^_s(x,3);}function _t1(x){return _r(x,17)^_r(x,19)^_s(x,10);}function _a(x,y){var l=(x&0xffff)+(y&0xffff);return((x>>16)+(y>>16)+(l>>16)<<16)|(l&0xffff);}var u=[];for(var i=0;i<msg.length;i++){var c=msg.charCodeAt(i);if(c<128)u.push(c);else if(c<2048)u.push((c>>6)|192,(c&63)|128);else u.push((c>>12)|224,((c>>6)&63)|128,(c&63)|128);}var L=u.length,M=new Uint32Array(Math.ceil((L+9)/64)*16);for(var j=0;j<L;j++)M[j>>2]|=u[j]<<(24-(j%4)*8);M[L>>2]|=0x80<<(24-(L%4)*8);M[M.length-1]=L*8;var H=[0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];for(var b=0;b<M.length;b+=16){var W=new Uint32Array(64);for(var t2=0;t2<16;t2++)W[t2]=M[b+t2];for(var t3=16;t3<64;t3++)W[t3]=_a(_a(_t1(W[t3-2]),W[t3-7]),_a(_t0(W[t3-15]),W[t3-16]));var a=H[0],bc=H[1],c2=H[2],d=H[3],e=H[4],f=H[5],g=H[6],h=H[7];for(var t4=0;t4<64;t4++){var T1=_a(_a(_a(_a(h,_s1(e)),_ch(e,f,g)),K[t4]),W[t4]);var T2=_a(_s0(a),_mj(a,bc,c2));h=g;g=f;f=e;e=_a(d,T1);d=c2;c2=bc;bc=a;a=_a(T1,T2);}H[0]=_a(a,H[0]);H[1]=_a(bc,H[1]);H[2]=_a(c2,H[2]);H[3]=_a(d,H[3]);H[4]=_a(e,H[4]);H[5]=_a(f,H[5]);H[6]=_a(g,H[6]);H[7]=_a(h,H[7]);}return H.map(function(n){return('00000000'+n.toString(16).toUpperCase()).slice(-8);}).join('');}
 var _sl=['KalamERP@','2025#Tamil','Nadu$Secu','re!XK9'].join('');
 function _val(key){if(!key||typeof key!=='string')return{valid:false};var p=key.trim().toUpperCase().split('-');if(p.length<4)return{valid:false};var plan=p[0],year=p[1],serial=p[2],hash=p[3];if(!PLANS[plan])return{valid:false};var y=parseInt(year),s=parseInt(serial);if(isNaN(y)||isNaN(s)||y<2025||y>2035||s<1||s>9999)return{valid:false};var payload=_sl+':'+plan+':'+y+':'+('000'+s).slice(-4);var exp=_sha256(payload).substring(0,8);if(exp!==hash)return{valid:false};if(plan==='ULTIMATE')return{valid:true,plan:plan,expiry:new Date(2099,11,31),daysLeft:99999,serial:s};var expiry=new Date(y+1,3,30,23,59,59);var now=new Date();if(now>expiry)return{valid:false,expired:true,plan:plan};return{valid:true,plan:plan,expiry:expiry,daysLeft:Math.ceil((expiry-now)/86400000),serial:s};}
 var _TK='_erp_ts';function _trial(){var s=erpGet(_TK)||Date.now().toString();erpSet(_TK,s);var d=Math.floor((Date.now()-parseInt(s))/86400000);return{daysLeft:Math.max(0,7-d),expired:7-d<=0};}
-function validateLicense(){var key=(CFG.LICENSE_KEY||'').trim().toUpperCase();var status={plan:'TRIAL',planName:'Free Trial',valid:true,expired:false,daysLeft:7,maxStudents:PLANS.TRIAL.maxStudents,features:{...PLANS.TRIAL.features},trialMode:true,message:''};if(!key||key==='TRIAL'){var t=_trial();status.daysLeft=t.daysLeft;status.expired=t.expired;status.valid=!t.expired;status.message=t.expired?'Trial expired — enter license key to continue':'Trial: '+t.daysLeft+' day'+(t.daysLeft===1?'':'s')+' left (5 students max)';}else{var r=_val(key);if(!r.valid){status={...status,valid:false,plan:'INVALID',planName:'Invalid',maxStudents:0,features:{},trialMode:false,message:r.expired?'License expired':'Invalid key'};}else{var pl=PLANS[r.plan];var daysMsg=r.plan==='ULTIMATE'?'Lifetime — ✅ Active':pl.name+' · '+r.daysLeft+' days left';status={...status,plan:r.plan,planName:pl.name,valid:true,expired:false,daysLeft:r.daysLeft,maxStudents:pl.maxStudents,features:{...pl.features},trialMode:false,message:daysMsg};}}CFG.FEATURES={...status.features};window.__LIC__=status;return status;}
+function validateLicense(){if(CFG.OWNER_MODE){return{plan:'ULTIMATE',planName:'Sri Kalam Tuition — Owner',valid:true,expired:false,daysLeft:99999,maxStudents:99999,features:Object.assign({},PLANS.ULTIMATE.features),trialMode:false,message:'Full access'}}var key=(CFG.LICENSE_KEY||'').trim().toUpperCase();var status={plan:'TRIAL',planName:'Free Trial',valid:true,expired:false,daysLeft:7,maxStudents:PLANS.TRIAL.maxStudents,features:{...PLANS.TRIAL.features},trialMode:true,message:''};if(!key||key==='TRIAL'){var t=_trial();status.daysLeft=t.daysLeft;status.expired=t.expired;status.valid=!t.expired;status.message=t.expired?'Trial expired — enter license key to continue':'Trial: '+t.daysLeft+' day'+(t.daysLeft===1?'':'s')+' left (5 students max)';}else{var r=_val(key);if(!r.valid){status={...status,valid:false,plan:'INVALID',planName:'Invalid',maxStudents:0,features:{},trialMode:false,message:r.expired?'License expired':'Invalid key'};}else{var pl=PLANS[r.plan];var daysMsg=r.plan==='ULTIMATE'?'Lifetime — ✅ Active':pl.name+' · '+r.daysLeft+' days left';status={...status,plan:r.plan,planName:pl.name,valid:true,expired:false,daysLeft:r.daysLeft,maxStudents:pl.maxStudents,features:{...pl.features},trialMode:false,message:daysMsg};}}CFG.FEATURES={...status.features};window.__LIC__=status;return status;}
 window.__VALIDATE_LICENSE__=validateLicense;window.__PLANS__=PLANS;
 })();
 
@@ -25479,6 +25481,162 @@ window.renderDailyReport=function(){var h=document.getElementById('adm-daily-rep
 }})();
 function drCopyOps(){var t=window._lastOpsReport||'';if(!t)return;
   if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(function(){showToast('✅ Report copied')},function(){_drFallbackCopy(t)})}else _drFallbackCopy(t)}
+/* ===== Student App publisher (Firebase) ===== */
+var SA={ready:false,pw:'',open:false,act:null};
+var SA_DOMAIN='@kalam-student.app';
+function _saSan(id){return String(id||'').trim().toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')}
+function saCfg(){try{return JSON.parse(erpGet('_erp_sa_cfg')||'null')||{}}catch(e){return {}}}
+function saList(k){try{return JSON.parse(erpGet(k)||'[]')||[]}catch(e){return []}}
+function _saLoadJs(src){return new Promise(function(res,rej){if(document.querySelector('script[data-sa="'+src+'"]'))return res();var s=document.createElement('script');s.src=src;s.dataset.sa=src;s.onload=res;s.onerror=function(){rej('Cannot load Firebase — check internet')};document.head.appendChild(s)})}
+async function saConnect(){
+  var c=saCfg();
+  if(SA.ready&&SA.app){var cu=SA.app.auth().currentUser;if(cu&&cu.email===c.adminEmail)return;SA.ready=false}
+  if(!c.firebase||!c.adminEmail)throw 'Save the Firebase config and admin email first';
+  if(!window.firebase){var b='https://www.gstatic.com/firebasejs/10.12.2/';await _saLoadJs(b+'firebase-app-compat.js');await _saLoadJs(b+'firebase-auth-compat.js');await _saLoadJs(b+'firebase-firestore-compat.js')}
+  SA.app=firebase.apps.find(function(a){return a.name==='admin'})||firebase.initializeApp(c.firebase,'admin');
+  var pw=SA.pw||prompt('Firebase admin password for '+c.adminEmail);if(!pw)throw 'Cancelled';
+  try{await SA.app.auth().signInWithEmailAndPassword(c.adminEmail,pw)}catch(e){SA.pw='';throw 'Admin login failed: '+(e.code||e.message||e)}
+  SA.pw=pw;SA.ready=true;
+}
+function saMsg(t,ok){var e=document.getElementById('sa-msg');if(e){e.textContent=t;e.style.color=ok===false?'#dc2626':(ok?'#16a34a':'var(--tx2)')}}
+function saSaveCfg(){
+  var raw=document.getElementById('sa-fb').value.trim(),em=document.getElementById('sa-em').value.trim(),url=document.getElementById('sa-url').value.trim(),fb=null;
+  try{var m=raw.match(/\{[\s\S]*\}/);fb=m?Function('"use strict";return ('+m[0]+')')():null}catch(e){}
+  if(!fb||!fb.apiKey||!fb.projectId){saMsg('Firebase config not valid — paste the firebaseConfig { ... } block',false);return}
+  erpSet('_erp_sa_cfg',JSON.stringify({firebase:fb,adminEmail:em,appUrl:url}));SA.ready=false;saMsg('✅ Saved',true);saRender();
+}
+async function saCreateLogins(){
+  try{
+    await saConnect();saMsg('Creating logins…');
+    var c=saCfg(),app2=firebase.apps.find(function(a){return a.name==='creator'})||firebase.initializeApp(c.firebase,'creator'),a2=app2.auth(),n=0,fail=0;
+    for(var i=0;i<students.length;i++){var s=students[i];if(!s||s.status==='inactive'||s.leftDate||s.appPin)continue;
+      var pin=String(Math.floor(100000+(crypto.getRandomValues(new Uint32Array(1))[0]%900000))),ver=1;
+      try{await a2.createUserWithEmailAndPassword(_saSan(s.id)+'-v'+ver+SA_DOMAIN,pin);s.appPin=pin;s.appVer=ver;n++;await a2.signOut()}
+      catch(e){if(e.code==='auth/email-already-in-use'){s.appVer=(s.appVer||1)+1;try{await a2.createUserWithEmailAndPassword(_saSan(s.id)+'-v'+s.appVer+SA_DOMAIN,pin);s.appPin=pin;n++;await a2.signOut()}catch(e2){fail++}}else fail++}}
+    saveStudents();saMsg('✅ '+n+' login'+(n===1?'':'s')+' created'+(fail?' · '+fail+' failed':'')+'. Now press Publish.',!fail);saRender();
+  }catch(e){saMsg(String(e),false)}
+}
+async function saResetPin(id){
+  var s=students.find(function(x){return x.id===id});if(!s)return;if(!confirm('Make a new PIN for '+s.name+'? The old PIN stops working.'))return;
+  try{await saConnect();var c=saCfg(),app2=firebase.apps.find(function(a){return a.name==='creator'})||firebase.initializeApp(c.firebase,'creator'),a2=app2.auth();
+    var pin=String(Math.floor(100000+(crypto.getRandomValues(new Uint32Array(1))[0]%900000))),ver=(s.appVer||1)+1;
+    await a2.createUserWithEmailAndPassword(_saSan(s.id)+'-v'+ver+SA_DOMAIN,pin);await a2.signOut();s.appPin=pin;s.appVer=ver;saveStudents();saMsg('✅ New PIN for '+s.name+' — press Publish',true);saRender()}
+  catch(e){saMsg('Reset failed: '+(e.code||e),false)}
+}
+function _saAttMaps(days){
+  var out={},now=new Date();
+  for(var i=0;i<days;i++){var d=new Date(now.getFullYear(),now.getMonth(),now.getDate()-i),k=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');out[k]=_dayAtt(k).per}
+  return out;
+}
+function saBuildDoc(s,maps){
+  var att={};Object.keys(maps).forEach(function(d){var r=maps[d][s.id];if(r)att[d]=(r.y===0)?'A':((r.late>0&&r.y===r.n)?'L':'P')});
+  var fe=fees.filter(function(f){return f&&!f._deleted&&(f.studentId===s.id||f.student===s.name)&&f.status!=='carried'}).slice(-12).reverse().map(function(f){return {month:f.month||'',total:f.total||0,paid:f.paid||0,balance:f.balance||0,status:f.status||'pending'}});
+  var mk=[];try{mk=getStudentMarks(s.id).map(function(m){return {exam:m.examName||'',subject:m.subject||'',date:m.date||'',marks:m.marks==null?0:m.marks,max:m.maxMarks||0,absent:!!m.absent}})}catch(e){}
+  return {id:s.id,name:s.name,grade:String(s.grade||''),batch:s.course||'',parent:s.parent||'',ver:s.appVer||1,updated:Date.now(),att:att,fees:fe,marks:mk,results:saMyResults(s.id)};
+}
+async function saPublish(){
+  try{
+    await saConnect();saMsg('Publishing…');var db=SA.app.firestore(),maps=_saAttMaps(120),n=0,batch=db.batch(),ops=0;
+    for(var i=0;i<students.length;i++){var s=students[i];if(!s||!s.appPin||s.status==='inactive'||s.leftDate)continue;
+      batch.set(db.collection('students').doc(_saSan(s.id)),saBuildDoc(s,maps));n++;ops++;if(ops>=400){await batch.commit();batch=db.batch();ops=0}}
+    batch.set(db.collection('center').doc('notices'),{items:saList('_erp_sa_notices')});
+    batch.set(db.collection('center').doc('papers'),{items:saList('_erp_sa_papers')});batch.set(db.collection('center').doc('tests'),{items:saPublicTests()});
+    await batch.commit();erpSet('_erp_sa_last',String(Date.now()));saMsg('✅ Published '+n+' student'+(n===1?'':'s')+' + notices + papers',true);saRender();
+  }catch(e){saMsg('Publish failed: '+(e.code||e.message||e),false)}
+}
+async function saPullActivity(){
+  try{await saConnect();saMsg('Loading activity…');var q=await SA.app.firestore().collection('activity').orderBy('ts','desc').limit(300).get();SA.act=q.docs.map(function(d){return d.data()});saMsg('✅ Activity loaded',true);saRender()}
+  catch(e){saMsg('Could not load: '+(e.code||e.message||e),false)}
+}
+function saAddNotice(){var t=document.getElementById('sa-nt').value.trim(),x=document.getElementById('sa-nx').value.trim(),g=document.getElementById('sa-ng').value.trim();if(!t)return;
+  var l=saList('_erp_sa_notices');l.unshift({id:'n'+Date.now(),date:_todayISO(),title:t,text:x,grade:g});erpSet('_erp_sa_notices',JSON.stringify(l.slice(0,30)));saRender()}
+function saDelNotice(i){var l=saList('_erp_sa_notices');l.splice(i,1);erpSet('_erp_sa_notices',JSON.stringify(l));saRender()}
+function saAddPaper(){var t=document.getElementById('sa-pt').value.trim();if(!t)return;
+  var l=saList('_erp_sa_papers');l.unshift({id:'p'+Date.now(),title:t,subject:document.getElementById('sa-ps').value.trim(),grade:document.getElementById('sa-pg').value.trim(),duration:parseInt(document.getElementById('sa-pd').value)||0,link:document.getElementById('sa-pl').value.trim(),date:_todayISO()});
+  erpSet('_erp_sa_papers',JSON.stringify(l.slice(0,60)));saRender()}
+function saDelPaper(i){var l=saList('_erp_sa_papers');l.splice(i,1);erpSet('_erp_sa_papers',JSON.stringify(l));saRender()}
+function saShare(id){
+  var s=students.find(function(x){return x.id===id});if(!s||!s.appPin)return;var c=saCfg();
+  var msg='அன்பான '+(s.parent||'Parent')+' அவர்களுக்கு,\n\n📱 *'+(CFG.CENTER.name||'')+' Student App* இப்போது தயார்!\n\n🔗 Link: '+(c.appUrl||'(app link)')+'\n🆔 Student ID: *'+s.id+'*\n🔑 PIN: *'+s.appPin+'*\n\nஇதில் '+s.name+'-இன் attendance, fees, marks, question papers பார்க்கலாம்.\n🔒 PIN-ஐ வேறு யாருடனும் பகிர வேண்டாம்.\n\n📞 '+(CFG.CENTER.phone||'');
+  if(typeof waSwipeCompose==='function'){waSwipeCompose(id);var sel=document.getElementById('wa-sw-type');if(sel){var o=document.createElement('option');o.value='app';o.textContent='📱 Student App login';sel.insertBefore(o,sel.firstChild);sel.value='app';document.getElementById('wa-sw-msg').value=msg}}
+  else openWA(s.phone,msg);
+}
+function saClassSel(id,st){var g={};students.forEach(function(s){if(s&&s.grade!=null&&String(s.grade).trim())g[String(s.grade).trim()]=1});var ks=Object.keys(g).sort(function(a,b){return a.localeCompare(b,undefined,{numeric:true})});
+  return '<select class="fi" id="'+id+'" style="'+st+'"><option value="">All classes</option>'+ks.map(function(k){return '<option value="'+escHtml(k)+'">Class '+escHtml(k)+'</option>'}).join('')+'</select>'}
+function saToggle(){SA.open=!SA.open;saRender()}
+function saRender(){
+  var h=document.getElementById('sa-card');
+  if(!h){var ref=document.getElementById('adm-dayorder-card');if(!ref)return;h=document.createElement('div');h.id='sa-card';ref.parentNode.insertBefore(h,ref)}
+  var c=saCfg(),has=!!(c.firebase&&c.firebase.apiKey),withPin=students.filter(function(s){return s&&s.appPin&&s.status!=='inactive'&&!s.leftDate}),noPin=students.filter(function(s){return s&&!s.appPin&&s.status!=='inactive'&&!s.leftDate}).length,last=parseInt(erpGet('_erp_sa_last')||'0');
+  var head='<div class="vz-card" style="margin-bottom:12px"><div class="vz-hd" style="cursor:pointer;margin-bottom:0" onclick="saToggle()">📱 Student App <span>'+(has?(last?'last published '+new Date(last).toLocaleString('en-IN',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}):'not published yet'):'not set up')+' · '+(SA.open?'▾':'▸')+'</span></div>';
+  if(!SA.open){h.innerHTML=head+'</div>';return}
+  var inp='width:100%;font-size:12px;margin-bottom:6px',b='';
+  b+='<div id="sa-msg" style="font-size:12px;margin:10px 0 6px;min-height:16px"></div>';
+  b+='<details'+(has?'':' open')+' style="margin-bottom:10px"><summary style="font-size:12px;font-weight:700;cursor:pointer">1 · Firebase setup'+(has?' ✅':'')+'</summary><div style="padding-top:8px"><textarea class="fi" id="sa-fb" rows="5" style="'+inp+';font-family:monospace" placeholder="Paste firebaseConfig { apiKey: ..., projectId: ... }">'+(has?escHtml(JSON.stringify(c.firebase,null,1)):'')+'</textarea><input class="fi" id="sa-em" style="'+inp+'" placeholder="Admin email (the Firebase user you created)" value="'+escHtml(c.adminEmail||'')+'"><input class="fi" id="sa-url" style="'+inp+'" placeholder="Student app web link (where student.html is hosted)" value="'+escHtml(c.appUrl||'')+'"><button class="btn btn-sm" onclick="saSaveCfg()">💾 Save setup</button></div></details>';
+  b+='<div style="font-size:12px;font-weight:700;margin:10px 0 6px">2 · Logins & publish</div><div style="font-size:11px;color:var(--tx2);margin-bottom:8px">'+withPin.length+' students have a login · '+noPin+' without</div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-sm" onclick="saCreateLogins()">🔑 Create logins ('+noPin+')</button><button class="btn btn-sm btn-p" onclick="saPublish()">☁️ Publish now</button><button class="btn btn-sm" onclick="saPullActivity()">📊 Student activity</button></div>';
+  if(withPin.length)b+='<div style="margin-top:10px;max-height:240px;overflow-y:auto;border:.5px solid var(--br);border-radius:10px">'+withPin.map(function(s){return '<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-bottom:.5px solid var(--br);font-size:12px"><div style="flex:1;min-width:0"><b>'+escHtml(s.name)+'</b><div style="font-size:10px;color:var(--tx3)">'+escHtml(s.id)+' · PIN '+escHtml(s.appPin)+'</div></div><button class="btn btn-sm" onclick="saShare(\''+s.id+'\')">📱 Send</button><button class="btn btn-sm" onclick="saResetPin(\''+s.id+'\')" title="New PIN">🔄</button></div>'}).join('')+'</div>';
+  var N=saList('_erp_sa_notices'),P=saList('_erp_sa_papers');
+  b+='<div style="font-size:12px;font-weight:700;margin:14px 0 6px">3 · Notices</div><input class="fi" id="sa-nt" style="'+inp+'" placeholder="Title"><textarea class="fi" id="sa-nx" rows="2" style="'+inp+'" placeholder="Message"></textarea><div style="display:flex;gap:6px">'+saClassSel('sa-ng','flex:1;font-size:12px')+'<button class="btn btn-sm" onclick="saAddNotice()">➕ Add</button></div>'
+   +N.map(function(n,i){return '<div style="display:flex;gap:8px;font-size:12px;padding:6px 0;border-bottom:.5px solid var(--br)"><div style="flex:1"><b>'+escHtml(n.title)+'</b>'+(n.grade?' <span style="color:var(--tx3)">(Class '+escHtml(n.grade)+')</span>':'')+'<div style="color:var(--tx2)">'+escHtml(n.text||'')+'</div></div><button class="btn btn-sm" onclick="saDelNotice('+i+')">🗑</button></div>'}).join('');
+  b+='<div style="font-size:12px;font-weight:700;margin:14px 0 6px">4 · Question papers</div><input class="fi" id="sa-pt" style="'+inp+'" placeholder="Paper title"><div style="display:flex;gap:6px;margin-bottom:6px"><input class="fi" id="sa-ps" style="flex:1;font-size:12px" placeholder="Subject">'+saClassSel('sa-pg','width:110px;font-size:12px')+'<input class="fi" id="sa-pd" type="number" style="width:90px;font-size:12px" placeholder="Minutes"></div><div style="display:flex;gap:6px"><input class="fi" id="sa-pl" style="flex:1;font-size:12px" placeholder="Paper link (Google Drive etc., optional)"><button class="btn btn-sm" onclick="saAddPaper()">➕ Add</button></div>'
+   +P.map(function(x,i){return '<div style="display:flex;gap:8px;font-size:12px;padding:6px 0;border-bottom:.5px solid var(--br)"><div style="flex:1"><b>'+escHtml(x.title)+'</b> <span style="color:var(--tx3)">'+escHtml(x.subject||'')+(x.grade?' · Class '+escHtml(x.grade):'')+(x.duration?' · '+x.duration+' min':'')+'</span></div><button class="btn btn-sm" onclick="saDelPaper('+i+')">🗑</button></div>'}).join('');
+  b+=saTestsHtml(inp);b+='<div style="font-size:11px;color:var(--tx3);margin-top:8px">After adding notices / papers press ☁️ Publish now.</div>';
+  if(SA.act){
+    var last={},ev=[];SA.act.forEach(function(a){if(a.type==='login'&&!last[a.sid])last[a.sid]=a;if(a.type!=='login')ev.push(a)});
+    b+='<div style="font-size:12px;font-weight:700;margin:14px 0 6px">📊 Student activity</div>'+Object.keys(last).map(function(k){var a=last[k];return '<div style="font-size:12px;padding:5px 0;border-bottom:.5px solid var(--br)">🟢 <b>'+escHtml(a.name||k)+'</b> — last login '+new Date(a.ts).toLocaleString('en-IN',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})+'</div>'}).join('')
+     +ev.slice(0,25).map(function(a){var lab=a.type==='paper_start'?'▶ started':a.type==='paper_finish'?'✅ finished ('+(a.minutesUsed||0)+' min)':'📄 opened';return '<div style="font-size:12px;padding:5px 0;border-bottom:.5px solid var(--br)"><b>'+escHtml(a.name||a.sid)+'</b> '+lab+' <i>'+escHtml(a.title||a.paper||'')+'</i> <span style="color:var(--tx3)">'+new Date(a.ts).toLocaleString('en-IN',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})+'</span></div>'}).join('');
+  }
+  h.innerHTML=head+b+'</div>';
+}
+(function(){var o=window.renderAdminPanel;if(typeof o!=='function')return;window.renderAdminPanel=function(){var r=o.apply(this,arguments);try{saRender()}catch(e){console.error(e)}return r}})();
+/* ===== MCQ tests (admin) ===== */
+function saParseMcq(txt){
+  var qs=[],cur=null;
+  String(txt||'').split(/\r?\n/).forEach(function(l){
+    var m;if(!l.trim())return;
+    if((m=l.match(/^\s*(?:ans(?:wer)?)\s*[:\-=]\s*\(?([A-Da-d])/i))){if(cur)cur.a='ABCD'.indexOf(m[1].toUpperCase());return}
+    if((m=l.match(/^\s*\(?([A-Da-d])[.)]\s*(.*)/))&&cur){cur.o.push(m[2].trim());return}
+    if((m=l.match(/^\s*(?:Q\s*)?\d+\s*[.)]\s*(.*)/i))){cur={q:m[1].trim(),o:[],a:-1,m:1};qs.push(cur);return}
+    if(cur&&!cur.o.length)cur.q+='\n'+l.trim();
+  });
+  return qs;
+}
+function saMcqPreview(){var qs=saParseMcq(document.getElementById('sa-mq').value),bad=qs.filter(function(q){return q.o.length<2||q.a<0}).length,e=document.getElementById('sa-mqp');if(e)e.textContent=qs.length+' questions found'+(bad?' · ⚠️ '+bad+' missing options/answer':' ✓')}
+function saAddTest(){
+  var t=document.getElementById('sa-mt').value.trim(),qs=saParseMcq(document.getElementById('sa-mq').value),m=parseFloat(document.getElementById('sa-mm').value)||1;
+  if(!t||!qs.length){saMsg('Enter test title and questions',false);return}
+  if(qs.some(function(q){return q.o.length<2||q.a<0})){saMsg('Some questions have no options / "Ans: B" line',false);return}
+  qs.forEach(function(q){q.m=m});
+  var l=saList('_erp_sa_tests');l.unshift({id:'t'+Date.now(),title:t,subject:document.getElementById('sa-ms').value.trim(),grade:document.getElementById('sa-mg').value.trim(),duration:parseInt(document.getElementById('sa-md').value)||30,start:document.getElementById('sa-mst').value,end:document.getElementById('sa-men').value,published:true,qs:qs});
+  erpSet('_erp_sa_tests',JSON.stringify(l.slice(0,40)));saMsg('✅ Test added — press Publish now',true);saRender();
+}
+function saDelTest(i){if(!confirm('Delete this test?'))return;var l=saList('_erp_sa_tests');l.splice(i,1);erpSet('_erp_sa_tests',JSON.stringify(l));saRender()}
+function saTogTest(i){var l=saList('_erp_sa_tests');l[i].published=l[i].published===false;erpSet('_erp_sa_tests',JSON.stringify(l));saRender()}
+function saPublicTests(){return saList('_erp_sa_tests').map(function(t){return {id:t.id,title:t.title,subject:t.subject,grade:t.grade,duration:t.duration,start:t.start||'',end:t.end||'',published:t.published!==false,qs:t.qs.map(function(q){return {q:q.q,o:q.o,m:q.m}})}})}
+async function saGradeTests(){
+  try{
+    await saConnect();saMsg('Grading…');var db=SA.app.firestore(),T=saList('_erp_sa_tests'),R={};
+    var at=await db.collection('attempts').get(),st=await db.collection('attemptStarts').get(),S={};
+    st.docs.forEach(function(d){S[d.id]=d.data()});
+    at.docs.forEach(function(d){var a=d.data(),t=T.find(function(x){return x.id===a.testId});if(!t)return;
+      var sc=0,tot=0;t.qs.forEach(function(q,k){tot+=q.m;if(a.ans&&a.ans[k]===q.a)sc+=q.m});
+      var s=S[d.id],late=false;if(s&&s.at&&a.at)late=(a.at.toMillis()-s.at.toMillis())>(t.duration*60+90)*1000;
+      (R[a.testId]=R[a.testId]||{})[a.sid]={score:sc,total:tot,late:late,name:a.name}});
+    Object.keys(R).forEach(function(tid){var arr=Object.keys(R[tid]).map(function(k){return R[tid][k]}).filter(function(x){return !x.late}),top=arr.reduce(function(m,x){return Math.max(m,x.score)},-1),n=arr.filter(function(x){return x.score===top}).length;
+      Object.keys(R[tid]).forEach(function(k){var r=R[tid][k];r.rank1=!r.late&&r.score===top&&n===1&&arr.length>1;r.topShared=!r.late&&r.score===top&&n>1})});
+    erpSet('_erp_sa_results',JSON.stringify(R));saMsg('✅ Graded. Press Publish now to send each student only their own result.',true);saRender();
+  }catch(e){saMsg('Grade failed: '+(e.code||e.message||e),false)}
+}
+function saMyResults(sid){var R={};try{R=JSON.parse(erpGet('_erp_sa_results')||'{}')}catch(e){}var T=saList('_erp_sa_tests'),k=_saSan(sid),out=[];
+  Object.keys(R).forEach(function(tid){var r=R[tid][k],t=T.find(function(x){return x.id===tid});if(r&&t&&!r.late)out.push({testId:tid,title:t.title,score:r.score,total:r.total,rank1:!!r.rank1,topShared:!!r.topShared})});return out}
+function saTestsHtml(inp){
+  var L=saList('_erp_sa_tests'),R={};try{R=JSON.parse(erpGet('_erp_sa_results')||'{}')}catch(e){}
+  var h='<div style="font-size:12px;font-weight:700;margin:14px 0 6px">5 · MCQ tests</div><input class="fi" id="sa-mt" style="'+inp+'" placeholder="Test title"><div style="display:flex;gap:6px;margin-bottom:6px"><input class="fi" id="sa-ms" style="flex:1;font-size:12px" placeholder="Subject">'+saClassSel('sa-mg','width:110px;font-size:12px')+'<input class="fi" id="sa-md" type="number" style="width:70px;font-size:12px" placeholder="Min"><input class="fi" id="sa-mm" type="number" style="width:60px;font-size:12px" placeholder="Mark"></div><div style="display:flex;gap:6px;margin-bottom:6px;font-size:11px"><label style="flex:1">Opens<input class="fi" id="sa-mst" type="datetime-local" style="width:100%;font-size:12px"></label><label style="flex:1">Closes<input class="fi" id="sa-men" type="datetime-local" style="width:100%;font-size:12px"></label></div>'
+   +'<textarea class="fi" id="sa-mq" rows="7" oninput="saMcqPreview()" style="'+inp+';font-family:monospace" placeholder="1. Question text\nA) option\nB) option\nC) option\nD) option\nAns: B\n\n2. Next question..."></textarea><div style="display:flex;gap:8px;align-items:center"><button class="btn btn-sm" onclick="saAddTest()">➕ Add test</button><span id="sa-mqp" style="font-size:11px;color:var(--tx3)"></span></div>';
+  h+=L.map(function(t,i){var r=R[t.id]||{},ks=Object.keys(r),rows=ks.sort(function(a,b){return r[b].score-r[a].score}).map(function(k){return '<div style="font-size:11px;display:flex;justify-content:space-between;padding:2px 0"><span>'+escHtml(r[k].name||k)+(r[k].late?' ⏰ late':'')+(r[k].rank1?' 🏆':'')+'</span><b>'+r[k].score+'/'+r[k].total+'</b></div>'}).join('');
+    return '<div style="font-size:12px;padding:8px 0;border-bottom:.5px solid var(--br)"><div style="display:flex;gap:8px;align-items:center"><div style="flex:1"><b>'+escHtml(t.title)+'</b> <span style="color:var(--tx3)">'+t.qs.length+' Qs · '+t.duration+' min'+(t.grade?' · Class '+escHtml(t.grade):'')+(t.published===false?' · hidden':'')+'</span></div><button class="btn btn-sm" onclick="saTogTest('+i+')">'+(t.published===false?'Show':'Hide')+'</button><button class="btn btn-sm" onclick="saDelTest('+i+')">🗑</button></div>'+(ks.length?'<div style="margin-top:4px;padding:6px 8px;background:var(--bg2,rgba(0,0,0,.04));border-radius:8px">'+rows+'</div>':'')+'</div>'}).join('');
+  return h+'<div style="margin-top:8px"><button class="btn btn-sm" onclick="saGradeTests()">🧮 Collect &amp; grade attempts</button></div>';
+}
 </script>
 
 <div id="xt-bg" onclick="if(event.target===this)xtClose()"><div id="xt-box">

@@ -708,6 +708,7 @@ tbody tr:hover td{background:var(--bg)}
 .tube-wrap::-webkit-scrollbar{height:6px}.tube-wrap::-webkit-scrollbar-thumb{background:var(--br2);border-radius:3px}
 @media(max-width:600px){#wa-type-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}}
 .lic-banner,button[onclick*="openUpgrade"],a[onclick*="openUpgrade"]{display:none!important}
+#sa-card,#sa-card *{animation:none!important;transition:none!important}
 </style>
 <script>
 /* ═══════════════════════════════════════════════════════════════
@@ -25505,11 +25506,21 @@ function saSaveCfg(){
   if(!fb||!fb.apiKey||!fb.projectId){saMsg('Firebase config not valid — paste the firebaseConfig { ... } block',false);return}
   erpSet('_erp_sa_cfg',JSON.stringify({firebase:fb,adminEmail:em,appUrl:url}));SA.ready=false;saMsg('✅ Saved',true);saRender();
 }
+function saGK(s){var g=String(s.grade==null?'':s.grade).trim(),m=g.match(/\d+/);return m?m[0]:g}
+function saCls(){try{var c=JSON.parse(erpGet('_erp_sa_cls')||'null');if(c)return c}catch(e){}return ['10','12']}
+function saInScope(s){return !!s&&s.status!=='inactive'&&!s.leftDate&&saCls().indexOf(saGK(s))>-1}
+function saSetCls(){var a=[];document.querySelectorAll('.sa-cls:checked').forEach(function(c){a.push(c.value)});erpSet('_erp_sa_cls',JSON.stringify(a));saRender()}
+async function saCleanOthers(){
+  var o=students.filter(function(s){return s&&s.appPin&&!saInScope(s)});if(!o.length){saMsg('Nothing to clean',true);return}
+  if(!confirm('Remove app login of '+o.length+' student(s) outside the selected classes?'))return;
+  try{await saConnect();var db=SA.app.firestore();for(var i=0;i<o.length;i++){try{await db.collection('students').doc(_saSan(o[i].id)).delete()}catch(e){}o[i].appPin=''}
+    saveStudents();saMsg('✅ Removed '+o.length+' logins',true);saRender()}catch(e){saMsg(String(e.code||e),false)}
+}
 async function saCreateLogins(){
   try{
     await saConnect();saMsg('Creating logins…');
     var c=saCfg(),app2=firebase.apps.find(function(a){return a.name==='creator'})||firebase.initializeApp(c.firebase,'creator'),a2=app2.auth(),n=0,fail=0;
-    for(var i=0;i<students.length;i++){var s=students[i];if(!s||s.status==='inactive'||s.leftDate||s.appPin)continue;
+    for(var i=0;i<students.length;i++){var s=students[i];if(!saInScope(s)||s.appPin)continue;
       var pin=String(Math.floor(100000+(crypto.getRandomValues(new Uint32Array(1))[0]%900000))),ver=1;
       try{await a2.createUserWithEmailAndPassword(_saSan(s.id)+'-v'+ver+SA_DOMAIN,pin);s.appPin=pin;s.appVer=ver;n++;await a2.signOut()}
       catch(e){if(e.code==='auth/email-already-in-use'){s.appVer=(s.appVer||1)+1;try{await a2.createUserWithEmailAndPassword(_saSan(s.id)+'-v'+s.appVer+SA_DOMAIN,pin);s.appPin=pin;n++;await a2.signOut()}catch(e2){fail++}}else fail++}}
@@ -25567,13 +25578,13 @@ function saToggle(){SA.open=!SA.open;saRender()}
 function saRender(){
   var h=document.getElementById('sa-card');
   if(!h){var ref=document.getElementById('adm-dayorder-card');if(!ref)return;h=document.createElement('div');h.id='sa-card';ref.parentNode.insertBefore(h,ref)}
-  var c=saCfg(),has=!!(c.firebase&&c.firebase.apiKey),withPin=students.filter(function(s){return s&&s.appPin&&s.status!=='inactive'&&!s.leftDate}),noPin=students.filter(function(s){return s&&!s.appPin&&s.status!=='inactive'&&!s.leftDate}).length,last=parseInt(erpGet('_erp_sa_last')||'0');
+  var c=saCfg(),has=!!(c.firebase&&c.firebase.apiKey),withPin=students.filter(function(s){return s&&s.appPin&&s.status!=='inactive'&&!s.leftDate}),noPin=students.filter(function(s){return saInScope(s)&&!s.appPin}).length,outside=students.filter(function(s){return s&&s.appPin&&!saInScope(s)}).length,allCls=(function(){var g={};students.forEach(function(s){if(s&&s.status!=='inactive'&&!s.leftDate&&saGK(s))g[saGK(s)]=1});return Object.keys(g).sort(function(a,b){return a.localeCompare(b,undefined,{numeric:true})})})(),last=parseInt(erpGet('_erp_sa_last')||'0');
   var head='<div class="vz-card" style="margin-bottom:12px"><div class="vz-hd" style="cursor:pointer;margin-bottom:0" onclick="saToggle()">📱 Student App <span>'+(has?(last?'last published '+new Date(last).toLocaleString('en-IN',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}):'not published yet'):'not set up')+' · '+(SA.open?'▾':'▸')+'</span></div>';
   if(!SA.open){h.innerHTML=head+'</div>';return}
   var inp='width:100%;font-size:12px;margin-bottom:6px',b='';
   b+='<div id="sa-msg" style="font-size:12px;margin:10px 0 6px;min-height:16px"></div>';
   b+='<details'+(has?'':' open')+' style="margin-bottom:10px"><summary style="font-size:12px;font-weight:700;cursor:pointer">1 · Firebase setup'+(has?' ✅':'')+'</summary><div style="padding-top:8px"><textarea class="fi" id="sa-fb" rows="5" style="'+inp+';font-family:monospace" placeholder="Paste firebaseConfig { apiKey: ..., projectId: ... }">'+(has?escHtml(JSON.stringify(c.firebase,null,1)):'')+'</textarea><input class="fi" id="sa-em" style="'+inp+'" placeholder="Admin email (the Firebase user you created)" value="'+escHtml(c.adminEmail||'')+'"><input class="fi" id="sa-url" style="'+inp+'" placeholder="Student app web link (where student.html is hosted)" value="'+escHtml(c.appUrl||'')+'"><button class="btn btn-sm" onclick="saSaveCfg()">💾 Save setup</button></div></details>';
-  b+='<div style="font-size:12px;font-weight:700;margin:10px 0 6px">2 · Logins & publish</div><div style="font-size:11px;color:var(--tx2);margin-bottom:8px">'+withPin.length+' students have a login · '+noPin+' without</div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-sm" onclick="saCreateLogins()">🔑 Create logins ('+noPin+')</button><button class="btn btn-sm btn-p" onclick="saPublish()">☁️ Publish now</button><button class="btn btn-sm" onclick="saPullActivity()">📊 Student activity</button></div>';
+  b+='<div style="font-size:12px;font-weight:700;margin:10px 0 6px">2 · Logins & publish</div><div style="font-size:12px;margin-bottom:8px">Create logins for: '+allCls.map(function(k){return '<label style="margin-right:12px"><input type="checkbox" class="sa-cls" value="'+escHtml(k)+'"'+(saCls().indexOf(k)>-1?' checked':'')+' onchange="saSetCls()"> Class '+escHtml(k)+'</label>'}).join('')+'</div>'+(outside?'<div style="font-size:11px;margin-bottom:8px;color:#dc2626">'+outside+' student(s) outside these classes already have a login. <a href="#" onclick="saCleanOthers();return false">Remove them</a></div>':'')+'<div style="font-size:11px;color:var(--tx2);margin-bottom:8px">'+withPin.length+' students have a login · '+noPin+' without</div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-sm" onclick="saCreateLogins()">🔑 Create logins ('+noPin+')</button><button class="btn btn-sm btn-p" onclick="saPublish()">☁️ Publish now</button><button class="btn btn-sm" onclick="saPullActivity()">📊 Student activity</button></div>';
   if(withPin.length)b+='<div style="margin-top:10px;max-height:240px;overflow-y:auto;border:.5px solid var(--br);border-radius:10px">'+withPin.map(function(s){return '<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-bottom:.5px solid var(--br);font-size:12px"><div style="flex:1;min-width:0"><b>'+escHtml(s.name)+'</b><div style="font-size:10px;color:var(--tx3)">'+escHtml(s.id)+' · PIN '+escHtml(s.appPin)+'</div></div><button class="btn btn-sm" onclick="saShare(\''+s.id+'\')">📱 Send</button><button class="btn btn-sm" onclick="saResetPin(\''+s.id+'\')" title="New PIN">🔄</button></div>'}).join('')+'</div>';
   var N=saList('_erp_sa_notices'),P=saList('_erp_sa_papers');
   b+='<div style="font-size:12px;font-weight:700;margin:14px 0 6px">3 · Notices</div><input class="fi" id="sa-nt" style="'+inp+'" placeholder="Title"><textarea class="fi" id="sa-nx" rows="2" style="'+inp+'" placeholder="Message"></textarea><div style="display:flex;gap:6px">'+saClassSel('sa-ng','flex:1;font-size:12px')+'<button class="btn btn-sm" onclick="saAddNotice()">➕ Add</button></div>'

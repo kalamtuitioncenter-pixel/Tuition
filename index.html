@@ -25124,10 +25124,9 @@ function renderClassWiseAttendance(){
   var order=['KG','1','2','3','4','5','6','7','8','9','10','11','12','NA'];
   var gr=Object.keys(agg).sort(function(x,y){return order.indexOf(x)-order.indexOf(y)});
   if(!gr.length){var lv=(typeof getTodayLeave==='function')?getTodayLeave(todayStr):null;el.innerHTML=lv?'🏖 Today is a leave day':'Attendance not taken yet';return}
-  el.innerHTML='<div style="font-size:10px;color:var(--tx3);margin-bottom:8px">Day average — morning + evening together</div><div class="wv-grid">'+gr.map(function(g){
-    var x=agg[g],pct=Math.round(x.s/x.n*100),cls=pct>=90?'':(pct>=75?'mid':'low');
-    return '<div class="wv-it"><div class="wv-c '+cls+'"><div class="wv-l" data-h="'+pct+'"></div><div class="wv-p">'+pct+'%</div></div><div style="font-size:11px;font-weight:700;color:var(--tx);margin-top:6px">'+(g==='KG'?'KG':g==='NA'?'No class':'Class '+g)+'</div><div style="font-size:10px;color:var(--tx3)">✅ '+x.full+(x.part?' · ◐ '+x.part:'')+' · ❌ '+x.none+'</div></div>'}).join('')+'</div>';
-  setTimeout(function(){el.querySelectorAll('.wv-l').forEach(function(w){w.style.height=w.dataset.h+'%'})},60);
+  el.innerHTML='<div style="font-size:10px;color:var(--tx3);margin-bottom:8px">Day average — morning + evening together</div><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px">'+gr.map(function(g){
+    var x=agg[g],pct=Math.round(x.s/x.n*100),col=pct>=90?'#16a34a':pct>=75?'#ca8a04':'#dc2626';
+    return '<div style="border:.5px solid var(--br);border-radius:10px;padding:8px 10px;background:var(--card)"><div style="font-size:11px;font-weight:700;color:var(--tx)">'+(g==='KG'?'KG':g==='NA'?'No class':'Class '+g)+'</div><div style="font-size:18px;font-weight:800;color:'+col+'">'+pct+'%</div><div style="font-size:10px;color:var(--tx3)">✅ '+x.full+' full · ⚠️ '+x.part+' part · ❌ '+x.none+' absent</div></div>'}).join('')+'</div>';
 }
 function renderDashOverview(){
   var h=vzHost('dash-viz2','#dash-viz');if(!h)return;
@@ -25169,37 +25168,6 @@ function _wvTone(p){return p>=60?'':(p>=30?'mid':'low')}
 function _wvSmooth(pp,lo,hi){var cl=function(v){return (lo===undefined)?v:Math.max(lo,Math.min(hi,v))};var o='';for(var i=0;i<pp.length-1;i++){var p0=pp[i-1]||pp[i],p1=pp[i],p2=pp[i+1],p3=pp[i+2]||p2;
   o+=' C'+(p1[0]+(p2[0]-p0[0])/6).toFixed(1)+' '+cl(p1[1]+(p2[1]-p0[1])/6).toFixed(1)+' '+(p2[0]-(p3[0]-p1[0])/6).toFixed(1)+' '+cl(p2[1]-(p3[1]-p1[1])/6).toFixed(1)+' '+p2[0].toFixed(1)+' '+p2[1].toFixed(1)}return o}
 
-/* Commute Overview */
-(function(){var o=window.renderCommuteDashCard;if(typeof o!=='function')return;
-window.renderCommuteDashCard=function(){
-  var r=o.apply(this,arguments);
-  try{
-    var el=document.getElementById('dash-commute-cards');if(!el)return r;
-    var sel=document.getElementById('dash-commute-session'),mode=sel?sel.value:'all',pool=students.filter(function(s){return s&&s.status==='active'});
-    if(mode==='morning'||mode==='evening'){var ids=_todayAttPresentIds(mode);pool=pool.filter(function(s){return ids.has(s.id)})}
-    var cnt={},un=0;pool.forEach(function(s){if(s.commute&&COMMUTE_MODES.some(function(m){return m.v===s.commute}))cnt[s.commute]=(cnt[s.commute]||0)+1;else un++});
-    var tot=pool.length||1,warn=el.querySelector('div[style*="grid-column"]');var w=warn?warn.outerHTML:'';
-    el.style.display='block';
-    el.innerHTML='<div class="wv-grid">'+COMMUTE_MODES.map(function(m){return _wvCircle((cnt[m.v]||0)/tot*100,'',m.emoji+' '+m.label,cnt[m.v]||0)}).join('')+(un?_wvCircle(un/tot*100,'low','❔ Not set',un):'')+'</div>'+w.replace('grid-column:1/-1;','');
-    _wvFill(el);
-  }catch(e){console.error(e)}
-  return r}})();
-
-/* Class-wise strength */
-(function(){var o=window.renderClassStrength;if(typeof o!=='function')return;
-window.renderClassStrength=function(){
-  var r=o.apply(this,arguments);
-  try{
-    var el=document.getElementById('dash-class-bars');if(!el)return r;
-    var act=students.filter(function(s){return s&&s.status==='active'});if(!act.length)return r;
-    var g={};act.forEach(function(s){var k=String(s.grade||'Unknown').trim();var x=g[k]||(g[k]={t:0,m:0,e:0});x.t++;var se=(s.session||s.batch||'').toLowerCase();if(se.indexOf('morning')>=0)x.m++;else if(se.indexOf('evening')>=0)x.e++});
-    var ord=function(k){return k==='KG'?-1:(isNaN(parseInt(k))?999:parseInt(k))},keys=Object.keys(g).sort(function(a,b){return ord(a)-ord(b)}),mx=Math.max.apply(null,keys.map(function(k){return g[k].t}));
-    el.style.display='block';
-    el.innerHTML='<div class="wv-grid">'+keys.map(function(k){var x=g[k];return '<div class="wv-it"><div class="wv-c" style="'+'"><div class="wv-l" data-h="'+Math.round(x.t/mx*100)+'"></div><div class="wv-p">'+x.t+'</div></div><div style="font-size:11px;font-weight:700;color:var(--tx);margin-top:6px">'+(k==='KG'?'🎒 KG':'📚 Class '+k)+'</div>'+((x.m||x.e)?'<div style="font-size:10px;color:var(--tx3)">'+(x.m?'☀️'+x.m:'')+(x.e?' 🌙'+x.e:'')+'</div>':'')+'</div>'}).join('')+'</div>';
-    _wvFill(el);
-  }catch(e){console.error(e)}
-  return r}})();
-
 /* Income trend (wave) + Fee status (water circle) */
 function renderWaveCharts(){
   var ci=document.getElementById('chart-income'),cf=document.getElementById('chart-fee');
@@ -25211,7 +25179,8 @@ function renderWaveCharts(){
   fees.filter(function(f){return f&&!f._deleted&&f.type==='admission'&&f.status==='paid'}).forEach(function(f){
     var k=null;try{if(f.paidOn){var p=f.paidOn.indexOf('/')>=0?f.paidOn.split('/'):null,dd=p?new Date(+p[2],+p[1]-1,+p[0]):new Date(f.paidOn);if(!isNaN(dd))k=CM[dd.getMonth()]}}catch(e){}
     var ix=k?mon.indexOf(k):mon.length-1;if(ix>=0)inc[ix]+=(f.paid||0)});
-  if(ci){var box=ci.parentNode;ci.style.display='none';var h=document.getElementById('wv-income');if(!h){h=document.createElement('div');h.id='wv-income';box.appendChild(h)}
+  if(ci){ci.style.display='';var _w=document.getElementById('wv-income');if(_w)_w.remove()}
+  if(false&&ci){var box=ci.parentNode;ci.style.display='none';var h=document.getElementById('wv-income');if(!h){h=document.createElement('div');h.id='wv-income';box.appendChild(h)}
     var W=360,H=170,L=6,R=6,T=14,B=20,mx=Math.max.apply(null,inc.concat(pen).concat([1])),X=function(i){return L+(W-L-R)*i/5},Y=function(v){return T+(H-T-B)*(1-v/mx)};
     function series(vals,col,id){var pts=vals.map(function(v,i){return [X(i),Y(v)]}),d='M'+pts[0][0].toFixed(1)+' '+pts[0][1].toFixed(1)+_wvSmooth(pts,T,H-B),
       a='M-14 '+pts[0][1].toFixed(1)+' L'+pts[0][0].toFixed(1)+' '+pts[0][1].toFixed(1)+_wvSmooth(pts,T,H-B)+' L'+(W+14)+' '+pts[5][1].toFixed(1)+' L'+(W+14)+' '+(H-B)+' L-14 '+(H-B)+' Z';
@@ -25282,9 +25251,9 @@ function renderFeeStatusWave(){
     if(f.status==='overdue'){over+=bal;no++}else if(f.status==='paid'||bal<=0){np++}else{pend+=bal;nn++}});
   var gt=paid+pend+over,pc=gt?paid/gt*100:0;
   h.innerHTML='<div style="display:flex;justify-content:flex-end;margin-bottom:8px"><select class="fi" style="width:auto;font-size:11px;padding:4px 8px" onchange="_fsYM=this.value;renderFeeStatusWave()">'+opts+'</select></div>'
-   +(rec.length?'<div class="vz-row" style="justify-content:center;gap:18px"><div class="wv-grid" style="justify-content:center">'+_wvCircle(pc,pc>=70?'':(pc>=40?'mid':'low'),'Collected','',true)+'</div><div class="vz-leg" style="max-width:190px"><div class="vz-li"><i style="background:#16a34a"></i>Paid<b>'+_inr(paid)+'</b></div><div class="vz-li"><i style="background:#ca8a04"></i>Pending<b>'+_inr(pend)+'</b></div><div class="vz-li"><i style="background:#dc2626"></i>Overdue<b>'+_inr(over)+'</b></div></div></div><div style="font-size:10px;color:var(--tx3);text-align:center;margin-top:6px">'+lbl+' · '+rec.length+' bills</div>'
+   +(rec.length?'<div class="vz-row" style="justify-content:center;gap:18px">'+vzPie([{n:'Paid',v:paid,c:'#16a34a'},{n:'Pending',v:pend,c:'#ca8a04'},{n:'Overdue',v:over,c:'#dc2626'}],120)+'<div class="vz-leg" style="max-width:190px"><div class="vz-li"><i style="background:#16a34a"></i>Paid<b>'+_inr(paid)+'</b></div><div class="vz-li"><i style="background:#ca8a04"></i>Pending<b>'+_inr(pend)+'</b></div><div class="vz-li"><i style="background:#dc2626"></i>Overdue<b>'+_inr(over)+'</b></div></div></div><div style="font-size:10px;color:var(--tx3);text-align:center;margin-top:6px">'+lbl+' · '+rec.length+' bills</div>'
     :'<div style="text-align:center;font-size:12px;color:var(--tx3);padding:26px 0">No fee records for '+lbl+'</div>');
-  _wvFill(h);
+  if(typeof vzGo==='function')vzGo(h);
 }
 /* Fee collection tubes: ascending by class */
 function renderTubes(){
@@ -25551,7 +25520,7 @@ function saBuildDoc(s,maps){
   var att={};Object.keys(maps).forEach(function(d){var r=maps[d][s.id];if(r)att[d]=(r.y===0)?'A':((r.late>0&&r.y===r.n)?'L':'P')});
   var fe=fees.filter(function(f){return f&&!f._deleted&&(f.studentId===s.id||f.student===s.name)&&f.status!=='carried'}).slice(0,24).map(function(f){var pd=f.paidOn||'';if(!pd&&f.paidAtTs){try{pd=new Date(f.paidAtTs).toLocaleDateString('en-IN')}catch(e){}}return {month:f.month||'',total:f.total||0,paid:f.paid||0,balance:f.balance||0,status:f.status||'pending',rcpt:f.rcpt||'',paidOn:pd,mode:f.mode||''}});
   var mk=[];try{mk=getStudentMarks(s.id).map(function(m){return {exam:m.examName||'',subject:m.subject||'',date:m.date||'',marks:m.marks==null?0:m.marks,max:m.maxMarks||0,absent:!!m.absent}})}catch(e){}
-  return {id:s.id,name:s.name,grade:String(s.grade||''),batch:s.course||'',parent:s.parent||'',ver:s.appVer||1,updated:Date.now(),att:att,fees:fe,marks:mk,results:saMyResults(s.id)};
+  return {id:s.id,name:s.name,grade:String(s.grade||''),batch:s.course||'',parent:s.parent||'',ver:s.appVer||1,updated:Date.now(),att:att,fees:fe,marks:mk};
 }
 async function saPublish(){
   try{
@@ -25559,7 +25528,7 @@ async function saPublish(){
     for(var i=0;i<students.length;i++){var s=students[i];if(!s||!s.appPin||s.status==='inactive'||s.leftDate)continue;
       batch.set(db.collection('students').doc(_saSan(s.id)),saBuildDoc(s,maps));n++;ops++;if(ops>=400){await batch.commit();batch=db.batch();ops=0}}
     batch.set(db.collection('center').doc('notices'),{items:saList('_erp_sa_notices')});
-    batch.set(db.collection('center').doc('papers'),{items:saList('_erp_sa_papers')});batch.set(db.collection('center').doc('tests'),{items:saPublicTests()});
+    batch.set(db.collection('center').doc('papers'),{items:saList('_erp_sa_papers')});
     await batch.commit();erpSet('_erp_sa_last',String(Date.now()));saMsg('✅ Published '+n+' student'+(n===1?'':'s')+' + notices + papers',true);saRender();
   }catch(e){saMsg('Publish failed: '+(e.code||e.message||e),false)}
 }
@@ -25588,6 +25557,26 @@ async function saPullMsgs(){
 }
 async function saDelMsg(i){var m=SA.msgs&&SA.msgs[i];if(!m)return;try{await saConnect();await SA.app.firestore().collection('messages').doc(m._id).delete();SA.msgs.splice(i,1);saRender()}catch(e){saMsg('Failed: '+(e.code||e),false)}}
 function saMsgReset(i){var m=SA.msgs[i],s=students.find(function(x){return _saSan(x.id)===m.sid});if(s)saResetPin(s.id);else saMsg('Student not found',false)}
+
+/* ===== Import approved test marks (from KTC Test Manager) into Marks & Exams ===== */
+async function saImportMarks(){
+  try{
+    await saConnect();saMsg('Importing test marks…');
+    var q=await SA.app.firestore().collection('adminFeed').get(),nNew=0,nUpd=0;
+    q.docs.forEach(function(d){var f=d.data(),eid='tm'+f.testId,key='_erp_marks_'+eid,marks={},max=f.total||0,pass=Math.round(max*0.35);
+      Object.keys(f.scores||{}).forEach(function(sid){var st=students.find(function(x){return _saSan(x.id)===sid});if(!st)return;var v=f.scores[sid];marks[st.id]={marks:v.score,absent:false,pass:v.score>=pass}});
+      if(!Object.keys(marks).length)return;
+      var ix=exams.findIndex(function(e){return e.id===eid}),ex={id:eid,name:f.title,subject:f.subject||'Test',type:'test',date:f.date,maxMarks:max,passMarks:pass,syllabus:'',duration:0,batch:f.grade?('Class '+f.grade):'All',color:'#7c3aed'};
+      if(ix===-1){exams.unshift(ex);nNew++}else{exams[ix]=Object.assign(exams[ix],ex);nUpd++}
+      var rec={examId:eid,examName:f.title,subject:ex.subject,maxMarks:max,passMarks:pass,syllabus:'',batch:ex.batch,date:f.date,marks:marks};
+      window.__ERP_MARKS_CACHE__=window.__ERP_MARKS_CACHE__||{};window.__ERP_MARKS_CACHE__[key]=rec;
+      window.__ERP_MARKS_INDEX_CACHE__=window.__ERP_MARKS_INDEX_CACHE__||[];if(window.__ERP_MARKS_INDEX_CACHE__.indexOf(key)<0)window.__ERP_MARKS_INDEX_CACHE__.push(key);
+      try{erpSet(key,JSON.stringify(rec));var idx=[];try{idx=JSON.parse(erpGet('_erp_marks_index')||'[]')}catch(e){}if(idx.indexOf(key)<0)idx.push(key);erpSet('_erp_marks_index',JSON.stringify(idx))}catch(e){}
+      if(typeof _erpIDBPut==='function')_erpIDBPut('marks:'+eid,{version:1,savedAt:Date.now(),key:key,record:rec}).catch(function(){})});
+    saveExams();try{renderExams()}catch(e){}
+    saMsg('✅ Test marks imported: '+nNew+' new, '+nUpd+' updated',true);
+  }catch(e){saMsg('Import failed: '+(e.code||e.message||e),false)}
+}
 function saToggle(){SA.open=!SA.open;saRender()}
 function saRender(){
   var h=document.getElementById('sa-card');
@@ -25598,14 +25587,14 @@ function saRender(){
   var inp='width:100%;font-size:12px;margin-bottom:6px',b='';
   b+='<div id="sa-msg" style="font-size:12px;margin:10px 0 6px;min-height:16px"></div>';
   b+='<details'+(has?'':' open')+' style="margin-bottom:10px"><summary style="font-size:12px;font-weight:700;cursor:pointer">1 · Firebase setup'+(has?' ✅':'')+'</summary><div style="padding-top:8px"><textarea class="fi" id="sa-fb" rows="5" style="'+inp+';font-family:monospace" placeholder="Paste firebaseConfig { apiKey: ..., projectId: ... }">'+(has?escHtml(JSON.stringify(c.firebase,null,1)):'')+'</textarea><input class="fi" id="sa-em" style="'+inp+'" placeholder="Admin email (the Firebase user you created)" value="'+escHtml(c.adminEmail||'')+'"><input class="fi" id="sa-url" style="'+inp+'" placeholder="Student app web link (where student.html is hosted)" value="'+escHtml(c.appUrl||'')+'"><button class="btn btn-sm" onclick="saSaveCfg()">💾 Save setup</button></div></details>';
-  b+='<div style="font-size:12px;font-weight:700;margin:10px 0 6px">2 · Logins & publish</div><div style="font-size:12px;margin-bottom:8px">Create logins for: '+allCls.map(function(k){return '<label style="margin-right:12px"><input type="checkbox" class="sa-cls" value="'+escHtml(k)+'"'+(saCls().indexOf(k)>-1?' checked':'')+' onchange="saSetCls()"> Class '+escHtml(k)+'</label>'}).join('')+'</div>'+(outside?'<div style="font-size:11px;margin-bottom:8px;color:#dc2626">'+outside+' student(s) outside these classes already have a login. <a href="#" onclick="saCleanOthers();return false">Remove them</a></div>':'')+'<div style="font-size:11px;color:var(--tx2);margin-bottom:8px">'+withPin.length+' students have a login · '+noPin+' without</div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-sm" onclick="saCreateLogins()">🔑 Create logins ('+noPin+')</button><button class="btn btn-sm btn-p" onclick="saPublish()">☁️ Publish now</button><button class="btn btn-sm" onclick="saPullActivity()">📊 Student activity</button><button class="btn btn-sm" onclick="saPullMsgs()">📨 Messages</button></div>';
+  b+='<div style="font-size:12px;font-weight:700;margin:10px 0 6px">2 · Logins & publish</div><div style="font-size:12px;margin-bottom:8px">Create logins for: '+allCls.map(function(k){return '<label style="margin-right:12px"><input type="checkbox" class="sa-cls" value="'+escHtml(k)+'"'+(saCls().indexOf(k)>-1?' checked':'')+' onchange="saSetCls()"> Class '+escHtml(k)+'</label>'}).join('')+'</div>'+(outside?'<div style="font-size:11px;margin-bottom:8px;color:#dc2626">'+outside+' student(s) outside these classes already have a login. <a href="#" onclick="saCleanOthers();return false">Remove them</a></div>':'')+'<div style="font-size:11px;color:var(--tx2);margin-bottom:8px">'+withPin.length+' students have a login · '+noPin+' without</div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-sm" onclick="saCreateLogins()">🔑 Create logins ('+noPin+')</button><button class="btn btn-sm btn-p" onclick="saPublish()">☁️ Publish now</button><button class="btn btn-sm" onclick="saPullActivity()">📊 Student activity</button><button class="btn btn-sm" onclick="saPullMsgs()">📨 Messages</button><button class="btn btn-sm" onclick="saImportMarks()">📥 Import test marks</button></div>';
   if(withPin.length)b+='<div style="margin-top:10px;max-height:240px;overflow-y:auto;border:.5px solid var(--br);border-radius:10px">'+withPin.map(function(s){return '<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-bottom:.5px solid var(--br);font-size:12px"><div style="flex:1;min-width:0"><b>'+escHtml(s.name)+'</b><div style="font-size:10px;color:var(--tx3)">'+escHtml(s.id)+' · PIN '+escHtml(s.appPin)+'</div></div><button class="btn btn-sm" onclick="saShare(\''+s.id+'\')">📱 Send</button><button class="btn btn-sm" onclick="saResetPin(\''+s.id+'\')" title="New PIN">🔄</button></div>'}).join('')+'</div>';
   var N=saList('_erp_sa_notices'),P=saList('_erp_sa_papers');
   b+='<div style="font-size:12px;font-weight:700;margin:14px 0 6px">3 · Notices</div><input class="fi" id="sa-nt" style="'+inp+'" placeholder="Title"><textarea class="fi" id="sa-nx" rows="2" style="'+inp+'" placeholder="Message"></textarea><div style="display:flex;gap:6px">'+saClassSel('sa-ng','flex:1;font-size:12px')+'<button class="btn btn-sm" onclick="saAddNotice()">➕ Add</button></div>'
    +N.map(function(n,i){return '<div style="display:flex;gap:8px;font-size:12px;padding:6px 0;border-bottom:.5px solid var(--br)"><div style="flex:1"><b>'+escHtml(n.title)+'</b>'+(n.grade?' <span style="color:var(--tx3)">(Class '+escHtml(n.grade)+')</span>':'')+'<div style="color:var(--tx2)">'+escHtml(n.text||'')+'</div></div><button class="btn btn-sm" onclick="saDelNotice('+i+')">🗑</button></div>'}).join('');
   b+='<div style="font-size:12px;font-weight:700;margin:14px 0 6px">4 · Question papers</div><input class="fi" id="sa-pt" style="'+inp+'" placeholder="Paper title"><div style="display:flex;gap:6px;margin-bottom:6px"><input class="fi" id="sa-ps" style="flex:1;font-size:12px" placeholder="Subject">'+saClassSel('sa-pg','width:110px;font-size:12px')+'<input class="fi" id="sa-pd" type="number" style="width:90px;font-size:12px" placeholder="Minutes"></div><div style="display:flex;gap:6px"><input class="fi" id="sa-pl" style="flex:1;font-size:12px" placeholder="Paper link (Google Drive etc., optional)"><button class="btn btn-sm" onclick="saAddPaper()">➕ Add</button></div>'
    +P.map(function(x,i){return '<div style="display:flex;gap:8px;font-size:12px;padding:6px 0;border-bottom:.5px solid var(--br)"><div style="flex:1"><b>'+escHtml(x.title)+'</b> <span style="color:var(--tx3)">'+escHtml(x.subject||'')+(x.grade?' · Class '+escHtml(x.grade):'')+(x.duration?' · '+x.duration+' min':'')+'</span></div><button class="btn btn-sm" onclick="saDelPaper('+i+')">🗑</button></div>'}).join('');
-  b+=saTestsHtml(inp);b+='<div style="font-size:11px;color:var(--tx3);margin-top:8px">After adding notices / papers press ☁️ Publish now.</div>';
+  b+='<div style="font-size:11px;color:var(--tx3);margin-top:8px">After adding notices / papers press ☁️ Publish now.</div>';
   if(SA.msgs){b+='<div style="font-size:12px;font-weight:700;margin:14px 0 6px">📨 Student messages</div>'+(SA.msgs.length?SA.msgs.map(function(m,i){return '<div style="font-size:12px;padding:7px 0;border-bottom:.5px solid var(--br)"><b>'+escHtml(m.name||m.sid)+'</b> · '+escHtml(m.type||'')+' <span style="color:var(--tx3)">'+new Date(m.ts).toLocaleString('en-IN',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})+'</span><div style="color:var(--tx2);white-space:pre-wrap">'+escHtml(m.text||'')+'</div><div style="margin-top:4px;display:flex;gap:6px">'+(/password|pin/i.test(m.type||'')?'<button class="btn btn-sm" onclick="saMsgReset('+i+')">🔄 New PIN</button>':'')+'<button class="btn btn-sm" onclick="saDelMsg('+i+')">✔ Done</button></div></div>'}).join(''):'<div style="font-size:12px;color:var(--tx3)">No messages</div>')}
   if(SA.act){
     var last={},ev=[];SA.act.forEach(function(a){if(a.type==='login'&&!last[a.sid])last[a.sid]=a;if(a.type!=='login')ev.push(a)});

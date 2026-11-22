@@ -25093,8 +25093,15 @@ function renderSummaryViz(){
   hook('renderBatchesPage',renderBatchViz);hook('renderCommutePage',renderCommuteViz);hook('renderStaffAttGrid',renderStaffAttViz);hook('renderSummaryCards',renderSummaryViz);
 })();
 /* ===== Dashboard overview cards + day-average attendance ===== */
+function _attIdsFor(dateStr){
+  /* batch ids that actually have attendance saved for this date — includes old/deleted batches and 'all' */
+  var ids={},pre='_erp_att_'+dateStr+'_';
+  try{(JSON.parse(erpGet('_erp_att_index')||'[]')||[]).forEach(function(k){if(k&&k.indexOf(pre)===0&&k.indexOf('_erp_att_dayorder_')!==0){var r=k.slice(pre.length),i=r.lastIndexOf('_');if(i>0)ids[r.slice(0,i)]=1}})}catch(e){}
+  try{if(window.localStorage){for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k&&k.indexOf(pre)===0){var r=k.slice(pre.length),j=r.lastIndexOf('_');if(j>0)ids[r.slice(0,j)]=1}}}}catch(e){}
+  return ids}
 function _dayAtt(dateStr){
-  var barr=(typeof batches!=='undefined'&&Array.isArray(batches)&&batches.length)?batches:[{id:''}];
+  var barr=(typeof batches!=='undefined'&&Array.isArray(batches)&&batches.length)?batches.slice():[{id:''}],have={};barr.forEach(function(b){have[b.id||'all']=1;have[b.id]=1});
+  Object.keys(_attIdsFor(dateStr)).forEach(function(id){if(!have[id]){barr.push({id:id});have[id]=1}});
   var per={},sess={morning:{y:0,n:0},evening:{y:0,n:0}};
   barr.forEach(function(b){['morning','evening'].forEach(function(se){
     try{

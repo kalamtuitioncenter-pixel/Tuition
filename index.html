@@ -25673,6 +25673,7 @@ function toggleLite(){var on=!document.documentElement.classList.contains('lite'
 /* ── Class & Medium strength page ── */
 function renderStrength(){
   var el=document.getElementById('str-body');if(!el)return;
+  var wasOpen=el.querySelector('details')&&el.querySelector('details').open;
   var act=students.filter(function(s){return s&&s.status==='active'});
   var g={};act.forEach(function(s){var k=String(s.grade||'?').trim();var m=s.medium==='Tamil'||s.medium==='English'?s.medium:'None';(g[k]=g[k]||{Tamil:0,English:0,None:0})[m]++});
   var ord=function(k){return k==='KG'?-1:(isNaN(parseInt(k))?999:parseInt(k))};
@@ -25684,7 +25685,7 @@ function renderStrength(){
   var no=act.filter(function(s){return s.medium!=='Tamil'&&s.medium!=='English'});
   if(no.length){h+='<details style="margin-top:14px"><summary style="font-size:12px;font-weight:700;cursor:pointer;color:var(--tx3)">Students without medium ('+no.length+') — tap to set</summary>';
     no.forEach(function(s){h+='<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:.5px solid var(--br)"><div style="flex:1;font-size:12.5px">'+escHtml(s.name)+' <span style="color:var(--tx3)">· '+(s.grade==='KG'?'KG':'Class '+escHtml(String(s.grade||'')))+'</span></div><button class="btn btn-sm" onclick="setMedium(\''+s.id+'\',\'Tamil\')">Tamil</button><button class="btn btn-sm" onclick="setMedium(\''+s.id+'\',\'English\')">English</button></div>'});h+='</details>'}
-  el.innerHTML=h;var te=document.getElementById('str-total');if(te)te.textContent=(tT+tE+tN)+' students';
+  el.innerHTML=h;if(wasOpen){var dd=el.querySelector('details');if(dd)dd.open=true}var te=document.getElementById('str-total');if(te)te.textContent=(tT+tE+tN)+' students';
 }
 var _medT;function setMedium(id,m){var s=students.find(function(x){return x.id===id});if(!s)return;s.medium=m;renderStrength();clearTimeout(_medT);_medT=setTimeout(function(){saveStudents()},1500)}
 

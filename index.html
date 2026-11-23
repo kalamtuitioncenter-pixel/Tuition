@@ -25534,7 +25534,7 @@ async function saPublish(){
     await saConnect();saMsg('Publishing…');var db=SA.app.firestore(),maps=_saAttMaps(120),n=0,batch=db.batch(),ops=0;
     for(var i=0;i<students.length;i++){var s=students[i];if(!s||!s.appPin||s.status==='inactive'||s.leftDate)continue;
       batch.set(db.collection('students').doc(_saSan(s.id)),saBuildDoc(s,maps));n++;ops++;if(ops>=400){await batch.commit();batch=db.batch();ops=0}}
-    batch.set(db.collection('center').doc('notices'),{items:saList('_erp_sa_notices')});
+    batch.set(db.collection('center').doc('notices'),{items:saList('_erp_sa_notices'),name:(CFG.CENTER.name||'Sri Kalam Tuition'),city:(CFG.CENTER.city||'')});
     batch.set(db.collection('center').doc('papers'),{items:saList('_erp_sa_papers')});
     await batch.commit();erpSet('_erp_sa_last',String(Date.now()));saMsg('✅ Published '+n+' student'+(n===1?'':'s')+' + notices + papers',true);saRender();
   }catch(e){saMsg('Publish failed: '+(e.code||e.message||e),false)}

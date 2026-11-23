@@ -862,6 +862,7 @@ html.lite .card,html.lite .stat,html.lite .vz-card{animation:none!important}
     <div class="nav-sec" id="ns-main">Main</div>
     <button class="nav-item active" data-page="dashboard"><svg viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="9" y="2" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="2" y="9" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="9" y="9" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.3"/></svg><span id="nl-dashboard">Dashboard</span></button>
     <button class="nav-item" data-page="students"><svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="3" stroke="currentColor" stroke-width="1.3"/><path d="M2 14c0-3.3 2.7-5 6-5s6 1.7 6 5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg><span id="nl-students">Students</span></button>
+    <button class="nav-item" data-page="strength"><svg viewBox="0 0 16 16" fill="none"><rect x="2" y="8" width="3" height="6" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="6.5" y="4" width="3" height="10" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="11" y="2" width="3" height="12" rx="1" stroke="currentColor" stroke-width="1.3"/></svg><span>Strength</span></button>
     <button class="nav-item" data-page="admissions"><svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="3" stroke="currentColor" stroke-width="1.3"/><path d="M2 14c0-3.3 2.7-5 6-5s6 1.7 6 5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M12 8v4M10 10h4" stroke="#25d366" stroke-width="1.4" stroke-linecap="round"/></svg><span id="nl-admissions">Admissions</span></button>
     <button class="nav-item" data-page="batches"><svg viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="5" height="5" rx="1" stroke="#7c3aed" stroke-width="1.3"/><rect x="9" y="2" width="5" height="5" rx="1" stroke="#7c3aed" stroke-width="1.3"/><rect x="2" y="9" width="5" height="5" rx="1" stroke="#7c3aed" stroke-width="1.3"/><rect x="9" y="9" width="5" height="5" rx="1" stroke="#7c3aed" stroke-width="1.3"/></svg><span id="nl-batches">Batches</span></button>
     <button class="nav-item" data-page="attendance"><svg viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5 2v2M11 2v2M2 7h12M5.5 10.5l1.5 1.5 3-3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg><span id="nl-attendance">Attendance</span></button>
@@ -1102,15 +1103,6 @@ html.lite .card,html.lite .stat,html.lite .vz-card{animation:none!important}
   </div>
 
 
-  <!-- ── Class-wise Strength Card ── -->
-  <div class="card" style="margin-bottom:14px" id="dash-class-strength">
-    <div class="card-hd" style="margin-bottom:10px">
-      <span class="card-title">🏫 Class-wise Strength</span>
-      <span id="dash-class-total" style="font-size:11px;color:var(--tx3);font-weight:600"></span>
-    </div>
-    <div id="dash-class-bars" style="display:flex;flex-direction:column;gap:7px"></div>
-  </div>
-
   <div class="row2">
     <div class="card">
       <div class="card-hd"><span class="card-title" id="ct-income">Income Trend (6 months)</span></div>
@@ -1167,6 +1159,8 @@ html.lite .card,html.lite .stat,html.lite .vz-card{animation:none!important}
 </div>
 
 <!-- ═══════════════ ADMISSIONS ═══════════════ -->
+<div class="page" id="pg-strength"><div class="card"><div class="card-hd"><span class="card-title">🏫 Class &amp; Medium Strength</span><span id="str-total" style="font-size:11px;color:var(--tx3);font-weight:600"></span></div><div id="str-body"></div></div></div>
+
 <div class="page" id="pg-admissions">
   <!-- Header banner -->
   <div style="background:linear-gradient(135deg,#0f172a,#1a56db);border-radius:12px;padding:16px 20px;margin-bottom:16px;display:flex;align-items:center;gap:14px">
@@ -1199,6 +1193,10 @@ html.lite .card,html.lite .stat,html.lite .vz-card{animation:none!important}
       <div class="fg">
         <label class="fl">Student Full Name *</label>
         <input class="fi" id="adm-name" placeholder="e.g. Arjun Kumar">
+      </div>
+      <div class="fg">
+        <label class="fl">Medium *</label>
+        <select class="fi" id="adm-medium"><option value="">Select medium…</option><option value="Tamil">Tamil Medium</option><option value="English">English Medium</option></select>
       </div>
 
       <!-- Admission type -->
@@ -4127,6 +4125,7 @@ function navTo(id) {
   if (id === 'backup') { renderBkHistory(); updateBkCount(); }
   if (id === 'ai') { renderAICards(); initAI(); }
   if (id === 'admissions') { initAdmissions(); }
+  if (id === 'strength') { document.getElementById('pg-title').textContent='Strength'; renderStrength(); }
   if (id === 'settings') { updateLatesDisplay(); initFeeReceiptTemplate(); }
   if (id === 'dashboard') {
     updateDashStats();
@@ -19696,6 +19695,8 @@ function submitAdmission() {
   const admType = document.getElementById('adm-type')?.value || 'class';
 
   if (!name)   { showToast('Enter student name'); document.getElementById('adm-name')?.focus(); return; }
+  const medium = document.getElementById('adm-medium')?.value || '';
+  if (!medium) { showToast('⚠️ Select Medium (Tamil / English)'); document.getElementById('adm-medium')?.focus(); return; }
   if (admType === 'class') {
     if (!grade) { showToast('Select a class'); return; }
   } else {
@@ -19748,7 +19749,7 @@ function submitAdmission() {
   }
 
   const newStudent = {
-    id: _safeId, admNo, name, parent, phone,
+    id: _safeId, admNo, name, parent, phone, medium,
     grade, dob, school, course, subjects, fee, commute,
     status: 'active', color: COLORS[students.length % COLORS.length],
     admDate: new Date().toLocaleDateString('en-IN'),
@@ -20161,6 +20162,7 @@ function editStudent(idx) {
       ${_batchPickHTML('edit-batchpick', s, 'edit-course')}
       ${s.course ? `<div style="font-size:11px;color:#7c3aed;margin-top:4px;padding:4px 8px;background:#ede9fe;border-radius:6px">Currently: ${s.course}</div>` : '<div style="font-size:11px;color:var(--tx3);margin-top:4px">No batch assigned yet. Select one above.</div>'}
     </div>
+    <div class="fg"><label class="fl">Medium *</label><select class="fi" id="edit-medium"><option value="">Select…</option><option value="Tamil"${s.medium==='Tamil'?' selected':''}>Tamil Medium</option><option value="English"${s.medium==='English'?' selected':''}>English Medium</option></select></div>
     <div class="fg"><label class="fl">School</label><input class="fi" id="edit-school" value="${s.school||''}"></div>
     <div class="fg"><label class="fl">🚲 Commute to Tuition</label>
       <select class="fi" id="edit-commute">
@@ -20194,6 +20196,7 @@ function saveEditStudent(idx) {
   s.phone    = document.getElementById('edit-phone')?.value.trim() || s.phone;
   s.dob      = document.getElementById('edit-dob')?.value || s.dob;
   s.grade    = document.getElementById('edit-grade')?.value || s.grade;
+  s.medium   = document.getElementById('edit-medium')?.value || s.medium || '';
   s.subjects = document.getElementById('edit-subjects')?.value.trim() || '';
   s.school   = document.getElementById('edit-school')?.value.trim() || s.school;
   s.commute  = document.getElementById('edit-commute')?.value || '';
@@ -25610,7 +25613,7 @@ function saRender(){
   }
   h.innerHTML=head+b+'</div>';
 }
-(function(){var o=window.renderAdminPanel;if(typeof o!=='function')return;window.renderAdminPanel=function(){var r=o.apply(this,arguments);try{saRender()}catch(e){console.error(e)}return r}})();
+/* Student App card removed from admin dashboard (perf). saRender() still available manually. */
 /* ===== MCQ tests (admin) ===== */
 function saParseMcq(txt){
   var qs=[],cur=null;
@@ -25666,6 +25669,24 @@ function saTestsHtml(inp){
 function _applyLite(on){document.documentElement.classList.toggle('lite',!!on);var e=document.getElementById('pref-lite-sub');if(e)e.textContent=on?'On — blur & endless animations are off':'Off — turn on if the app feels slow'}
 function toggleLite(){var on=!document.documentElement.classList.contains('lite');_applyLite(on);try{erpSet('_erp_lite',on?'1':'0')}catch(e){}showToast(on?'⚡ Fast mode on':'Fast mode off')}
 (function(){var v=null;try{v=erpGet('_erp_lite')}catch(e){}var auto=(window.innerWidth<=768&&(navigator.hardwareConcurrency||8)<=6);_applyLite(v==null?auto:v==='1')})();
+
+/* ── Class & Medium strength page ── */
+function renderStrength(){
+  var el=document.getElementById('str-body');if(!el)return;
+  var act=students.filter(function(s){return s&&s.status==='active'});
+  var g={};act.forEach(function(s){var k=String(s.grade||'?').trim();var m=s.medium==='Tamil'||s.medium==='English'?s.medium:'None';(g[k]=g[k]||{Tamil:0,English:0,None:0})[m]++});
+  var ord=function(k){return k==='KG'?-1:(isNaN(parseInt(k))?999:parseInt(k))};
+  var keys=Object.keys(g).sort(function(a,b){return ord(a)-ord(b)});
+  var tT=0,tE=0,tN=0,h='<table style="width:100%;border-collapse:collapse;font-size:13px"><tr style="text-align:left;color:var(--tx3);font-size:11px"><th style="padding:6px 4px">Class</th><th>Tamil</th><th>English</th><th>Total</th></tr>';
+  keys.forEach(function(k){var x=g[k],t=x.Tamil+x.English+x.None;tT+=x.Tamil;tE+=x.English;tN+=x.None;
+    h+='<tr style="border-top:.5px solid var(--br)"><td style="padding:8px 4px;font-weight:700">'+(k==='KG'?'KG':'Class '+k)+'</td><td>'+x.Tamil+'</td><td>'+x.English+'</td><td style="font-weight:700">'+t+(x.None?' <span style="color:#dc2626;font-size:11px">('+x.None+' no medium)</span>':'')+'</td></tr>'});
+  h+='<tr style="border-top:1.5px solid var(--br);font-weight:800"><td style="padding:8px 4px">Total</td><td>'+tT+'</td><td>'+tE+'</td><td>'+(tT+tE+tN)+'</td></tr></table>';
+  var no=act.filter(function(s){return s.medium!=='Tamil'&&s.medium!=='English'});
+  if(no.length){h+='<details style="margin-top:14px"><summary style="font-size:12px;font-weight:700;cursor:pointer;color:var(--tx3)">Students without medium ('+no.length+') — tap to set</summary>';
+    no.forEach(function(s){h+='<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:.5px solid var(--br)"><div style="flex:1;font-size:12.5px">'+escHtml(s.name)+' <span style="color:var(--tx3)">· '+(s.grade==='KG'?'KG':'Class '+escHtml(String(s.grade||'')))+'</span></div><button class="btn btn-sm" onclick="setMedium(\''+s.id+'\',\'Tamil\')">Tamil</button><button class="btn btn-sm" onclick="setMedium(\''+s.id+'\',\'English\')">English</button></div>'});h+='</details>'}
+  el.innerHTML=h;var te=document.getElementById('str-total');if(te)te.textContent=(tT+tE+tN)+' students';
+}
+function setMedium(id,m){var s=students.find(function(x){return x.id===id});if(!s)return;s.medium=m;saveStudents();renderStrength()}
 </script>
 
 <div id="xt-bg" onclick="if(event.target===this)xtClose()"><div id="xt-box">

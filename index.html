@@ -25686,7 +25686,14 @@ function renderStrength(){
     no.forEach(function(s){h+='<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:.5px solid var(--br)"><div style="flex:1;font-size:12.5px">'+escHtml(s.name)+' <span style="color:var(--tx3)">· '+(s.grade==='KG'?'KG':'Class '+escHtml(String(s.grade||'')))+'</span></div><button class="btn btn-sm" onclick="setMedium(\''+s.id+'\',\'Tamil\')">Tamil</button><button class="btn btn-sm" onclick="setMedium(\''+s.id+'\',\'English\')">English</button></div>'});h+='</details>'}
   el.innerHTML=h;var te=document.getElementById('str-total');if(te)te.textContent=(tT+tE+tN)+' students';
 }
-function setMedium(id,m){var s=students.find(function(x){return x.id===id});if(!s)return;s.medium=m;saveStudents();renderStrength()}
+var _medT;function setMedium(id,m){var s=students.find(function(x){return x.id===id});if(!s)return;s.medium=m;renderStrength();clearTimeout(_medT);_medT=setTimeout(function(){saveStudents()},1500)}
+
+/* Coalesce rapid student saves (speed): persist once after 400ms, flush when app is hidden/closed */
+(function(){var o=window.saveStudents||saveStudents,t=null,pend=false;
+ function flush(){if(!pend)return;pend=false;clearTimeout(t);try{o()}catch(e){console.error(e)}}
+ window.saveStudents=saveStudents=function(){pend=true;clearTimeout(t);t=setTimeout(flush,400)};
+ window.addEventListener('pagehide',flush);document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')flush()});
+ window._flushStudents=flush})();
 </script>
 
 <div id="xt-bg" onclick="if(event.target===this)xtClose()"><div id="xt-box">

@@ -3167,22 +3167,22 @@ const CFG = {
 var PLANS={
   // ── BASIC ₹300/yr — 10 students ──────────────────────────────
   // Features: Fees WA + Absent WA + Attendance AI only
-  BASIC:{name:'Basic',maxStudents:10,features:{
+  BASIC:{name:'Starter',days:30,maxStudents:50,features:{
     aiFeatures:true,googleSheets:false,autoBackup:true,multiCenter:false,advancedReports:false,
-    tamil:false,qrAttendance:false,waTypes:2,
-    feesWA:true,absentWA:true,lateWA:false,
+    tamil:true,qrAttendance:false,waTypes:0,waCustomOnly:true,
+    feesWA:false,absentWA:false,lateWA:false,
     aiModels:1,
     aiModuleIds:['attend_late'],
     teachingLog:true,monthlyGrowthWA:false,aiGrowthClass:false,
   }},
   // ── PRO ₹500/yr — 30 students ────────────────────────────────
   // Features: Basic + Late WA + Exam Notice WA + AI Growth Prediction + Timetable
-  PRO:{name:'Pro',maxStudents:30,features:{
-    aiFeatures:true,googleSheets:false,autoBackup:true,multiCenter:false,advancedReports:false,
-    tamil:true,qrAttendance:true,waTypes:4,
+  PRO:{name:'Pro',days:183,maxStudents:150,features:{
+    aiFeatures:true,googleSheets:false,autoBackup:true,multiCenter:false,advancedReports:true,
+    tamil:true,qrAttendance:true,waTypes:6,
     feesWA:true,absentWA:true,lateWA:true,
-    aiModels:4,
-    aiModuleIds:['attend_late','weak_subject','late_pattern','timetable'],
+    aiModels:5,
+    aiModuleIds:['attend_late','weak_subject','late_pattern','timetable','frequent_absent'],
     teachingLog:true,monthlyGrowthWA:true,aiGrowthClass:true,
   }},
   // ── PREMIUM ₹1200/yr — 100 students ─────────────────────────
@@ -3196,7 +3196,7 @@ var PLANS={
     teachingLog:true,monthlyGrowthWA:true,aiGrowthClass:true,
   }},
   // ── ULTIMATE ₹1500/yr — Unlimited + All AI ──────────────────
-  ULTIMATE:{name:'Ultimate',maxStudents:99999,features:{
+  ULTIMATE:{name:'Elite',days:365,maxStudents:99999,features:{
     aiFeatures:true,googleSheets:true,autoBackup:true,multiCenter:true,advancedReports:true,
     tamil:true,qrAttendance:true,waTypes:8,
     feesWA:true,absentWA:true,lateWA:true,
@@ -3205,7 +3205,7 @@ var PLANS={
     teachingLog:true,monthlyGrowthWA:true,aiGrowthClass:true,
   }},
   // ── TRIAL — 7 days, max 5 students, ALL features unlocked ──
-  TRIAL:{name:'Free Trial',maxStudents:5,features:{
+  TRIAL:{name:'Free Trial',maxStudents:20,features:{
     aiFeatures:true,googleSheets:true,autoBackup:true,multiCenter:true,advancedReports:true,
     tamil:true,qrAttendance:true,waTypes:8,
     feesWA:true,absentWA:true,lateWA:true,
@@ -3217,9 +3217,9 @@ var PLANS={
 var _dt=false;function _chk(){}
 function _sha256(msg){var K=[0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];function _r(x,n){return(x>>>n)|(x<<(32-n));}function _s(x,n){return x>>>n;}function _ch(x,y,z){return(x&y)^(~x&z);}function _mj(x,y,z){return(x&y)^(x&z)^(y&z);}function _s0(x){return _r(x,2)^_r(x,13)^_r(x,22);}function _s1(x){return _r(x,6)^_r(x,11)^_r(x,25);}function _t0(x){return _r(x,7)^_r(x,18)^_s(x,3);}function _t1(x){return _r(x,17)^_r(x,19)^_s(x,10);}function _a(x,y){var l=(x&0xffff)+(y&0xffff);return((x>>16)+(y>>16)+(l>>16)<<16)|(l&0xffff);}var u=[];for(var i=0;i<msg.length;i++){var c=msg.charCodeAt(i);if(c<128)u.push(c);else if(c<2048)u.push((c>>6)|192,(c&63)|128);else u.push((c>>12)|224,((c>>6)&63)|128,(c&63)|128);}var L=u.length,M=new Uint32Array(Math.ceil((L+9)/64)*16);for(var j=0;j<L;j++)M[j>>2]|=u[j]<<(24-(j%4)*8);M[L>>2]|=0x80<<(24-(L%4)*8);M[M.length-1]=L*8;var H=[0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];for(var b=0;b<M.length;b+=16){var W=new Uint32Array(64);for(var t2=0;t2<16;t2++)W[t2]=M[b+t2];for(var t3=16;t3<64;t3++)W[t3]=_a(_a(_t1(W[t3-2]),W[t3-7]),_a(_t0(W[t3-15]),W[t3-16]));var a=H[0],bc=H[1],c2=H[2],d=H[3],e=H[4],f=H[5],g=H[6],h=H[7];for(var t4=0;t4<64;t4++){var T1=_a(_a(_a(_a(h,_s1(e)),_ch(e,f,g)),K[t4]),W[t4]);var T2=_a(_s0(a),_mj(a,bc,c2));h=g;g=f;f=e;e=_a(d,T1);d=c2;c2=bc;bc=a;a=_a(T1,T2);}H[0]=_a(a,H[0]);H[1]=_a(bc,H[1]);H[2]=_a(c2,H[2]);H[3]=_a(d,H[3]);H[4]=_a(e,H[4]);H[5]=_a(f,H[5]);H[6]=_a(g,H[6]);H[7]=_a(h,H[7]);}return H.map(function(n){return('00000000'+n.toString(16).toUpperCase()).slice(-8);}).join('');}
 var _sl=['KalamERP@','2025#Tamil','Nadu$Secu','re!XK9'].join('');
-function _val(key){if(!key||typeof key!=='string')return{valid:false};var p=key.trim().toUpperCase().split('-');if(p.length<4)return{valid:false};var plan=p[0],year=p[1],serial=p[2],hash=p[3];if(!PLANS[plan])return{valid:false};var y=parseInt(year),s=parseInt(serial);if(isNaN(y)||isNaN(s)||y<2025||y>2035||s<1||s>9999)return{valid:false};var payload=_sl+':'+plan+':'+y+':'+('000'+s).slice(-4);var exp=_sha256(payload).substring(0,8);if(exp!==hash)return{valid:false};if(plan==='ULTIMATE')return{valid:true,plan:plan,expiry:new Date(2099,11,31),daysLeft:99999,serial:s};var expiry=new Date(y+1,3,30,23,59,59);var now=new Date();if(now>expiry)return{valid:false,expired:true,plan:plan};return{valid:true,plan:plan,expiry:expiry,daysLeft:Math.ceil((expiry-now)/86400000),serial:s};}
-var _TK='_erp_ts';function _trial(){var s=erpGet(_TK)||Date.now().toString();erpSet(_TK,s);var d=Math.floor((Date.now()-parseInt(s))/86400000);return{daysLeft:Math.max(0,7-d),expired:7-d<=0};}
-function validateLicense(){if(CFG.OWNER_MODE){return{plan:'ULTIMATE',planName:'Sri Kalam Tuition — Owner',valid:true,expired:false,daysLeft:99999,maxStudents:99999,features:Object.assign({},PLANS.ULTIMATE.features),trialMode:false,message:'Full access'}}var key=(CFG.LICENSE_KEY||'').trim().toUpperCase();var status={plan:'TRIAL',planName:'Free Trial',valid:true,expired:false,daysLeft:7,maxStudents:PLANS.TRIAL.maxStudents,features:{...PLANS.TRIAL.features},trialMode:true,message:''};if(!key||key==='TRIAL'){var t=_trial();status.daysLeft=t.daysLeft;status.expired=t.expired;status.valid=!t.expired;status.message=t.expired?'Trial expired — enter license key to continue':'Trial: '+t.daysLeft+' day'+(t.daysLeft===1?'':'s')+' left (5 students max)';}else{var r=_val(key);if(!r.valid){status={...status,valid:false,plan:'INVALID',planName:'Invalid',maxStudents:0,features:{},trialMode:false,message:r.expired?'License expired':'Invalid key'};}else{var pl=PLANS[r.plan];var daysMsg=r.plan==='ULTIMATE'?'Lifetime — ✅ Active':pl.name+' · '+r.daysLeft+' days left';status={...status,plan:r.plan,planName:pl.name,valid:true,expired:false,daysLeft:r.daysLeft,maxStudents:pl.maxStudents,features:{...pl.features},trialMode:false,message:daysMsg};}}CFG.FEATURES={...status.features};window.__LIC__=status;return status;}
+function _val(key){if(!key||typeof key!=='string')return{valid:false};var K=key.trim().toUpperCase(),p=K.split('-');if(p.length<4)return{valid:false};var plan0=p[0],plan=({STARTER:'BASIC',ELITE:'ULTIMATE'})[plan0]||plan0,year=p[1],serial=p[2],hash=p[3];if(!PLANS[plan]||!PLANS[plan].days)return{valid:false};var y=parseInt(year),s=parseInt(serial);if(isNaN(y)||isNaN(s)||y<2025||y>2035||s<1||s>9999)return{valid:false};var payload=_sl+':'+plan0+':'+y+':'+('000'+s).slice(-4);var exp=_sha256(payload).substring(0,8);if(exp!==hash)return{valid:false};var acts={};try{acts=JSON.parse(erpGet('_erp_lic_acts')||'{}')||{}}catch(e){acts={}}if(!acts[K]){acts[K]=Date.now();erpSet('_erp_lic_acts',JSON.stringify(acts))}var expiry=new Date(acts[K]+PLANS[plan].days*86400000);var now=new Date();if(now>expiry)return{valid:false,expired:true,plan:plan};return{valid:true,plan:plan,expiry:expiry,daysLeft:Math.ceil((expiry-now)/86400000),serial:s};}
+var _TK='_erp_ts';function _trial(){var s=erpGet(_TK)||Date.now().toString();erpSet(_TK,s);var d=Math.floor((Date.now()-parseInt(s))/86400000);return{daysLeft:Math.max(0,15-d),expired:15-d<=0};}
+function validateLicense(){if(CFG.OWNER_MODE){return{plan:'ULTIMATE',planName:'Sri Kalam Tuition — Owner',valid:true,expired:false,daysLeft:99999,maxStudents:99999,features:Object.assign({},PLANS.ULTIMATE.features),trialMode:false,message:'Full access'}}var key=(CFG.LICENSE_KEY||'').trim().toUpperCase();var status={plan:'TRIAL',planName:'Free Trial',valid:true,expired:false,daysLeft:15,maxStudents:PLANS.TRIAL.maxStudents,features:{...PLANS.TRIAL.features},trialMode:true,message:''};if(!key||key==='TRIAL'){var t=_trial();status.daysLeft=t.daysLeft;status.expired=t.expired;status.valid=!t.expired;status.message=t.expired?'Trial expired — enter license key to continue':'Trial: '+t.daysLeft+' day'+(t.daysLeft===1?'':'s')+' left (20 students max)';}else{var r=_val(key);if(!r.valid){status={...status,valid:false,plan:'INVALID',planName:'Invalid',maxStudents:0,features:{},trialMode:false,message:r.expired?'License expired':'Invalid key'};}else{var pl=PLANS[r.plan];var daysMsg=pl.name+' · '+r.daysLeft+' days left';status={...status,plan:r.plan,planName:pl.name,valid:true,expired:false,daysLeft:r.daysLeft,maxStudents:pl.maxStudents,features:{...pl.features},trialMode:false,message:daysMsg};}}CFG.FEATURES={...status.features};window.__LIC__=status;return status;}
 window.__VALIDATE_LICENSE__=validateLicense;window.__PLANS__=PLANS;
 })();
 
@@ -5250,7 +5250,7 @@ const MODALS = {
     <div class="plan-grid">${renderPlansHTML()}</div>
     <div style="background:var(--bg);border-radius:10px;padding:14px;margin-bottom:12px">
       <div style="font-size:12px;font-weight:600;color:var(--tx);margin-bottom:8px">Already have a license key?</div>
-      <div style="display:flex;gap:8px"><input class="fi" id="m-lickey" placeholder="e.g. PRO-2027-0001-XXXXXXXX" style="flex:1;font-family:monospace;font-size:12px"><button class="btn btn-p btn-sm" onclick="activateLic()">Activate</button></div>
+      <div style="display:flex;gap:8px"><input class="fi" id="m-lickey" placeholder="e.g. PRO-2026-0001-XXXXXXXX" style="flex:1;font-family:monospace;font-size:12px"><button class="btn btn-p btn-sm" onclick="activateLic()">Activate</button></div>
       <div id="m-lic-msg" style="font-size:11px;margin-top:6px"></div>
     </div>
     <div style="text-align:center;font-size:11px;color:var(--tx3);line-height:1.9">
@@ -7518,7 +7518,7 @@ function renderWATypes() {
   const grid = document.getElementById('wa-type-grid');
   if (!grid) return;
   const lic = window.__LIC__ || {};
-  const maxTypes = lic.features ? (lic.features.waTypes || 2) : 2;
+  const maxTypes = lic.features ? (lic.features.waTypes ?? 2) : 2;
   grid.innerHTML = _waTypesUnified().map((wt) => {
     const isActive = waType === wt.id;
     // First 8 types keep the original plan limits; the extra template types are open on plans that allow 8.
@@ -7676,6 +7676,7 @@ function buildWAQueue() {
     });
   }
 
+  if (typeof _waStarterFilter === 'function') targetStudents = _waStarterFilter(targetStudents);
   // Class filter (ticked classes only; none ticked = all classes)
   const _selCls = _waSelectedClasses();
   if (_selCls.length) targetStudents = targetStudents.filter(s => _selCls.includes(String(s.grade || '').trim()));
@@ -13858,7 +13859,7 @@ const AI_FEATS = [
    en:{name:'Smart Timetable Generator',       desc:'Optimised Mon-Sat schedule following TN board weightage'},
    ta:{name:'Timetable generator',           desc:'TN Syllabus priority schedule'}},
   // ── PREMIUM — adds frequent absent ─────────────────────
-  {id:'frequent_absent',planMin:'PREMIUM', c:'#dc2626',bg:'#fff1f2',
+  {id:'frequent_absent',planMin:'PRO', c:'#dc2626',bg:'#fff1f2',
    en:{name:'Frequent Absentee Analyser',      desc:'Patterns of repeated absences with parent alert templates'},
    ta:{name:'Frequent absentee analysis',   desc:'Students who are repeatedly absent & Parent alert'}},
   // ── ULTIMATE — all remaining AI ────────────────────────
@@ -16379,7 +16380,7 @@ function getSnapshot() {
 }
 function runBackup(source) {
   const data = getSnapshot();
-  const json = JSON.stringify(data,null,2);
+  const json = JSON.stringify(data);
   const size = (json.length/1024).toFixed(1)+' KB';
   const saved = JSON.parse(erpGet(BK_KEY)||'[]');
   saved.unshift({ts:data.timestamp,data:json,source,size});
@@ -17188,33 +17189,25 @@ function getSheetsSecret() {
    LICENSE UI
 ═══════════════════════════════════════════════════════ */
 function renderPlansHTML() {
-  const plans = window.__PLANS__||PLANS||{};
-  const lic   = window.__LIC__||{};
-  const DISPLAY = {
-    BASIC:   {name:'Basic',   price:'₹300',  sub:'10 Students'},
-    PRO:     {name:'Pro',     price:'₹500',  sub:'30 Students'},
-    PREMIUM: {name:'Premium', price:'₹1,200',sub:'100 Students'},
-    ULTIMATE:{name:'Ultimate',price:'₹1,500',sub:'Unlimited Students'}
-  };
-  const FEAT_MAP = {
-    BASIC:   ['✅ Fees Reminder WA','✅ Absent Alert WA','✅ Attendance AI','❌ Late WA','❌ AI Growth','❌ Google Sheets'],
-    PRO:     ['✅ Fees Reminder WA','✅ Absent Alert WA','✅ Attendance AI','✅ Late WA','✅ AI Growth + Timetable','❌ Google Sheets'],
-    PREMIUM: ['✅ Fees Reminder WA','✅ Absent Alert WA','✅ Attendance AI','✅ Late WA','✅ AI Growth + Timetable','✅ Google Sheets'],
-    ULTIMATE:['✅ All WA Features','✅ All AI Features','✅ Fee Forecast AI','✅ Concentration AI','✅ Google Sheets','✅ Multi-Center'],
-  };
-  const BADGE = {BASIC:'bb',PRO:'bg',PREMIUM:'bp',ULTIMATE:'bt'};
-  return ['BASIC','PRO','PREMIUM','ULTIMATE'].map(k=>{
-    const p=plans[k]; if(!p) return '';
-    const isCur=lic.plan===k, isP=k==='PRO';
-    const d=DISPLAY[k];
-    return `<div class="plan-card${isP?' pop':''}" style="${k==='ULTIMATE'?'border-color:#7c3aed':''}">
+  const lic = window.__LIC__||{};
+  const PL = [
+    {k:'BASIC',   name:'Starter', price:'₹200',   per:'/month',   sub:'Up to 50 students · 1 month',
+      f:['✅ Students, Admission, Batches','✅ Attendance, Fees & Receipts','✅ Marks & Exams','✅ Class &amp; Medium Strength','✅ WhatsApp: free custom message (1 batch at a time)','❌ WhatsApp templates (Fee, Absent, Late…)','❌ Staff, Timetable, Teaching Log','❌ Advanced AI']},
+    {k:'PRO',     name:'Pro',     price:'₹1,000', per:'/6 months',sub:'Up to 150 students · 6 months',
+      f:['✅ Everything in Starter','✅ WhatsApp templates (6 types)','✅ Staff, Timetable, Teaching Log','✅ School Marks, Student Summary','✅ Advanced reports + QR attendance','✅ AI: 5 modules','❌ Rising Stars, Target, Google Sheets']},
+    {k:'ULTIMATE',name:'Elite',   price:'₹1,800', per:'/year',    sub:'Unlimited students · 1 year from activation',
+      f:['✅ Everything in Pro','✅ All WhatsApp types','✅ All 8 AI modules + Fee Forecast','✅ Rising Stars, Target','✅ Google Sheets, Multi-Center','✅ Priority support']}
+  ];
+  return PL.map(d=>{
+    const isCur=lic.plan===d.k,isP=d.k==='PRO',isE=d.k==='ULTIMATE';
+    return `<div class="plan-card${isP?' pop':''}" style="${isE?'border-color:#7c3aed':''}">
       ${isCur?`<div class="badge bg" style="margin-bottom:6px">✓ Current Plan</div>`:''}
       ${isP?'<div class="badge bb" style="margin-bottom:4px">⭐ Most Popular</div>':''}
-      ${k==='ULTIMATE'?'<div class="badge bt" style="margin-bottom:4px;background:#4c1d95;color:#fff">🔥 Best Value</div>':''}
-      <div class="plan-name" style="${k==='ULTIMATE'?'color:#7c3aed':''}">${escHtml(d.name)}</div>
-      <div class="plan-price" style="font-size:22px;font-weight:800;color:var(--pr)">${d.price}<span style="font-size:11px;font-weight:400;color:var(--tx2)">/yr</span></div>
+      ${isE?'<div class="badge bt" style="margin-bottom:4px;background:#4c1d95;color:#fff">🔥 Best Value</div>':''}
+      <div class="plan-name" style="${isE?'color:#7c3aed':''}">${d.name}</div>
+      <div class="plan-price" style="font-size:22px;font-weight:800;color:var(--pr)">${d.price}<span style="font-size:11px;font-weight:400;color:var(--tx2)">${d.per}</span></div>
       <div style="font-size:10px;font-weight:700;color:var(--tx3);margin-bottom:8px;text-transform:uppercase">${d.sub}</div>
-      <div class="plan-feat" style="text-align:left;line-height:2.2;font-size:12px">${(FEAT_MAP[k]||[]).join('<br>')}</div>
+      <div class="plan-feat" style="text-align:left;line-height:2.1;font-size:12px">${d.f.join('<br>')}</div>
     </div>`;
   }).join('');
 }
@@ -17239,9 +17232,9 @@ function initLicenseUI() {
   window.__LIC__=lic;
   const banner=document.getElementById('lic-banner'),msg=document.getElementById('lic-banner-msg');
   if(banner&&msg){
-    if(lic.plan==='ULTIMATE'&&lic.valid){banner.style.display='none';}
-    else if(lic.trialMode&&lic.valid){msg.textContent='🎯 Free Trial — '+lic.daysLeft+' day'+(lic.daysLeft===1?'':'s')+' left · 5 students · All features unlocked';banner.style.background='#0369a1';banner.style.display='block';}
-    else if(lic.daysLeft<=30&&!lic.trialMode){msg.textContent='⚠️ License expires in '+lic.daysLeft+' days';banner.style.display='block';}
+    if(lic.daysLeft>9000&&lic.valid){banner.style.display='none';}
+    else if(lic.trialMode&&lic.valid){msg.textContent='🎯 Free Trial — '+lic.daysLeft+' day'+(lic.daysLeft===1?'':'s')+' left · 20 students · All features unlocked';banner.style.background='#0369a1';banner.style.display='block';}
+    else if(lic.daysLeft<=(lic.plan==='BASIC'?5:15)&&!lic.trialMode){msg.textContent='⚠️ License expires in '+lic.daysLeft+' days';banner.style.display='block';}
     if(!lic.valid){msg.textContent=lic.message||'License expired';banner.style.background='#dc2626';banner.style.display='block';}
   }
   // Update settings page
@@ -25695,6 +25688,38 @@ var _medT;function setMedium(id,m){var s=students.find(function(x){return x.id==
  window.saveStudents=saveStudents=function(){pend=true;clearTimeout(t);t=setTimeout(flush,400)};
  window.addEventListener('pagehide',flush);document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')flush()});
  window._flushStudents=flush})();
+
+/* ══ PLAN ENGINE: locks, expiry, Starter WhatsApp ══ */
+var _PG_MIN={staff:'PRO',timetable:'PRO',teaching:'PRO',summary:'PRO',schoolmarks:'PRO',risingstar:'ULTIMATE',target:'ULTIMATE'};
+var _PL_RANK={TRIAL:9,BASIC:1,PRO:2,PREMIUM:2,ULTIMATE:3};
+var _PL_NAME={BASIC:'Starter',PRO:'Pro',ULTIMATE:'Elite'};
+function _planOK(pg){var l=window.__LIC__||{};if(l.daysLeft>9000)return true;var need=_PG_MIN[pg];if(!need)return true;return (_PL_RANK[l.plan]||0)>=_PL_RANK[need]}
+function _applyNavLocks(){document.querySelectorAll('.nav-item[data-page]').forEach(function(b){var pg=b.getAttribute('data-page');if(!_PG_MIN[pg])return;var ok=_planOK(pg),sp=b.querySelector('span:not(.nav-badge)');if(!sp)return;var has=sp.getAttribute('data-lk')==='1';if(!ok&&!has){sp.textContent+=' 🔒';sp.setAttribute('data-lk','1')}else if(ok&&has){sp.textContent=sp.textContent.replace(' 🔒','');sp.removeAttribute('data-lk')}})}
+function _lockPopup(pg){var need=_PL_NAME[_PG_MIN[pg]]||'a higher';var d=document.createElement('div');d.id='lk-pop';d.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99998;display:flex;align-items:center;justify-content:center;padding:20px';d.innerHTML='<div style="background:var(--card,#fff);color:var(--tx,#111);border-radius:14px;padding:22px;max-width:340px;text-align:center"><div style="font-size:34px">🔒</div><div style="font-weight:800;font-size:16px;margin:6px 0">'+need+' plan feature</div><div style="font-size:13px;color:var(--tx2,#555);margin-bottom:14px">This page is available in the <b>'+need+'</b> plan. Upgrade to unlock it.</div><button class="btn btn-p" style="width:100%;justify-content:center;margin-bottom:8px" onclick="document.getElementById(\'lk-pop\').remove();openUpgrade()">View plans</button><button class="btn" style="width:100%;justify-content:center" onclick="document.getElementById(\'lk-pop\').remove()">Not now</button></div>';document.body.appendChild(d)}
+(function(){var o=window.navTo;if(typeof o!=='function')return;window.navTo=function(id){if(id&&!_planOK(id)){_lockPopup(id);return}return o.apply(this,arguments)}})();
+function _licGate(){var l=window.__LIC__||{};var ov=document.getElementById('lic-gate');if(l.valid!==false){if(ov)ov.remove();return}if(ov)return;ov=document.createElement('div');ov.id='lic-gate';ov.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,.94);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px';ov.innerHTML='<div style="background:var(--card,#fff);color:var(--tx,#111);border-radius:14px;padding:24px;max-width:360px;text-align:center"><div style="font-size:38px">⏰</div><div style="font-weight:800;font-size:17px;margin:6px 0">'+(l.plan==='TRIAL'?'Free trial ended':'License expired')+'</div><div style="font-size:13px;color:var(--tx2,#555);margin-bottom:14px">Your data is safe. Enter a new license key to continue, or download a backup first.</div><button class="btn btn-p" style="width:100%;justify-content:center;margin-bottom:8px" onclick="showModal(\'upgrade\')">Enter license key / Plans</button><button class="btn" style="width:100%;justify-content:center" onclick="try{runBackup(\'manual\')}catch(e){alert(\'Open Backup page after activating\')}">⬇ Download my data (backup)</button></div>';document.body.appendChild(ov)}
+(function(){var o=window.initLicenseUI;if(typeof o!=='function')return;window.initLicenseUI=function(){var r=o.apply(this,arguments);try{_applyNavLocks();_licGate();_waStarterUI()}catch(e){console.error(e)}return r}})();
+/* Starter WhatsApp: only a free custom message, one batch at a time */
+function _waIsStarter(){var l=window.__LIC__||{};return !!(l.features&&l.features.waCustomOnly)}
+function _waStarterFilter(list){if(!_waIsStarter())return list;var msg=(document.getElementById('wa-custom-msg')||{}).value||'';var b=(document.getElementById('wa-starter-batch')||{}).value||'';if(!msg.trim()||!b)return [];return list.filter(function(s){try{return _stuBatchList(s).indexOf(b)!==-1}catch(e){return false}})}
+function _waStarterUI(){var st=_waIsStarter();var g=document.getElementById('wa-type-grid');if(!g)return;var tab=document.getElementById('wa-tab-templates');if(tab)tab.style.display=st?'none':'';
+  var hide=['wa-template-sel','wa-recipients-sel','wa-class-chips'];hide.forEach(function(id){var e=document.getElementById(id);if(e&&e.closest('.fg'))e.closest('.fg').style.display=st?'none':''});
+  g.style.display=st?'none':'';var det=document.getElementById('wa-details');if(st&&det)det.style.display='none';
+  var box=document.getElementById('wa-starter-box');
+  if(!st){if(box)box.remove();return}
+  if(!box){var cm=document.getElementById('wa-custom-msg');if(!cm)return;var fg=cm.closest('.fg');box=document.createElement('div');box.id='wa-starter-box';box.className='fg';fg.parentNode.insertBefore(box,fg);}
+  var cur=(document.getElementById('wa-starter-batch')||{}).value||'';
+  box.innerHTML='<div style="font-size:11px;background:#ecfdf5;border:.5px solid #86efac;border-radius:8px;padding:8px 10px;margin-bottom:8px;color:#166534">🆓 <b>Starter plan:</b> send a custom message to <b>one batch</b> at a time. Templates &amp; auto-reminders are in Pro / Elite.</div><label class="fl">Send to batch *</label><select class="fi" id="wa-starter-batch" onchange="buildWAQueue()"><option value="">Select a batch…</option>'+(window.batches||[]).map(function(b){return '<option value="'+escHtml(String(b.id))+'"'+(String(b.id)===cur?' selected':'')+'>'+escHtml(b.name||b.id)+'</option>'}).join('')+'</select>';
+  var cm2=document.getElementById('wa-custom-msg');if(cm2){var lb=cm2.closest('.fg').querySelector('label');if(lb)lb.textContent='Message *';cm2.placeholder='Type your message…';if(!cm2.dataset.st){cm2.dataset.st='1';cm2.addEventListener('input',function(){buildWAQueue()})}}}
+(function(){var o=window.renderWATypes;if(typeof o!=='function')return;window.renderWATypes=function(){var r=o.apply(this,arguments);try{_waStarterUI()}catch(e){}return r}})();
+setTimeout(function(){try{_applyNavLocks();_licGate()}catch(e){}},600);
+
+/* Speed: 'change' backups are coalesced — one backup 45s after the last change (or when app is hidden) */
+(function(){var o=window.runBackup||runBackup,t=null,pend=false;
+ function flush(){if(!pend)return;pend=false;clearTimeout(t);var f=function(){try{o('change')}catch(e){console.error(e)}};(window.requestIdleCallback?requestIdleCallback(f,{timeout:4000}):setTimeout(f,50))}
+ window.runBackup=runBackup=function(src){if(src==='change'){pend=true;clearTimeout(t);t=setTimeout(flush,45000);return}return o.apply(this,arguments)};
+ window.addEventListener('pagehide',function(){if(pend){pend=false;try{o('change')}catch(e){}}});
+ document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden'&&pend){pend=false;try{o('change')}catch(e){}}})})();
 </script>
 
 <div id="xt-bg" onclick="if(event.target===this)xtClose()"><div id="xt-box">
